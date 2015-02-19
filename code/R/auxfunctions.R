@@ -112,3 +112,25 @@ trunc <- function(x, eps=0.1) {
   x <- ifelse(x > 1-eps, 1-eps, x)
   return(x)
 }
+
+# generate rare binary data
+# for now working with independent to test functions for beta and xi
+rBinaryRareInd <- function(x, beta, xi) {
+  nt <- dim(x)[2]
+  ns <- dim(x)[1]
+
+  x.beta <- matrix(NA, ns, nt)
+  for (t in 1:nt) {
+    x.beta[, t] <- x[, t, ] %*% beta
+  }
+
+  z <- (1 + xi * x.beta)^(1 / xi)
+  p <- 1 - exp(-1 / z)  # we need P(Y = 1) for rbinom
+  y <- rbinom(n=ns * nt, size=1, prob=p)
+  return(y)
+}
+
+# generate dependent rare binary data
+rRareBinary <- function(x, beta, xi, alpha, rho) {
+
+}
