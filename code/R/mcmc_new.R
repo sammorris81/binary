@@ -1,5 +1,6 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
-                 xi.init=0.1, beta.init=0,
+                 beta.init=0, beta.m=0, beta.s=10,
+                 xi.init=0.1, xi.m=0, xi.s=1,
                  knots=NULL, thresh=NULL, logrho.init=1, alpha.init=0.5,
                  init.beta, init.alpha, init.range, init.bw, init.logs,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
@@ -40,7 +41,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
       x.beta[, t] <- x[, t] * beta
     }
   }
-  z <- -(1 - xi * x.beta)^(-1 / xi)
+  z <- getZ(xi=xi, x.beta=x.beta)
 
   for (t in 1:nt) {
     for (k in 1:nknots) {
@@ -66,7 +67,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   for (iter in 1:iters) { for (ttt in 1:nthin) {
     # update beta
     beta.update <- updateBeta(y=y, theta=theta, alpha=alpha, z=z,
-                              beta=beta, xi=xi, x=x, cur.lly=cur.lly,
+                              beta=beta, beta.m=beta.m, beta.s=beta.s,
+                              xi=xi, x=x, cur.lly=cur.lly,
                               acc=acc.beta, att=att.beta, mh=mh.beta)  # TODO: Make function
     beta     <- beta.update$beta
     x.beta   <- beta.update$x.beta
@@ -77,7 +79,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     # update xi
     xi.update <- updateXi(y=y, A=A, w=w, alpha=alpha, z=z, x.beta=x.beta,
-                          xi=xi, cur.lly, acc=acc.xi, att=att.xi, mh=mh.xi)
+                          xi=xi, xi.m=xi.m, xi.s=xi.s,
+                          cur.lly, acc=acc.xi, att=att.xi, mh=mh.xi)
     xi      <- xi.update$xi
     z       <- xi.update$z
     cur.lly <- xi.update$cur.lly

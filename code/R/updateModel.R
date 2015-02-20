@@ -1,25 +1,26 @@
 # update the beta term for the linear model
-updateBeta <- function(y, theta, alpha, z, beta, xi, x, cur.lly,
+updateBeta <- function(y, theta, alpha, z, beta, beta.m, beta.s, xi, x, cur.lly,
                        acc, att, mh) {
   # at the moment coding a block update for all parameters
-  p <- dim(x)[3]
+  np <- dim(x)[3]
   nt <- dim(x)[2]
-  att <- att + 1
 
-  can.beta <- rnorm(p, beta, mh)
+  can.beta <- rnorm(np, beta, mh)
+  can.x.beta <- matrix(NA, ns, nt)
   for (t in 1:nt) {
-    if (p > 1) {
+    if (np > 1) {
       can.x.beta[, t] <- x[, t, ] %*% can.beta
     } else {
       can.x.beta[, t] <- x[, t] * can.beta
     }
   }
-  can.z <- -(1 - xi * can.x.beta)^(-1 / xi)
+  can.z <- getZ(xi=xi, x.beta=can.x.beta)
 
   can.lly <- logLikeY(y=y, theta=theta, alpha=alpha, z=can.z)
 
   R <- sum(can.lly - cur.lly) +
-       sum(dnorm(can.beta, log=TRUE)) - sum(dnorm(beta, log=TRUE))
+       sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
+       sum(dnorm(beta, beta.m, beta.s, log=TRUE))
 
   if (!is.na(R)) { if (log(runif(1)) < R) {
     beta    <- can.beta
@@ -29,23 +30,55 @@ updateBeta <- function(y, theta, alpha, z, beta, xi, x, cur.lly,
     acc     <- acc + 1
   }}
 
+  # for (p in 1:np) {
+  #   att[p] <- att[p] + 1
+  #   can.beta[p] <- rnorm(1, beta[p], mh[p])
+  #   can.x.beta  <- matrix(NA, ns, nt)
+  #   for (t in 1:nt) {
+  #     if (np > 1) {
+  #       can.x.beta[, t] <- x[, t, ] %*% can.beta
+  #     } else {
+  #       can.x.beta[, t] <- x[, t] * can.beta
+  #     }
+  #   }
+  #   can.z <- (1 + xi * can.x.beta)^(1 / xi)
+
+  #   # treat as independent at the moment
+  #   cur.lly <- y * (-1 / z) + (1 - y) * log(1 - exp(-1 / z))
+  #   can.lly <- y * (-1 / can.z) + (1 - y) * log(1 - exp(-1 / can.z))
+  #   # can.lly <- logLikeY(y=y, theta=theta, alpha=alpha, z=can.z)
+
+  #   R <- sum(can.lly - cur.lly) +
+  #        dnorm(can.beta[p], log=TRUE) - dnorm(beta[p], log=TRUE)
+
+  #   if (!is.na(R)) { if (log(runif(1)) < R) {
+  #     beta[p] <- can.beta[p]
+  #     x.beta  <- can.x.beta
+  #     z       <- can.z
+  #     cur.lly <- can.lly
+  #     acc[p]  <- acc[p] + 1
+  #   }}
+  # }
+
   results <- list(beta=beta, x.beta=x.beta, z=z, cur.lly=cur.lly,
                   att=att, acc=acc)
+  return(results)
 }
 
 # update the xi term for the linear model
-updateXi <- function(y, theta, alpha, z, x.beta, xi, cur.lly,
+updateXi <- function(y, theta, alpha, z, x.beta, xi, xi.m, xi.s, cur.lly,
                      acc, att, mh) {
   nt <- dim(x)[2]
   att <- att + 1
 
   can.xi <- rnorm(1, xi, mh)
-  can.z <- -(1 - can.xi * x.beta)^(-1 / can.xi)
+  can.z <- getZ(xi=can.xi, x.beta=x.beta)
 
   can.lly <- logLikeY(y=y, theta=theta, alpha=alpha, z=can.z)
 
   R <- sum(can.lly - cur.lly) +
-       dnorm(can.xi, log=TRUE) - dnorm(xi, log=TRUE)
+       dnorm(can.xi, xi.m, xi.s, log=TRUE) -
+       dnorm(xi, xi.m, xi.s, log=TRUE)
 
   if (!is.na(R)) { if (log(runif(1)) < R) {
     xi      <- can.xi

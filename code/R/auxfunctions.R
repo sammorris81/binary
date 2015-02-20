@@ -1,3 +1,11 @@
+getZ <- function(xi, x.beta) {
+  if (xi != 0) {
+    z <- (1 + xi * x.beta)^(1 / xi)
+  } else {
+    z <- exp(x.beta)
+  }
+}
+
 # theta sum_l=1^L a_l * w_l^(1 / alpha)
 getTheta <- function(w, a, alpha) {
   # theta is nxnF
@@ -27,7 +35,7 @@ stdW <- function(x, single=FALSE) {
 # get find the ll for y - returns ns x nt matrix for each site/day
 logLikeY <- function(y, theta, alpha, z) {
   z.star <- -(theta / z)^(1 / alpha)
-  ll.y <- (1 - y) * z.star + y * log(1 - z.star)
+  ll.y <- (1 - y) * z.star + y * log(1 - exp(z.star))
   return(ll.y)
 }
 
@@ -45,7 +53,22 @@ dPS <- function(a, alpha, npts=100) {
   return(l)
 }
 
+# update mh settings
+mhUpdate <- function(acc, att, mh, nattempts=50, lower=0.8, higher=1.2) {
+  acc.rate     <- acc / att
+  these.update <- att > nattempts
+  these.low    <- (acc.rate < 0.25) & these.update
+  these.high   <- (acc.rate > 0.50) & these.update
 
+  mh[these.low]  <- mh[these.low] * lower
+  mh[these.high] <- mh[these.high] * higher
+
+  acc[these.update] <- 0
+  att[these.update] <- 0
+
+  results <- list(acc=acc, att=att, mh=mh)
+  return(results)
+}
 
 
 ECkern <- function(h, alpha, gamma, Lmax=50) {
@@ -126,7 +149,7 @@ rBinaryRareInd <- function(x, beta, xi) {
 
   z <- (1 + xi * x.beta)^(1 / xi)
   p <- 1 - exp(-1 / z)  # we need P(Y = 1) for rbinom
-  y <- rbinom(n=ns * nt, size=1, prob=p)
+  y <- matrix(rbinom(n=ns * nt, size=1, prob=p), nrow=ns, ncol=nt)
   return(y)
 }
 
