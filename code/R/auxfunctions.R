@@ -1,3 +1,37 @@
+################################################################################
+# Common data transformations
+################################################################################
+transform <- list(
+  logit = function(x, lower=0, upper=1) {
+    x <- (x - lower) / (upper - lower)
+    return(log(x / (1 - x)))
+  },
+  inv.logit = function(x, lower=0, upper=1) {
+    p <- exp(x) / (1 + exp(x))
+    p <- p * (upper - lower) + lower
+    return(p)
+  },
+  probit = function(x, lower=0, upper=1) {
+    x <- (x - lower) / (upper - lower)
+    return(qnorm(x))
+  },
+  inv.probit = function(x, lower=0, upper=1) {
+    p <- pnorm(x)
+    p <- p * (upper - lower) + lower
+    return(p)
+  },
+  log = function(x) log(x),
+  exp = function(x) exp(x),
+  copula = function(dens) {
+    this.dens <- paste("p", dens, sep="")
+    function(x, ...) qnorm(do.call(this.dens, args=list(x, ...)))
+  },
+  inv.copula = function(dens) {
+    this.dens <- paste("q", dens, sep="")
+    function(x, ...) do.call(this.dens, args=list(pnorm(x), ...))
+  }
+)
+
 getZ <- function(xi, x.beta) {
   if (xi != 0) {
     z <- (1 + xi * x.beta)^(1 / xi)
@@ -53,6 +87,17 @@ dPS <- function(a, alpha, npts=100) {
   return(l)
 }
 
+# used when evaluating the postive stable density
+ld <- function(u, a, alpha) {
+  psi <- pi * u
+  c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
+  c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
+  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
+          log(c) - c * (1 / a^(alpha / (1 - alpha)))
+
+  return(exp(logd))
+}
+
 # update mh settings
 mhUpdate <- function(acc, att, mh, nattempts=50, lower=0.8, higher=1.2) {
   acc.rate     <- acc / att
@@ -83,17 +128,7 @@ ECkern <- function(h, alpha, gamma, Lmax=50) {
 
 
 
-ld <- function(u, A, alpha) {
-  psi <- pi * u
-  c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
-  c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
-  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(A) +
-          log(c) - c * (1 / A^(alpha / (1 - alpha)))
-
-  return(exp(logd))
-}
-
-
+# ld2 is used in generating positive stable random variables
 ld2 <- function(u, logs, alpha, shift=0, log=T) {
 
   logs <- logs - shift / alpha

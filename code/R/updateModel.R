@@ -2,8 +2,9 @@
 updateBeta <- function(y, theta, alpha, z, beta, beta.m, beta.s, xi, x, cur.lly,
                        acc, att, mh) {
   # at the moment coding a block update for all parameters
-  np <- dim(x)[3]
-  nt <- dim(x)[2]
+  np  <- dim(x)[3]
+  nt  <- dim(x)[2]
+  att <- att + 1
 
   can.beta <- rnorm(np, beta, mh)
   can.x.beta <- matrix(NA, ns, nt)
@@ -91,7 +92,10 @@ updateXi <- function(y, theta, alpha, z, x.beta, xi, xi.m, xi.s, cur.lly,
 }
 
 # update the random effects for theta
-updateA <- function(y, theta, alpha, z, w, acc, att, mh) {
+updateA <- function(y, theta, a, alpha, cur.lly, cur.llps, z, w,
+                    mh, cuts) {
+  nt     <- ncol(y)
+  nknots <- nrow(a)
 
   for (t in 1:nt) {
     for (k in 1:nknots) {
@@ -100,17 +104,59 @@ updateA <- function(y, theta, alpha, z, w, acc, att, mh) {
       l2        <- get.level(can.a, cuts)
       www       <- w[, k]^(1 / alpha)
       can.theta <- theta[, t] + www * (can.a - a[k, t])
-      can.lp    <- dPS(can.a, alpha)
+      can.llps  <- dPS(can.a, alpha)
+      can.lly   <- logLikeY(y=y[, t], theta=theta[, t], alpha=alpha, z=z[, t])
+
+      R <- sum(can.lly - cur.lly[, t]) +
+           can.llps - cur.llps[k, t] +
+           dlognormal(a[k, t], cana, mh[l2]) - # candidate sd changes
+           dlognormal(cana, a[k, t], mh[l1])
+
+      if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
+        a[t, k]        <- can.a
+        theta[, t]     <- can.theta
+        cur.lly[, t]   <- can.lly[, t]
+        cur.llps[k, t] <- can.llps
+      }}
     }
   }
 
+  can.lly <- logLikeY(y=y, theta=theta, alpha=alpha, z=z)
 
-
-  results <- list(a=a, theta=theta, cur.lly=cur.lly, att=att, acc=acc)
+  results <- list(a=a, theta=theta, cur.lly=cur.lly, cur.llps,
+                  att=att, acc=acc)
 }
 
 # update the alpha term for theta
-updateAlpha <- function() {
+updateAlpha <- function(y, theta, a, alpha, cur.lly, cur.llps, z, w,
+                        acc, att, mh) {
+  nt     <- ncol(y)
+  nknots <- nrow(a)
+
+  att <- att + 1
+  cur.alpha.star <- transform$probit(alpha, 0, 1)
+  can.alpha.star <- rnorm(1, cur.alpha.star, mh)
+  can.alpha      <- transform$inv.probit(can.alpha.star, 0, 1)
+  can.theta      <- getTheta(w, a, can.alpha)
+
+  can.lly <- logLikeY(y=y, theta=can.theta, alpha=can.alpha, z=z)
+  for(t in 1:nt) {
+    for (k in 1:knots) {
+      can.llps[k, t] <- dPS(a, can.alpha)
+    }
+  }
+
+  R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
+       dnorm(can.alpha.star, log=TRUE) - dnorm(cur.alpha.star, log=TRUE)
+
+  if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
+    alpha    <- can.alpha
+    theta    <- can.theta
+    cur.lly  <- can.lly
+    cur.llps <- can.llps
+    acc      <- acc + 1
+  }}
+
 
   results <- list(alpha=alpha, theta=theta, cur.lly=cur.lly, att=att, acc=acc)
 }
