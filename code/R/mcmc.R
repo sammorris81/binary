@@ -130,6 +130,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     alpha     <- alpha.update$alpha
     theta     <- alpha.update$theta
     cur.lly   <- alpha.update$cur.lly
+    cur.llps  <- alpha.update$cur.llps
     att.alpha <- alpha.update$att
     acc.alpha <- alpha.update$acc
 

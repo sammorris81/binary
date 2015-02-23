@@ -134,12 +134,14 @@ updateAlpha <- function(y, theta, a, alpha, cur.lly, cur.llps, z, w,
   nknots <- nrow(a)
 
   att <- att + 1
-  cur.alpha.star <- transform$probit(alpha, 0, 1)
-  can.alpha.star <- rnorm(1, cur.alpha.star, mh)
-  can.alpha      <- transform$inv.probit(can.alpha.star, 0, 1)
-  can.theta      <- getTheta(w, a, can.alpha)
 
-  can.lly <- logLikeY(y=y, theta=can.theta, alpha=can.alpha, z=z)
+  # not exactly U(0, 1) - using truncation for numerical stability
+  cur.alpha.star <- transform$probit(alpha, 0.000001, 0.999999)
+  can.alpha.star <- rnorm(1, cur.alpha.star, mh)
+  can.alpha      <- transform$inv.probit(can.alpha.star, 0.000001, 0.999999)
+  can.theta      <- getTheta(w, a, can.alpha)
+  can.lly        <- logLikeY(y=y, theta=can.theta, alpha=can.alpha, z=z)
+  can.llps       <- matrix(NA, nknots, nt)
   for(t in 1:nt) {
     for (k in 1:knots) {
       can.llps[k, t] <- dPS(a, can.alpha)
@@ -158,7 +160,8 @@ updateAlpha <- function(y, theta, a, alpha, cur.lly, cur.llps, z, w,
   }}
 
 
-  results <- list(alpha=alpha, theta=theta, cur.lly=cur.lly, att=att, acc=acc)
+  results <- list(alpha=alpha, theta=theta, cur.lly=cur.lly, cur.llps=cur.llps,
+                  att=att, acc=acc)
 }
 
 updateRho <- function() {

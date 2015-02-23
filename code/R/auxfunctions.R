@@ -40,6 +40,7 @@ getZ <- function(xi, x.beta) {
   }
 }
 
+# TODO: Is this theta or theta^alpha. I think it's theta^alpha
 # theta sum_l=1^L a_l * w_l^(1 / alpha)
 getTheta <- function(w, a, alpha) {
   # theta is nxnF
@@ -52,11 +53,11 @@ getTheta <- function(w, a, alpha) {
 }
 
 # get the kernel weighting
-makeW <- function(dw2, rho.star) {
-  # rho.star is in (-Inf, Inf)
-  rho2 <- exp(rho.star)^2
-  fac <- exp(-0.5 * dw2 / rho2)
-  return(fac)
+makeW <- function(dw2, logrho) {
+  # rho.star = log(rho)
+  rho2 <- exp(logrho)^2
+  w <- exp(-0.5 * dw2 / rho2)
+  return(w)
 }
 
 # standardize the kernel weights
@@ -66,6 +67,7 @@ stdW <- function(x, single=FALSE) {
   return(x)
 }
 
+
 # get find the ll for y - returns ns x nt matrix for each site/day
 logLikeY <- function(y, theta, alpha, z) {
   z.star <- -(theta / z)^(1 / alpha)
@@ -73,18 +75,84 @@ logLikeY <- function(y, theta, alpha, z) {
   return(ll.y)
 }
 
-npts <- 50
-Ubeta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
-MidPoints <- (Ubeta[-1] + Ubeta[-(npts + 1)]) / 2
-BinWidth <- Ubeta[-1] - Ubeta[-(npts + 1)]
-
+################################################################################
+#### positive stable density functions
+################################################################################
 dPS <- function(a, alpha, npts=100) {
+  Ubeta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+  MidPoints <- (Ubeta[-1] + Ubeta[-(npts + 1)]) / 2
+  BinWidth <- Ubeta[-1] - Ubeta[-(npts + 1)]
   l <- -Inf
+
   if (a > 0) {
     l <- log(sum(BinWidth * ld(MidPoints, a, alpha)))
   }
 
   return(l)
+}
+
+rPS <- function(n, alpha) {
+  #### PS(alpha) generation as given by Stephenson(2003)
+  unif <- runif(n) * pi
+  stdexp.ps <- rexp(n, 1)
+  logs <- (1 - alpha) / alpha * log(sin((1 - alpha) * unif)) +
+          log(sin(alpha * unif)) - (1 - alpha) / alpha * log(stdexp.ps) -
+          1 / alpha * log(sin(unif))
+  return(exp(logs))
+}
+
+# generate rare binary data
+# for now working with independent to test functions for beta and xi
+rRareBinaryInd <- function(x, beta, xi) {
+  nt <- dim(x)[2]
+  ns <- dim(x)[1]
+
+  x.beta <- matrix(NA, ns, nt)
+  for (t in 1:nt) {
+    x.beta[, t] <- x[, t, ] %*% beta
+  }
+
+  z    <- (1 + xi * x.beta)^(1 / xi)
+  prob <- 1 - exp(-1 / z)  # we need P(Y = 1) for rbinom
+  y    <- matrix(rbinom(n=ns * nt, size=1, prob=prob), nrow=ns, ncol=nt)
+  return(y)
+}
+
+# generate dependent rare binary data
+rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho) {
+  y      <- matrix(NA, ns, nt)
+  p      <- dim(x)[3]
+  nknots <- nrow(knots)
+
+  x.beta <- matrix(NA, ns, nt)
+  for (t in 1:nt) {
+    if (p > 1) {
+      x.beta[, t] <- x[, t, ] %*% beta
+    } else {
+      x.beta[, t] <- x[, t] * beta
+    }
+  }
+  z <- getZ(xi=xi, x.beta=x.beta)
+
+  # get weights
+  dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  w <- stdW(makeW(dw2, log(rho)))      # w is ns x nknots
+
+  # get random effects and theta
+  a     <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
+  theta <- matrix(1, ns, nt)
+  for (t in 1:nt) {
+    theta[, t] <- getTheta(w, a[, t], alpha)
+  }
+
+  prob <- 1 - exp(-(theta / z)^(1 / alpha))  # we need P(Y = 1) for rbinom
+
+  for (t in 1:nt) {
+    y[, t] <- rbinom(n=ns, size=1, prob=prob)
+  }
+
+  results <- list(y=y, a=a)
+  return(results)
 }
 
 # used when evaluating the postive stable density
@@ -171,24 +239,3 @@ trunc <- function(x, eps=0.1) {
   return(x)
 }
 
-# generate rare binary data
-# for now working with independent to test functions for beta and xi
-rBinaryRareInd <- function(x, beta, xi) {
-  nt <- dim(x)[2]
-  ns <- dim(x)[1]
-
-  x.beta <- matrix(NA, ns, nt)
-  for (t in 1:nt) {
-    x.beta[, t] <- x[, t, ] %*% beta
-  }
-
-  z <- (1 + xi * x.beta)^(1 / xi)
-  p <- 1 - exp(-1 / z)  # we need P(Y = 1) for rbinom
-  y <- matrix(rbinom(n=ns * nt, size=1, prob=p), nrow=ns, ncol=nt)
-  return(y)
-}
-
-# generate dependent rare binary data
-rRareBinary <- function(x, beta, xi, alpha, rho) {
-
-}
