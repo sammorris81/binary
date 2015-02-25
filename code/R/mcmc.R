@@ -1,7 +1,7 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
                  beta.init=0, beta.m=0, beta.s=10,
-                 xi.init=0.1, xi.m=0, xi.s=1,
-                 knots=NULL, thresh=NULL, logrho.init=1, alpha.init=0.5,
+                 xi.init=0.1, xi.m=0, xi.s=1, npts=100,
+                 knots=NULL, thresh=NULL, rho.init=1, alpha.init=0.5,
                  init.beta, init.alpha, init.range, init.bw, init.logs,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
@@ -14,16 +14,16 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   nknots <- dim(knots)[1]
 
   # get the initial set of weights for the sites and knots
-  logrho <- logrho.init
-  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-  w      <- stdW(makeW(dw2, logrho))      # w is ns x nknots
+  rho <- rho.init
+  dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  w   <- stdW(makeW(dw2, rho))         # w is ns x nknots
 
   # get the initial set of random effects
-  alpha <- alpha.init
-  a     <- matrix(1, nknots, nt)  # random intensities
-  theta <- matrix(1, ns, nt)      # sum_l a_l * w_l^(1/alpha)
+  alpha      <- alpha.init
+  a          <- matrix(1, nknots, nt)  # random intensities
+  theta.star <- matrix(NA, ns, nt)      # sum_l a_l * w_l^(1/alpha)
   for (t in 1:nt) {
-    theta[, t] <- getTheta(w, a[, t], alpha)
+    theta.star[, t] <- getThetaStar(w, a[, t], alpha)
   }
 
   # get initial z
@@ -43,33 +43,41 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   }
   z <- getZ(xi=xi, x.beta=x.beta)
 
+  u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+  mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
+  bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
+
   for (t in 1:nt) {
     for (k in 1:nknots) {
-      cur.llps[k, t] <- dPS(a, alpha)
+      cur.llps[k, t] <- dPS(a=a, alpha=alpha,
+                            mid.points=mid.points, bin.width=bin.width)
   }}
 
-  cur.lly <- logLikeY(y=y, theta=theta, alpha=alpha, z=z)  # try to keep current
+  # keep current in mcmc for time savings
+  cur.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=z)
 
   # MH tuning parameters
   acc.beta  <- att.beta  <- mh.beta  <- 1
   acc.xi    <- att.xi    <- mh.xi    <- 1
-  acc.a     <- att.a     <- mh.a     <- rep(1, 100)
+  cuts      <- exp(c(-1, 0, 1, 2, 5, 10))
+  mh.a      <- rep(1, 100)
+  acc.a     <- att.a     <- 0 * mh.a
   acc.alpha <- att.alpha <- mh.alpha <- 1
   acc.rho   <- att.rho   <- mh.rho   <- 1
 
   # storage
-  beta.keepers  <- matrix(NA, nrow=iters, ncol=p)
-  xi.keepers    <- rep(NA, iters)
-  a.keepers     <- array(NA, dim=c(iters, nknots, nt))
-  alpha.keepers <- rep(NA, iters)
-  rho.keepers   <- rep(NA, iters)
+  keepers.beta  <- matrix(NA, nrow=iters, ncol=p)
+  keepers.xi    <- rep(NA, iters)
+  keepers.a     <- array(NA, dim=c(iters, nknots, nt))
+  keepers.alpha <- rep(NA, iters)
+  keepers.rho   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:nthin) {
     # update beta
-    beta.update <- updateBeta(y=y, theta=theta, alpha=alpha, z=z,
+    beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha, z=z,
                               beta=beta, beta.m=beta.m, beta.s=beta.s,
                               xi=xi, x=x, cur.lly=cur.lly,
-                              acc=acc.beta, att=att.beta, mh=mh.beta)  # TODO: Make function
+                              acc=acc.beta, att=att.beta, mh=mh.beta)
     beta     <- beta.update$beta
     x.beta   <- beta.update$x.beta
     z        <- beta.update$z
@@ -85,8 +93,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     }
 
     # update xi
-    xi.update <- updateXi(y=y, A=A, w=w, alpha=alpha, z=z, x.beta=x.beta,
-                          xi=xi, xi.m=xi.m, xi.s=xi.s,
+    xi.update <- updateXi(y=y, theta.star=theta.star, alpha=alpha, z=z,
+                          x.beta=x.beta, xi=xi, xi.m=xi.m, xi.s=xi.s,
                           cur.lly, acc=acc.xi, att=att.xi, mh=mh.xi)
     xi      <- xi.update$xi
     z       <- xi.update$z
@@ -103,32 +111,35 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     # update a - NOTE: does not use acc, att, and mh like usual
     old.a    <- a
-    a.update <- updateA(y=y, theta=theta, a=a, alpha=alpha, cur.lly=cur.lly,
-                        cur.llps=cur.llps, z=z, w=w, mh=mh.a, cuts=cuts)
-    a        <- a.update$a
-    theta    <- a.update$theta
-    cur.lly  <- a.update$cur.lly
-    cur.llps <- a.update$cur.llps
+    a.update <- updateA(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                        cur.lly=cur.lly, cur.llps=cur.llps, z=z, w=w,
+                        mid.points=mid.points, bin.width=bin.width,
+                        mh=mh.a, cuts=cuts)
+    a          <- a.update$a
+    theta.star <- a.update$theta.star
+    cur.lly    <- a.update$cur.lly
+    cur.llps   <- a.update$cur.llps
 
-    # the MH standard deviations are a little different here
-    level <- get.level(old.a, cuts)
-    for (j in 1:length(mh.a)) {
-      acc.a[j] <- acc.a[j] + sum(olda[level == j] != a[level == j])
-      att.a[j] <- att.a[j] + sum(level == j)
-      if ((i < burn / 2) & (att.a[j] > 100)) {
-        if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
-        if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
-        acc.a[j] <- att.a[j] <- 0
-      }
-    }
+    # not going to worry about tuning the a terms at the moment
+    # level <- get.level(old.a, cuts)
+    # for (j in 1:length(mh.a)) {
+    #   acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
+    #   att.a[j] <- att.a[j] + sum(level == j)
+    #   if ((i < burn / 2) & (att.a[j] > 100)) {
+    #     if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
+    #     if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
+    #     acc.a[j] <- att.a[j] <- 0
+    #   }
+    # }
 
     # update alpha
-    alpha.update <- updateAlpha(y=y, theta=theta, a=a, alpha=alpha,
+    alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
                                 cur.lly=cur.lly, cur.llps=cur.llps, z=z, w=w,
+                                mid.points=mid.points, bin.width=bin.width,
                                 acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
     alpha     <- alpha.update$alpha
-    theta     <- alpha.update$theta
+    theta     <- alpha.update$theta.star
     cur.lly   <- alpha.update$cur.lly
     cur.llps  <- alpha.update$cur.llps
     att.alpha <- alpha.update$att
@@ -144,15 +155,29 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     # update rho
     rho.update <- updateRho(  # TODO: write function
                             )
-    rho     <- rho.update$rho
-    theta   <- rho.update$theta
-    cur.lly <- rho.update$cur.lly
-    att.rho <- rho.update$att
-    acc.rho <- rho.update$acc
+    rho        <- rho.update$rho
+    w          <- rho.update$w
+    theta.star <- rho.update$theta.star
+    cur.lly    <- rho.update$cur.lly
+    att.rho    <- rho.update$att
+    acc.rho    <- rho.update$acc
 
-  }}
+    if (i < burn / 2) {
+      mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho)
+      acc.rho   <- mh.update$acc
+      att.rho   <- mh.update$att
+      mh.rho    <- mh.update$mh
+    }
 
+  }  # end thin
 
+  # storage
+  keepers.beta[iter, , ] <- beta
+  keepers.xi[iter]       <- xi
+  keepers.a[iter, , ]    <- a
+  keepers.alpha[iter]    <- alpha
+  keepers.rho[iter]      <- rho
 
+  }
 
 }

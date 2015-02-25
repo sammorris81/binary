@@ -40,10 +40,9 @@ getZ <- function(xi, x.beta) {
   }
 }
 
-# TODO: Is this theta or theta^alpha. I think it's theta^alpha
-# theta sum_l=1^L a_l * w_l^(1 / alpha)
-getTheta <- function(w, a, alpha) {
-  # theta is nxnF
+# theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
+getThetaStar <- function(w, a, alpha) {
+  # theta is nxnFdp
   # s is nFxnt
   # alpha in (0,1)
   w.star <- w^(1 / alpha)
@@ -53,10 +52,8 @@ getTheta <- function(w, a, alpha) {
 }
 
 # get the kernel weighting
-makeW <- function(dw2, logrho) {
-  # rho.star = log(rho)
-  rho2 <- exp(logrho)^2
-  w <- exp(-0.5 * dw2 / rho2)
+makeW <- function(dw2, rho) {
+  w <- exp(-0.5 * dw2 / (rho^2))
   return(w)
 }
 
@@ -69,8 +66,8 @@ stdW <- function(x, single=FALSE) {
 
 
 # get find the ll for y - returns ns x nt matrix for each site/day
-logLikeY <- function(y, theta, alpha, z) {
-  z.star <- -(theta / z)^(1 / alpha)
+logLikeY <- function(y, theta.star, alpha, z) {
+  z.star <- -theta.star / (z^(1 / alpha))
   ll.y <- (1 - y) * z.star + y * log(1 - exp(z.star))
   return(ll.y)
 }
@@ -78,17 +75,25 @@ logLikeY <- function(y, theta, alpha, z) {
 ################################################################################
 #### positive stable density functions
 ################################################################################
-dPS <- function(a, alpha, npts=100) {
-  Ubeta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
-  MidPoints <- (Ubeta[-1] + Ubeta[-(npts + 1)]) / 2
-  BinWidth <- Ubeta[-1] - Ubeta[-(npts + 1)]
+dPS <- function(a, alpha, mid.points, bin.width) {
   l <- -Inf
 
   if (a > 0) {
-    l <- log(sum(BinWidth * ld(MidPoints, a, alpha)))
+    l <- log(sum(bin.width * ld(mid.points, a, alpha)))
   }
 
   return(l)
+}
+
+# used when evaluating the postive stable density
+ld <- function(u, a, alpha) {
+  psi <- pi * u
+  c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
+  c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
+  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
+          log(c) - c * (1 / a^(alpha / (1 - alpha)))
+
+  return(exp(logd))
 }
 
 rPS <- function(n, alpha) {
@@ -120,6 +125,8 @@ rRareBinaryInd <- function(x, beta, xi) {
 
 # generate dependent rare binary data
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho) {
+  ns     <- nrow(s)
+  nt     <- dim(x)[2]
   y      <- matrix(NA, ns, nt)
   p      <- dim(x)[3]
   nknots <- nrow(knots)
@@ -136,16 +143,16 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho) {
 
   # get weights
   dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-  w <- stdW(makeW(dw2, log(rho)))      # w is ns x nknots
+  w <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
 
-  # get random effects and theta
+  # get random effects and theta.star
   a     <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
-  theta <- matrix(1, ns, nt)
+  theta.star <- matrix(1, ns, nt)
   for (t in 1:nt) {
-    theta[, t] <- getTheta(w, a[, t], alpha)
+    theta.star[, t] <- getThetaStar(w, a[, t], alpha)
   }
 
-  prob <- 1 - exp(-(theta / z)^(1 / alpha))  # we need P(Y = 1) for rbinom
+  prob <- 1 - exp(- theta.star / (z^(1 / alpha)))  # we need P(Y = 1) for rbinom
 
   for (t in 1:nt) {
     y[, t] <- rbinom(n=ns, size=1, prob=prob)
@@ -155,16 +162,6 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho) {
   return(results)
 }
 
-# used when evaluating the postive stable density
-ld <- function(u, a, alpha) {
-  psi <- pi * u
-  c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
-  c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
-  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
-          log(c) - c * (1 / a^(alpha / (1 - alpha)))
-
-  return(exp(logd))
-}
 
 # update mh settings
 mhUpdate <- function(acc, att, mh, nattempts=50, lower=0.8, higher=1.2) {
@@ -184,15 +181,15 @@ mhUpdate <- function(acc, att, mh, nattempts=50, lower=0.8, higher=1.2) {
 }
 
 
-ECkern <- function(h, alpha, gamma, Lmax=50) {
-  dw2 <- rdist(c(0, h), seq(-Lmax, Lmax, 1))
-  W <- fac2FAC(make.fac(dw2, gamma))^(1 / alpha)
-  for (j in 1:length(h)) {
-    h[j]<-sum((W[1, ] + W[j + 1, ])^alpha)
-  }
+# ECkern <- function(h, alpha, gamma, Lmax=50) {
+#   dw2 <- rdist(c(0, h), seq(-Lmax, Lmax, 1))
+#   W <- fac2FAC(make.fac(dw2, gamma))^(1 / alpha)
+#   for (j in 1:length(h)) {
+#     h[j]<-sum((W[1, ] + W[j + 1, ])^alpha)
+#   }
 
-  return(h)
-}
+#   return(h)
+# }
 
 
 
@@ -212,11 +209,13 @@ ld2 <- function(u, logs, alpha, shift=0, log=T) {
   return(logd)
 }
 
-
-
-logd <- function(theta, v) {
-  sum(log(theta) - theta * v)
+dlognormal <- function(x, mu, sig) {
+  dnorm(log(x), log(mu), sig, log=T) - log(x)
 }
+
+# logd <- function(theta, v) {
+#   sum(log(theta) - theta * v)
+# }
 
 #### Used to set the standard deviation for the candidate distribution
 #### for the A terms in the random effect. When log(A) is large means

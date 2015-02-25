@@ -1,0 +1,27 @@
+{
+	"folders":
+	[
+		// {
+		// 	"follow_symlinks": true,
+		// 	"path": ".",
+  //     "file_exclude_patterns": [".*"],
+  //     "folder_exclude_patterns": [".*"]
+		// },
+    {
+      "path": "code/R",
+      "name": "mcmc",
+    },
+    {
+      "path": "code/analysis/simstudy",
+      "name": "sim study",
+    },
+    {
+      "path": "code/analysis/birds",
+      "name": "data analysis"
+    },
+    {
+      "path": "LaTeX",
+      "name": "manuscript",
+    }
+	]
+}
