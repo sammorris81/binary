@@ -32,11 +32,11 @@ transform <- list(
   }
 )
 
-getZ <- function(xi, x.beta) {
+getZ <- function(xi, x.beta, thresh=0) {
   if (xi != 0) {
-    z <- (1 - xi * x.beta)^(1 / xi)
+    z <- (1 + xi * (thresh - x.beta))^(1 / xi)
   } else {
-    z <- exp(-x.beta)
+    z <- exp(thresh - x.beta)
   }
 }
 
