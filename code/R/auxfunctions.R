@@ -34,21 +34,22 @@ transform <- list(
 
 getZ <- function(xi, x.beta) {
   if (xi != 0) {
-    z <- (1 + xi * x.beta)^(1 / xi)
+    z <- (1 - xi * x.beta)^(1 / xi)
   } else {
-    z <- exp(x.beta)
+    z <- exp(-x.beta)
   }
 }
 
 # theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
 getThetaStar <- function(w, a, alpha) {
-  # theta is nxnFdp
-  # s is nFxnt
+  # theta.star is ns x nt
+  # w is ns x nknots
+  # a is nknots x nt
   # alpha in (0,1)
   w.star <- w^(1 / alpha)
-  if (length(a) == 1) {xxx <- w.star * a}
-  if (length(a) > 1) {xxx <- w.star %*% a}
-  return(xxx)
+  if (length(a) == 1) {theta.star <- w.star * a}
+  if (length(a) > 1) {theta.star <- w.star %*% a}
+  return(theta.star)
 }
 
 # get the kernel weighting
@@ -117,7 +118,7 @@ rRareBinaryInd <- function(x, beta, xi) {
     x.beta[, t] <- x[, t, ] %*% beta
   }
 
-  z    <- (1 + xi * x.beta)^(1 / xi)
+  z    <- getZ(xi=xi, x.beta=x.beta)
   prob <- 1 - exp(-1 / z)  # we need P(Y = 1) for rbinom
   y    <- matrix(rbinom(n=ns * nt, size=1, prob=prob), nrow=ns, ncol=nt)
   return(y)
@@ -127,8 +128,8 @@ rRareBinaryInd <- function(x, beta, xi) {
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho) {
   ns     <- nrow(s)
   nt     <- dim(x)[2]
-  y      <- matrix(NA, ns, nt)
   p      <- dim(x)[3]
+  y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
 
   x.beta <- matrix(NA, ns, nt)
@@ -146,11 +147,8 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho) {
   w <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
 
   # get random effects and theta.star
-  a     <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
-  theta.star <- matrix(1, ns, nt)
-  for (t in 1:nt) {
-    theta.star[, t] <- getThetaStar(w, a[, t], alpha)
-  }
+  a <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
+  theta.star <- getThetaStar(w, data$a, alpha)
 
   prob <- 1 - exp(- theta.star / (z^(1 / alpha)))  # we need P(Y = 1) for rbinom
 
