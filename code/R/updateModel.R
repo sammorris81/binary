@@ -34,20 +34,13 @@ updateBeta <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, xi, x,
   # }}
 
   for (p in 1:np) {
-    att[p] <- att[p] + 1
-    can.beta <- beta
+    att[p]      <- att[p] + 1
+    can.beta    <- beta
     can.beta[p] <- rnorm(1, beta[p], mh[p])
     can.x.beta  <- x.beta
     # trying to save a little time
-    can.x.beta <- can.x.beta + can.beta[p] * x[, , p] - beta[p] * x[, , p]
-    # for (t in 1:nt) {
-    #   if (np > 1) {
-    #     can.x.beta[, t] <- x[, t, ] %*% can.beta
-    #   } else {
-    #     can.x.beta[, t] <- x[, t] * can.beta
-    #   }
-    # }
-    can.z <- getZ(xi=xi, x.beta=can.x.beta)
+    can.x.beta  <- can.x.beta + can.beta[p] * x[, , p] - beta[p] * x[, , p]
+    can.z       <- getZ(xi=xi, x.beta=can.x.beta)
 
     # treat as independent at the moment
     can.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=can.z)
@@ -233,9 +226,9 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z, w, dw2, rho,
   # rho.star       <- log(rho)
   # can.rho.star   <- rnorm(1, rho.star, mh)
   # can.rho        <- exp(can.rho.star)
-  rho.star <- transform$probit(rho, lower=0, upper=rho.upper)
-  can.rho.star <- rnorm(1, rho.star, mh)
-  can.rho  <- transform$inv.probit(can.rho.star, lower=0, upper=rho.upper)
+  rho.star       <- transform$probit(rho, lower=0, upper=rho.upper)
+  can.rho.star   <- rnorm(1, rho.star, mh)
+  can.rho        <- transform$inv.probit(can.rho.star, lower=0, upper=rho.upper)
   can.w          <- stdW(makeW(dw2=dw2, rho=can.rho))
   can.theta.star <- getThetaStar(w=can.w, a=a, alpha=alpha)
   can.lly <- logLikeY(y=y, theta.star=can.theta.star, alpha=alpha, z=z)
