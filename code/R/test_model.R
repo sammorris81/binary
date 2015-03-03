@@ -1,3 +1,19 @@
+# model update testing
+# independence:
+#   beta: PASS
+#   xi: PASS
+#   beta and xi: PASS
+# spatial dependence:
+#   beta: PASS
+#   xi: 
+#   beta and xi:
+#   alpha:
+#   rho:
+#   alpha and rho:
+#   beta, xi, alpha:
+#   beta, xi, rho:
+#   beta, xi, alpha, rho
+
 # currently trying to figure out what's wrong with the dependent version
 # of the model...issues with beta, xi, alpha, and rho updates when data
 # are created using the model with dependence.
@@ -5,6 +21,7 @@
 rm(list=ls())
 options(warn=2)
 library(fields)
+library(evd)
 source("auxfunctions.R")
 source("updateModel.R")
 set.seed(10)
@@ -411,7 +428,7 @@ for (i in 1:nreps) {
 }
 
 # test beta update when there's spatial dependence
-# there's a problem here
+# seems to be working
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
