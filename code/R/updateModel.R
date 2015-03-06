@@ -201,8 +201,8 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
   }
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
-       dnorm(can.alpha.star, 0, 5, log=TRUE) -
-       dnorm(cur.alpha.star, 0, 5, log=TRUE)
+       dnorm(can.alpha.star, log=TRUE) -
+       dnorm(cur.alpha.star, log=TRUE)
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     alpha      <- can.alpha
