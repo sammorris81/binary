@@ -7,9 +7,9 @@
 #   beta: PASS
 #   xi: PASS
 #   beta and xi: PASS
-#   alpha: PASS (very slow moving though)
+#   alpha: PASS
 #   rho: PASS
-#   alpha and rho:
+#   alpha and rho: PASS
 #   beta, xi, alpha:
 #   beta, xi, rho:
 #   beta, xi, alpha, rho
@@ -43,115 +43,15 @@ source("updateModel.R")
 nreps <- 2000
 burn  <- 200
 xi.t <- 0.1
-beta.t <- c(2, 0, 0)
+beta.t <- c(1, -1, 0)
 theta.star.t <- 1
 alpha.t <- 1
-y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t)
+y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t, thresh=1.2)
 
 # initialization and prior distribution
 beta <- c(0, 0, 0)
 beta.m <- 0
 beta.s <- 10
-x.beta <- matrix(1, ns, nt)
-z <- getZ(xi=xi.t, x.beta=x.beta)
-cur.lly <- logLikeY(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z)
-
-# MH adjustments
-acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
-
-# storage
-beta.keep <- matrix(NA, nreps, 3)
-tic <- proc.time()[3]
-for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                            beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi.t, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta)
-  beta     <- beta.update$beta
-  x.beta   <- beta.update$x.beta
-  z        <- beta.update$z
-  cur.lly  <- beta.update$cur.lly
-  att.beta <- beta.update$att
-  acc.beta <- beta.update$acc
-
-  beta.keep[i, ] <- beta
-  if (i %% 500 == 0) {
-    print(i)
-  }
-
-  # if (i < burn / 2) {
-  #   mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta)
-  #   acc.beta  <- mh.update$acc
-  #   att.beta  <- mh.update$att
-  #   mh.beta   <- mh.update$mh
-  # }
-}
-toc <- proc.time()[3]
-toc - tic
-
-par(mfrow=c(1, 3))
-plot(beta.keep[, 1], type="l", main="beta 0")
-plot(beta.keep[, 2], type="l", main="beta 1")
-plot(beta.keep[, 3], type="l", main="beta 2")
-
-# Looking at timing
-beta <- rep(0, 3)
-beta.m <- rep(0, 3)
-beta.s <- rep(0, 3)
-alpha <- 0.5
-y <- matrix(rbinom(ns * nt, size=1, prob=0.5), ns, nt)
-theta.star <- matrix(rchisq(ns * nt, df=3), ns, nt)
-z <- matrix(rchisq(ns * nt, df=2), ns, nt)
-x <- array(runif(ns * nt * 3), dim=c(ns, nt, 3))
-x[, , 1] <- 1
-x.beta <- matrix(rnorm(ns * nt), ns, nt)
-nreps <- 5000
-
-cur.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=z)
-tic <- proc.time()[3]
-for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha, z=z,
-                            beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi.t, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta)
-  beta     <- beta.update$beta
-  x.beta   <- beta.update$x.beta
-  z        <- beta.update$z
-  cur.lly  <- beta.update$cur.lly
-  att.beta <- beta.update$att
-  acc.beta <- beta.update$acc
-
-  beta.keep[i, ] <- beta
-  if (i %% 500 == 0) {
-    print(i)
-  }
-
-  # if (i < burn / 2) {
-  #   mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta)
-  #   acc.beta  <- mh.update$acc
-  #   att.beta  <- mh.update$att
-  #   mh.beta   <- mh.update$mh
-  # }
-}
-toc <- proc.time()[3]
-toc - tic
-
-# test update for beta
-set.seed(15)
-source("auxfunctions.R")
-source("updateModel.R")
-nreps <- 10000
-burn  <- 7000
-xi.t <- 0.1
-beta.t <- c(1, -1, 0)
-theta.star.t <- 1
-alpha.t <- 1
-y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t)
-
-# initialization and prior distribution
-beta <- c(0, 0, 0)
-beta.m <- 0
-beta.s <- 5
 x.beta <- matrix(0, ns, nt)
 z <- getZ(xi=xi.t, x.beta=x.beta)
 cur.lly <- logLikeY(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z)
@@ -161,12 +61,12 @@ acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
 
 # storage
 beta.keep <- matrix(NA, nreps, 3)
-
+tic <- proc.time()[3]
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
                             beta=beta, beta.m=beta.m, beta.s=beta.s,
                             xi=xi.t, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta)
+                            acc=acc.beta, att=att.beta, mh=mh.beta, thresh=1.2)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
@@ -203,7 +103,8 @@ xi.t <- 0.1
 beta.t <- c(1, -1, 0)
 theta.star.t <- 1
 alpha.t <- 1
-y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t)
+thresh <- 0
+y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t, thresh=thresh)
 x.beta.t <- matrix(0, ns, nt)
 for (t in 1:nt) {
   x.beta.t[, t] <- x[, t, ] %*% beta.t
@@ -226,7 +127,7 @@ for (i in 1:nreps) {
   xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
                         x.beta=x.beta.t, xi=xi, xi.m=xi.m, xi.s=xi.s,
                         cur.lly=cur.lly,
-                        acc=acc.xi, att=att.xi, mh=mh.xi)
+                        acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
   z       <- xi.update$z
   cur.lly <- xi.update$cur.lly
@@ -235,102 +136,20 @@ for (i in 1:nreps) {
 
   xi.keep[i] <- xi
   if (i %% 500 == 0) {
-    print(i)
-  }
-
-  if (i < burn / 2) {
-    mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi)
-    acc.xi  <- mh.update$acc
-    att.xi  <- mh.update$att
-    mh.xi   <- mh.update$mh
-  }
-}
-
-plot(xi.keep, type="l")
-
-# test update for xi and beta (just intercept)
-set.seed(15)
-source("auxfunctions.R")
-source("updateModel.R")
-nreps <- 7000
-burn  <- 5000
-xi.t <- 0.1
-beta.t <- c(1, 0, 0)
-theta.star.t <- 1
-alpha.t <- 1
-y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t)
-
-# initialization and prior distribution
-beta <- c(0, 0, 0)
-beta.m <- 0
-beta.s <- 10
-x.beta <- matrix(0, ns, nt)
-xi <- 0.1
-xi.m <- 0
-xi.s <- 1
-z <- getZ(xi=xi, x.beta=x.beta)
-cur.lly <- logLikeY(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z)
-
-# MH adjustments
-acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
-acc.xi <- att.xi <- mh.xi <- rep(1, 3)
-
-# storage
-beta.keep <- matrix(NA, nreps, 3)
-xi.keep <- rep(NA, nreps)
-
-for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                            beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi.t, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta)
-  beta     <- beta.update$beta
-  x.beta   <- beta.update$x.beta
-  z        <- beta.update$z
-  cur.lly  <- beta.update$cur.lly
-  att.beta <- beta.update$att
-  acc.beta <- beta.update$acc
-
-  beta.keep[i, ] <- beta
-
-
-  if (i < burn / 2) {
-    mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta)
-    acc.beta  <- mh.update$acc
-    att.beta  <- mh.update$att
-    mh.beta   <- mh.update$mh
-  }
-
-  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                        x.beta=x.beta, xi=xi, xi.m=xi.m, xi.s=xi.s,
-                        cur.lly=cur.lly,
-                        acc=acc.xi, att=att.xi, mh=mh.xi)
-  xi      <- xi.update$xi
-  z       <- xi.update$z
-  cur.lly <- xi.update$cur.lly
-  att.xi  <- xi.update$att
-  acc.xi  <- xi.update$acc
-
-  xi.keep[i] <- xi
-
-  if (i < burn / 2) {
-    mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi)
-    acc.xi  <- mh.update$acc
-    att.xi  <- mh.update$att
-    mh.xi   <- mh.update$mh
-  }
-  if (i %% 500 == 0) {
-    print(i)
-    if (i < 3000) {
-      start <- 1
-    } else {
+    if (i > 3000) {
       start <- i - 3000
+    } else {
+      start <- 1
     }
-    par(mfrow=c(2, 2))
-    plot(beta.keep[start:i, 1], type="l", main="beta 0")
-    plot(beta.keep[start:i, 2], type="l", main="beta 1")
-    plot(beta.keep[start:i, 3], type="l", main="beta 2")
+    print(i)
     plot(xi.keep[start:i], type="l")
+  }
+
+  if (i < burn / 2) {
+    mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi)
+    acc.xi  <- mh.update$acc
+    att.xi  <- mh.update$att
+    mh.xi   <- mh.update$mh
   }
 }
 
@@ -338,8 +157,8 @@ for (i in 1:nreps) {
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
-nreps <- 15000
-burn  <- 12000
+nreps <- 7000
+burn  <- 5000
 xi.t <- 0.1
 beta.t <- c(1, -1, 0)
 theta.star.t <- 1
@@ -433,14 +252,15 @@ for (i in 1:nreps) {
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
-nreps <- 20000
-burn  <- 10000
-xi.t <- 0.1
-beta.t <- c(1, -1, 0)
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
 alpha.t <- 0.7
 rho.t   <- 1
+thresh  <- 0
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
-                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
@@ -464,7 +284,7 @@ for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
                             z=z, beta=beta, beta.m=beta.m, beta.s=beta.s,
                             xi=xi.t, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta)
+                            acc=acc.beta, att=att.beta, mh=mh.beta, thresh=0)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
@@ -498,20 +318,21 @@ for (i in 1:nreps) {
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
-nreps <- 20000
-burn  <- 10000
-xi.t <- 0.1
-beta.t <- c(1, -1, 0)
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
 alpha.t <- 0.7
 rho.t   <- 1
+thresh  <- 0
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
-dw2 <- as.matrix(rdist(s, knots))^2
-w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
+dw2  <- as.matrix(rdist(s, knots))^2
+w.t  <- stdW(makeW(dw2=dw2, rho=rho.t))
 theta.star.t <- getThetaStar(w=w.t, a=data$a, alpha=alpha.t)
 
 # initialization and prior distribution
-xi <- 0.1
+xi   <- 0.1
 xi.m <- 0
 xi.s <- 1
 x.beta.t <- matrix(0, ns, nt)
@@ -531,7 +352,7 @@ for (i in 1:nreps) {
   xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z,
                         x.beta=x.beta.t, xi=xi, xi.m=xi.m, xi.s=xi.s,
                         cur.lly=cur.lly,
-                        acc=acc.xi, att=att.xi, mh=mh.xi)
+                        acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
   z       <- xi.update$z
   cur.lly <- xi.update$cur.lly
@@ -561,14 +382,15 @@ for (i in 1:nreps) {
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
-nreps <- 20000
-burn  <- 10000
-xi.t <- 0.1
-beta.t <- c(1, -1, 0)
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
 alpha.t <- 0.7
 rho.t   <- 1
+thresh  <- 0
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
-                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
@@ -597,7 +419,8 @@ for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
                             z=z, beta=beta, beta.m=beta.m, beta.s=beta.s,
                             xi=xi, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta)
+                            acc=acc.beta, att=att.beta, mh=mh.beta,
+                            thresh=thresh)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
@@ -610,7 +433,7 @@ for (i in 1:nreps) {
   xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z,
                         x.beta=x.beta, xi=xi, xi.m=xi.m, xi.s=xi.s,
                         cur.lly=cur.lly,
-                        acc=acc.xi, att=att.xi, mh=mh.xi)
+                        acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
   z       <- xi.update$z
   cur.lly <- xi.update$cur.lly
@@ -651,46 +474,49 @@ for (i in 1:nreps) {
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
-nreps <- 20000
-burn  <- 10000
-xi.t <- 0.1
-beta.t <- c(1, -1, 0)
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
 alpha.t <- 0.8
 rho.t   <- 1
+thresh  <- 0
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
-                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
 x.beta.t <- matrix(0, ns, nt)
 for (t in 1:nt) {
   x.beta.t[, t] <- x[, t, ] %*% beta.t
 }
-z.t <- getZ(xi=xi.t, x.beta=x.beta.t)
+z.t <- getZ(xi=xi.t, x.beta=x.beta.t, thresh=thresh)
 
 # initialization and prior distribution
 npts <- 70
-u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+u.beta     <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
 mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
-bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
-dw2 <- as.matrix(rdist(s, knots))^2
-w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
-alpha <- 0.5
+bin.width  <- u.beta[-1] - u.beta[-(npts + 1)]
+dw2        <- as.matrix(rdist(s, knots))^2
+w.t        <- stdW(makeW(dw2=dw2, rho=rho.t))
+alpha      <- 0.5
 theta.star <- getThetaStar(w=w.t, a=data$a, alpha=alpha)
 
-cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
-cur.llps <- matrix(NA, nknots, nt)
-for (t in 1:nt) {
-  for (k in 1:nknots) {
-    cur.llps[k, t] <- dPS(a=data$a[k, t], alpha=alpha,
-                          mid.points=mid.points, bin.width=bin.width)
-  }
-}
+cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
+cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
+                     bin.width=bin.width)
 
+tic <- proc.time()[3]
+for (i in 1:100) {
+  cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
+                       bin.width=bin.width)
+}
+toc <- proc.time()[3]
+toc - tic
 # MH adjustments
 acc.alpha <- att.alpha <- mh.alpha <- 0.1
 
 # storage
 alpha.keep <- rep(NA, nreps)
 
-for (i in 1:5000) {
+for (i in 1:nreps) {
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
                               z=z.t, w=w.t,
@@ -730,14 +556,15 @@ for (i in 1:5000) {
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
-nreps <- 20000
-burn  <- 10000
-xi.t <- 0.1
-beta.t <- c(1, -1, 0)
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
 alpha.t <- 0.8
 rho.t   <- 3
+thresh  <- 0
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
-                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
 x.beta.t <- matrix(0, ns, nt)
 for (t in 1:nt) {
   x.beta.t[, t] <- x[, t, ] %*% beta.t
@@ -750,7 +577,7 @@ dw2 <- as.matrix(rdist(s, knots))^2
 w   <- stdW(makeW(dw2=dw2, rho=rho))
 theta.star <- getThetaStar(w=w, a=data$a, alpha=alpha.t)
 
-cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
+cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha.t, z=z.t)
 
 # MH adjustments
 acc.rho <- att.rho <- mh.rho <- 0.1
@@ -758,7 +585,7 @@ acc.rho <- att.rho <- mh.rho <- 0.1
 # storage
 rho.keep <- rep(NA, nreps)
 
-for (i in 1:5000) {
+for (i in 1:nreps) {
   rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
                           alpha=alpha.t, cur.lly=cur.lly, z=z.t, w=w,
                           dw2=dw2, rho=rho, rho.upper=15,
@@ -773,7 +600,7 @@ for (i in 1:5000) {
 
   rho.keep[i] <- rho
 
-  if ((i %% 100) == 0) {
+  if ((i %% 500) == 0) {
     cat("Iter", i, "\n")
     if (i > 3000) {
       start <- i - 3000
@@ -793,11 +620,114 @@ for (i in 1:5000) {
   }
 }
 
+# test update for alpha and rho
+set.seed(15)
+source("auxfunctions.R")
+source("updateModel.R")
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
+alpha.t <- 0.4
+rho.t   <- 1
+thresh  <- 0
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
+                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
+x.beta.t <- matrix(0, ns, nt)
+for (t in 1:nt) {
+  x.beta.t[, t] <- x[, t, ] %*% beta.t
+}
+z.t <- getZ(xi=xi.t, x.beta=x.beta.t, thresh=thresh)
 
+# initialization and prior distribution
+npts <- 70
+u.beta     <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
+bin.width  <- u.beta[-1] - u.beta[-(npts + 1)]
+alpha      <- 0.5
+rho        <- 5
 
+dw2        <- as.matrix(rdist(s, knots))^2
+w          <- stdW(makeW(dw2=dw2, rho=rho))
+theta.star <- getThetaStar(w=w, a=data$a, alpha=alpha)
 
+cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
+cur.llps.1 <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
+                     bin.width=bin.width)
+cur.llps.2 <- matrix(NA, nknots, nt)
+for (t in 1:nt) {
+  for (k in 1:nknots) {
+    cur.llps.2[k, t] <- dPS(a=data$a[k, t], alpha=alpha,
+                          mid.points=mid.points, bin.width=bin.width)
+  }
+}
 
+# MH adjustments
+acc.alpha <- att.alpha <- mh.alpha <- 0.1
+acc.rho   <- att.rho   <- mh.rho   <- 0.1
 
+# storage
+alpha.keep <- rep(NA, nreps)
+rho.keep   <- rep(NA, nreps)
+
+for (i in 1:nreps) {
+  alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
+                              alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
+                              z=z.t, w=w,
+                              mid.points=mid.points, bin.width=bin.width,
+                              acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+
+  alpha      <- alpha.update$alpha
+  theta.star <- alpha.update$theta.star
+  cur.lly    <- alpha.update$cur.lly
+  cur.llps   <- alpha.update$cur.llps
+  att.alpha  <- alpha.update$att
+  acc.alpha  <- alpha.update$acc
+
+  alpha.keep[i] <- alpha
+
+  rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
+                          alpha=alpha, cur.lly=cur.lly, z=z.t, w=w,
+                          dw2=dw2, rho=rho, rho.upper=15,
+                          acc=acc.rho, att=att.rho, mh=mh.rho)
+
+  rho        <- rho.update$rho
+  w          <- rho.update$w
+  theta.star <- rho.update$theta.star
+  cur.lly    <- rho.update$cur.lly
+  att.rho    <- rho.update$att
+  acc.rho    <- rho.update$acc
+
+  rho.keep[i] <- rho
+
+  if ((i %% 100) == 0) {
+    cat("Iter", i, "\n")
+    if (i > 3000) {
+      start <- i - 3000
+    } else {
+      start <- 1
+    }
+    par(mfrow=c(1, 2))
+    plot(rho.keep[start:i], type="l",
+         ylab=bquote(paste(rho, " mh =", .(round(mh.rho, 4)))),
+         main=bquote(paste(rho, " true =", .(rho.t))))
+    plot(alpha.keep[start:i], type="l",
+         ylab=bquote(paste(alpha, " mh =", .(round(mh.alpha, 4)))),
+         main=bquote(paste(alpha, " true =", .(alpha.t))))
+  }
+
+  if (i < burn / 2) {
+    mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+    acc.alpha <- mh.update$acc
+    att.alpha <- mh.update$att
+    mh.alpha  <- mh.update$mh
+
+    mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho)
+    acc.rho <- mh.update$acc
+    att.rho <- mh.update$att
+    mh.rho  <- mh.update$mh
+  }
+}
 
 
 
@@ -1144,3 +1074,96 @@ checkStrict(mhUpdate)
 checkStrict(ld2)
 checkStrict(dlognormal)
 checkStrict(get.level)
+
+# timing tests with ijulia
+# Looking at timing
+beta <- rep(0, 3)
+beta.m <- rep(0, 3)
+beta.s <- rep(0, 3)
+alpha <- 0.5
+y <- matrix(rbinom(ns * nt, size=1, prob=0.5), ns, nt)
+theta.star <- matrix(rchisq(ns * nt, df=3), ns, nt)
+z <- matrix(rchisq(ns * nt, df=2), ns, nt)
+x <- array(runif(ns * nt * 3), dim=c(ns, nt, 3))
+x[, , 1] <- 1
+x.beta <- matrix(rnorm(ns * nt), ns, nt)
+nreps <- 5000
+
+cur.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=z)
+tic <- proc.time()[3]
+for (i in 1:nreps) {
+  beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha, z=z,
+                            beta=beta, beta.m=beta.m, beta.s=beta.s,
+                            xi=xi.t, x=x, cur.lly=cur.lly,
+                            acc=acc.beta, att=att.beta, mh=mh.beta)
+  beta     <- beta.update$beta
+  x.beta   <- beta.update$x.beta
+  z        <- beta.update$z
+  cur.lly  <- beta.update$cur.lly
+  att.beta <- beta.update$att
+  acc.beta <- beta.update$acc
+
+  beta.keep[i, ] <- beta
+  if (i %% 500 == 0) {
+    print(i)
+  }
+
+  # if (i < burn / 2) {
+  #   mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta)
+  #   acc.beta  <- mh.update$acc
+  #   att.beta  <- mh.update$att
+  #   mh.beta   <- mh.update$mh
+  # }
+}
+toc <- proc.time()[3]
+toc - tic
+
+
+can.llps <- matrix(0.0, nknots, nt)
+tic <- proc.time()
+  for(t in 1:nt) {
+    for (k in 1:nknots) {
+      can.llps[k, t] <- dPS(data$a[k, t], alpha, mid.points, bin.width)
+    }
+  }
+toc <- proc.time()
+
+# timing updates agains julia
+tic <- proc.time()
+for (i in 1:50) {
+  alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
+                              alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
+                              z=z.t, w=w.t,
+                              mid.points=mid.points, bin.width=bin.width,
+                              acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+
+  alpha      <- alpha.update$alpha
+  theta.star <- alpha.update$theta.star
+  cur.lly    <- alpha.update$cur.lly
+  cur.llps   <- alpha.update$cur.llps
+  att.alpha  <- alpha.update$att
+  acc.alpha  <- alpha.update$acc
+
+  alpha.keep[i] <- alpha
+
+  # if ((i %% 100) == 0) {
+  #   cat("Iter", i, "\n")
+  #   if (i > 3000) {
+  #     start <- i - 3000
+  #   } else {
+  #     start <- 1
+  #   }
+  #   plot(alpha.keep[start:i], type="l",
+  #        ylab=bquote(paste(alpha, " mh =", .(round(mh.alpha, 4)))),
+  #        main=bquote(paste(alpha, " true =", .(alpha.t))))
+  # }
+
+  if (i < burn / 2) {
+    mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+    acc.alpha <- mh.update$acc
+    att.alpha <- mh.update$att
+    mh.alpha  <- mh.update$mh
+  }
+}
+toc <- proc.time()
+toc - tic

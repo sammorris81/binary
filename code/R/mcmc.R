@@ -7,6 +7,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     ) {
   library(fields)
 
+
   # initial setup
   p <- dim(x)[3]
   ns <- nrow(y)
