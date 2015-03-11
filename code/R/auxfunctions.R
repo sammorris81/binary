@@ -1,3 +1,8 @@
+# Rcpp functions
+if (!exists("dPS.Rcpp")) {
+  source('llps_cpp.R')
+}
+
 ################################################################################
 # Common data transformations
 ################################################################################
@@ -109,7 +114,7 @@ rPS <- function(n, alpha) {
 
 # generate rare binary data
 # for now working with independent to test functions for beta and xi
-rRareBinaryInd <- function(x, beta, xi) {
+rRareBinaryInd <- function(x, beta, xi, thresh=0) {
   nt <- dim(x)[2]
   ns <- dim(x)[1]
 
@@ -118,9 +123,9 @@ rRareBinaryInd <- function(x, beta, xi) {
     x.beta[, t] <- x[, t, ] %*% beta
   }
 
-  z    <- getZ(xi=xi, x.beta=x.beta)
-  prob <- 1 - exp(-1 / z)  # we need P(Y = 1) for rbinom
-  y    <- matrix(rbinom(n=ns * nt, size=1, prob=prob), nrow=ns, ncol=nt)
+  z <- matrix(rgev(n=ns * nt, 1, 1, 1), ns, nt)
+  h <- x.beta + (z^xi - 1) / xi
+  y <- ifelse(h > thresh, 1, 0)
   return(y)
 }
 
@@ -140,7 +145,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0) {
       x.beta[, t] <- x[, t] * beta
     }
   }
-  
+
   # get weights
   dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   w <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
@@ -148,11 +153,11 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0) {
   # get random effects and theta.star
   a <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
   theta.star <- getThetaStar(w, a, alpha)
-  
+
   # get underlying latent variable
   u <- matrix(rgev(n=ns * nt, 1, alpha, alpha), ns, nt)
   z <- u * theta.star^alpha
-  
+
   h <- x.beta + (z^xi - 1) / xi
 
   y <- ifelse(h > thresh, 1, 0)
