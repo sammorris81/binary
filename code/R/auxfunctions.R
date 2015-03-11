@@ -224,11 +224,19 @@ dlognormal <- function(x, mu, sig) {
 #### Used to set the standard deviation for the candidate distribution
 #### for the A terms in the random effect. When log(A) is large means
 #### sd is smaller, and log(A) small means sd is larger.
-get.level <- function(a, cuts) {
+get.level.1 <- function(a, cuts) {
   lev <- a * 0 + 1
   for (j in 1:length(cuts)) {
     lev <- ifelse(a > cuts[j], j + 1, lev)
   }
+  return(lev)
+}
+
+get.level <- function(a, cuts) {
+  if (length(a) > 1) {
+    warning("get.level should only be used when length(a) = 1")
+  }
+  lev <- sum(a > cuts) + 1
   return(lev)
 }
 

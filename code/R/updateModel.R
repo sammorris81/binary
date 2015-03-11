@@ -142,25 +142,23 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
 
   for (t in 1:nt) {
     cur.lly.t <- cur.lly[, t]
-    # cur.lly.t <- logLikeY(y=y[, t], theta.star=theta.star[, t], alpha=alpha, z=z[, t])
     for (k in 1:nknots) {
-      l1             <- get.level(a[k, t], cuts)  # keeps sd reasonable
-      can.a          <- exp(rnorm(1, log(a[k, t]), mh[l1]))
+      cur.a          <- a[k, t]
+      l1             <- get.level(cur.a, cuts)  # keeps sd reasonable
+      can.a          <- exp(rnorm(1, log(cur.a), mh[l1]))
       l2             <- get.level(can.a, cuts)
       www            <- w[, k]^(1 / alpha)  # w is ns x nknots
       # can.theta.star only changes at a site when it's near the knot
-      can.theta.star <- theta.star[, t] + www * (can.a - a[k, t])
+      can.theta.star <- theta.star[, t] + www * (can.a - cur.a)
       can.llps       <- dPS.Rcpp(a=can.a, alpha=alpha,
                             mid.points=mid.points, bin.width=bin.width)
-      # can.llps       <- dPS(a=can.a, alpha=alpha,
-      #                       mid.points=mid.points, bin.width=bin.width)
       can.lly.t      <- logLikeY(y=y[, t], theta.star=can.theta.star,
                                  alpha=alpha, z=z[, t])
 
       R <- sum(can.lly.t - cur.lly.t) +
            can.llps - cur.llps[k, t] +
-           dlognormal(a[k, t], can.a, mh[l2]) - # candidate sd changes
-           dlognormal(can.a, a[k, t], mh[l1])
+           dlognormal(cur.a, can.a, mh[l2]) - # candidate sd changes
+           dlognormal(can.a, cur.a, mh[l1])
 
       if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
         a[k, t]         <- can.a
