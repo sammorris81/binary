@@ -1,6 +1,6 @@
 # update the beta term for the linear model
 updateBeta <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, xi, x,
-                       cur.lly, acc, att, mh) {
+                       cur.lly, acc, att, mh, thresh=0) {
   # tried a block update for the beta update, but it doesn't do as well
   # as individual updates for each beta term separately.
   np  <- dim(x)[3]
@@ -17,7 +17,7 @@ updateBeta <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, xi, x,
   #     can.x.beta[, t] <- x[, t] * can.beta
   #   }
   # }
-  # can.z <- getZ(xi=xi, x.beta=can.x.beta)
+  # can.z <- getZ(xi=xi, x.beta=can.x.beta, thresh=thresh)
 
   # can.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=can.z)
 
@@ -35,22 +35,20 @@ updateBeta <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, xi, x,
 
   for (p in 1:np) {
     att[p]      <- att[p] + 1
-    can.beta    <- beta
-    can.beta[p] <- rnorm(1, beta[p], mh[p])
-    can.x.beta  <- x.beta
+    can.beta    <- rnorm(1, beta[p], mh[p])
     # trying to save a little time
-    can.x.beta  <- can.x.beta + can.beta[p] * x[, , p] - beta[p] * x[, , p]
-    can.z       <- getZ(xi=xi, x.beta=can.x.beta)
+    can.x.beta  <- x.beta + x[, , p] * (can.beta - beta[p])
+    can.z       <- getZ(xi=xi, x.beta=can.x.beta, thresh=thresh)
 
     # treat as independent at the moment
     can.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=can.z)
 
     R <- sum(can.lly - cur.lly) +
-         dnorm(can.beta[p], beta.m, beta.s, log=TRUE) -
+         dnorm(can.beta, beta.m, beta.s, log=TRUE) -
          dnorm(beta[p], beta.m, beta.s, log=TRUE)
 
     if (!is.na(R)) { if (log(runif(1)) < R) {
-      beta[p] <- can.beta[p]
+      beta[p] <- can.beta
       x.beta  <- can.x.beta
       z       <- can.z
       cur.lly <- can.lly
@@ -65,12 +63,12 @@ updateBeta <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, xi, x,
 
 # update the xi term for the linear model
 updateXi <- function(y, theta.star, alpha, z, x.beta, xi, xi.m, xi.s, cur.lly,
-                     acc, att, mh) {
+                     acc, att, mh, thresh=0) {
   nt <- ncol(y)
   att <- att + 1
 
   can.xi <- rnorm(1, xi, mh)
-  can.z <- getZ(xi=can.xi, x.beta=x.beta)
+  can.z <- getZ(xi=can.xi, x.beta=x.beta, thresh=thresh)
 
   can.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=can.z)
 
@@ -91,7 +89,7 @@ updateXi <- function(y, theta.star, alpha, z, x.beta, xi, xi.m, xi.s, cur.lly,
 
 updateBetaXi <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, x,
                          xi, xi.m, xi.s, cur.lly, acc.beta, att.beta, mh.beta,
-                         acc.xi, att.xi, mh.xi) {
+                         acc.xi, att.xi, mh.xi, thresh=0) {
   np  <- dim(x)[3]
   ns  <- nrow(y)
   nt  <- dim(x)[2]
@@ -109,7 +107,7 @@ updateBetaXi <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, x,
   }
 
   can.xi <- rnorm(1, xi, mh.xi)
-  can.z <- getZ(xi=can.xi, x.beta=can.x.beta)
+  can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
 
   can.lly <- logLikeY(y=y, theta.star=theta.star, alpha=alpha, z=can.z)
 
@@ -152,8 +150,10 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
       www            <- w[, k]^(1 / alpha)  # w is ns x nknots
       # can.theta.star only changes at a site when it's near the knot
       can.theta.star <- theta.star[, t] + www * (can.a - a[k, t])
-      can.llps       <- dPS(a=can.a, alpha=alpha,
+      can.llps       <- dPS.Rcpp(a=can.a, alpha=alpha,
                             mid.points=mid.points, bin.width=bin.width)
+      # can.llps       <- dPS(a=can.a, alpha=alpha,
+      #                       mid.points=mid.points, bin.width=bin.width)
       can.lly.t      <- logLikeY(y=y[, t], theta.star=can.theta.star,
                                  alpha=alpha, z=z[, t])
 
@@ -194,11 +194,12 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
   can.lly        <- logLikeY(y=y, theta.star=can.theta.star, alpha=can.alpha,
                              z=z)
   can.llps       <- matrix(NA, nknots, nt)
-  for(t in 1:nt) {
-    for (k in 1:nknots) {
-      can.llps[k, t] <- dPS(a[k, t], can.alpha, mid.points, bin.width)
-    }
-  }
+  can.llps       <- dPS.Rcpp(a, can.alpha, mid.points, bin.width)
+  # for(t in 1:nt) {
+  #   for (k in 1:nknots) {
+  #     can.llps[k, t] <- dPS(a[k, t], can.alpha, mid.points, bin.width)
+  #   }
+  # }
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
        dnorm(can.alpha.star, log=TRUE) -
