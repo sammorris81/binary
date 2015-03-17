@@ -1,7 +1,7 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
                  beta.init=0, beta.m=0, beta.s=10,
-                 xi.init=0.1, xi.m=0, xi.s=1, npts=100,
-                 knots=NULL, thresh=NULL, rho.init=1, alpha.init=0.5,
+                 xi.init=0.1, xi.m=0, xi.s=1, npts=100, knots=NULL,
+                 thresh=NULL, rho.init=1, rho.upper=Inf, alpha.init=0.5,
                  init.beta, init.alpha, init.range, init.bw, init.logs,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
@@ -15,17 +15,15 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   nknots <- dim(knots)[1]
 
   # get the initial set of weights for the sites and knots
-  rho <- rho.init
-  dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-  w   <- stdW(makeW(dw2, rho))         # w is ns x nknots
+  rho    <- rho.init
+  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
+  w.star <- w^(1 / alpha)
 
   # get the initial set of random effects
   alpha      <- alpha.init
   a          <- matrix(1, nknots, nt)  # random intensities
-  theta.star <- matrix(NA, ns, nt)      # sum_l a_l * w_l^(1/alpha)
-  for (t in 1:nt) {
-    theta.star[, t] <- getThetaStar(w, a[, t], alpha)
-  }
+  theta.star <- getThetaStar(w.star, a)  # sum_l a_l * w_l^(1/alpha)
 
   # get initial z
   xi     <- xi.init
@@ -113,7 +111,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     # update a - NOTE: does not use acc, att, and mh like usual
     old.a    <- a
     a.update <- updateA(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                        cur.lly=cur.lly, cur.llps=cur.llps, z=z, w=w,
+                        cur.lly=cur.lly, cur.llps=cur.llps, z=z, w.star=w.star,
                         mid.points=mid.points, bin.width=bin.width,
                         mh=mh.a, cuts=cuts)
     a          <- a.update$a
@@ -135,8 +133,9 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     # update alpha
     alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                cur.lly=cur.lly, cur.llps=cur.llps, z=z, w=w,
-                                mid.points=mid.points, bin.width=bin.width,
+                                cur.lly=cur.lly, cur.llps=cur.llps, z=z,
+                                w.star=w.star, mid.points=mid.points,
+                                bin.width=bin.width,
                                 acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
     alpha     <- alpha.update$alpha
@@ -154,10 +153,13 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     }
 
     # update rho
-    rho.update <- updateRho(  # TODO: write function
-                            )
+    rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                            cur.lly=cur.lly, z=z, w=w, w.star=w.star, dw2=dw2,
+                            rho=rho, rho.upper=rho.upper,
+                            acc=acc.rho, att=att.rho, mh=mh.rho)
     rho        <- rho.update$rho
     w          <- rho.update$w
+    w.star     <- rho.update$w.star
     theta.star <- rho.update$theta.star
     cur.lly    <- rho.update$cur.lly
     att.rho    <- rho.update$att

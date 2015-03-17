@@ -135,7 +135,7 @@ updateBetaXi <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, x,
 }
 
 # update the random effects for theta.star
-updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
+updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w.star,
                     mid.points, bin.width, mh, cuts) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -147,9 +147,9 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
       l1             <- get.level(cur.a, cuts)  # keeps sd reasonable
       can.a          <- exp(rnorm(1, log(cur.a), mh[l1]))
       l2             <- get.level(can.a, cuts)
-      www            <- w[, k]^(1 / alpha)  # w is ns x nknots
       # can.theta.star only changes at a site when it's near the knot
-      can.theta.star <- theta.star[, t] + www * (can.a - cur.a)
+      # w.star = w^(1 / alpha)
+      can.theta.star <- theta.star[, t] + w.star[, k] * (can.a - cur.a)
       can.llps       <- dPS.Rcpp(a=can.a, alpha=alpha,
                             mid.points=mid.points, bin.width=bin.width)
       can.lly.t      <- logLikeY(y=y[, t], theta.star=can.theta.star,
@@ -178,7 +178,7 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
 
 # update the alpha term for theta.star
 updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
-                        mid.points, bin.width, acc, att, mh) {
+                        w.star, mid.points, bin.width, acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -188,7 +188,8 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
   cur.alpha.star <- transform$probit(alpha, 0.000001, 0.999999)
   can.alpha.star <- rnorm(1, cur.alpha.star, mh)
   can.alpha      <- transform$inv.probit(can.alpha.star, 0.000001, 0.999999)
-  can.theta.star <- getThetaStar(w, a, can.alpha)
+  can.w.star     <- w^(1 / can.alpha)
+  can.theta.star <- getThetaStar(can.w.star, a)
   can.lly        <- logLikeY(y=y, theta.star=can.theta.star, alpha=can.alpha,
                              z=z)
   can.llps       <- matrix(NA, nknots, nt)
@@ -205,18 +206,19 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, w,
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     alpha      <- can.alpha
+    w.star     <- can.w.star
     theta.star <- can.theta.star
     cur.lly    <- can.lly
     cur.llps   <- can.llps
     acc        <- acc + 1
   }}
 
-  results <- list(alpha=alpha, theta.star=theta.star, cur.lly=cur.lly,
-                  cur.llps=cur.llps, att=att, acc=acc)
+  results <- list(alpha=alpha, w.star=w.star, theta.star=theta.star,
+                  cur.lly=cur.lly, cur.llps=cur.llps, att=att, acc=acc)
   return(results)
 }
 
-updateRho <- function(y, theta.star, a, alpha, cur.lly, z, w, dw2, rho,
+updateRho <- function(y, theta.star, a, alpha, cur.lly, z, w, w.star, dw2, rho,
                       rho.upper=Inf, acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -229,7 +231,8 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z, w, dw2, rho,
   can.rho.star   <- rnorm(1, rho.star, mh)
   can.rho        <- transform$inv.probit(can.rho.star, lower=0, upper=rho.upper)
   can.w          <- stdW(makeW(dw2=dw2, rho=can.rho))
-  can.theta.star <- getThetaStar(w=can.w, a=a, alpha=alpha)
+  can.wstar      <- can.w^(1 / alpha)
+  can.theta.star <- getThetaStar(w.star=can.w.star, a=a, alpha=alpha)
   can.lly <- logLikeY(y=y, theta.star=can.theta.star, alpha=alpha, z=z)
 
   logrho.m <- -1
@@ -246,12 +249,13 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z, w, dw2, rho,
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     rho        <- can.rho
     w          <- can.w
+    w.star     <- can.w.star
     theta.star <- can.theta.star
     cur.lly    <- can.lly
     acc        <- acc + 1
   }}
 
-  results <- list(rho=rho, w=w, theta.star=theta.star, cur.lly=cur.lly,
-                  att=att, acc=acc)
+  results <- list(rho=rho, w=w, w.star=w.star, theta.star=theta.star,
+                  cur.lly=cur.lly, att=att, acc=acc)
   return(results)
 }

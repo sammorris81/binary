@@ -46,12 +46,11 @@ getZ <- function(xi, x.beta, thresh=0) {
 }
 
 # theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
-getThetaStar <- function(w, a, alpha) {
+getThetaStar <- function(w.star, a) {
   # theta.star is ns x nt
-  # w is ns x nknots
+  # w.star = w^(1 / alpha) is ns x nknots
   # a is nknots x nt
   # alpha in (0,1)
-  w.star <- w^(1 / alpha)
   if (length(a) == 1) {theta.star <- w.star * a}
   if (length(a) > 1) {theta.star <- w.star %*% a}
   return(theta.star)
@@ -147,12 +146,13 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0) {
   }
 
   # get weights
-  dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-  w <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
+  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  w      <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
+  w.star <- w^(1 / alpha)
 
   # get random effects and theta.star
   a <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
-  theta.star <- getThetaStar(w, a, alpha)
+  theta.star <- getThetaStar(w.star=w.star, a=a)
 
   # get underlying latent variable
   u <- matrix(rgev(n=ns * nt, 1, alpha, alpha), ns, nt)

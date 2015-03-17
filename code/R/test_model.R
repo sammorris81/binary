@@ -265,7 +265,8 @@ data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
-theta.star.t <- getThetaStar(w=w.t, a=data$a, alpha=alpha.t)
+w.star.t <- w.t^(1 / alpha.t)
+theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
 
 # initialization and prior distribution
 beta <- c(0, 0, 0)
@@ -330,7 +331,8 @@ data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 dw2  <- as.matrix(rdist(s, knots))^2
 w.t  <- stdW(makeW(dw2=dw2, rho=rho.t))
-theta.star.t <- getThetaStar(w=w.t, a=data$a, alpha=alpha.t)
+w.star.t <- w.t^(1 / alpha.t)
+theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
 
 # initialization and prior distribution
 xi   <- 0.1
@@ -395,7 +397,8 @@ data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
-theta.star.t <- getThetaStar(w=w.t, a=data$a, alpha=alpha.t)
+w.star.t <- w.t^(1 / alpha.t)
+theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
 
 # initialization and prior distribution
 beta   <- c(0, 0, 0)
@@ -498,7 +501,8 @@ bin.width  <- u.beta[-1] - u.beta[-(npts + 1)]
 dw2        <- as.matrix(rdist(s, knots))^2
 w.t        <- stdW(makeW(dw2=dw2, rho=rho.t))
 alpha      <- 0.5
-theta.star <- getThetaStar(w=w.t, a=data$a, alpha=alpha)
+w.star     <- w.t^(1 / alpha)
+theta.star <- getThetaStar(w.star=w.star.t, a=data$a)
 
 cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
 cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
@@ -520,11 +524,12 @@ alpha.keep <- rep(NA, nreps)
 for (i in 1:nreps) {
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
-                              z=z.t, w=w.t,
+                              z=z.t, w=w.t, w.star=w.star,
                               mid.points=mid.points, bin.width=bin.width,
                               acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
   alpha      <- alpha.update$alpha
+  w.star     <- alpha.update$w.star
   theta.star <- alpha.update$theta.star
   cur.lly    <- alpha.update$cur.lly
   cur.llps   <- alpha.update$cur.llps
@@ -576,7 +581,8 @@ z.t <- getZ(xi=xi.t, x.beta=x.beta.t)
 rho <- 5
 dw2 <- as.matrix(rdist(s, knots))^2
 w   <- stdW(makeW(dw2=dw2, rho=rho))
-theta.star <- getThetaStar(w=w, a=data$a, alpha=alpha.t)
+w.star <- w^(1 / alpha.t)
+theta.star <- getThetaStar(w.star=w.star, a=data$a)
 
 cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha.t, z=z.t)
 
@@ -588,12 +594,14 @@ rho.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
   rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
-                          alpha=alpha.t, cur.lly=cur.lly, z=z.t, w=w,
-                          dw2=dw2, rho=rho, rho.upper=15,
+                          alpha=alpha.t, cur.lly=cur.lly, z=z.t,
+                          w=w, w.star=w.star, dw2=dw2,
+                          rho=rho, rho.upper=15,
                           acc=acc.rho, att=att.rho, mh=mh.rho)
 
   rho        <- rho.update$rho
   w          <- rho.update$w
+  w.star     <- rho.update$w.star
   theta.star <- rho.update$theta.star
   cur.lly    <- rho.update$cur.lly
   att.rho    <- rho.update$att
@@ -649,7 +657,8 @@ alpha      <- 0.5
 rho        <- 5
 dw2        <- as.matrix(rdist(s, knots))^2
 w          <- stdW(makeW(dw2=dw2, rho=rho))
-theta.star <- getThetaStar(w=w, a=data$a, alpha=alpha)
+w.star     <- w^(1 / alpha)
+theta.star <- getThetaStar(w.star=w.star, a=data$a)
 
 cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
 cur.llps.1 <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
@@ -673,7 +682,7 @@ rho.keep   <- rep(NA, nreps)
 for (i in 1:nreps) {
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
-                              z=z.t, w=w,
+                              z=z.t, w.star=w.star,
                               mid.points=mid.points, bin.width=bin.width,
                               acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
@@ -687,12 +696,14 @@ for (i in 1:nreps) {
   alpha.keep[i] <- alpha
 
   rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
-                          alpha=alpha, cur.lly=cur.lly, z=z.t, w=w,
+                          alpha=alpha, cur.lly=cur.lly, z=z.t,
+                          w=w, w.star=w.star,
                           dw2=dw2, rho=rho, rho.upper=15,
                           acc=acc.rho, att=att.rho, mh=mh.rho)
 
   rho        <- rho.update$rho
   w          <- rho.update$w
+  w.star     <- rho.update$w.star
   theta.star <- rho.update$theta.star
   cur.lly    <- rho.update$cur.lly
   att.rho    <- rho.update$att
@@ -755,9 +766,10 @@ mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
 bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
+w.star.t <- w.t^(1 / alpha.t)
 a <- matrix(5, nknots, nt)
-theta.star <- getThetaStar(w=w.t, a=a, alpha=alpha.t)
-theta.star.t <- getThetaStar(w=w.t, a=data$a, alpha=alpha.t)
+theta.star <- getThetaStar(w.star=w.star.t, a=a)
+theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
 
 cur.lly    <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha.t, z=z.t)
 cur.lly.t  <- logLikeY(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z.t)
@@ -778,9 +790,9 @@ Rprof(filename = "Rprof.out",line.profiling = TRUE)
 for (i in 1:50) {
   old.a <- a
   a.update <- updateA(y=data$y, theta.star=theta.star, a=a, alpha=alpha.t,
-                      cur.lly=cur.lly, cur.llps=cur.llps, z=z.t, w=w.t,
-                      mid.points=mid.points, bin.width=bin.width,
-                      mh=mh.a, cuts=cuts)
+                      cur.lly=cur.lly, cur.llps=cur.llps, z=z.t,
+                      w.star=w.star.t, mid.points=mid.points,
+                      bin.width=bin.width, mh=mh.a, cuts=cuts)
 #   level <- get.level.1(old.a, cuts)
 #   for (j in 1:length(mh.a)) {
 #     acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
@@ -850,7 +862,7 @@ get.level(1000, cuts)
 get.level.1(1000, cuts)
 
 library(microbenchmark)
-microbenchmark(get.level(100, cuts), get.level.1(100, cuts), 
+microbenchmark(get.level(100, cuts), get.level.1(100, cuts),
               apply(data$a, MARGIN=c(1, 2), FUN=get.level, cuts=cuts),
               get.level.1(data$a, cuts=cuts), times = 100)
 
@@ -870,6 +882,7 @@ data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 
 # initialization and prior distribution
+alpha <- 0.5
 npts <- 50
 u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
 mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
@@ -878,9 +891,9 @@ x.beta <- matrix(2, ns, nt)
 z.t <- getZ(xi=xi.t, x.beta=x.beta)
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
-alpha <- 0.5
+w.star <- w.t^(1 / alpha)
 a <- matrix(1, nknots, nt)
-theta.star <- getThetaStar(w=w.t, a=a, alpha=alpha)
+theta.star <- getThetaStar(w.star=w.star, a=a)
 
 cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
 cur.llps <- matrix(NA, nknots, nt)
@@ -905,9 +918,9 @@ Rprof("rprof.out", line.profiling=TRUE)
 for (i in 1:2000) {
   old.a <- a
   a.update <- updateA(y=data$y, theta.star=theta.star, a=a, alpha=alpha,
-                      cur.lly=cur.lly, cur.llps=cur.llps, z=z.t, w=w.t,
-                      mid.points=mid.points, bin.width=bin.width,
-                      mh=mh.a, cuts=cuts)
+                      cur.lly=cur.lly, cur.llps=cur.llps, z=z.t,
+                      w.star=w.star.t, mid.points=mid.points,
+                      bin.width=bin.width, mh=mh.a, cuts=cuts)
 
   a          <- a.update$a
   theta.star <- a.update$theta.star
@@ -918,7 +931,7 @@ for (i in 1:2000) {
 
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
-                              z=z.t, w=w.t,
+                              z=z.t, w.star=w.star.t,
                               mid.points=mid.points, bin.width=bin.width,
                               acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
@@ -996,7 +1009,8 @@ x.beta <- matrix(2, ns, nt)
 z.t <- getZ(xi=xi.t, x.beta=x.beta)
 dw2 <- as.matrix(rdist(s, knots))^2
 w <- stdW(makeW(dw2=dw2, rho=rho))
-theta.star <- getThetaStar(w=w, a=data$a, alpha=alpha.t)
+w.star <- w^(1 / alpha.t)
+theta.star <- getThetaStar(w.star=w.star, a=data$a)
 cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha.t, z=z.t)
 
 # MH adjustments
@@ -1007,11 +1021,12 @@ rho.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
   rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
-                          alpha=alpha.t, cur.lly=cur.lly, z=z.t, w=w, dw2=dw2,
-                          rho=rho, rho.upper=15,
+                          alpha=alpha.t, cur.lly=cur.lly, z=z.t, w=w,
+                          w.star=w.star, dw2=dw2, rho=rho, rho.upper=15,
                           acc=acc.rho, att=att.rho, mh=mh.rho)
   rho        <- rho.update$rho
   w          <- rho.update$w
+  w.star     <- rho.update$w.star
   theta.star <- rho.update$theta.star
   cur.lly    <- rho.update$cur.lly
   att.rho    <- rho.update$att
@@ -1137,7 +1152,7 @@ tic <- proc.time()
 for (i in 1:50) {
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
-                              z=z.t, w=w.t,
+                              z=z.t, w.star=w.star.t,
                               mid.points=mid.points, bin.width=bin.width,
                               acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
