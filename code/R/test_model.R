@@ -9,7 +9,9 @@
 #   beta and xi: PASS
 #   alpha: PASS
 #   rho: PASS
-#   alpha and rho: PASS
+#   alpha and rho: PASS (both at alpha = 0.4 and alpha = 0.8)
+#       moves fairly slowly in the chain though
+#   A:
 #   beta, xi, alpha:
 #   beta, xi, rho:
 #   beta, xi, alpha, rho
@@ -55,7 +57,8 @@ beta.m <- 0
 beta.s <- 10
 x.beta <- matrix(0, ns, nt)
 z <- getZ(xi=xi.t, x.beta=x.beta)
-cur.lly <- logLikeY(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=y, theta.star=theta.star.t, z.star=z.star)
 
 # MH adjustments
 acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
@@ -64,13 +67,15 @@ acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
 beta.keep <- matrix(NA, nreps, 3)
 tic <- proc.time()[3]
 for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
+  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, 
+                            z=z, z.star=z.star,
                             beta=beta, beta.m=beta.m, beta.s=beta.s,
                             xi=xi.t, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta, thresh=1.2)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
+  z.star   <- beta.update$z.star
   cur.lly  <- beta.update$cur.lly
   att.beta <- beta.update$att
   acc.beta <- beta.update$acc
@@ -116,7 +121,8 @@ xi <- 0
 xi.m <- 0
 xi.s <- 10
 z <- getZ(xi=xi, x.beta=x.beta.t)
-cur.lly <- logLikeY(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=y, theta.star=theta.star.t, z.star=z.star)
 
 # MH adjustments
 acc.xi <- att.xi <- mh.xi <- rep(1, 3)
@@ -125,12 +131,13 @@ acc.xi <- att.xi <- mh.xi <- rep(1, 3)
 xi.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
-  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                        x.beta=x.beta.t, xi=xi, xi.m=xi.m, xi.s=xi.s,
-                        cur.lly=cur.lly,
+  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z, 
+                        z.star=z.star, x.beta=x.beta.t, xi=xi, xi.m=xi.m, 
+                        xi.s=xi.s, cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
   z       <- xi.update$z
+  z.star  <- xi.update$z.star
   cur.lly <- xi.update$cur.lly
   att.xi  <- xi.update$att
   acc.xi  <- xi.update$acc
@@ -179,7 +186,8 @@ xi <- 0.1
 xi.m <- 0
 xi.s <- 1
 z <- getZ(xi=xi, x.beta=x.beta)
-cur.lly <- logLikeY(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=y, theta.star=theta.star.t, z.star=z.star)
 
 # MH adjustments
 acc.beta <- att.beta <- mh.beta <- rep(0.01, 3)
@@ -190,13 +198,14 @@ beta.keep <- matrix(NA, nreps, 3)
 xi.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                            beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi.t, x=x, cur.lly=cur.lly,
+  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, 
+                            z=z, z.star=z.star, beta=beta, beta.m=beta.m, 
+                            beta.s=beta.s, xi=xi.t, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
+  z.star   <- beta.update$z.star
   cur.lly  <- beta.update$cur.lly
   att.beta <- beta.update$att
   acc.beta <- beta.update$acc
@@ -211,12 +220,14 @@ for (i in 1:nreps) {
     mh.beta   <- mh.update$mh
   }
 
-  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                        x.beta=x.beta, xi=xi, xi.m=xi.m, xi.s=xi.s,
+  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, 
+                        z=z, z.star=z.star, x.beta=x.beta, 
+                        xi=xi, xi.m=xi.m, xi.s=xi.s,
                         cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi)
   xi      <- xi.update$xi
   z       <- xi.update$z
+  z.star  <- xi.update$z.star
   cur.lly <- xi.update$cur.lly
   att.xi  <- xi.update$att
   acc.xi  <- xi.update$acc
@@ -274,7 +285,8 @@ beta.m <- 0
 beta.s <- 10
 x.beta <- matrix(0, ns, nt)
 z <- getZ(xi=xi.t, x.beta=x.beta)
-cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star)
 
 # MH adjustments
 acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
@@ -284,12 +296,13 @@ beta.keep <- matrix(NA, nreps, 3)
 
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
-                            z=z, beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi.t, x=x, cur.lly=cur.lly,
+                            z=z, z.star=z.star, beta=beta, beta.m=beta.m, 
+                            beta.s=beta.s, xi=xi.t, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta, thresh=0)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
+  z.star   <- beta.update$z.star
   cur.lly  <- beta.update$cur.lly
   att.beta <- beta.update$att
   acc.beta <- beta.update$acc
@@ -343,7 +356,8 @@ for (t in 1:nt) {
   x.beta.t[, t] <- x[, t, ] %*% beta.t
 }
 z <- getZ(xi=xi, x.beta=x.beta.t)
-cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star)
 
 # MH adjustments
 acc.xi <- att.xi <- mh.xi <- 0.01
@@ -352,12 +366,13 @@ acc.xi <- att.xi <- mh.xi <- 0.01
 xi.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
-  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                        x.beta=x.beta.t, xi=xi, xi.m=xi.m, xi.s=xi.s,
-                        cur.lly=cur.lly,
+  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, 
+                        z.star=z.star, x.beta=x.beta.t, xi=xi, xi.m=xi.m, 
+                        xi.s=xi.s, cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
   z       <- xi.update$z
+  z.star  <- xi.update$z.star
   cur.lly <- xi.update$cur.lly
   att.xi  <- xi.update$att
   acc.xi  <- xi.update$acc
@@ -409,7 +424,8 @@ xi     <- 0
 xi.m   <- 0
 xi.s   <- 1
 z <- getZ(xi=xi, x.beta=x.beta)
-cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star)
 
 # MH adjustments
 acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
@@ -421,25 +437,27 @@ xi.keep   <- rep(NA, nreps)
 
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
-                            z=z, beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi, x=x, cur.lly=cur.lly,
+                            z.star=z.star, beta=beta, beta.m=beta.m, 
+                            beta.s=beta.s, xi=xi, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta,
                             thresh=thresh)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
+  z.star   <- beta.update$z.star
   cur.lly  <- beta.update$cur.lly
   att.beta <- beta.update$att
   acc.beta <- beta.update$acc
 
   beta.keep[i, ] <- beta
 
-  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z,
-                        x.beta=x.beta, xi=xi, xi.m=xi.m, xi.s=xi.s,
-                        cur.lly=cur.lly,
+  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, 
+                        z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m, 
+                        xi.s=xi.s, cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
   z       <- xi.update$z
+  z.star  <- xi.update$z.star
   cur.lly <- xi.update$cur.lly
   att.xi  <- xi.update$att
   acc.xi  <- xi.update$acc
@@ -501,10 +519,11 @@ bin.width  <- u.beta[-1] - u.beta[-(npts + 1)]
 dw2        <- as.matrix(rdist(s, knots))^2
 w.t        <- stdW(makeW(dw2=dw2, rho=rho.t))
 alpha      <- 0.5
+z.star     <- z.t^(1 / alpha)
 w.star     <- w.t^(1 / alpha)
 theta.star <- getThetaStar(w.star=w.star.t, a=data$a)
 
-cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
+cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, z=z.star)
 cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
                      bin.width=bin.width)
 
@@ -524,12 +543,13 @@ alpha.keep <- rep(NA, nreps)
 for (i in 1:nreps) {
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
-                              z=z.t, w=w.t, w.star=w.star,
+                              z=z.t, z.star=z.star, w=w.t, w.star=w.star,
                               mid.points=mid.points, bin.width=bin.width,
                               acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
   alpha      <- alpha.update$alpha
   w.star     <- alpha.update$w.star
+  z.star     <- alpha.update$z.star
   theta.star <- alpha.update$theta.star
   cur.lly    <- alpha.update$cur.lly
   cur.llps   <- alpha.update$cur.llps
@@ -582,9 +602,10 @@ rho <- 5
 dw2 <- as.matrix(rdist(s, knots))^2
 w   <- stdW(makeW(dw2=dw2, rho=rho))
 w.star <- w^(1 / alpha.t)
+z.star <- z.t^(1 / alpha.t)
 theta.star <- getThetaStar(w.star=w.star, a=data$a)
 
-cur.lly <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha.t, z=z.t)
+cur.lly <- logLikeY(y=data$y, theta.star=theta.star, z.star=z.star)
 
 # MH adjustments
 acc.rho <- att.rho <- mh.rho <- 0.1
@@ -594,7 +615,7 @@ rho.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
   rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
-                          alpha=alpha.t, cur.lly=cur.lly, z=z.t,
+                          alpha=alpha.t, cur.lly=cur.lly, z.star=z.star,
                           w=w, w.star=w.star, dw2=dw2,
                           rho=rho, rho.upper=15,
                           acc=acc.rho, att=att.rho, mh=mh.rho)
@@ -637,7 +658,7 @@ nreps   <- 20000
 burn    <- 10000
 xi.t    <- 0.1
 beta.t  <- c(1, -1, 0)
-alpha.t <- 0.4
+alpha.t <- 0.8
 rho.t   <- 1
 thresh  <- 0
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
@@ -658,18 +679,19 @@ rho        <- 5
 dw2        <- as.matrix(rdist(s, knots))^2
 w          <- stdW(makeW(dw2=dw2, rho=rho))
 w.star     <- w^(1 / alpha)
+z.star     <- z.t^(1 / alpha)
 theta.star <- getThetaStar(w.star=w.star, a=data$a)
 
-cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha, z=z.t)
-cur.llps.1 <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
+cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, z.star=z.star)
+cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
                      bin.width=bin.width)
-cur.llps.2 <- matrix(NA, nknots, nt)
-for (t in 1:nt) {
-  for (k in 1:nknots) {
-    cur.llps.2[k, t] <- dPS(a=data$a[k, t], alpha=alpha,
-                          mid.points=mid.points, bin.width=bin.width)
-  }
-}
+# cur.llps.2 <- matrix(NA, nknots, nt)
+# for (t in 1:nt) {
+#   for (k in 1:nknots) {
+#     cur.llps.2[k, t] <- dPS(a=data$a[k, t], alpha=alpha,
+#                           mid.points=mid.points, bin.width=bin.width)
+#   }
+# }
 
 # MH adjustments
 acc.alpha <- att.alpha <- mh.alpha <- 0.1
@@ -682,11 +704,13 @@ rho.keep   <- rep(NA, nreps)
 for (i in 1:nreps) {
   alpha.update <- updateAlpha(y=data$y, theta.star=theta.star, a=data$a,
                               alpha=alpha, cur.lly=cur.lly, cur.llps=cur.llps,
-                              z=z.t, w.star=w.star,
+                              z=z.t, z.star=z.star, w=w, w.star=w.star,
                               mid.points=mid.points, bin.width=bin.width,
                               acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
   alpha      <- alpha.update$alpha
+  w.star     <- alpha.update$w.star
+  z.star     <- alpha.update$z.star
   theta.star <- alpha.update$theta.star
   cur.lly    <- alpha.update$cur.lly
   cur.llps   <- alpha.update$cur.llps
@@ -758,6 +782,7 @@ for (t in 1:nt) {
   x.beta.t[, t] <- x[, t, ] %*% beta.t
 }
 z.t <- getZ(xi=xi.t, x.beta=x.beta.t, thresh=thresh)
+z.star.t <- z.t^(1 / alpha.t)
 
 # initialization and prior distribution
 npts <- 70
@@ -771,8 +796,8 @@ a <- matrix(5, nknots, nt)
 theta.star <- getThetaStar(w.star=w.star.t, a=a)
 theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
 
-cur.lly    <- logLikeY(y=data$y, theta.star=theta.star, alpha=alpha.t, z=z.t)
-cur.lly.t  <- logLikeY(y=data$y, theta.star=theta.star.t, alpha=alpha.t, z=z.t)
+cur.lly    <- logLikeY(y=data$y, theta.star=theta.star, z.star=z.star.t)
+cur.lly.t  <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star.t)
 cur.llps   <- dPS.Rcpp(a, alpha=alpha.t, mid.points=mid.points,
                      bin.width=bin.width)
 cur.llps.t <- dPS.Rcpp(a=data$a, alpha=alpha.t, mid.points=mid.points,
@@ -790,7 +815,7 @@ Rprof(filename = "Rprof.out",line.profiling = TRUE)
 for (i in 1:50) {
   old.a <- a
   a.update <- updateA(y=data$y, theta.star=theta.star, a=a, alpha=alpha.t,
-                      cur.lly=cur.lly, cur.llps=cur.llps, z=z.t,
+                      cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star,
                       w.star=w.star.t, mid.points=mid.points,
                       bin.width=bin.width, mh=mh.a, cuts=cuts)
 #   level <- get.level.1(old.a, cuts)
@@ -865,6 +890,9 @@ library(microbenchmark)
 microbenchmark(get.level(100, cuts), get.level.1(100, cuts),
               apply(data$a, MARGIN=c(1, 2), FUN=get.level, cuts=cuts),
               get.level.1(data$a, cuts=cuts), times = 100)
+
+
+
 
 
 

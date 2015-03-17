@@ -71,9 +71,9 @@ stdW <- function(x, single=FALSE) {
 
 
 # get find the ll for y - returns ns x nt matrix for each site/day
-logLikeY <- function(y, theta.star, alpha, z) {
-  z.star <- -theta.star / (z^(1 / alpha))
-  ll.y <- (1 - y) * z.star + y * log(1 - exp(z.star))
+logLikeY <- function(y, theta.star, z.star) {
+  theta.z.star <- -theta.star / z.star
+  ll.y <- (1 - y) * theta.z.star + y * log(1 - exp(theta.z.star))
   return(ll.y)
 }
 

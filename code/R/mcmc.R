@@ -72,14 +72,17 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   keepers.rho   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:nthin) {
+    # update beta and xi
     # update beta
-    beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha, z=z,
+    beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha, 
+                              z=z, z.star=z.star, 
                               beta=beta, beta.m=beta.m, beta.s=beta.s,
                               xi=xi, x=x, cur.lly=cur.lly,
                               acc=acc.beta, att=att.beta, mh=mh.beta)
     beta     <- beta.update$beta
     x.beta   <- beta.update$x.beta
     z        <- beta.update$z
+    z.star   <- beta.update$z.star
     cur.lly  <- beta.update$cur.lly
     att.beta <- beta.update$att
     acc.beta <- beta.update$acc
@@ -93,10 +96,12 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     # update xi
     xi.update <- updateXi(y=y, theta.star=theta.star, alpha=alpha, z=z,
-                          x.beta=x.beta, xi=xi, xi.m=xi.m, xi.s=xi.s,
+                          z.star=z.star, x.beta=x.beta, 
+                          xi=xi, xi.m=xi.m, xi.s=xi.s,
                           cur.lly, acc=acc.xi, att=att.xi, mh=mh.xi)
     xi      <- xi.update$xi
     z       <- xi.update$z
+    z.star  <- xi.update$z.star
     cur.lly <- xi.update$cur.lly
     att.xi  <- xi.update$att
     acc.xi  <- xi.update$acc
@@ -111,9 +116,9 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     # update a - NOTE: does not use acc, att, and mh like usual
     old.a    <- a
     a.update <- updateA(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                        cur.lly=cur.lly, cur.llps=cur.llps, z=z, w.star=w.star,
-                        mid.points=mid.points, bin.width=bin.width,
-                        mh=mh.a, cuts=cuts)
+                        cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star, 
+                        w.star=w.star, mid.points=mid.points, 
+                        bin.width=bin.width, mh=mh.a, cuts=cuts)
     a          <- a.update$a
     theta.star <- a.update$theta.star
     cur.lly    <- a.update$cur.lly
@@ -133,12 +138,14 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     # update alpha
     alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                cur.lly=cur.lly, cur.llps=cur.llps, z=z,
-                                w.star=w.star, mid.points=mid.points,
-                                bin.width=bin.width,
+                                cur.lly=cur.lly, cur.llps=cur.llps, 
+                                z=z, z.star=z.star, w=w, w.star=w.star, 
+                                mid.points=mid.points, bin.width=bin.width,
                                 acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
     alpha     <- alpha.update$alpha
+    w.star    <- alpha.update$w.star
+    z.star    <- alpha.update$z.star
     theta     <- alpha.update$theta.star
     cur.lly   <- alpha.update$cur.lly
     cur.llps  <- alpha.update$cur.llps
@@ -154,8 +161,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     # update rho
     rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                            cur.lly=cur.lly, z=z, w=w, w.star=w.star, dw2=dw2,
-                            rho=rho, rho.upper=rho.upper,
+                            cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star, 
+                            dw2=dw2, rho=rho, rho.upper=rho.upper,
                             acc=acc.rho, att=att.rho, mh=mh.rho)
     rho        <- rho.update$rho
     w          <- rho.update$w
