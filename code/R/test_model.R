@@ -33,11 +33,29 @@ s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
 x[, , 3] <- s[, 2]
-# knots.1 <- seq(1, 10, length=9)
-# knots.2 <- seq(1, 10, length=9)
-# knots <- expand.grid(knots.1, knots.2)
-knots  <- s
+knots.1 <- seq(1, 10, length=5)
+knots.2 <- seq(1, 10, length=5)
+knots <- expand.grid(knots.1, knots.2)
+# knots  <- s
 nknots <- nrow(knots)
+
+set.seed(15)
+source("auxfunctions.R")
+source("updateModel.R")
+source("mcmc.R")
+nreps <- 10000
+burn  <- 7000
+xi.t <- 0.1
+beta.t <- c(1, -1, 0)
+alpha.t <- 0.8
+rho.t   <- 1
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
+                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+
+fit <- mcmc(y=data$y, s=s, x=x, knots=knots, npts=70, rho.upper=15,
+            rho.init=5, iters=10000, burn=7000,
+            # beta.init=beta.t, alpha.init=alpha.t, a.init=data$a,
+            update=100, iterplot=TRUE)
 
 # test update for beta
 set.seed(15)
@@ -49,7 +67,8 @@ xi.t <- 0.1
 beta.t <- c(1, -1, 0)
 theta.star.t <- 1
 alpha.t <- 1
-y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t, thresh=1.2)
+thresh <- 0
+y <- rRareBinaryInd(x, beta=beta.t, xi=xi.t, thresh=thresh)
 
 # initialization and prior distribution
 beta <- c(0, 0, 0)
@@ -67,11 +86,11 @@ acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
 beta.keep <- matrix(NA, nreps, 3)
 tic <- proc.time()[3]
 for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, 
-                            z=z, z.star=z.star,
-                            beta=beta, beta.m=beta.m, beta.s=beta.s,
-                            xi=xi.t, x=x, cur.lly=cur.lly,
-                            acc=acc.beta, att=att.beta, mh=mh.beta, thresh=1.2)
+  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t,
+                            z=z, z.star=z.star, beta=beta, beta.m=beta.m,
+                            beta.s=beta.s, x.beta=x.beta, xi=xi.t, x=x,
+                            cur.lly=cur.lly, acc=acc.beta, att=att.beta,
+                            mh=mh.beta, thresh=thresh)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
@@ -92,6 +111,8 @@ for (i in 1:nreps) {
     mh.beta   <- mh.update$mh
   }
 }
+toc <- proc.time()[3]
+toc - tic
 
 par(mfrow=c(1, 3))
 plot(beta.keep[, 1], type="l", main="beta 0")
@@ -131,8 +152,8 @@ acc.xi <- att.xi <- mh.xi <- rep(1, 3)
 xi.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
-  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z, 
-                        z.star=z.star, x.beta=x.beta.t, xi=xi, xi.m=xi.m, 
+  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, z=z,
+                        z.star=z.star, x.beta=x.beta.t, xi=xi, xi.m=xi.m,
                         xi.s=xi.s, cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
@@ -198,8 +219,8 @@ beta.keep <- matrix(NA, nreps, 3)
 xi.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
-  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t, 
-                            z=z, z.star=z.star, beta=beta, beta.m=beta.m, 
+  beta.update <- updateBeta(y=y, theta.star=theta.star.t, alpha=alpha.t,
+                            z=z, z.star=z.star, beta=beta, beta.m=beta.m,
                             beta.s=beta.s, xi=xi.t, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta)
   beta     <- beta.update$beta
@@ -220,8 +241,8 @@ for (i in 1:nreps) {
     mh.beta   <- mh.update$mh
   }
 
-  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t, 
-                        z=z, z.star=z.star, x.beta=x.beta, 
+  xi.update <- updateXi(y=y, theta.star=theta.star.t, alpha=alpha.t,
+                        z=z, z.star=z.star, x.beta=x.beta,
                         xi=xi, xi.m=xi.m, xi.s=xi.s,
                         cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi)
@@ -296,7 +317,7 @@ beta.keep <- matrix(NA, nreps, 3)
 
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
-                            z=z, z.star=z.star, beta=beta, beta.m=beta.m, 
+                            z=z, z.star=z.star, beta=beta, beta.m=beta.m,
                             beta.s=beta.s, xi=xi.t, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta, thresh=0)
   beta     <- beta.update$beta
@@ -366,8 +387,8 @@ acc.xi <- att.xi <- mh.xi <- 0.01
 xi.keep <- rep(NA, nreps)
 
 for (i in 1:nreps) {
-  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, 
-                        z.star=z.star, x.beta=x.beta.t, xi=xi, xi.m=xi.m, 
+  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
+                        z=z, z.star=z.star, x.beta=x.beta.t, xi=xi, xi.m=xi.m,
                         xi.s=xi.s, cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
@@ -437,7 +458,7 @@ xi.keep   <- rep(NA, nreps)
 
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
-                            z.star=z.star, beta=beta, beta.m=beta.m, 
+                            z=z, z.star=z.star, beta=beta, beta.m=beta.m,
                             beta.s=beta.s, xi=xi, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta,
                             thresh=thresh)
@@ -451,8 +472,8 @@ for (i in 1:nreps) {
 
   beta.keep[i, ] <- beta
 
-  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t, 
-                        z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m, 
+  xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
+                        z=z, z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m,
                         xi.s=xi.s, cur.lly=cur.lly,
                         acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
   xi      <- xi.update$xi
@@ -527,13 +548,13 @@ cur.lly  <- logLikeY(y=data$y, theta.star=theta.star, z=z.star)
 cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
                      bin.width=bin.width)
 
-tic <- proc.time()[3]
-for (i in 1:100) {
-  cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
-                       bin.width=bin.width)
-}
-toc <- proc.time()[3]
-toc - tic
+# tic <- proc.time()[3]
+# for (i in 1:100) {
+#   cur.llps <- dPS.Rcpp(a=data$a, alpha=alpha, mid.points=mid.points,
+#                        bin.width=bin.width)
+# }
+# toc <- proc.time()[3]
+# toc - tic
 # MH adjustments
 acc.alpha <- att.alpha <- mh.alpha <- 0.1
 
@@ -720,7 +741,7 @@ for (i in 1:nreps) {
   alpha.keep[i] <- alpha
 
   rho.update <- updateRho(y=data$y, theta.star=theta.star, a=data$a,
-                          alpha=alpha, cur.lly=cur.lly, z=z.t,
+                          alpha=alpha, cur.lly=cur.lly, z.star=z.star,
                           w=w, w.star=w.star,
                           dw2=dw2, rho=rho, rho.upper=15,
                           acc=acc.rho, att=att.rho, mh=mh.rho)
@@ -761,6 +782,103 @@ for (i in 1:nreps) {
     acc.rho <- mh.update$acc
     att.rho <- mh.update$att
     mh.rho  <- mh.update$mh
+  }
+}
+
+# test update for alpha and a
+set.seed(15)
+source("auxfunctions.R")
+source("updateModel.R")
+nreps   <- 20000
+burn    <- 10000
+xi.t    <- 0.1
+beta.t  <- c(1, -1, 0)
+alpha.t <- 0.8
+rho.t   <- 1
+thresh  <- 0
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
+                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
+x.beta.t <- matrix(0, ns, nt)
+for (t in 1:nt) {
+  x.beta.t[, t] <- x[, t, ] %*% beta.t
+}
+z.t <- getZ(xi=xi.t, x.beta=x.beta.t, thresh=thresh)
+z.star.t <- z.t^(1 / alpha.t)
+
+# initialization and prior distribution
+npts <- 70
+u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
+bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
+dw2 <- as.matrix(rdist(s, knots))^2
+w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
+w.star.t <- w.t^(1 / alpha.t)
+a <- matrix(5, nknots, nt)
+theta.star <- getThetaStar(w.star=w.star.t, a=a)
+theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
+
+cur.lly    <- logLikeY(y=data$y, theta.star=theta.star, z.star=z.star.t)
+cur.lly.t  <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star.t)
+cur.llps   <- dPS.Rcpp(a, alpha=alpha.t, mid.points=mid.points,
+                     bin.width=bin.width)
+cur.llps.t <- dPS.Rcpp(a=data$a, alpha=alpha.t, mid.points=mid.points,
+                       bin.width=bin.width)
+
+# MH adjustments
+cuts  <- exp(c(-1, 0, 1, 2, 5, 10))
+mh.a  <- rep(0.5, 100)
+acc.a <- att.a <- 0 * mh.a
+
+# storage
+a.keep     <- array(NA, dim=c(nreps, nknots, nt))
+
+# Rprof(filename = "Rprof.out",line.profiling = TRUE)
+for (i in 1:nreps) {
+  old.a <- a
+  a.update <- updateA(y=data$y, theta.star=theta.star, a=a, alpha=alpha.t,
+                      cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star.t,
+                      w.star=w.star.t, mid.points=mid.points,
+                      bin.width=bin.width, mh=mh.a, cuts=cuts)
+
+  a          <- a.update$a
+  theta.star <- a.update$theta.star
+  cur.lly    <- a.update$cur.lly
+  cur.llps   <- a.update$cur.llps
+
+  a.keep[i, , ] <- a
+
+  if ((i %% 50) == 0) {
+    par(mfrow=c(3, 4))
+    cat("Iter", i, "\n")
+    if (i > 3000) {
+      start <- i - 3000
+    } else {
+      start <- 1
+    }
+    plot(a.keep[start:i, 1, 1], type="l",
+         main=paste("a 1, 1 true:", round(data$a[1, 1], 3)))
+    plot(a.keep[start:i, 3, 1], type="l",
+         main=paste("a 3, 1 true:", round(data$a[3, 1], 3)))
+    plot(a.keep[start:i, 5, 1], type="l",
+         main=paste("a 5, 1 true:", round(data$a[5, 1], 3)))
+    plot(a.keep[start:i, 7, 1], type="l",
+         main=paste("a 7, 1 true:", round(data$a[7, 1], 3)))
+    plot(a.keep[start:i, 1, 5], type="l",
+         main=paste("a 1, 5 true:", round(data$a[1, 5], 3)))
+    plot(a.keep[start:i, 3, 5], type="l",
+         main=paste("a 3, 5 true:", round(data$a[3, 5], 3)))
+    plot(a.keep[start:i, 5, 5], type="l",
+         main=paste("a 5, 5 true:", round(data$a[5, 5], 3)))
+    plot(a.keep[start:i, 7, 5], type="l",
+         main=paste("a 7, 5 true:", round(data$a[7, 5], 3)))
+    plot(a.keep[start:i, 1, 10], type="l",
+         main=paste("a 1, 10 true:", round(data$a[1, 10], 3)))
+    plot(a.keep[start:i, 3, 10], type="l",
+         main=paste("a 3, 10 true:", round(data$a[3, 10], 3)))
+    plot(a.keep[start:i, 5, 10], type="l",
+         main=paste("a 5, 10 true:", round(data$a[5, 10], 3)))
+    plot(a.keep[start:i, 7, 10], type="l",
+         main=paste("a 7, 10 true:", round(data$a[7, 10], 3)))
   }
 }
 
@@ -811,23 +929,13 @@ acc.a <- att.a <- 0 * mh.a
 # storage
 a.keep     <- array(NA, dim=c(nreps, nknots, nt))
 
-Rprof(filename = "Rprof.out",line.profiling = TRUE)
-for (i in 1:50) {
+# Rprof(filename = "Rprof.out",line.profiling = TRUE)
+for (i in 1:nreps) {
   old.a <- a
   a.update <- updateA(y=data$y, theta.star=theta.star, a=a, alpha=alpha.t,
-                      cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star,
+                      cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star.t,
                       w.star=w.star.t, mid.points=mid.points,
                       bin.width=bin.width, mh=mh.a, cuts=cuts)
-#   level <- get.level.1(old.a, cuts)
-#   for (j in 1:length(mh.a)) {
-#     acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
-#     att.a[j] <- att.a[j] + sum(level == j)
-#     if ((i < burn / 2) & (att.a[j] > 200)) {
-#       if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
-#       if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
-#       acc.a[j] <- att.a[j] <- 0
-#     }
-#   }
 
   a          <- a.update$a
   theta.star <- a.update$theta.star
@@ -836,7 +944,7 @@ for (i in 1:50) {
 
   a.keep[i, , ] <- a
 
-  if ((i %% 100) == 0) {
+  if ((i %% 50) == 0) {
     par(mfrow=c(3, 4))
     cat("Iter", i, "\n")
     if (i > 3000) {
@@ -870,28 +978,6 @@ for (i in 1:50) {
          main=paste("a 7, 10 true:", round(data$a[7, 10], 3)))
   }
 }
-Rprof(NULL)
-summaryRprof(filename = "Rprof.out", lines = "show")
-
-source("auxfunctions.R")
-source("updateModel.R")
-cuts  <- exp(c(-1, 0, 1, 2, 5, 10))
-get.level(1, cuts)
-get.level.1(1, cuts)
-apply(data$a, MARGIN=c(1, 2), FUN=get.level, cuts=cuts )
-
-get.level(100, cuts)
-get.level.1(100, cuts)
-
-get.level(1000, cuts)
-get.level.1(1000, cuts)
-
-library(microbenchmark)
-microbenchmark(get.level(100, cuts), get.level.1(100, cuts),
-              apply(data$a, MARGIN=c(1, 2), FUN=get.level, cuts=cuts),
-              get.level.1(data$a, cuts=cuts), times = 100)
-
-
 
 
 

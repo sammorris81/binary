@@ -129,7 +129,8 @@ rRareBinaryInd <- function(x, beta, xi, thresh=0) {
 }
 
 # generate dependent rare binary data
-rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0) {
+rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0,
+                            dw2=NULL, a=NULL) {
   ns     <- nrow(s)
   nt     <- dim(x)[2]
   p      <- dim(x)[3]
@@ -146,12 +147,16 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0) {
   }
 
   # get weights
-  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  if (is.null(dw2)) {  # for predictions, already have dw2
+    dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  }
   w      <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
   w.star <- w^(1 / alpha)
 
   # get random effects and theta.star
-  a <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
+  if (is.null(a)) {
+    a <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
+  }
   theta.star <- getThetaStar(w.star=w.star, a=a)
 
   # get underlying latent variable

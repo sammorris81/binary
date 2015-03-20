@@ -1,6 +1,6 @@
 # update the beta term for the linear model
-updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s, 
-                       xi, x, cur.lly, acc, att, mh, thresh=0) {
+updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
+                       x.beta, xi, x, cur.lly, acc, att, mh, thresh=0) {
   # tried a block update for the beta update, but it doesn't do as well
   # as individual updates for each beta term separately.
   np  <- dim(x)[3]
@@ -39,7 +39,7 @@ updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
 }
 
 # update the xi term for the linear model
-updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s, 
+updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
                      cur.lly, acc, att, mh, thresh=0) {
   nt  <- ncol(y)
   att <- att + 1
@@ -76,7 +76,7 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
 #   att.beta <- att.beta + 1
 #   att.xi   <- att.xi + 1
 #   alpha.inv <- 1 / alpha
-# 
+#
 #   can.beta <- rnorm(np, beta, mh.beta)
 #   can.x.beta <- matrix(NA, ns, nt)
 #   for (t in 1:nt) {
@@ -86,19 +86,19 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
 #       can.x.beta[, t] <- x[, t] * can.beta
 #     }
 #   }
-# 
+#
 #   can.xi <- rnorm(1, xi, mh.xi)
 #   can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
 #   can.z.star <- can.z^alpha.inv
-# 
+#
 #   can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
-# 
+#
 #   R <- sum(can.lly - cur.lly) +
 #        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
 #        sum(dnorm(beta, beta.m, beta.s, log=TRUE))
 #        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
 #        dnorm(xi, xi.m, xi.s, log=TRUE)
-# 
+#
 #   if (!is.na(R)) { if (log(runif(1)) < R) {
 #     beta     <- can.beta
 #     x.beta   <- can.x.beta
@@ -108,7 +108,7 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
 #     acc.beta <- acc.beta + 1
 #     acc.xi   <- acc.xi + 1
 #   }}
-# 
+#
 #   results <- list(beta=beta, x.beta=x.beta,
 #                   xi=xi, z=z, cur.lly=cur.lly,
 #                   att.beta=att.beta, acc.beta=acc.beta,
@@ -131,10 +131,15 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
       l2             <- get.level(can.a, cuts)
       # can.theta.star only changes at a site when it's near the knot
       can.theta.star <- theta.star[, t] + w.star[, k] * (can.a - cur.a)
-      can.llps       <- dPS.Rcpp(a=can.a, alpha=alpha,
-                                 mid.points=mid.points, bin.width=bin.width)
-      can.lly.t      <- logLikeY(y=y[, t], theta.star=can.theta.star,
-                                 z.star=z.star[, t])
+      if (sum(can.theta.star <= 0) > 0) {  # numerical stability
+        can.llps <- -Inf
+        can.lly.t <- -Inf
+      } else {
+        can.llps       <- dPS.Rcpp(a=can.a, alpha=alpha,
+                                   mid.points=mid.points, bin.width=bin.width)
+        can.lly.t      <- logLikeY(y=y[, t], theta.star=can.theta.star,
+                                   z.star=z.star[, t])
+      }
 
       R <- sum(can.lly.t - cur.lly.t) +
            can.llps - cur.llps[k, t] +
@@ -152,13 +157,13 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
 
   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
 
-  results <- list(a=a, theta.star=theta.star, 
+  results <- list(a=a, theta.star=theta.star,
                   cur.lly=cur.lly, cur.llps=cur.llps)
   return(results)
 }
 
 # update the alpha term for theta.star
-updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star, 
+updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
                         w, w.star, mid.points, bin.width, acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -196,13 +201,13 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
     acc        <- acc + 1
   }}
 
-  results <- list(alpha=alpha, w.star=w.star, z.star=z.star, 
-                  theta.star=theta.star, cur.lly=cur.lly, cur.llps=cur.llps, 
+  results <- list(alpha=alpha, w.star=w.star, z.star=z.star,
+                  theta.star=theta.star, cur.lly=cur.lly, cur.llps=cur.llps,
                   att=att, acc=acc)
   return(results)
 }
 
-updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2, 
+updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
                       rho, rho.upper=Inf, acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
