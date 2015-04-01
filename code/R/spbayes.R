@@ -2,7 +2,9 @@ library(spBayes)
 library(fields)
 library(SpatialTools)
 
-## Not run: 
+rm(list=ls())
+
+## Not run:
 rmvn <- function(n, mu=0, V = matrix(1)){
   p <- length(mu)
   if(any(is.na(match(dim(V),p))))
@@ -10,7 +12,6 @@ rmvn <- function(n, mu=0, V = matrix(1)){
   D <- chol(V)
   t(matrix(rnorm(n*p), ncol=p)%*%D + rep(mu,rep(n,p)))
 }
-
 set.seed(1)
 
 n <- 100
@@ -34,7 +35,7 @@ phi <- 3/0.5
 
 D <- as.matrix(dist(coords))
 R <- exp(-phi*D)
-R <- simple.cov.sp(D=D, sp.type="matern", sp.par=c(1, 1/phi), error.var=0, smoothness=0.4, finescale.var=0)
+R <- simple.cov.sp(D=D, sp.type="matern", sp.par=c(1, 1/phi), error.var=0, smoothness=0.5, finescale.var=0)
 w <- rmvn(1, rep(0,n), sigma.sq*R)  # spatial component
 y <- rnorm(n, X%*%B + w, sqrt(tau.sq))
 
@@ -62,8 +63,8 @@ starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1, "nu"=0.5)
 
 tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1, "nu"=0.1)
 priors <- list("beta.norm"=list(rep(0,p), diag(1000,p)),
-               "phi.unif"=c(0.5, 1e6), "sigma.sq.ig"=c(1, 1),
-               "tau.sq.ig"=c(1, 1), "nu.unif"=c(1e-6, 10))
+               "phi.unif"=c(0.5, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1), "nu.unif"=c(1e-4, 5))
 cov.model <- "matern"
 
 # implements dimension reduction
@@ -77,7 +78,14 @@ hist(y)
 y.bin <- ifelse(y > 6, 1, 0)
 mean(y.bin) # 0.16
 
-m <- spGLM(y.bin~X-1, family="binomial", coords=coords, knots=c(6, 6, 0.1), 
+# we need to include tuning parameters for beta and w because in the
+# GLM framework, all of the updates are metropolis updates.
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1, "nu"=0.1,
+               "beta"=c(0.1, 0.1), "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1, "nu"=0.5,
+                 "beta"=c(0, 0), "w"=0)
+
+m <- spGLM(y.bin~X-1, family="binomial", coords=coords, knots=c(10, 10, 0.1),
            starting=starting, tuning=tuning, priors=priors, cov.model=cov.model,
            n.samples=n.samples, verbose=verbose, n.report=n.report)
 
@@ -90,4 +98,3 @@ round(summary(window(m.2$p.beta.samples, start=burn.in))$quantiles[,c(3,1,5)],2)
 round(summary(window(m.1$p.theta.samples, start=burn.in))$quantiles[,c(3,1,5)],2)
 round(summary(window(m.2$p.theta.samples, start=burn.in))$quantiles[,c(3,1,5)],2)
 
-## End(Not run)

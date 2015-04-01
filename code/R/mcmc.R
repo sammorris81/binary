@@ -1,6 +1,8 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
                  beta.init=0, beta.m=0, beta.s=10, xi.init=0.1, xi.m=0, xi.s=1,
                  npts=100, knots=NULL, thresh=0,
+                 beta.tune=0.1, xi.tune=0.1, alpha.tune=0.1, rho.tune=0.1,
+                 A.tune=1,
                  rho.init=1, rho.upper=Inf, alpha.init=0.5, a.init=1,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
@@ -66,13 +68,17 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
                        bin.width=bin.width)
 
   # MH tuning parameters
-  acc.beta  <- att.beta  <- mh.beta  <- rep(0.1, 3)
-  acc.xi    <- att.xi    <- mh.xi    <- 0.1
+  if (length(beta.tune) == 1) {
+    acc.beta <- att.beta <- mh.beta <- rep(beta.tune, p)
+  } else {
+    acc.beta <- att.beta <- mh.beta <- beta.tune
+  }
+  acc.xi    <- att.xi    <- mh.xi    <- xi.tune
   cuts      <- exp(c(-1, 0, 1, 2, 5, 10))
-  mh.a      <- rep(1, 100)
+  mh.a      <- rep(A.tune, 100)
   acc.a     <- att.a     <- 0 * mh.a
-  acc.alpha <- att.alpha <- mh.alpha <- 0.1
-  acc.rho   <- att.rho   <- mh.rho   <- 0.1
+  acc.alpha <- att.alpha <- mh.alpha <- alpha.tune
+  acc.rho   <- att.rho   <- mh.rho   <- alpha.tune
 
   # storage
   keepers.beta  <- matrix(NA, nrow=iters, ncol=p)
