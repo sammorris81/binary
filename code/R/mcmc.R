@@ -1,8 +1,10 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
                  beta.init=0, beta.m=0, beta.s=10, xi.init=0.1, xi.m=0, xi.s=1,
                  npts=100, knots=NULL, thresh=0,
-                 beta.tune=0.1, xi.tune=0.1, alpha.tune=0.1, rho.tune=0.1,
-                 A.tune=1,
+                 beta.tune=0.01, xi.tune=0.1,
+                 alpha.tune=0.1, rho.tune=0.1, A.tune=1,
+                 beta.attempts=50, xi.attempts=50,
+                 alpha.attempts=200, rho.attempts=200,
                  rho.init=1, rho.upper=Inf, alpha.init=0.5, a.init=1,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
@@ -104,7 +106,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     acc.beta <- beta.update$acc
 
     if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta)
+      mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+                            nattempts=beta.attempts)
       acc.beta  <- mh.update$acc
       att.beta  <- mh.update$att
       mh.beta   <- mh.update$mh
@@ -123,7 +126,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     acc.xi  <- xi.update$acc
 
     if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi)
+      mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
+                            nattempts=xi.attempts)
       acc.xi  <- mh.update$acc
       att.xi  <- mh.update$att
       mh.xi   <- mh.update$mh
@@ -170,7 +174,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     if (iter < burn / 2) {
       mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,
-                            nattempts=400)
+                            nattempts=alpha.attempts)
       acc.alpha <- mh.update$acc
       att.alpha <- mh.update$att
       mh.alpha  <- mh.update$mh
@@ -191,7 +195,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     if (iter < burn / 2) {
       mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
-                            nattempts=400)
+                            nattempts=rho.attempts)
       acc.rho   <- mh.update$acc
       att.rho   <- mh.update$att
       mh.rho    <- mh.update$mh
@@ -244,7 +248,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
              xlab=round(mh.rho, 4), ylab=acc.rate.rho)
 
 
-        for (i in 1:2) {
+        for (i in 1:min(nt, 2)) {
           for (j in 1:6) {
             plot(keepers.a[begin:iter, j, i], type="l",
                  main=paste("knot ", j, ", day ", i, sep=""),

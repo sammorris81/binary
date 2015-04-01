@@ -27,14 +27,14 @@ library(evd)
 source("auxfunctions.R")
 source("updateModel.R")
 set.seed(10)
-ns   <- 400
-nt   <- 40
-s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
+ns   <- 350
+nt   <- 4
+s    <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
 x[, , 3] <- s[, 2]
-knots.1 <- seq(1, 10, length=9)
-knots.2 <- seq(1, 10, length=9)
+knots.1 <- seq(0, 6, length=7)
+knots.2 <- seq(0, 6, length=7)
 knots <- expand.grid(knots.1, knots.2)
 # knots  <- s
 nknots <- nrow(knots)
@@ -43,23 +43,49 @@ set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
 source("mcmc.R")
-iters <- 2000
-burn  <- 500
+iters <- 30000
+burn  <- 25000
 xi.t <- 0.1
 beta.t <- c(1, -1, 0)
-alpha.t <- 0.8
-rho.t   <- 1
+alpha.t <- 0.7
+rho.t   <- 3
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 
 tic <- proc.time()[3]
 fit <- mcmc(y=data$y, s=s, x=x, knots=knots, npts=70, rho.upper=15,
             rho.init=5, iters=iters, burn=burn,
-            beta.tune=0.1, xi.tune=0.1, alpha.tune=0.1, rho.tune=0.1, A.tune=1,
+            beta.tune=0.05, xi.tune=0.1,
+            alpha.tune=0.05, rho.tune=0.05, A.tune=1,
             # beta.init=beta.t, alpha.init=alpha.t, a.init=data$a,
-            update=100, iterplot=TRUE)
+            update=500, iterplot=TRUE)
 toc <- proc.time()[3]
 toc - tic
+
+set.seed(15)
+source("auxfunctions.R")
+source("updateModel.R")
+source("mcmc.R")
+iters <- 30000
+burn  <- 25000
+xi.t <- 0.1
+beta.t <- c(1, -1, 0)
+alpha.t <- 0.3
+rho.t   <- 3
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
+                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+
+tic <- proc.time()[3]
+fit <- mcmc(y=data$y, s=s, x=x, knots=knots, npts=70, rho.upper=15,
+            rho.init=5, iters=iters, burn=burn,
+            beta.tune=0.05, xi.tune=0.1,
+            alpha.tune=0.05, rho.tune=0.05, A.tune=1,
+            alpha.attempts=50, rho.attempts=50,
+            # beta.init=beta.t, alpha.init=alpha.t, a.init=data$a,
+            update=500, iterplot=TRUE)
+toc <- proc.time()[3]
+toc - tic
+
 
 # test update for beta
 set.seed(15)
