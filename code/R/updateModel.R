@@ -171,9 +171,9 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   att <- att + 1
 
   # not exactly U(0, 1) - using truncation for numerical stability
-  cur.alpha.star <- transform$probit(alpha, 0.000001, 0.999999)
+  cur.alpha.star <- transform$probit(alpha, 1e-6, 0.999999)
   can.alpha.star <- rnorm(1, cur.alpha.star, mh)
-  can.alpha      <- transform$inv.probit(can.alpha.star, 0.000001, 0.999999)
+  can.alpha      <- transform$inv.probit(can.alpha.star, 1e-6, 0.999999)
   can.alpha.inv  <- 1 / can.alpha
   can.w.star     <- w^can.alpha.inv
   can.z.star     <- z^can.alpha.inv
@@ -216,9 +216,9 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
   # rho.star       <- log(rho)
   # can.rho.star   <- rnorm(1, rho.star, mh)
   # can.rho        <- exp(can.rho.star)
-  rho.star       <- transform$probit(rho, lower=0, upper=rho.upper)
+  rho.star       <- transform$probit(rho, lower=1e-6, upper=rho.upper)
   can.rho.star   <- rnorm(1, rho.star, mh)
-  can.rho        <- transform$inv.probit(can.rho.star, lower=0, upper=rho.upper)
+  can.rho        <- transform$inv.probit(can.rho.star, lower=1e-6, upper=rho.upper)
   can.w          <- stdW(makeW(dw2=dw2, rho=can.rho))
   can.w.star     <- can.w^(1 / alpha)
   can.theta.star <- getThetaStar(w.star=can.w.star, a=a)
@@ -247,4 +247,32 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
   results <- list(rho=rho, w=w, w.star=w.star, theta.star=theta.star,
                   cur.lly=cur.lly, att=att, acc=acc)
   return(results)
+}
+
+predictY <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
+                     thin=1, thresh=0, update=NULL) {
+
+  if (is.null(end)) {
+    end <- nrow(mcmcoutput$beta)
+  }
+
+  np   <- nrow(s.pred)
+  iters <- end - start + 1
+  dw2p <- as.matrix(rdist(s.pred, knots))^2
+  yp <- matrix(NA, nrow=iters, ncol=np)
+  for (i in start:end) {
+    yp[i, ] <- rRareBinarySpat(x=x.pred, s=s.pred, knots=knots,
+                             beta=mcmcoutput$beta[i, ], xi=mcmcoutput$xi[i],
+                             alpha=mcmcoutput$alpha[i], rho=mcmcoutput$rho[i],
+                             thresh=thresh, dw2=dw2p, a=mcmcoutput$a[i, ])$y
+
+    if (!is.null(update)) {
+      if (i %% update == 0) {
+        cat("\t Iter", i, "\n")
+      }
+    }
+  }
+
+  return(yp)
+
 }

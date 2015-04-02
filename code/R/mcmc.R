@@ -1,5 +1,6 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
-                 beta.init=0, beta.m=0, beta.s=10, xi.init=0.1, xi.m=0, xi.s=1,
+                 beta.init=0, beta.m=0, beta.s=5,
+                 xi.init=0.1, xi.m=0, xi.s=0.5,
                  npts=100, knots=NULL, thresh=0,
                  beta.tune=0.01, xi.tune=0.1,
                  alpha.tune=0.1, rho.tune=0.1, A.tune=1,
@@ -205,16 +206,16 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
 
     if ((iter > burn) & predictions) {
       yp <- rRareBinarySpat(x=x.pred, s=s.pred, knots=knots, beta=beta, xi=xi,
-                            alpha=alpha, rho=rho, thresh=thresh, dw2=dw2p)
+                            alpha=alpha, rho=rho, thresh=thresh, dw2=dw2p, a=a)
       keepers.y.pred[(iter - burn), , ] <- yp$y
     }
 
     # storage
     keepers.beta[iter, ] <- beta
-    keepers.xi[iter]       <- xi
-    keepers.a[iter, , ]    <- a
-    keepers.alpha[iter]    <- alpha
-    keepers.rho[iter]      <- rho
+    keepers.xi[iter]     <- xi
+    keepers.a[iter, , ]  <- a
+    keepers.alpha[iter]  <- alpha
+    keepers.rho[iter]    <- rho
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)

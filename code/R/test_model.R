@@ -24,17 +24,21 @@ rm(list=ls())
 options(warn=2)
 library(fields)
 library(evd)
+library(spBayes)
+library(fields)
+library(SpatialTools)
+
 source("auxfunctions.R")
 source("updateModel.R")
 set.seed(10)
-ns   <- 350
-nt   <- 4
-s    <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
+ns   <- 600
+nt   <- 1
+s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
 x[, , 3] <- s[, 2]
-knots.1 <- seq(0, 6, length=7)
-knots.2 <- seq(0, 6, length=7)
+knots.1 <- seq(0, 10, length=9)
+knots.2 <- seq(0, 10, length=9)
 knots <- expand.grid(knots.1, knots.2)
 # knots  <- s
 nknots <- nrow(knots)
@@ -43,24 +47,79 @@ set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
 source("mcmc.R")
-iters <- 30000
-burn  <- 25000
+iters <- 100000
+burn  <- 80000
 xi.t <- 0.1
-beta.t <- c(1, -1, 0)
-alpha.t <- 0.7
+beta.t <- c(0, -1, 0)
+alpha.t <- 0.5
 rho.t   <- 3
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 
+obs <- c(rep(T, 350), rep(F, 50))
+# obs <- rep(T, 350)
+y.o <- data$y[obs, , drop=F]
+s.o <- s[obs, ]
+x.o <- x[obs, , , drop=F]
+
+set.seed(1)
 tic <- proc.time()[3]
-fit <- mcmc(y=data$y, s=s, x=x, knots=knots, npts=70, rho.upper=15,
-            rho.init=5, iters=iters, burn=burn,
-            beta.tune=0.05, xi.tune=0.1,
-            alpha.tune=0.05, rho.tune=0.05, A.tune=1,
-            # beta.init=beta.t, alpha.init=alpha.t, a.init=data$a,
-            update=500, iterplot=TRUE)
+fit.1 <- mcmc(y=y.o, s=s.o, x=x.o, knots=knots, npts=70, rho.upper=15,
+              rho.init=5, iters=iters, burn=burn,
+              beta.tune=1, xi.tune=1,
+              alpha.tune=0.05, rho.tune=0.05, A.tune=1,
+              # beta.attempts=100, xi.attempts=100, alpha.attempts=100, rho.attempts=100,
+              # beta.init=beta.t, alpha.init=alpha.t, a.init=data$a,
+              update=500, iterplot=TRUE)
 toc <- proc.time()[3]
 toc - tic
+
+# testing spbays
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1, "nu"=0.1,
+               "beta"=c(0.1, 0.1, 0.1), "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1, "nu"=0.5,
+                 "beta"=c(0, 0, 0), "w"=0)
+priors <- list("beta.norm"=list(rep(0,3), diag(1000,3)),
+               "phi.unif"=c(0.5, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1), "nu.unif"=c(1e-4, 5))
+cov.model <- "matern"
+
+y.o <- data$y[obs, ]
+s.o <- s[obs, ]
+x.o <- x[obs, , ]
+
+set.seed(2)
+tic <- proc.time()[3]
+fit.2 <- spGLM(y.o~x.o-1, family="binomial", coords=s.o, knots=c(9, 9, 0),
+           starting=starting, tuning=tuning, priors=priors, cov.model=cov.model,
+           n.samples=iters, verbose=verbose, n.report=n.report)
+toc <- proc.time()[3]
+toc - tic
+
+load("datasets/rarebinary.RData")
+load("datasets/spbayes.RData")
+
+s.p <- s[!obs, ]
+np <- nrow(s.p)
+x.p.rb  <- x[!obs, , , drop=FALSE]
+x.p.spb <- matrix(x[!obs, , ], np, 3)  # need vector for spbayes
+
+set.seed(3)
+yp.rb  <- predictY(mcmcoutput = fit.1, s.pred = s.p, x.pred = x.p.rb,
+                   knots = knots, start = 1, end=20000, update=500)
+
+set.seed(4)
+yp.spb <- spPredict(sp.obj = fit.2, pred.coords = s.p, pred.covars = x.p.spb,
+                    start = 80001, end = 100000, thin = 1, verbose = TRUE,
+                    n.report = 500)
+y.pred.spb <- matrix(NA, np, 20000)
+for (i in 1:20000) {
+  y.pred.spb[, i] <- rbinom(n = np, size = 1, prob = yp.spb$p.y.predictive.samples[, i])
+}
+
+save.image(file="datasets/predictions.RData")
 
 set.seed(15)
 source("auxfunctions.R")
@@ -1237,6 +1296,7 @@ checkStrict(mhUpdate)
 checkStrict(ld2)
 checkStrict(dlognormal)
 checkStrict(get.level)
+checkStrict(mcmc)
 
 # timing tests with ijulia
 # Looking at timing
