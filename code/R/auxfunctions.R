@@ -37,6 +37,8 @@ transform <- list(
   }
 )
 
+# TODO: There needs to be more checks here.
+# (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
 getZ <- function(xi, x.beta, thresh=0) {
   if (xi != 0) {
     z <- (1 + xi * (thresh - x.beta))^(1 / xi)
@@ -255,3 +257,22 @@ trunc <- function(x, eps=0.1) {
   return(x)
 }
 
+################################################################
+# Arguments:
+#   post.prob(iters, yp): posterior probability of exceeding
+#   validate(np): validation data
+#
+# Returns:
+#   scores(iters): posterior density of the brier scores
+################################################################
+BrierScore <- function(post.prob, validate) {
+  iters <- nrow(post.prob)
+  np    <- ncol(post.prob)
+  
+  scores <- rep(NA, iters)
+  for (i in 1:iters) {
+    scores[i] <- mean((validate - post.prob[i, ])^2)
+  }
+  
+  return(scores)
+}

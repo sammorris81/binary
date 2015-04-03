@@ -249,6 +249,51 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
   return(results)
 }
 
+predictProb <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
+                        thin=1, thresh=0, update=NULL) {
+  if (is.null(end)) {
+    end <- nrow(mcmcoutput$beta)
+  }
+  p     <- dim(x.p.rb)[3]
+  np    <- nrow(s.pred)
+  iters <- end - start + 1
+  dw2p  <- as.matrix(rdist(s.pred, knots))^2
+  prob.success <- matrix(NA, nrow=iters, ncol=np)
+  x.beta <- matrix(NA, np, nt)
+  
+  for (i in start:end) {
+    for (t in 1:nt) {
+      if (p > 1) {
+        x.beta[, t] <- x.pred[, t, ] %*% mcmcoutput$beta[i, ]
+      } else {
+        x.beta[, t] <- x.pred[, t] * mcmcoutput$beta[i]
+      }
+    }
+    
+    z            <- getZ(xi = mcmcoutput$xi[i], x.beta=x.beta, thresh=thresh)
+    if (sum(is.nan(z)) > 0) {
+      print(paste("xi = ", mcmcoutput$xi[i]))
+      print(x.beta)
+      stop("z contains nan")
+    }
+    z.star       <- z^(1 / mcmcoutput$alpha[i])
+    w            <- stdW(makeW(dw2 = dw2p, rho = mcmcoutput$rho[i]))
+    w.star       <- w^(1 / mcmcoutput$alpha[i])
+    theta.star   <- getThetaStar(w.star = w.star, a = mcmcoutput$a[i, ])
+    theta.z.star <- -theta.star / z.star
+    prob.success[i, ] <- 1 - exp(theta.z.star)
+    
+    if (!is.null(update)) {
+      if (i %% update == 0) {
+        cat("\t Iter", i, "\n")
+      }
+    }
+  }
+  
+  return(prob.success)
+  
+}
+
 predictY <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
                      thin=1, thresh=0, update=NULL) {
 

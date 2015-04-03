@@ -31,7 +31,7 @@ library(SpatialTools)
 source("auxfunctions.R")
 source("updateModel.R")
 set.seed(10)
-ns   <- 600
+ns   <- 1000
 nt   <- 1
 s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
 x <- array(1, dim=c(ns, nt, 3))
@@ -56,7 +56,7 @@ rho.t   <- 3
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 
-obs <- c(rep(T, 350), rep(F, 50))
+obs <- c(rep(T, 350), rep(F, 650))
 # obs <- rep(T, 350)
 y.o <- data$y[obs, , drop=F]
 s.o <- s[obs, ]
@@ -73,6 +73,8 @@ fit.1 <- mcmc(y=y.o, s=s.o, x=x.o, knots=knots, npts=70, rho.upper=15,
               update=500, iterplot=TRUE)
 toc <- proc.time()[3]
 toc - tic
+
+save.image(file="datasets/rarebinary.RData")
 
 # testing spbays
 n.report <- 500
@@ -98,6 +100,8 @@ fit.2 <- spGLM(y.o~x.o-1, family="binomial", coords=s.o, knots=c(9, 9, 0),
 toc <- proc.time()[3]
 toc - tic
 
+save.image(file="datasets/spbayes.RData")
+
 load("datasets/rarebinary.RData")
 load("datasets/spbayes.RData")
 
@@ -107,19 +111,30 @@ x.p.rb  <- x[!obs, , , drop=FALSE]
 x.p.spb <- matrix(x[!obs, , ], np, 3)  # need vector for spbayes
 
 set.seed(3)
-yp.rb  <- predictY(mcmcoutput = fit.1, s.pred = s.p, x.pred = x.p.rb,
-                   knots = knots, start = 1, end=20000, update=500)
+yp.rb <- predictProb(mcmcoutput = fit.1, s.pred = s.p, x.pred = x.p.rb,
+                     knots = knots, start = 1, end=20000, update=500)
 
 set.seed(4)
-yp.spb <- spPredict(sp.obj = fit.2, pred.coords = s.p, pred.covars = x.p.spb,
-                    start = 80001, end = 100000, thin = 1, verbose = TRUE,
-                    n.report = 500)
-y.pred.spb <- matrix(NA, np, 20000)
-for (i in 1:20000) {
-  y.pred.spb[, i] <- rbinom(n = np, size = 1, prob = yp.spb$p.y.predictive.samples[, i])
-}
+yp.spbayes <- spPredict(sp.obj = fit.2, pred.coords = s.p, 
+                        pred.covars = x.p.spb, start = 80001, end = 100000, 
+                        thin = 1, verbose = TRUE, n.report = 500)
+yp.spb <- t(yp.spbayes$p.y.predictive.samples)
 
 save.image(file="datasets/predictions.RData")
+load(file="datasets/predictions.RData")
+
+y.validate   <- data$y[!obs, ]
+success.idx  <- which(y.validate == 1)
+rb.prob.med  <- apply(yp.rb, 2, quantile, probs=0.50)
+spb.prob.med <- apply(y.spb, 2, mean)
+
+post.prob.rb[success.idx]
+post.prob.spb[success.idx]
+
+rb.bs  <- BrierScore(post.prob = yp.rb, validate = y.validate)
+spb.bs <- BrierScore(post.prob = yp.spb, validate = y.validate)
+
+
 
 set.seed(15)
 source("auxfunctions.R")
