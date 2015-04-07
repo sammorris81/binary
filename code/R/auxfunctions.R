@@ -268,11 +268,11 @@ trunc <- function(x, eps=0.1) {
 BrierScore <- function(post.prob, validate) {
   iters <- nrow(post.prob)
   np    <- ncol(post.prob)
-  
+
   scores <- rep(NA, iters)
   for (i in 1:iters) {
     scores[i] <- mean((validate - post.prob[i, ])^2)
   }
-  
+
   return(scores)
 }

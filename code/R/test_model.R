@@ -115,8 +115,8 @@ yp.rb <- predictProb(mcmcoutput = fit.1, s.pred = s.p, x.pred = x.p.rb,
                      knots = knots, start = 1, end=20000, update=500)
 
 set.seed(4)
-yp.spbayes <- spPredict(sp.obj = fit.2, pred.coords = s.p, 
-                        pred.covars = x.p.spb, start = 80001, end = 100000, 
+yp.spbayes <- spPredict(sp.obj = fit.2, pred.coords = s.p,
+                        pred.covars = x.p.spb, start = 80001, end = 100000,
                         thin = 1, verbose = TRUE, n.report = 500)
 yp.spb <- t(yp.spbayes$p.y.predictive.samples)
 
@@ -135,13 +135,28 @@ rb.bs  <- BrierScore(post.prob = yp.rb, validate = y.validate)
 spb.bs <- BrierScore(post.prob = yp.spb, validate = y.validate)
 
 
+# test timing for whole mcmc
+source("auxfunctions.R")
+source("updateModel.R")
+set.seed(10)
+ns   <- 200
+nt   <- 1
+s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
+x <- array(1, dim=c(ns, nt, 3))
+x[, , 2] <- s[, 1]
+x[, , 3] <- s[, 2]
+knots.1 <- seq(0, 10, length=9)
+knots.2 <- seq(0, 10, length=9)
+knots <- expand.grid(knots.1, knots.2)
+# knots  <- s
+nknots <- nrow(knots)
 
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
 source("mcmc.R")
-iters <- 30000
-burn  <- 25000
+iters <- 2000
+burn  <- 200
 xi.t <- 0.1
 beta.t <- c(1, -1, 0)
 alpha.t <- 0.3
@@ -156,12 +171,27 @@ fit <- mcmc(y=data$y, s=s, x=x, knots=knots, npts=70, rho.upper=15,
             alpha.tune=0.05, rho.tune=0.05, A.tune=1,
             alpha.attempts=50, rho.attempts=50,
             # beta.init=beta.t, alpha.init=alpha.t, a.init=data$a,
-            update=500, iterplot=TRUE)
+            update=100, iterplot=FALSE)
 toc <- proc.time()[3]
 toc - tic
 
 
 # test update for beta
+source("auxfunctions.R")
+source("updateModel.R")
+set.seed(10)
+ns   <- 200
+nt   <- 40
+s    <- cbind(runif(ns, 0.01, 0.99), runif(ns, 0.01, 0.99))
+x <- array(1, dim=c(ns, nt, 3))
+x[, , 2] <- s[, 1]
+x[, , 3] <- s[, 2]
+knots.1 <- seq(0, 10, length=9)
+knots.2 <- seq(0, 10, length=9)
+knots <- expand.grid(knots.1, knots.2)
+# knots  <- s
+nknots <- nrow(knots)
+
 set.seed(15)
 source("auxfunctions.R")
 source("updateModel.R")
