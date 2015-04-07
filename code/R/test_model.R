@@ -140,7 +140,7 @@ source("auxfunctions.R")
 source("updateModel.R")
 set.seed(10)
 ns   <- 200
-nt   <- 1
+nt   <- 5
 s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
