@@ -31,7 +31,7 @@ library(SpatialTools)
 source("auxfunctions.R")
 source("updateModel.R")
 set.seed(10)
-ns   <- 1000
+ns   <- 2000
 nt   <- 1
 s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
 x <- array(1, dim=c(ns, nt, 3))
@@ -51,12 +51,12 @@ iters <- 100000
 burn  <- 80000
 xi.t <- 0.1
 beta.t <- c(0, -1, 0)
-alpha.t <- 0.5
+alpha.t <- 0.3
 rho.t   <- 3
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 
-obs <- c(rep(T, 350), rep(F, 650))
+obs <- c(rep(T, 1000), rep(F, 1000))
 # obs <- rep(T, 350)
 y.o <- data$y[obs, , drop=F]
 s.o <- s[obs, ]
