@@ -130,10 +130,7 @@ load(file="datasets/predictions2.RData")
 y.validate   <- data$y[!obs, ]
 success.idx  <- which(y.validate == 1)
 rb.prob.med  <- apply(yp.rb, 2, quantile, probs=0.50)
-spb.prob.med <- apply(y.spb, 2, mean)
-
-post.prob.rb[success.idx]
-post.prob.spb[success.idx]
+spb.prob.med <- apply(yp.spb, 2, quantile, probs=0.50)
 
 rb.bs  <- BrierScore(post.prob = yp.rb, validate = y.validate)
 spb.bs <- BrierScore(post.prob = yp.spb, validate = y.validate)
@@ -141,9 +138,17 @@ spb.bs <- BrierScore(post.prob = yp.spb, validate = y.validate)
 # xi.t <- 0.1
 # beta.t <- c(0, -1, 0)
 # alpha.t <- 0.5
-# rb.bs = 0.0321
+# rb.bs  = 0.0321
 # spb.bs = 0.0319
 # predictions are saved as predictions1.RData
+
+# when there are 1000 training sites and 1000 validation sites
+# xi.t <- 0.1
+# beta.t <- c(0, -1, 0)
+# alpha.t <- 0.3
+# rb.bs  = 0.0150
+# spb.bs = 0.0167
+# predictions are saved as predictions2.RData
 
 # test timing for whole mcmc
 source("auxfunctions.R")
