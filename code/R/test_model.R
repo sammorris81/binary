@@ -30,6 +30,7 @@ library(SpatialTools)
 
 source("auxfunctions.R")
 source("updateModel.R")
+source("mcmc.R")
 set.seed(10)
 ns   <- 2000
 nt   <- 1
