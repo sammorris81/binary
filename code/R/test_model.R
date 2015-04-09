@@ -74,7 +74,7 @@ fit.1 <- mcmc(y=y.o, s=s.o, x=x.o, knots=knots, npts=70, rho.upper=15,
 toc <- proc.time()[3]
 toc - tic
 
-save.image(file="datasets/rarebinary.RData")
+save.image(file="datasets/rarebinary2.RData")
 
 # testing spbays
 n.report <- 500
@@ -100,10 +100,13 @@ fit.2 <- spGLM(y.o~x.o-1, family="binomial", coords=s.o, knots=c(9, 9, 0),
 toc <- proc.time()[3]
 toc - tic
 
-save.image(file="datasets/spbayes.RData")
+save.image(file="datasets/spbayes2.RData")
 
-load("datasets/rarebinary.RData")
-load("datasets/spbayes.RData")
+load("datasets/rarebinary2.RData")
+load("datasets/spbayes2.RData")
+source("auxfunctions.R")
+source("updateModel.R")
+source("mcmc.R")
 
 s.p <- s[!obs, ]
 np <- nrow(s.p)
@@ -120,8 +123,8 @@ yp.spbayes <- spPredict(sp.obj = fit.2, pred.coords = s.p,
                         thin = 1, verbose = TRUE, n.report = 500)
 yp.spb <- t(yp.spbayes$p.y.predictive.samples)
 
-save.image(file="datasets/predictions.RData")
-load(file="datasets/predictions.RData")
+save.image(file="datasets/predictions2.RData")
+load(file="datasets/predictions2.RData")
 
 y.validate   <- data$y[!obs, ]
 success.idx  <- which(y.validate == 1)

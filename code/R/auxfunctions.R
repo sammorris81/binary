@@ -117,7 +117,7 @@ rPS <- function(n, alpha) {
 
 # generate rare binary data
 # for now working with independent to test functions for beta and xi
-rRareBinaryInd <- function(x, beta, xi, thresh=0) {
+rRareBinaryInd <- function(x, beta, xi, prob.success = 0.05) {
   nt <- dim(x)[2]
   ns <- dim(x)[1]
 
@@ -128,13 +128,19 @@ rRareBinaryInd <- function(x, beta, xi, thresh=0) {
 
   z <- matrix(rgev(n=ns * nt, 1, 1, 1), ns, nt)
   h <- x.beta + (z^xi - 1) / xi
+
+  # set the threshold for success at whatever value will give us
+  # our desired percentage of 1s.
+  thresh <- quantile(h, probs = prob.success)
   y <- ifelse(h > thresh, 1, 0)
-  return(y)
+
+  results <- list(y = y)
+  return(results)
 }
 
 # generate dependent rare binary data
-rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0,
-                            dw2=NULL, a=NULL) {
+rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho,
+                            prob.success = 0.05, dw2 = NULL, a = NULL) {
   ns     <- nrow(s)
   nt     <- dim(x)[2]
   p      <- dim(x)[3]
@@ -154,30 +160,33 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, thresh=0,
   if (is.null(dw2)) {  # for predictions, already have dw2
     dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   }
-  w      <- stdW(makeW(dw2=dw2, rho=rho))      # w is ns x nknots
+  w      <- stdW(makeW(dw2 = dw2, rho = rho))  # w is ns x nknots
   w.star <- w^(1 / alpha)
 
   # get random effects and theta.star
   if (is.null(a)) {
-    a <- matrix(rPS(n=nknots * nt, alpha=alpha), nknots, nt)
+    a <- matrix(rPS(n = nknots * nt, alpha = alpha), nknots, nt)
   }
-  theta.star <- getThetaStar(w.star=w.star, a=a)
+  theta.star <- getThetaStar(w.star = w.star, a = a)
 
   # get underlying latent variable
-  u <- matrix(rgev(n=ns * nt, 1, alpha, alpha), ns, nt)
+  u <- matrix(rgev(n = ns * nt, 1, alpha, alpha), ns, nt)
   z <- u * theta.star^alpha
 
   h <- x.beta + (z^xi - 1) / xi
 
+  # set the threshold for success at whatever value will give us
+  # our desired percentage of 1s.
+  thresh <- quantile(h, probs = prob.success)
+
   y <- ifelse(h > thresh, 1, 0)
 
-  results <- list(y=y, a=a)
+  results <- list(y = y, a = a, thresh = thresh)
   return(results)
 }
 
-
 # update mh settings
-mhUpdate <- function(acc, att, mh, nattempts=50, lower=0.8, higher=1.2) {
+mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
   acc.rate     <- acc / att
   these.update <- att > nattempts
   these.low    <- (acc.rate < 0.25) & these.update
