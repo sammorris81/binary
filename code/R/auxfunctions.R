@@ -45,6 +45,8 @@ getZ <- function(xi, x.beta, thresh=0) {
   } else {
     z <- exp(thresh - x.beta)
   }
+
+  return(z)
 }
 
 # theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
@@ -266,13 +268,15 @@ trunc <- function(x, eps=0.1) {
 #   scores(iters): posterior density of the brier scores
 ################################################################
 BrierScore <- function(post.prob, validate) {
-  iters <- nrow(post.prob)
-  np    <- ncol(post.prob)
+  # iters <- nrow(post.prob)
+  # np    <- ncol(post.prob)
 
-  scores <- rep(NA, iters)
-  for (i in 1:iters) {
-    scores[i] <- mean((validate - post.prob[i, ])^2)
-  }
+  # scores <- rep(NA, iters)
+  # for (i in 1:iters) {
+  #   scores[i] <- mean((validate - post.prob[i, ])^2)
+  # }
+  probs <- apply(post.prob, 2, median)
+  score <- mean((validate - probs)^2)
 
-  return(scores)
+  return(score)
 }

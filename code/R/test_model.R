@@ -133,7 +133,13 @@ post.prob.spb[success.idx]
 
 rb.bs  <- BrierScore(post.prob = yp.rb, validate = y.validate)
 spb.bs <- BrierScore(post.prob = yp.spb, validate = y.validate)
-
+# when there are 350 training sites and 650 validation sites
+# xi.t <- 0.1
+# beta.t <- c(0, -1, 0)
+# alpha.t <- 0.5
+# rb.bs = 0.0321
+# spb.bs = 0.0319
+# predictions are saved as predictions1.RData
 
 # test timing for whole mcmc
 source("auxfunctions.R")

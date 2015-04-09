@@ -1,5 +1,5 @@
 mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
-                 beta.init=0, beta.m=0, beta.s=5,
+                 beta.init=0, beta.m=0, beta.s=20,
                  xi.init=0.1, xi.m=0, xi.s=0.5,
                  npts=100, knots=NULL, thresh=0,
                  beta.tune=0.01, xi.tune=0.1,

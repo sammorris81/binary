@@ -260,7 +260,7 @@ predictProb <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
   prob.success <- matrix(NA, nrow=iters, ncol=np)
   x.beta <- matrix(NA, np, nt)
-  
+
   for (i in start:end) {
     for (t in 1:nt) {
       if (p > 1) {
@@ -269,29 +269,38 @@ predictProb <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
         x.beta[, t] <- x.pred[, t] * mcmcoutput$beta[i]
       }
     }
-    
-    z            <- getZ(xi = mcmcoutput$xi[i], x.beta=x.beta, thresh=thresh)
-    if (sum(is.nan(z)) > 0) {
-      print(paste("xi = ", mcmcoutput$xi[i]))
-      print(x.beta)
-      stop("z contains nan")
-    }
+
+    z <- getZ(xi = mcmcoutput$xi[i], x.beta=x.beta, thresh=thresh)
     z.star       <- z^(1 / mcmcoutput$alpha[i])
     w            <- stdW(makeW(dw2 = dw2p, rho = mcmcoutput$rho[i]))
     w.star       <- w^(1 / mcmcoutput$alpha[i])
     theta.star   <- getThetaStar(w.star = w.star, a = mcmcoutput$a[i, ])
     theta.z.star <- -theta.star / z.star
     prob.success[i, ] <- 1 - exp(theta.z.star)
-    
+
+    # if z is nan, it means that x.beta is such a large number there is
+    # basically 0 probability that z < 0
+    if (sum(is.nan(z)) > 0) {
+      these <- which(is.nan(z))
+      prob.success[i, these] <- 1
+    #   these <- which(is.nan(z))
+    #   cat("xi = ", mcmcoutput$xi[i], "\n", sep="")
+    #   cat("beta = ", mcmcoutput$beta[i, ], "\n", sep="")
+    #   cat("iter = ", i, "\n", sep="")
+    #   cat("x.beta = ", x.beta[these, 1], "\n", sep="")
+    #   cat("x.beta = ", x.beta[these + 1, 1], "\n", sep="")
+    #   cat("x.beta = ", x.beta[these + 2, 1], "\n", sep="")
+    }
+
     if (!is.null(update)) {
       if (i %% update == 0) {
         cat("\t Iter", i, "\n")
       }
     }
   }
-  
+
   return(prob.success)
-  
+
 }
 
 predictY <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
@@ -310,7 +319,13 @@ predictY <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
                              beta=mcmcoutput$beta[i, ], xi=mcmcoutput$xi[i],
                              alpha=mcmcoutput$alpha[i], rho=mcmcoutput$rho[i],
                              thresh=thresh, dw2=dw2p, a=mcmcoutput$a[i, ])$y
-
+    if (sum(is.nan(yp[i, ])) > 0) {
+      cat("beta", mcmcoutput$beta[i, ], "\n")
+      cat("xi", mcmcoutput$xi[i], "\n")
+      cat("alpha", mcmcoutput$alpha[i], "\n")
+      cat("rho", mcmcoutput$rho[i], "\n")
+      stop()
+    }
     if (!is.null(update)) {
       if (i %% update == 0) {
         cat("\t Iter", i, "\n")
