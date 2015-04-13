@@ -4,21 +4,20 @@
 # standard kriging methods
 #
 # data settings:
-#   1 - Gaussian
-#   2 - t-1
-#   3 - t-5
-#   4 - skew t-1 (lambda = 3)
-#   5 - skew t-5 w/partition (lambda = 3)
-#   6 - max-stable with mu=1, sig=1, xi=0.1
-#   7 - x = setting 4, set T = q(0.80)
-#       y = x,              x > T
-#       y = T * exp(x - T), x <= T
-#
-# analysis methods:
-#  1 - Gaussian
-#  2 - skew t-1
-#  3 - t-1 (T = 0.80)
-#  4 - skew t-5
-#  5 - t-5 (T = 0.80)
-#
+#   All: rho = 5, s in [0, 10] x [0, 10]
+#   1: GEV link
+#      a: alpha = 0.3, 100 knots, 1% rareness
+#      b: alpha = 0.7, 100 knots, 1% rareness
+#      c: alpha = 0.3, 100 knots, 5% rareness
+#      d: alpha = 0.7, 100 knots, 5% rareness
+#   2: Logit link
+#      a: rho = 1, 100 knots, 1% rareness
+#      b: rho = 3, 100 knots, 1% rareness
+#      c: rho = 1, 100 knots, 5% rareness
+#      d: rho = 3, 100 knots, 5% rareness
+#   3: Probit link -- Hold off for now
+#      a: gamma = 0.9, 100 knots, 1% rareness
+#      b: gamma = 0.1, 100 knots, 1% rareness
+#      c: gamma = 0.9, 100 knots, 5% rareness
+#      d: gamma = 0.1, 100 knots, 5% rareness
 #########################################################################
