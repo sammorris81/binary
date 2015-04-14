@@ -147,44 +147,44 @@ return(output)}
 ############################################################
 
 
-library(fields)
-
-n  <- 1000
-np <- 1000 
-
-s     <- cbind(runif(n),runif(n))
-sp    <- cbind(runif(np),runif(np))
-knots <- expand.grid(seq(0,1,.1),seq(0,1,.1))
-
-X     <- matrix(1,n,1)
-Xp    <- matrix(1,np,1)    
-
-alpha <- rnorm(nrow(knots))
-beta  <- -.5
-bw    <- 0.1
-
-B     <- make.B(rdist(s,knots),bw)
-Bp    <- make.B(rdist(sp,knots),bw)
-
-M     <- B%*%alpha+X%*%beta
-Z     <- M+rnorm(n)
-FIT   <- pnorm(M)
-Y     <- ifelse(Z>0,1,0)
-MP    <- Bp%*%alpha+Xp%*%beta
-PRED  <- pnorm(MP)
-
-fit<-probit(Y,X,s,knots,Xp=Xp,sp=sp)
-
-par(mfrow=c(2,2))
-
-plot(FIT,fit$fitted)
-abline(0,1,col=2)
-
-plot(PRED,fit$pred)
-abline(0,1,col=2)
-
-plot(fit$beta,type="l")
-abline(beta,0,col=2)
-
-plot(fit$bw,type="l")
-abline(bw,0,col=2)
+# library(fields)
+# 
+# n  <- 1000
+# np <- 1000 
+# 
+# s     <- cbind(runif(n),runif(n))
+# sp    <- cbind(runif(np),runif(np))
+# knots <- expand.grid(seq(0,1,.1),seq(0,1,.1))
+# 
+# X     <- matrix(1,n,1)
+# Xp    <- matrix(1,np,1)    
+# 
+# alpha <- rnorm(nrow(knots))
+# beta  <- -.5
+# bw    <- 0.1
+# 
+# B     <- make.B(rdist(s,knots),bw)
+# Bp    <- make.B(rdist(sp,knots),bw)
+# 
+# M     <- B%*%alpha+X%*%beta
+# Z     <- M+rnorm(n)
+# FIT   <- pnorm(M)
+# Y     <- ifelse(Z>0,1,0)
+# MP    <- Bp%*%alpha+Xp%*%beta
+# PRED  <- pnorm(MP)
+# 
+# fit<-probit(Y,X,s,knots,Xp=Xp,sp=sp)
+# 
+# par(mfrow=c(2,2))
+# 
+# plot(FIT,fit$fitted)
+# abline(0,1,col=2)
+# 
+# plot(PRED,fit$pred)
+# abline(0,1,col=2)
+# 
+# plot(fit$beta,type="l")
+# abline(beta,0,col=2)
+# 
+# plot(fit$bw,type="l")
+# abline(bw,0,col=2)
