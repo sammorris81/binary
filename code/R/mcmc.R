@@ -6,13 +6,18 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
                  alpha.tune=0.1, rho.tune=0.1, A.tune=1,
                  beta.attempts=50, xi.attempts=50,
                  alpha.attempts=200, rho.attempts=200,
+                 spatial = TRUE,
                  rho.init=1, rho.upper=Inf, alpha.init=0.5, a.init=1,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
 
   # initial setup
-  p <- dim(x)[3]
+  if (is.na(dim(X)[3])) {
+    p <- 1
+  } else {
+    p <- dim(x)[3]
+  }
   ns <- nrow(y)
   nt <- ncol(y)
   nknots <- dim(knots)[1]
@@ -29,19 +34,23 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   }
 
   # get the initial set of weights for the sites and knots
-  alpha  <- alpha.init
-  rho    <- rho.init
-  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-  w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
-  w.star <- w^(1 / alpha)
+  if (spatial) {
+    alpha  <- alpha.init
+    rho    <- rho.init
+    dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+    w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
+    w.star <- w^(1 / alpha)
 
-  # get the initial set of random effects
-  if (length(a.init) > 1) {
-    a <- a.init
+    # get the initial set of random effects
+    if (length(a.init) > 1) {
+      a <- a.init
+    } else {
+      a <- matrix(a.init, nknots, nt)
+    }
+    theta.star <- getThetaStar(w.star, a)  # sum_l a_l * w_l^(1/alpha)
   } else {
-    a <- matrix(a.init, nknots, nt)
+    alpha <- 1
   }
-  theta.star <- getThetaStar(w.star, a)  # sum_l a_l * w_l^(1/alpha)
 
   # get initial z
   xi     <- xi.init
@@ -134,72 +143,74 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
       mh.xi   <- mh.update$mh
     }
 
-    # update a - NOTE: does not use acc, att, and mh like usual
-    old.a    <- a
-    a.update <- updateA(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                        cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star,
-                        w.star=w.star, mid.points=mid.points,
-                        bin.width=bin.width, mh=mh.a, cuts=cuts)
-    a          <- a.update$a
-    theta.star <- a.update$theta.star
-    cur.lly    <- a.update$cur.lly
-    cur.llps   <- a.update$cur.llps
+    if (spatial) {
+      # update a - NOTE: does not use acc, att, and mh like usual
+      old.a    <- a
+      a.update <- updateA(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                          cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star,
+                          w.star=w.star, mid.points=mid.points,
+                          bin.width=bin.width, mh=mh.a, cuts=cuts)
+      a          <- a.update$a
+      theta.star <- a.update$theta.star
+      cur.lly    <- a.update$cur.lly
+      cur.llps   <- a.update$cur.llps
 
-    # not going to worry about tuning the a terms at the moment
-    # level <- get.level(old.a, cuts)
-    # for (j in 1:length(mh.a)) {
-    #   acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
-    #   att.a[j] <- att.a[j] + sum(level == j)
-    #   if ((i < burn / 2) & (att.a[j] > 100)) {
-    #     if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
-    #     if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
-    #     acc.a[j] <- att.a[j] <- 0
-    #   }
-    # }
+      # not going to worry about tuning the a terms at the moment
+      # level <- get.level(old.a, cuts)
+      # for (j in 1:length(mh.a)) {
+      #   acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
+      #   att.a[j] <- att.a[j] + sum(level == j)
+      #   if ((i < burn / 2) & (att.a[j] > 100)) {
+      #     if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
+      #     if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
+      #     acc.a[j] <- att.a[j] <- 0
+      #   }
+      # }
 
-    # update alpha
-    alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                cur.lly=cur.lly, cur.llps=cur.llps,
-                                z=z, z.star=z.star, w=w, w.star=w.star,
-                                mid.points=mid.points, bin.width=bin.width,
-                                acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+      # update alpha
+      alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                                  cur.lly=cur.lly, cur.llps=cur.llps,
+                                  z=z, z.star=z.star, w=w, w.star=w.star,
+                                  mid.points=mid.points, bin.width=bin.width,
+                                  acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
-    alpha     <- alpha.update$alpha
-    w.star    <- alpha.update$w.star
-    z.star    <- alpha.update$z.star
-    theta     <- alpha.update$theta.star
-    cur.lly   <- alpha.update$cur.lly
-    cur.llps  <- alpha.update$cur.llps
-    att.alpha <- alpha.update$att
-    acc.alpha <- alpha.update$acc
+      alpha     <- alpha.update$alpha
+      w.star    <- alpha.update$w.star
+      z.star    <- alpha.update$z.star
+      theta     <- alpha.update$theta.star
+      cur.lly   <- alpha.update$cur.lly
+      cur.llps  <- alpha.update$cur.llps
+      att.alpha <- alpha.update$att
+      acc.alpha <- alpha.update$acc
 
-    if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,
-                            nattempts=alpha.attempts)
-      acc.alpha <- mh.update$acc
-      att.alpha <- mh.update$att
-      mh.alpha  <- mh.update$mh
-    }
+      if (iter < burn / 2) {
+        mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,
+                              nattempts=alpha.attempts)
+        acc.alpha <- mh.update$acc
+        att.alpha <- mh.update$att
+        mh.alpha  <- mh.update$mh
+      }
 
-    # update rho
-    rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                            cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
-                            dw2=dw2, rho=rho, rho.upper=rho.upper,
-                            acc=acc.rho, att=att.rho, mh=mh.rho)
-    rho        <- rho.update$rho
-    w          <- rho.update$w
-    w.star     <- rho.update$w.star
-    theta.star <- rho.update$theta.star
-    cur.lly    <- rho.update$cur.lly
-    att.rho    <- rho.update$att
-    acc.rho    <- rho.update$acc
+      # update rho
+      rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                              cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
+                              dw2=dw2, rho=rho, rho.upper=rho.upper,
+                              acc=acc.rho, att=att.rho, mh=mh.rho)
+      rho        <- rho.update$rho
+      w          <- rho.update$w
+      w.star     <- rho.update$w.star
+      theta.star <- rho.update$theta.star
+      cur.lly    <- rho.update$cur.lly
+      att.rho    <- rho.update$att
+      acc.rho    <- rho.update$acc
 
-    if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
-                            nattempts=rho.attempts)
-      acc.rho   <- mh.update$acc
-      att.rho   <- mh.update$att
-      mh.rho    <- mh.update$mh
+      if (iter < burn / 2) {
+        mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
+                              nattempts=rho.attempts)
+        acc.rho   <- mh.update$acc
+        att.rho   <- mh.update$att
+        mh.rho    <- mh.update$mh
+      }
     }
 
     }  # end thin
@@ -213,15 +224,19 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
     # storage
     keepers.beta[iter, ] <- beta
     keepers.xi[iter]     <- xi
-    keepers.a[iter, , ]  <- a
-    keepers.alpha[iter]  <- alpha
-    keepers.rho[iter]    <- rho
+    if (spatial) {
+      keepers.a[iter, , ]  <- a
+      keepers.alpha[iter]  <- alpha
+      keepers.rho[iter]    <- rho
+    }
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)
       acc.rate.xi    <- round(acc.xi / att.xi, 3)
-      acc.rate.alpha <- round(acc.alpha / att.alpha, 3)
-      acc.rate.rho   <- round(acc.rho / att.rho, 3)
+      if (spatial) {
+        acc.rate.alpha <- round(acc.alpha / att.alpha, 3)
+        acc.rate.rho   <- round(acc.rho / att.rho, 3)
+      }
 
       if (iterplot) {
         if (iter < burn) {
@@ -243,17 +258,19 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
         }
         plot(keepers.xi[begin:iter], type="l", main=bquote(xi),
              xlab=round(mh.xi, 4), ylab=acc.rate.xi)
-        plot(keepers.alpha[begin:iter], type="l", main=bquote(alpha),
-             xlab=round(mh.alpha, 4), ylab=acc.rate.alpha)
-        plot(keepers.rho[begin:iter], type="l", main=bquote(rho),
-             xlab=round(mh.rho, 4), ylab=acc.rate.rho)
 
+        if (spatial) {
+          plot(keepers.alpha[begin:iter], type="l", main=bquote(alpha),
+               xlab=round(mh.alpha, 4), ylab=acc.rate.alpha)
+          plot(keepers.rho[begin:iter], type="l", main=bquote(rho),
+               xlab=round(mh.rho, 4), ylab=acc.rate.rho)
 
-        for (i in 1:min(nt, 2)) {
-          for (j in 1:6) {
-            plot(keepers.a[begin:iter, j, i], type="l",
-                 main=paste("knot ", j, ", day ", i, sep=""),
-                 xlab="", ylab="")
+          for (i in 1:min(nt, 2)) {
+            for (j in 1:6) {
+              plot(keepers.a[begin:iter, j, i], type="l",
+                   main=paste("knot ", j, ", day ", i, sep=""),
+                   xlab="", ylab="")
+            }
           }
         }
       }
@@ -263,12 +280,22 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   } # end iter
 
   return.iters <- (burn + 1):iters
-  results <- list(beta=keepers.beta[return.iters, ],
-                  xi=keepers.xi[return.iters],
-                  a=keepers.a[return.iters, , ],
-                  alpha=keepers.alpha[return.iters],
-                  rho=keepers.rho[return.iters],
-                  y.pred=keepers.y.pred)
+
+  if (spatial) {
+    results <- list(beta=keepers.beta[return.iters, ],
+                    xi=keepers.xi[return.iters],
+                    a=keepers.a[return.iters, , ],
+                    alpha=keepers.alpha[return.iters],
+                    rho=keepers.rho[return.iters],
+                    y.pred=keepers.y.pred)
+  } else {
+    results <- list(beta=keepers.beta[return.iters, ],
+                    xi=keepers.xi[return.iters],
+                    a=NULL,
+                    alpha=NULL,
+                    rho=NULL,
+                    y.pred=keepers.y.pred)
+  }
 
   return(results)
 }  # end mcmc

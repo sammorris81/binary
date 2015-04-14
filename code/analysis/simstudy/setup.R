@@ -1,7 +1,6 @@
 #########################################################################
-# A simulation study to determine if a thresholded or skew methods improve
-# return-level estimation and threshold exceedance prediction over
-# standard kriging methods
+# A small-scale simulation study to determine when spatial GEV link
+# performs better than
 #
 # data settings:
 #   All: s in [0, 6] x [0, 6]
@@ -20,6 +19,14 @@
 #      b: gamma = 0.1, 100 knots, 1% rareness
 #      c: gamma = 0.9, 100 knots, 5% rareness
 #      d: gamma = 0.1, 100 knots, 5% rareness
+#
+# methods:
+#   1: Independent logit
+#   2: Independent probit
+#   3: Independent GEV (Wang and Dey)
+#   4: Spatial logit   (spbayes)
+#   5: Spatial probit
+#   6: Spatial GEV (our method)
 #########################################################################
 
 rm(list=ls())
@@ -37,6 +44,7 @@ source("../../R/probit.R", chdir=T)
 
 ns        <- 4000
 nt        <- 1
+np        <- 1
 nsets     <- 10
 nlinks    <- 2   # using Max-stable and logit
 nsettings <- 4   # a, b, c, d from above
@@ -45,7 +53,7 @@ knots.1 <- knots.2 <- seq(from = 0, to = 6, length = 10)
 knots <- expand.grid(knots.1, knots.2)
 nknots <- nrow(knots)
 
-X <- matrix(1, ns, nt)
+X <- array(1, dim=c(ns, nt, np))
 
 y         <- array(NA, dim=c(ns, nt, nsets, nsettings * nlinks))
 a.t       <- array(NA, dim=c(nknots, nt, nsets, nsettings))
@@ -53,7 +61,6 @@ w.tilde.t <- array(NA, dim=c(ns, nt, nsets, nsettings))
 
 set.seed <- 7483 # site
 s <- cbind(runif(ns), runif(ns))
-
 
 # max-stable % rareness is set with prob.ms
 prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
@@ -63,7 +70,7 @@ rho.ms   <- 3
 
 # to generate logistic data with around 1% rareness, need intercept = -log(99)
 # to generate logistic data with around 5% rareness, need intercept = -log(19)
-int.logit   <- c(-log(99), -log(99), -log(19), -log(19)) 
+int.logit   <- c(-log(99), -log(99), -log(19), -log(19))
 rho.logit   <- c(1, 3, 1, 3)
 sigsq.logit <- 1
 nu.logit    <- 0.5
@@ -74,18 +81,20 @@ for (i in 1:nsets) {
     for (k in 1:nsettings) {
       setting <- (j - 1) * nsettings + k
       if (j == 1) {  # max-stable
-        data <- rRareBinarySpat(x = X, s = s, knots = knots, beta = 0, xi.ms, 
-                                alpha = alpha.ms[k], rho.ms, 
+        data <- rRareBinarySpat(x = X, s = s, knots = knots, beta = 0, xi.ms,
+                                alpha = alpha.ms[k], rho.ms,
                                 prob.success = prob.ms[k])
         a.t[, , i, k] <- data$a
       } else {  # logit
-        data <- rLogitSpat(x = X, s = s, knots = knots, beta = int.logit[k], 
-                           rho = rho.logit[k], sigma.sq = sigsq.logit, 
+        data <- rLogitSpat(x = X, s = s, knots = knots, beta = int.logit[k],
+                           rho = rho.logit[k], sigma.sq = sigsq.logit,
                            nu = nu.logit)
         w.tilde.t[, , i, k] <- data$w.tilde
       }
       y[, , i, setting] <- data$y
-    }   
+    }
   }
-  cat("Set", i, "finished \n") 
+  cat("Set", i, "finished \n")
 }
+
+save.image(file = "simdata1.RData")
