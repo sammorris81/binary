@@ -82,11 +82,12 @@ for (g in 1:2) {
     }
 
     # independent logit - sets seed inside MCMClogit
-    fit.1[[d]] <- MCMClogit(formula = y.o ~ 1,
+    fit.1[[d]] <- MCMClogit(formula = y.o ~ X.o - 1,
                             burnin = burn, mcmc = (iters - burn),
                             tune = 0.5,
-                            verbose = update, seed = cur.seed,
-                            beta.start = 0, B0 = 0.01)
+                            verbose = update, #seed = cur.seed,
+                            beta.start = -2.3,
+                            B0 = 1)
     cur.seed <- cur.seed + 1
 
     # independent probit - sets seed inside MCMCprobit
