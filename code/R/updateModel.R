@@ -3,7 +3,7 @@ updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
                        x.beta, xi, x, cur.lly, acc, att, mh, thresh=0) {
   # tried a block update for the beta update, but it doesn't do as well
   # as individual updates for each beta term separately.
-  np  <- dim(x)[3]
+  np  <- length(beta)
   ns  <- nrow(y)
   nt  <- dim(x)[2]
   alpha.inv <- 1 / alpha
@@ -12,7 +12,11 @@ updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     att[p]      <- att[p] + 1
     can.beta    <- rnorm(1, beta[p], mh[p])
     # trying to save a little time
-    can.x.beta  <- x.beta + x[, , p] * (can.beta - beta[p])
+    if (nt == 1) {
+      can.x.beta <- x.beta + x[, p] * (can.beta - beta[p])
+    } else {
+      can.x.beta  <- x.beta + x[, , p] * (can.beta - beta[p])
+    }
     can.z       <- getZ(xi=xi, x.beta=can.x.beta, thresh=thresh)
     can.z.star  <- can.z^(alpha.inv)
 

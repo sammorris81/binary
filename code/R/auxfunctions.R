@@ -141,7 +141,7 @@ rRareBinaryInd <- function(x, beta, xi, prob.success = 0.05) {
 # generate dependent rare binary data
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho,
                             prob.success = 0.05, dw2 = NULL, a = NULL) {
-  ns     <- nrow(s)
+  ns     <- dim(x)[1]
   nt     <- dim(x)[2]
   p      <- length(beta)
   y      <- matrix(NA, ns, nt)
@@ -192,7 +192,7 @@ rLogitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5) {
   p      <- length(beta)
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
-  
+
   x.beta <- matrix(NA, ns, nt)
   for (t in 1:nt) {
     if (p > 1) {
@@ -201,33 +201,33 @@ rLogitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5) {
       x.beta[, t] <- x[, t] * beta
     }
   }
-  
+
   # we use 22 for covariance between knots
   # we use 12 for covariance between all sites and knots
   d.22 <- as.matrix(rdist(knots))  # d.knots is nknots x nknots
   d.12 <- as.matrix(rdist(s, knots))  #d.sknots is ns x nknots
   diag(d.22) <- 0
-  
+
   if (nu == 0.5) {
     Sigma.12 <- simple.cov.sp(D = d.12, sp.type = "exponential",
                               sp.par = c(sigma.sq, rho), error.var = 0,
                               finescale.var = 0)
-    Sigma.22 <- simple.cov.sp(D = d.22, sp.type = "exponential", 
-                              sp.par = c(sigma.sq, rho), error.var = 0, 
+    Sigma.22 <- simple.cov.sp(D = d.22, sp.type = "exponential",
+                              sp.par = c(sigma.sq, rho), error.var = 0,
                               finescale.var = 0)
   } else {
-    Sigma.12 <- simple.cov.sp(D = d.12, sp.type = "matern", 
+    Sigma.12 <- simple.cov.sp(D = d.12, sp.type = "matern",
                               sp.par = c(sigma.sq, rho), error.var = 0,
                               smoothness = nu, finescale.var = 0)
-    Sigma.22 <- simple.cov.sp(D = d.22, sp.type = "matern", 
+    Sigma.22 <- simple.cov.sp(D = d.22, sp.type = "matern",
                               sp.par = c(sigma.sq, rho), error.var = 0,
                               smoothness = nu, finescale.var = 0)
   }
-  
+
   Sigma.22.inv <- chol2inv(chol(Sigma.22))
   Sigma.12.22.inv <- Sigma.12 %*% Sigma.22.inv
   sd.mtx <- t(chol(Sigma.22))
-  
+
   # generate the random effects
   w <- matrix(NA, nknots, nt)
   w.tilde <- matrix(NA, ns, nt)
@@ -235,14 +235,14 @@ rLogitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5) {
     w[, t] <- sd.mtx %*% rnorm(nknots, 0, 1)
     w.tilde[, t] <- Sigma.12.22.inv %*% w[, t]
   }
-  
+
   p.success <- 1 / (1 + exp(-(x.beta + w.tilde)))
   for (t in 1:nt) {
     y[, t] <- rbinom(n = ns, size = 1, prob = p.success[, t])
   }
-  
+
   results <- list(y = y, w.tilde = w.tilde)
-  
+
   return(results)
 }
 

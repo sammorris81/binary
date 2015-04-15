@@ -21,23 +21,22 @@
 #      d: gamma = 0.1, 100 knots, 5% rareness
 #
 # methods:
-#   1: Independent logit
-#   2: Independent probit
-#   3: Independent GEV (Wang and Dey)
-#   4: Spatial logit (spbayes)
-#   5: Spatial probit
-#   6: Spatial GEV (our method)
+#   1: Independent probit
+#   2: Independent GEV (Wang and Dey)
+#   3: Spatial logit (spbayes)
+#   4: Spatial probit
+#   5: Spatial GEV (our method)
+#   0: Independent logit - tried and MCMClogit gets stuck
 #########################################################################
-# NOTE: if rerunning with covariates, make sure you adjust X matrix accordingly
+# NOTE: if rerunning with covariates, make sure to adjust X matrix accordingly
 rm(list=ls())
 load("simdata1.RData")
 source("initialize.R", chdir=T)  # loads packages and sources files
 
-setting <- 1
-analysis <- "indlogit"
+setting <- 5
 
 # y is ns, nt, nsets, nsettings
-iters <- 100000; burn <- 80000; update <- 1000; thin <- 1
+iters <- 100000; burn <- 80000; update <- 500; thin <- 1
 nsets <- 5
 ntrain <- 3000
 ntest  <- 1000
@@ -57,8 +56,8 @@ cov.model <- "exponential"
 
 for (g in 1:2) {
   fit.1 <- vector(mode = "list", length = nsets)
-  fit.2 <- fit.3 <- fit.4 <- fit.5 <- fit.6 <- fit.1
-  outputfile <- paste(setting, "-", analysis, "-", g, ".RData", sep="")
+  fit.2 <- fit.3 <- fit.4 <- fit.5 <- fit.1
+  outputfile <- paste(setting, "-", g, ".RData", sep="")
 
   start <- proc.time()
   for (d in 1:nsets) {
@@ -74,68 +73,73 @@ for (g in 1:2) {
     } else {
       y.o <- y.d[obs, , drop = F]
       X.o <- X[obs, , drop = F]
-      s.o <- s[obs, ]
-
-      y.validate[, , d] <- y.d[!obs, ]
-      X.p <- X[!obs, ]
-      s.p <- s[!obs, ]
     }
+    s.o <- s[obs, ]
 
     # independent logit - sets seed inside MCMClogit
-    fit.1[[d]] <- MCMClogit(formula = y.o ~ X.o - 1,
-                            burnin = burn, mcmc = (iters - burn),
-                            tune = 0.5,
-                            verbose = update, #seed = cur.seed,
-                            beta.start = -2.3,
-                            B0 = 1)
-    cur.seed <- cur.seed + 1
+    #     fit.1[[d]] <- MCMClogit(formula = y.o ~ X.o - 1,
+    #                             burnin = burn, mcmc = (iters - burn),
+    #                             tune = 0.5,
+    #                             verbose = update, #seed = cur.seed,
+    #                             beta.start = -2.3,
+    #                             B0 = 1)
+    #     cur.seed <- cur.seed + 1
 
     # independent probit - sets seed inside MCMCprobit
-    fit.2[[d]] <- MCMCprobit(formula = y.o ~ 1,
+    cat("Start independent probit \n")
+    fit.1[[d]] <- MCMCprobit(formula = y.o ~ 1,
                              burnin = burn, mcmc = (iters - burn),
                              verbose = update, seed = cur.seed, B0 = 0.01)
-
+    cat("End independent probit \n")
     cur.seed <- cur.seed + 1
 
     # independent GEV
     set.seed(cur.seed)
-    fit.3[[d]] <- mcmc(y = y.o, s = s.o, x = x.o, beta.init = 0, beta.m = 0,
+    cat("Start independent GEV \n")
+    fit.2[[d]] <- mcmc(y = y.o, s = s.o, x = X.o, beta.init = 0, beta.m = 0,
                        beta.s = 100, xi.init = 0.1, xi.m = 0, xi.s = 0.5,
                        beta.tune = 0.01, xi.tune = 0.1, beta.attempts = 50,
-                       xi.attempts = 50, spatial = FALSE, iterplot = FALSE,
+                       xi.attempts = 50, spatial = FALSE, iterplot = TRUE,
                        iters = iters, burn = burn, update = update, thin = 1)
+    cat("End independent GEV \n")
     cur.seed <- cur.seed + 1
 
     # spatial logit
     set.seed(cur.seed)
-    fit.4[[d]] <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+    cat("Start spatial logit \n")
+    fit.3[[d]] <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
                         knots = knots, starting = starting, tuning = tuning,
                         priors = priors, cov.model = cov.model,
                         n.samples = iters, verbose = verbose,
                         n.report = n.report)
+    cat("End spatial logit")
     cur.seed <- cur.seed + 1
+
 
     # spatial probit
     set.seed(cur.seed)
-    fit.5[[d]] <- probit(Y = y.o, X = X.o, s = s.o, iters = iters, burn = burn,
-                         update = update)
+    cat("Start spatial probit \n")
+    fit.4[[d]] <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
+                         iters = iters, burn = burn, update = 100)
+    cat("End spatial probit \n")
     cur.seed <- cur.seed + 1
 
     # spatial GEV
     set.seed(cur.seed)
-    fit.6[[d]] <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+    cat("Start spatial GEV \n")
+    fit.5[[d]] <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                        beta.init = 0, beta.m = 0, beta.s = 100,
                        xi.init = 0.1, xi.m = 0, xi.s = 0.5,
                        knots = knots, beta.tune = 1, xi.tune = 1,
                        alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
                        beta.attempts = 50, xi.attempts = 50,
                        alpha.attempts = 200, rho.attempts = 200,
-                       spatial = TRUE, rho.init = 1, rho.upper = Inf,
+                       spatial = TRUE, rho.init = 1, rho.upper = 9,
                        alpha.init = 0.5, a.init = 1, iterplot = FALSE,
-                       iters = iters, burn = burn, update = update, thin = 1)
+                       iters = iters, burn = burn, update = 100, thin = 1)
+    cat("End spatial GEV \n")
 
-    save(fit.1, fit.2, fit.3, fit.4, fit.5, fit.6, file=outputfile)
+    save(fit.1, fit.2, fit.3, fit.4, fit.5, file=outputfile)
   }
-
 
 }

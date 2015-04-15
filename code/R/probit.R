@@ -6,7 +6,7 @@ make.B <- function(d, rho){
 
 probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                    logbw.mn=-1, logbw.sd=2, eps=0.01, a=0.1, b=0.1,
-                   iters=5000, burn=1000, thin=1, update=2){
+                   iters=5000, burn=1000, thin=1, update=2, iterplot=FALSE){
 
     par(mfrow=c(1, 1))
     tick <- proc.time()[3]
@@ -67,15 +67,15 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
 
        # BETA
 
-        VVV  <- solve(tXX + eps * diag(p))
+        VVV  <- chol2inv(chol(tXX + eps * diag(p)))
         MMM  <- t(X) %*% (Y - BA)
         beta <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(p)
         XB   <- X %*% beta
 
        # ALPHA
 
-        VVV   <- solve(t(B) %*% B + taua * diag(m))
-        MMM   <- t(B) %*% (Y-XB)
+        VVV   <- chol2inv(chol(t(B) %*% B + taua * diag(m)))
+        MMM   <- t(B) %*% (Y - XB)
         alpha <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(m)
         BA    <- B %*% alpha
 
@@ -105,13 +105,14 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
 
 
       #Plot current iteration
-
-      if(proc.time()[3] - t_last_plot > update | iter == iters){
-        plot(s, pch=19,
-             col=ifelse(Y > 0, 2, 1),
-             cex=2 * pnorm(XB + BA),
-             main=paste(iter, "of", iters))
-        t_last_plot <- proc.time()[3]
+      if (iterplot) {
+        if(proc.time()[3] - t_last_plot > update | iter == iters){
+          plot(s, pch=19,
+               col=ifelse(Y > 0, 2, 1),
+               cex=2 * pnorm(XB + BA),
+               main=paste(iter, "of", iters))
+          t_last_plot <- proc.time()[3]
+        }
       }
 
       # Keep track of stuff:
@@ -129,6 +130,10 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
 
       keep.bw[iter]    <- bw
       keep.beta[iter, ] <- beta
+
+      if (iter %% update == 0) {
+        cat("\t Iter", iter, "\n")
+      }
     }
 
     tock   <- proc.time()[3]

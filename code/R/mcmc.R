@@ -48,7 +48,8 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
       a <- matrix(a.init, nknots, nt)
     }
     theta.star <- getThetaStar(w.star, a)  # sum_l a_l * w_l^(1/alpha)
-  } else {
+  } else {  # independent GEV from Wang & Dey
+    theta.star <- 1
     alpha <- 1
   }
 
@@ -59,6 +60,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   } else {
     beta   <- beta.init
   }
+
   x.beta <- matrix(NA, ns, nt)
   for (t in 1:nt) {
     if (p > 1) {
@@ -70,14 +72,15 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   z <- getZ(xi=xi, x.beta=x.beta)
   z.star <- z^(1 / alpha)
 
-  u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
-  mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
-  bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
-
   # keep current likelihood values in mcmc for time savings
   cur.lly  <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
-  cur.llps <- dPS.Rcpp(a=a, alpha=alpha, mid.points=mid.points,
-                       bin.width=bin.width)
+  if (spatial) {
+    u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+    mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
+    bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
+    cur.llps <- dPS.Rcpp(a=a, alpha=alpha, mid.points=mid.points,
+                         bin.width=bin.width)
+  }
 
   # MH tuning parameters
   if (length(beta.tune) == 1) {
@@ -90,7 +93,7 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
   mh.a      <- rep(A.tune, 100)
   acc.a     <- att.a     <- 0 * mh.a
   acc.alpha <- att.alpha <- mh.alpha <- alpha.tune
-  acc.rho   <- att.rho   <- mh.rho   <- alpha.tune
+  acc.rho   <- att.rho   <- mh.rho   <- rho.tune
 
   # storage
   keepers.beta  <- matrix(NA, nrow=iters, ncol=p)

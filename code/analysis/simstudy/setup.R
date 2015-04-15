@@ -50,10 +50,10 @@ nlinks    <- 2   # using Max-stable and logit
 nsettings <- 4   # a, b, c, d from above
 
 knots.1 <- knots.2 <- seq(from = 0, to = 6, length = 10)
-knots <- expand.grid(knots.1, knots.2)
+knots <- as.matrix(expand.grid(knots.1, knots.2))
 nknots <- nrow(knots)
 
-X <- array(1, dim=c(ns, nt, np))
+X <- matrix(1, nrow=ns, ncol=np)
 
 y         <- array(NA, dim=c(ns, nt, nsets, nsettings * nlinks))
 a.t       <- array(NA, dim=c(nknots, nt, nsets, nsettings))
@@ -64,6 +64,7 @@ s <- cbind(runif(ns), runif(ns))
 
 # max-stable % rareness is set with prob.ms
 prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
+int.ms   <- matrix(NA, nsets, nsettings)
 alpha.ms <- c(0.3, 0.7, 0.3, 0.7)
 xi.ms    <- 0.1
 rho.ms   <- 3
@@ -85,6 +86,7 @@ for (i in 1:nsets) {
                                 alpha = alpha.ms[k], rho.ms,
                                 prob.success = prob.ms[k])
         a.t[, , i, k] <- data$a
+        int.ms[i, k] <- data$thresh
       } else {  # logit
         data <- rLogitSpat(x = X, s = s, knots = knots, beta = int.logit[k],
                            rho = rho.logit[k], sigma.sq = sigsq.logit,
