@@ -99,7 +99,7 @@ for (g in 1:2) {
     fit.2[[d]] <- mcmc(y = y.o, s = s.o, x = X.o, beta.init = 0, beta.m = 0,
                        beta.s = 100, xi.init = 0.1, xi.m = 0, xi.s = 0.5,
                        beta.tune = 0.01, xi.tune = 0.1, beta.attempts = 50,
-                       xi.attempts = 50, spatial = FALSE, iterplot = TRUE,
+                       xi.attempts = 50, spatial = FALSE, iterplot = FALSE,
                        iters = iters, burn = burn, update = update, thin = 1)
     cat("End independent GEV \n")
     cur.seed <- cur.seed + 1
