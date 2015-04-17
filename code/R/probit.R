@@ -42,9 +42,10 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
 
     PRED <- 0
     FIT  <- 0
-
-    keep.bw             <- rep(0, iters)
-    keep.beta           <- matrix(0, iters, p)
+    
+    # trying to keep memory usage low, so only samples saving post burnin
+    keep.bw             <- rep(0, iters - burn)
+    keep.beta           <- matrix(0, iters - burn, p)
     colnames(keep.beta) <- colnames(X)
 
    # Preprocessing
@@ -126,10 +127,9 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
           PRED <- PRED + pnorm(MMM) / nnn
         }
 
+        keep.bw[iter - burn]     <- bw
+        keep.beta[iter - burn, ] <- beta
       }
-
-      keep.bw[iter]    <- bw
-      keep.beta[iter, ] <- beta
 
       if (iter %% update == 0) {
         cat("\t Iter", iter, "\n")
