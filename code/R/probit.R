@@ -3,6 +3,34 @@ make.B <- function(d, rho){
 }
 
 #Main MCMC function
+probit.pred <- function(mcmcoutput, X.pred, s.pred, knots,
+                        start = 1, end = NULL, update = NULL) {
+
+  if (is.null(end)) {
+    end <- nrow(mcmcoutput$beta)
+  }
+
+  # bookkeeping
+  np    <- nrow(s.pred)
+  iters <- end - start + 1
+  dp    <- as.matrix(rdist(s.pred, knots))
+  prob.success <- matrix(NA, nrow=iters, ncol=np)
+
+  for (i in 1:iters) {
+    # beta and bandwidth come directly from output
+    z.pred <- X.pred %*% mcmcoutput$beta[i, ] +
+              make.B(dp, mcmcoutput$bw[i]) %*% mcmcoutput$alpha[i, ]
+    prob.success[i, ] <- pnorm(z.pred)
+
+    if (!is.null(update)) {
+      if (i %% update == 0) {
+        cat("\t Iter", i, "\n")
+      }
+    }
+  }
+
+  return(prob.success)
+}
 
 probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                    logbw.mn=-1, logbw.sd=2, eps=0.01, a=0.1, b=0.1,
@@ -42,10 +70,12 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
 
     PRED <- 0
     FIT  <- 0
-    
+
     # trying to keep memory usage low, so only samples saving post burnin
     keep.bw             <- rep(0, iters - burn)
     keep.beta           <- matrix(0, iters - burn, p)
+    keep.taua           <- rep(0, iters - burn)
+    keep.alpha          <- matrix(0, iters - burn, m)
     colnames(keep.beta) <- colnames(X)
 
    # Preprocessing
@@ -80,11 +110,9 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         alpha <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(m)
         BA    <- B %*% alpha
 
-
        # TAUA
 
         taua <- rgamma(1, m / 2 + a, sum((alpha^2)) / 2 + b)
-
 
        # BW
 
@@ -127,8 +155,10 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
           PRED <- PRED + pnorm(MMM) / nnn
         }
 
-        keep.bw[iter - burn]     <- bw
-        keep.beta[iter - burn, ] <- beta
+        keep.bw[iter - burn]      <- bw
+        keep.beta[iter - burn, ]  <- beta
+        keep.taua[iter - burn]    <- taua
+        keep.alpha[iter - burn, ] <- alpha
       }
 
       if (iter %% update == 0) {
@@ -141,6 +171,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                    pred=PRED,
                    beta=keep.beta,
                    bw=keep.bw,
+                   taua=keep.taua,
                    minutes=(tock - tick)/60)
 
 return(output)}
