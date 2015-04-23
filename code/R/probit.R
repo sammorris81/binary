@@ -172,6 +172,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                    beta=keep.beta,
                    bw=keep.bw,
                    taua=keep.taua,
+                   alpha=keep.alpha,
                    minutes=(tock - tick)/60)
 
 return(output)}
