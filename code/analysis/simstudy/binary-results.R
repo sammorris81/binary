@@ -33,8 +33,6 @@ rm(list=ls())
 load("simdata1.RData")
 source("initialize.R", chdir=T)  # loads packages and sources files
 
-setting <- 8
-
 # y is ns, nt, nsets, nsettings
 iters <- 100000; burn <- 80000; update <- 500; thin <- 1
 nsets <- 10
@@ -72,6 +70,7 @@ for (setting in 1:nsettings) {
     load(filename)
     post.prob <- matrix(fit, iters, ntest, byrow = FALSE)
     brier.scores[set, 1, setting] <- BrierScore(post.prob, y.validate)
+    print(paste("Independent probit - set", set, "finished"))
 
     # 2: Independent GEV
     filename <- paste(setting, "-2-", set, ".RData", sep="")
@@ -81,6 +80,7 @@ for (setting in 1:nsettings) {
       post.prob[i, ] <- 1 - exp(-1 / z)
     }
     brier.scores[set, 2, setting] <- BrierScore(post.prob, y.validate)
+    print(paste("Independent GEV - set", set, "finished"))
 
     # 3: Spatial logit
     filename <- paste(setting, "-3-", set, ".RData", sep="")
@@ -90,6 +90,7 @@ for (setting in 1:nsettings) {
                           thin = 1, verbose = TRUE, n.report = 500)
     post.prob <- t(yp.sp.lo$p.y.predictive.samples)
     brier.scores[set, 3, setting] <- BrierScore(post.prob, y.validate)
+    print(paste("Spatial logit - set", set, "finished"))
 
 #     # 4: Spatial probit
 #     filename <- paste(setting, "-4-", set, ".RData", sep="")
@@ -98,6 +99,7 @@ for (setting in 1:nsettings) {
 #                              s.pred = s.pred, knots = knots,
 #                              start = 1, end=20000, update=500)
 #     brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
+#     print(paste("Spatial probit - set", set, "finished"))
 
     # 5: Spatial GEV
     filename <- paste(setting, "-5-", set, ".RData", sep="")
@@ -106,6 +108,7 @@ for (setting in 1:nsettings) {
                             s.pred = s.pred, knots = knots,
                             start = 1, end = 20000, update = 500)
     brier.scores[set, 5, setting] <- BrierScore(post.prob, y.validate)
+    print(paste("Spatial GEV - set", set, "finished"))
   }
 }
 
