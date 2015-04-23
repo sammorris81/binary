@@ -253,12 +253,16 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
   return(results)
 }
 
-predictProb <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
                         thin=1, thresh=0, update=NULL) {
   if (is.null(end)) {
     end <- nrow(mcmcoutput$beta)
   }
-  p     <- dim(x.p.rb)[3]
+  if (is.null(dim(mcmcoutput$beta))) {
+    p <- 1
+  } else {
+    p <- dim(mcmcoutput$beta)[2]
+  }
   np    <- nrow(s.pred)
   iters <- end - start + 1
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
@@ -287,13 +291,6 @@ predictProb <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
     if (sum(is.nan(z)) > 0) {
       these <- which(is.nan(z))
       prob.success[i, these] <- 1
-    #   these <- which(is.nan(z))
-    #   cat("xi = ", mcmcoutput$xi[i], "\n", sep="")
-    #   cat("beta = ", mcmcoutput$beta[i, ], "\n", sep="")
-    #   cat("iter = ", i, "\n", sep="")
-    #   cat("x.beta = ", x.beta[these, 1], "\n", sep="")
-    #   cat("x.beta = ", x.beta[these + 1, 1], "\n", sep="")
-    #   cat("x.beta = ", x.beta[these + 2, 1], "\n", sep="")
     }
 
     if (!is.null(update)) {

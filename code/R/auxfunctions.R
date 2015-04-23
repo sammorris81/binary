@@ -335,7 +335,7 @@ trunc <- function(x, eps=0.1) {
 #   validate(np): validation data
 #
 # Returns:
-#   scores(iters): posterior density of the brier scores
+#   score(1): Brier score for dataset
 ################################################################
 BrierScore <- function(post.prob, validate) {
   # iters <- nrow(post.prob)

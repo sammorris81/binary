@@ -3,7 +3,7 @@ make.B <- function(d, rho){
 }
 
 #Main MCMC function
-probit.pred <- function(mcmcoutput, X.pred, s.pred, knots,
+pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
                         start = 1, end = NULL, update = NULL) {
 
   if (is.null(end)) {

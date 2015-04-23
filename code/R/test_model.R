@@ -115,7 +115,7 @@ x.p.rb  <- x[!obs, , , drop=FALSE]
 x.p.spb <- matrix(x[!obs, , ], np, 3)  # need vector for spbayes
 
 set.seed(3)
-yp.rb <- predictProb(mcmcoutput = fit.1, s.pred = s.p, x.pred = x.p.rb,
+yp.rb <- predictProb(mcmcoutput = fit.1, x.pred = x.p.rb, s.pred = s.p,
                      knots = knots, start = 1, end=20000, update=500)
 
 set.seed(4)

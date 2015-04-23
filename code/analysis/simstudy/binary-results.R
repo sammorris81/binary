@@ -38,6 +38,8 @@ setting <- 8
 # y is ns, nt, nsets, nsettings
 iters <- 100000; burn <- 80000; update <- 500; thin <- 1
 nsets <- 10
+nsettings <- 8
+nmethods  <- 5
 ntrain <- 3000
 ntest  <- 1000
 obs <- c(rep(T, ntrain), rep(F, ntest))
@@ -54,105 +56,57 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-start <- proc.time()
+s.pred <- s[!obs, ]
+X.pred <- matrix(1, ntest, nt)
+brier.scores <- array(0, dim=c(nsets, nmethods, nsettings))
 
-# (1 - 8)-(1 - 5)-(1 - 10)
-# for fit method 1 (*-1-*: independent probit), the posterior P(Y = 1) = 1 = Phi(fit)
-# for fit method 2 (*-2-*: independent GEV), the posterior
-  z = rep(NA, length(fit$xi))
-  for (i in 1:length(fit$xi)) {
-    z[i] = getZ(xi = fit$xi[i], x.beta = fit$beta[i], thresh = 0)
+nsettings <- 1
+nsets <- 1
+
+for (setting in 1:nsettings) {
+  for (set in 1:nsets) {
+    y.validate   <- y[!obs, , set, setting]
+
+    # 1: Independent probit
+    filename <- paste(setting, "-1-", set, ".RData", sep="")
+    load(filename)
+    post.prob <- matrix(fit, iters, ntest, byrow = FALSE)
+    brier.scores[set, 1, setting] <- BrierScore(post.prob, y.validate)
+
+    # 2: Independent GEV
+    filename <- paste(setting, "-2-", set, ".RData", sep="")
+    load(filename)
+    for (i in 1:(iters - burn)) {
+      z <- getZ(xi = fit$xi[i], x.beta = fit$beta[i], thresh = 0)
+      post.prob[i, ] <- 1 - exp(-1 / z)
+    }
+    brier.scores[set, 2, setting] <- BrierScore(post.prob, y.validate)
+
+    # 3: Spatial logit
+    filename <- paste(setting, "-3-", set, ".RData", sep="")
+    load(filename)
+    yp.sp.lo <- spPredict(sp.obj = fit, pred.coords = s.pred,
+                          pred.covars = X.pred, start = 80001, end = 100000,
+                          thin = 1, verbose = TRUE, n.report = 500)
+    post.prob <- t(yp.sp.lo$p.y.predictive.samples)
+    brier.scores[set, 3, setting] <- BrierScore(post.prob, y.validate)
+
+#     # 4: Spatial probit
+#     filename <- paste(setting, "-4-", set, ".RData", sep="")
+#     load(filename)
+#     post.prob <- pred.spprob(mcmcoutput = fit, X.pred = X.pred,
+#                              s.pred = s.pred, knots = knots,
+#                              start = 1, end=20000, update=500)
+#     brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
+
+    # 5: Spatial GEV
+    filename <- paste(setting, "-5-", set, ".RData", sep="")
+    load(filename)
+    post.prob <- pred.spgev(mcmcoutput = fit, x.pred = X.pred,
+                            s.pred = s.pred, knots = knots,
+                            start = 1, end = 20000, update = 500)
+    brier.scores[set, 5, setting] <- BrierScore(post.prob, y.validate)
   }
-#   
-#   P(Y = 1) = exp(-1 / z)
-for (d in 1:nsets) {
-  cat("start dataset", d, "\n")
-
-  y.d <- y[, , d, setting]
-
-  if (nt == 1) {
-    y.o <- matrix(y.d[obs], ntrain, 1)
-    X.o <- matrix(X[obs], ntrain, 1)
-  } else {
-    y.o <- y.d[obs, , drop = F]
-    X.o <- X[obs, , drop = F]
-  }
-  s.o <- s[obs, ]
-
-  # independent probit - sets seed inside MCMCprobit
-  cur.seed <- setting * 100 + d  # need for MCMCpack
-  cat("Start independent probit: Set", d, "\n")
-  fit <- MCMCprobit(formula = y.o ~ 1,
-                    burnin = burn, mcmc = (iters - burn),
-                    verbose = update, seed = cur.seed, B0 = 0.01)
-  cat("End independent probit: Set", d, "\n")
-  # setting-method-set.RData
-  outputfile <- paste(setting, "-1-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
-
-
-  # independent GEV
-  cur.seed <- cur.seed + 1
-  set.seed(cur.seed)
-  cat("Start independent GEV: Set", d, "\n")
-  fit <- mcmc(y = y.o, s = s.o, x = X.o, beta.init = 0, beta.m = 0,
-              beta.s = 100, xi.init = 0.1, xi.m = 0, xi.s = 0.5,
-              beta.tune = 0.01, xi.tune = 0.1, beta.attempts = 50,
-              xi.attempts = 50, spatial = FALSE, iterplot = FALSE,
-              iters = iters, burn = burn, update = update, thin = 1)
-  cat("End independent GEV: Set", d, "\n")
-  outputfile <- paste(setting, "-2-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
-
-  # spatial logit
-  cur.seed <- cur.seed + 1
-  set.seed(cur.seed)
-  cat("Start spatial logit: Set", d, "\n")
-  fit <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
-               knots = knots, starting = starting, tuning = tuning,
-               priors = priors, cov.model = cov.model,
-               n.samples = iters, verbose = verbose,
-               n.report = n.report)
-  cat("End spatial logit: Set", d, "\n")
-  outputfile <- paste(setting, "-3-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
-
-  # spatial probit
-  cur.seed <- cur.seed + 1
-  set.seed(cur.seed)
-  cat("Start spatial probit: Set", d, "\n")
-  fit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
-                iters = iters, burn = burn, update = update)
-  cat("End spatial probit: Set", d, "\n")
-  outputfile <- paste(setting, "-4-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
-
-
-  # spatial GEV
-  cur.seed <- cur.seed + 1
-  set.seed(cur.seed)
-  cat("Start spatial GEV: Set", d, "\n")
-  fit <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-              beta.init = 0, beta.m = 0, beta.s = 100,
-              xi.init = 0.1, xi.m = 0, xi.s = 0.5,
-              knots = knots, beta.tune = 1, xi.tune = 1,
-              alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
-              beta.attempts = 50, xi.attempts = 50,
-              alpha.attempts = 200, rho.attempts = 200,
-              spatial = TRUE, rho.init = 1, rho.upper = 9,
-              alpha.init = 0.5, a.init = 1, iterplot = FALSE,
-              iters = iters, burn = burn, update = update, thin = 1)
-  cat("End spatial GEV: Set", d, "\n")
-  outputfile <- paste(setting, "-5-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
 }
+
+save(brier.scores, file="binary-results.RData")
