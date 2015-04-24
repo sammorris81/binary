@@ -58,9 +58,6 @@ s.pred <- s[!obs, ]
 X.pred <- matrix(1, ntest, nt)
 brier.scores <- array(0, dim=c(nsets, nmethods, nsettings))
 
-nsettings <- 1
-nsets <- 1
-
 for (setting in 1:nsettings) {
   for (set in 1:nsets) {
     y.validate   <- y[!obs, , set, setting]
@@ -92,14 +89,14 @@ for (setting in 1:nsettings) {
     brier.scores[set, 3, setting] <- BrierScore(post.prob, y.validate)
     print(paste("Spatial logit - set", set, "finished"))
 
-#     # 4: Spatial probit
-#     filename <- paste(setting, "-4-", set, ".RData", sep="")
-#     load(filename)
-#     post.prob <- pred.spprob(mcmcoutput = fit, X.pred = X.pred,
-#                              s.pred = s.pred, knots = knots,
-#                              start = 1, end=20000, update=500)
-#     brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
-#     print(paste("Spatial probit - set", set, "finished"))
+    # 4: Spatial probit
+    filename <- paste(setting, "-4-", set, ".RData", sep="")
+    load(filename)
+    post.prob <- pred.spprob(mcmcoutput = fit, X.pred = X.pred,
+                             s.pred = s.pred, knots = knots,
+                             start = 1, end=20000, update=500)
+    brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
+    print(paste("Spatial probit - set", set, "finished"))
 
     # 5: Spatial GEV
     filename <- paste(setting, "-5-", set, ".RData", sep="")
