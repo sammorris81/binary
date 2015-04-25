@@ -34,12 +34,12 @@ source("mcmc.R")
 set.seed(10)
 ns   <- 2000
 nt   <- 1
-s    <- cbind(runif(ns, 0, 10), runif(ns, 0, 10))
+s    <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
 x[, , 3] <- s[, 2]
-knots.1 <- seq(0, 10, length=9)
-knots.2 <- seq(0, 10, length=9)
+knots.1 <- seq(0, 10, length=12)
+knots.2 <- seq(0, 10, length=12)
 knots <- expand.grid(knots.1, knots.2)
 # knots  <- s
 nknots <- nrow(knots)
@@ -50,12 +50,17 @@ source("updateModel.R")
 source("mcmc.R")
 iters <- 100000
 burn  <- 80000
-xi.t <- 0.1
-beta.t <- c(0, -1, 0)
-alpha.t <- 0.3
-rho.t   <- 3
-data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
-                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+xi.t <- 0.25
+beta.t <- c(0, 0, 0)
+alpha.t <- 0.7
+rho.t   <- 0.5
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = beta.t,
+                        xi = xi.t, alpha = alpha.t, rho = rho.t,
+                        prob.success = 0.01)
+
+occurs <- which(data$y == 1)
+plot(s[occurs,], xlim=c(0, 6), ylim=c(0, 6))
+# points(knots, col=2)
 
 obs <- c(rep(T, 1000), rep(F, 1000))
 # obs <- rep(T, 350)
