@@ -5,38 +5,30 @@
 # data settings:
 #   All: s in [0, 6] x [0, 6]
 #   1: GEV link
-#      a: alpha = 0.3, 100 knots, 1% rareness, bw = 3
-#      b: alpha = 0.7, 100 knots, 1% rareness, bw = 3
-#      c: alpha = 0.3, 100 knots, 5% rareness, bw = 3
-#      d: alpha = 0.7, 100 knots, 5% rareness, bw = 3
+#      a: alpha = 0.3, 144 knots, 1% rareness, bw = 3, xi = 0.25
+#      b: alpha = 0.7, 144 knots, 1% rareness, bw = 3, xi = 0.25
+#      c: alpha = 0.3, 144 knots, 5% rareness, bw = 3, xi = 0.25
+#      d: alpha = 0.7, 144 knots, 5% rareness, bw = 3, xi = 0.25
 #   2: Logit link
-#      a: rho = 1, 100 knots, 1% rareness
-#      b: rho = 3, 100 knots, 1% rareness
-#      c: rho = 1, 100 knots, 5% rareness
-#      d: rho = 3, 100 knots, 5% rareness
-#   3: Probit link -- Hold off for now
-#      a: gamma = 0.9, 100 knots, 1% rareness
-#      b: gamma = 0.1, 100 knots, 1% rareness
-#      c: gamma = 0.9, 100 knots, 5% rareness
-#      d: gamma = 0.1, 100 knots, 5% rareness
+#      a: rho = 3, 144 knots, 1% rareness
+#      b: rho = 1, 144 knots, 1% rareness
+#      c: rho = 3, 144 knots, 5% rareness
+#      d: rho = 1, 144 knots, 5% rareness
 #
 # methods:
-#   1: Independent probit
-#   2: Independent GEV (Wang and Dey)
-#   3: Spatial logit (spbayes)
-#   4: Spatial probit
-#   5: Spatial GEV (our method)
-#   0: Independent logit - tried and MCMClogit gets stuck
+#   1: Spatial logit   (spbayes)
+#   2: Spatial probit
+#   3: Spatial GEV (our method)
 #########################################################################
 # NOTE: if rerunning with covariates, make sure to adjust X matrix accordingly
 rm(list=ls())
-load("simdata1.RData")
+load("simdata2.RData")
 source("initialize.R", chdir=T)  # loads packages and sources files
 
 setting <- 5
 
 # y is ns, nt, nsets, nsettings
-iters <- 100000; burn <- 80000; update <- 500; thin <- 1
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
 nsets <- 10
 ntrain <- 3000
 ntest  <- 1000
@@ -80,32 +72,32 @@ for (d in 1:nsets) {
   
   # independent probit - sets seed inside MCMCprobit
   cur.seed <- setting * 100 + d  # need for MCMCpack
-  cat("Start independent probit: Set", d, "\n")
-  fit <- MCMCprobit(formula = y.o ~ 1,
-                    burnin = burn, mcmc = (iters - burn),
-                    verbose = update, seed = cur.seed, B0 = 0.01)
-  cat("End independent probit: Set", d, "\n")
-  # setting-method-set.RData
-  outputfile <- paste(setting, "-1-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
+#   cat("Start independent probit: Set", d, "\n")
+#   fit <- MCMCprobit(formula = y.o ~ 1,
+#                     burnin = burn, mcmc = (iters - burn),
+#                     verbose = update, seed = cur.seed, B0 = 0.01)
+#   cat("End independent probit: Set", d, "\n")
+#   # setting-method-set.RData
+#   outputfile <- paste(setting, "-1-", d, ".RData", sep="")
+#   save(fit, file = outputfile)
+#   rm(fit)
+#   gc()
   
   
   # independent GEV
   cur.seed <- cur.seed + 1
-  set.seed(cur.seed)
-  cat("Start independent GEV: Set", d, "\n")
-  fit <- mcmc(y = y.o, s = s.o, x = X.o, beta.init = 0, beta.m = 0,
-              beta.s = 100, xi.init = 0.1, xi.m = 0, xi.s = 0.5,
-              beta.tune = 0.01, xi.tune = 0.1, beta.attempts = 50,
-              xi.attempts = 50, spatial = FALSE, iterplot = FALSE,
-              iters = iters, burn = burn, update = update, thin = 1)
-  cat("End independent GEV: Set", d, "\n")
-  outputfile <- paste(setting, "-2-", d, ".RData", sep="")
-  save(fit, file = outputfile)
-  rm(fit)
-  gc()
+#   set.seed(cur.seed)
+#   cat("Start independent GEV: Set", d, "\n")
+#   fit <- mcmc(y = y.o, s = s.o, x = X.o, beta.init = 0, beta.m = 0,
+#               beta.s = 100, xi.init = 0.1, xi.m = 0, xi.s = 0.5,
+#               beta.tune = 0.01, xi.tune = 0.1, beta.attempts = 50,
+#               xi.attempts = 50, spatial = FALSE, iterplot = FALSE,
+#               iters = iters, burn = burn, update = update, thin = 1)
+#   cat("End independent GEV: Set", d, "\n")
+#   outputfile <- paste(setting, "-2-", d, ".RData", sep="")
+#   save(fit, file = outputfile)
+#   rm(fit)
+#   gc()
   
   # spatial logit
   cur.seed <- cur.seed + 1

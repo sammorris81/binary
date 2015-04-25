@@ -5,10 +5,10 @@
 # data settings:
 #   All: s in [0, 6] x [0, 6]
 #   1: GEV link
-#      a: alpha = 0.3, 144 knots, 1% rareness, bw = 3, xi = 0.25
-#      b: alpha = 0.7, 144 knots, 1% rareness, bw = 3, xi = 0.25
-#      c: alpha = 0.3, 144 knots, 5% rareness, bw = 3, xi = 0.25
-#      d: alpha = 0.7, 144 knots, 5% rareness, bw = 3, xi = 0.25
+#      a: alpha = 0.3, 144 knots, 1% rareness, bw = 0.5, xi = 0.25
+#      b: alpha = 0.7, 144 knots, 1% rareness, bw = 0.5, xi = 0.25
+#      c: alpha = 0.3, 144 knots, 5% rareness, bw = 0.5, xi = 0.25
+#      d: alpha = 0.7, 144 knots, 5% rareness, bw = 0.5, xi = 0.25
 #   2: Logit link
 #      a: rho = 3, 144 knots, 1% rareness
 #      b: rho = 1, 144 knots, 1% rareness
@@ -41,7 +41,7 @@ nsets     <- 10
 nlinks    <- 2   # using Max-stable and logit
 nsettings <- 4   # a, b, c, d from above
 
-knots.1 <- knots.2 <- seq(from = 0, to = 6, length = 10)
+knots.1 <- knots.2 <- seq(from = 0, to = 6, length = 12)
 knots <- as.matrix(expand.grid(knots.1, knots.2))
 nknots <- nrow(knots)
 
@@ -59,7 +59,7 @@ prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
 int.ms   <- matrix(NA, nsets, nsettings)
 alpha.ms <- c(0.3, 0.7, 0.3, 0.7)
 xi.ms    <- 0.1
-rho.ms   <- 3
+rho.ms   <- 0.5
 
 # to generate logistic data with around 1% rareness, need intercept = -log(99)
 # to generate logistic data with around 5% rareness, need intercept = -log(19)
