@@ -59,7 +59,7 @@ prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
 int.ms   <- matrix(NA, nsets, nsettings)
 alpha.ms <- c(0.3, 0.7, 0.3, 0.7)
 xi.ms    <- 0.1
-rho.ms   <- 0.5
+rho.ms   <- 6 / 11
 
 # to generate logistic data with around 1% rareness, need intercept = -log(99)
 # to generate logistic data with around 5% rareness, need intercept = -log(19)
