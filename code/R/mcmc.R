@@ -1,13 +1,14 @@
-mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
-                 beta.init=0, beta.m=0, beta.s=20,
-                 xi.init=0.1, xi.m=0, xi.s=0.5,
-                 npts=100, knots=NULL, thresh=0,
-                 beta.tune=0.01, xi.tune=0.1,
-                 alpha.tune=0.1, rho.tune=0.1, A.tune=1,
-                 beta.attempts=50, xi.attempts=50,
-                 alpha.attempts=200, rho.attempts=200,
+mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
+                 beta.init = 0, beta.m = 0, beta.s = 20,
+                 xi.init = 0.1, xi.m = 0, xi.s = 0.5,
+                 npts = 100, knots = NULL, thresh = 0,
+                 beta.tune = 0.01, xi.tune = 0.1,
+                 alpha.tune = 0.1, rho.tune = 0.1, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
                  spatial = TRUE,
-                 rho.init=1, rho.upper=Inf, alpha.init=0.5, a.init=1,
+                 rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
+                 rho.fix = FALSE, alpha.fix = FALSE, # for debug
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
@@ -171,48 +172,52 @@ mcmc <- function(y, s, x, s.pred=NULL, x.pred=NULL,
       # }
 
       # update alpha
-      alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                  cur.lly=cur.lly, cur.llps=cur.llps,
-                                  z=z, z.star=z.star, w=w, w.star=w.star,
-                                  mid.points=mid.points, bin.width=bin.width,
-                                  acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+      if (!fixalpha) {
+        alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                                    cur.lly=cur.lly, cur.llps=cur.llps,
+                                    z=z, z.star=z.star, w=w, w.star=w.star,
+                                    mid.points=mid.points, bin.width=bin.width,
+                                    acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
-      alpha     <- alpha.update$alpha
-      w.star    <- alpha.update$w.star
-      z.star    <- alpha.update$z.star
-      theta     <- alpha.update$theta.star
-      cur.lly   <- alpha.update$cur.lly
-      cur.llps  <- alpha.update$cur.llps
-      att.alpha <- alpha.update$att
-      acc.alpha <- alpha.update$acc
+        alpha     <- alpha.update$alpha
+        w.star    <- alpha.update$w.star
+        z.star    <- alpha.update$z.star
+        theta     <- alpha.update$theta.star
+        cur.lly   <- alpha.update$cur.lly
+        cur.llps  <- alpha.update$cur.llps
+        att.alpha <- alpha.update$att
+        acc.alpha <- alpha.update$acc
 
-      if (iter < burn / 2) {
-        mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,
-                              nattempts=alpha.attempts)
-        acc.alpha <- mh.update$acc
-        att.alpha <- mh.update$att
-        mh.alpha  <- mh.update$mh
-      }
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,
+                                nattempts=alpha.attempts)
+          acc.alpha <- mh.update$acc
+          att.alpha <- mh.update$att
+          mh.alpha  <- mh.update$mh
+        }
+      }  # fi !fixalpha
 
       # update rho
-      rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                              cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
-                              dw2=dw2, rho=rho, rho.upper=rho.upper,
-                              acc=acc.rho, att=att.rho, mh=mh.rho)
-      rho        <- rho.update$rho
-      w          <- rho.update$w
-      w.star     <- rho.update$w.star
-      theta.star <- rho.update$theta.star
-      cur.lly    <- rho.update$cur.lly
-      att.rho    <- rho.update$att
-      acc.rho    <- rho.update$acc
+      if (!fixrho) {
+        rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
+                                cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
+                                dw2=dw2, rho=rho, rho.upper=rho.upper,
+                                acc=acc.rho, att=att.rho, mh=mh.rho)
+        rho        <- rho.update$rho
+        w          <- rho.update$w
+        w.star     <- rho.update$w.star
+        theta.star <- rho.update$theta.star
+        cur.lly    <- rho.update$cur.lly
+        att.rho    <- rho.update$att
+        acc.rho    <- rho.update$acc
 
-      if (iter < burn / 2) {
-        mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
-                              nattempts=rho.attempts)
-        acc.rho   <- mh.update$acc
-        att.rho   <- mh.update$att
-        mh.rho    <- mh.update$mh
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
+                                nattempts=rho.attempts)
+          acc.rho   <- mh.update$acc
+          att.rho   <- mh.update$att
+          mh.rho    <- mh.update$mh
+        }
       }
     }
 
