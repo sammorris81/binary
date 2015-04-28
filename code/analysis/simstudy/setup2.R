@@ -41,7 +41,7 @@ nsets     <- 10
 nlinks    <- 2   # using Max-stable and logit
 nsettings <- 4   # a, b, c, d from above
 
-knots.1 <- knots.2 <- seq(from = 0, to = 6, length = 12)
+knots.1 <- knots.2 <- seq(from = 0.2, to = 5.8, length = 12)
 knots <- as.matrix(expand.grid(knots.1, knots.2))
 nknots <- nrow(knots)
 
@@ -52,7 +52,7 @@ a.t       <- array(NA, dim=c(nknots, nt, nsets, nsettings))
 w.tilde.t <- array(NA, dim=c(ns, nt, nsets, nsettings))
 
 set.seed <- 7483 # site
-s <- cbind(runif(ns), runif(ns))
+s <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
 
 # max-stable % rareness is set with prob.ms
 prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
@@ -92,3 +92,5 @@ for (i in 1:nsets) {
 }
 
 save.image(file = "simdata2.RData")
+
+# look at a few of the datasets
