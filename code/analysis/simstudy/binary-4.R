@@ -1,4 +1,4 @@
-#########################################################################
+################################################################################
 # A small-scale simulation study to determine when spatial GEV link
 # performs better than
 #
@@ -19,7 +19,8 @@
 #   1: Spatial logit   (spbayes)
 #   2: Spatial probit
 #   3: Spatial GEV (our method)
-#########################################################################
+#   4: Spatial GEV (our method with alpha and rho fixed: settings 1 - 4 only)
+################################################################################
 # NOTE: if rerunning with covariates, make sure to adjust X matrix accordingly
 rm(list=ls())
 load("simdata2.RData")
@@ -61,90 +62,52 @@ for (d in 1:nsets) {
   }
   s.o <- s[obs, ]
 
-  # independent logit - sets seed inside MCMClogit
-  #     fit.1[[d]] <- MCMClogit(formula = y.o ~ X.o - 1,
-  #                             burnin = burn, mcmc = (iters - burn),
-  #                             tune = 0.5,
-  #                             verbose = update, #seed = cur.seed,
-  #                             beta.start = -2.3,
-  #                             B0 = 1)
-  #     cur.seed <- cur.seed + 1
-
-  # independent probit - sets seed inside MCMCprobit
-  cur.seed <- setting * 100 + d  # need for MCMCpack
-#   cat("Start independent probit: Set", d, "\n")
-#   fit <- MCMCprobit(formula = y.o ~ 1,
-#                     burnin = burn, mcmc = (iters - burn),
-#                     verbose = update, seed = cur.seed, B0 = 0.01)
-#   cat("End independent probit: Set", d, "\n")
-#   # setting-method-set.RData
-#   outputfile <- paste(setting, "-1-", d, ".RData", sep="")
-#   save(fit, file = outputfile)
-#   rm(fit)
-#   gc()
-
-
-  # independent GEV
-  cur.seed <- cur.seed + 1
-#   set.seed(cur.seed)
-#   cat("Start independent GEV: Set", d, "\n")
-#   fit <- mcmc(y = y.o, s = s.o, x = X.o, beta.init = 0, beta.m = 0,
-#               beta.s = 100, xi.init = 0.1, xi.m = 0, xi.s = 0.5,
-#               beta.tune = 0.01, xi.tune = 0.1, beta.attempts = 50,
-#               xi.attempts = 50, spatial = FALSE, iterplot = FALSE,
-#               iters = iters, burn = burn, update = update, thin = 1)
-#   cat("End independent GEV: Set", d, "\n")
-#   outputfile <- paste(setting, "-2-", d, ".RData", sep="")
-#   save(fit, file = outputfile)
-#   rm(fit)
-#   gc()
-
   # spatial logit
-  cur.seed <- cur.seed + 1
-  # set.seed(cur.seed)
-  # cat("Start spatial logit: Set", d, "\n")
-  # fit <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
-  #              knots = knots, starting = starting, tuning = tuning,
-  #              priors = priors, cov.model = cov.model,
-  #              n.samples = iters, verbose = verbose,
-  #              n.report = n.report)
-  # cat("End spatial logit: Set", d, "\n")
-  # outputfile <- paste(setting, "-3-", d, ".RData", sep="")
-  # save(fit, file = outputfile)
-  # rm(fit)
-  # gc()
-
+  cur.seed <- setting * 100 + d
+  set.seed(cur.seed)
+  cat("Start spatial logit: Set", d, "\n")
+  fit <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+               knots = knots, starting = starting, tuning = tuning,
+               priors = priors, cov.model = cov.model,
+               n.samples = iters, verbose = verbose,
+               n.report = n.report)
+  cat("End spatial logit: Set", d, "\n")
+  outputfile <- paste(setting, "-3-", d, ".RData", sep="")
+  save(fit, file = outputfile)
+  rm(fit)
+  gc()
+  
   # spatial probit
   cur.seed <- cur.seed + 1
-  # set.seed(cur.seed)
-  # cat("Start spatial probit: Set", d, "\n")
-  # fit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
-  #               iters = iters, burn = burn, update = update)
-  # cat("End spatial probit: Set", d, "\n")
-  # outputfile <- paste(setting, "-4-", d, ".RData", sep="")
-  # save(fit, file = outputfile)
-  # rm(fit)
-  # gc()
-
+  set.seed(cur.seed)
+  cat("Start spatial probit: Set", d, "\n")
+  fit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
+                iters = iters, burn = burn, update = update)
+  cat("End spatial probit: Set", d, "\n")
+  outputfile <- paste(setting, "-4-", d, ".RData", sep="")
+  save(fit, file = outputfile)
+  rm(fit)
+  gc()
+  
   # spatial GEV
   cur.seed <- cur.seed + 1
-  # set.seed(cur.seed)
-  # cat("Start spatial GEV: Set", d, "\n")
-  # fit <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-  #             beta.init = 0, beta.m = 0, beta.s = 100,
-  #             xi.init = 0.1, xi.m = 0, xi.s = 0.5,
-  #             knots = knots, beta.tune = 1, xi.tune = 1,
-  #             alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
-  #             beta.attempts = 50, xi.attempts = 50,
-  #             alpha.attempts = 200, rho.attempts = 200,
-  #             spatial = TRUE, rho.init = 1, rho.upper = 9,
-  #             alpha.init = 0.5, a.init = 1, iterplot = FALSE,
-  #             iters = iters, burn = burn, update = update, thin = 1)
-  # cat("End spatial GEV: Set", d, "\n")
-  # outputfile <- paste(setting, "-5-", d, ".RData", sep="")
-  # save(fit, file = outputfile)
-  # rm(fit)
-  # gc()
+  set.seed(cur.seed)
+  cat("Start spatial GEV: Set", d, "\n")
+  fit <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+              beta.init = 0, beta.m = 0, beta.s = 100,
+              xi.init = 0.1, xi.m = 0, xi.s = 0.5,
+              knots = knots, beta.tune = 1, xi.tune = 1,
+              alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
+              beta.attempts = 50, xi.attempts = 50,
+              alpha.attempts = 200, rho.attempts = 200,
+              spatial = TRUE, rho.init = 1, rho.upper = 9,
+              alpha.init = 0.5, a.init = 1, iterplot = FALSE,
+              iters = iters, burn = burn, update = update, thin = 1)
+  cat("End spatial GEV: Set", d, "\n")
+  outputfile <- paste(setting, "-5-", d, ".RData", sep="")
+  save(fit, file = outputfile)
+  rm(fit)
+  gc()
 
   # spatial GEV (fix rho and alpha)
   cur.seed <- cur.seed + 1
