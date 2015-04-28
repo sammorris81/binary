@@ -126,28 +126,3 @@ for (setting in 1:nsettings) {
 load("binary-results.RData")
 apply(brier.scores, c(2, 3), mean)  # right now, only setting 1b is in our favor.
 
-# look at some of the datasets where alpha and rho are fixed
-# Setting 1: Sets 1, 5, 7 have unusually high brier scores
-load("simdata2.RData")
-these.train <- which(y[obs, 1, 1, 1] == 1)
-these.test  <- which(y[!obs, 1, 1, 1] == 1)
-s.o <- s[obs, ]
-s.p <- s[!obs, ]
-plot(s.o[these, ])
-points(s.p[these.test, ], col=2)
-
-these.train <- which(y[obs, 1, 5, 1] == 1)
-these.test  <- which(y[!obs, 1, 5, 1] == 1)
-s.o <- s[obs, ]
-s.p <- s[!obs, ]
-plot(s.o[these, ])
-points(s.p[these.test, ], col=2)
-
-these.train <- which(y[obs, 1, 7, 1] == 1)
-these.test  <- which(y[!obs, 1, 7, 1] == 1)
-s.o <- s[obs, ]
-s.p <- s[!obs, ]
-plot(s.o[these, ], pch=22, bg="dodgerblue1", col="dodgerblue4",
-     xlab="", ylab="", xlim=c(0, 1), ylim=c(0, 1))
-points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
-points(knots)

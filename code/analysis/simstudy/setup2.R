@@ -95,3 +95,30 @@ for (i in 1:nsets) {
 save.image(file = "simdata2.RData")
 
 # look at a few of the datasets
+load("simdata2.RData")
+these.train <- which(y[obs, 1, 1, 1] == 1)
+these.test  <- which(y[!obs, 1, 1, 1] == 1)
+s.o <- s[obs, ]
+s.p <- s[!obs, ]
+plot(s.o[these.train, ], pch=22, bg="dodgerblue1", col="dodgerblue4",
+     xlab="", ylab="", xlim=c(0, 6), ylim=c(0, 6))
+points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
+points(knots)
+
+these.train <- which(y[obs, 1, 5, 1] == 1)
+these.test  <- which(y[!obs, 1, 5, 1] == 1)
+s.o <- s[obs, ]
+s.p <- s[!obs, ]
+plot(s.o[these.train, ], pch=22, bg="dodgerblue1", col="dodgerblue4",
+     xlab="", ylab="", xlim=c(0, 6), ylim=c(0, 6))
+points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
+points(knots)
+
+these.train <- which(y[obs, 1, 7, 1] == 1)
+these.test  <- which(y[!obs, 1, 7, 1] == 1)
+s.o <- s[obs, ]
+s.p <- s[!obs, ]
+plot(s.o[these.train, ], pch=22, bg="dodgerblue1", col="dodgerblue4",
+     xlab="", ylab="", xlim=c(0, 6), ylim=c(0, 6))
+points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
+points(knots)
