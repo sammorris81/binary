@@ -19,6 +19,7 @@
 #   1: Spatial logit   (spbayes)
 #   2: Spatial probit
 #   3: Spatial GEV (our method)
+#   4: Spatial GEV (our method with alpha and rho fixed)
 #########################################################################
 
 rm(list=ls())
