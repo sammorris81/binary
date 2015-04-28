@@ -37,7 +37,7 @@ source("initialize.R", chdir=T)  # loads packages and sources files
 iters <- 100000; burn <- 80000; update <- 500; thin <- 1
 nsets <- 10
 nsettings <- 8
-nmethods  <- 5
+nmethods  <- 6
 ntrain <- 3000
 ntest  <- 1000
 obs <- c(rep(T, ntrain), rep(F, ntest))
@@ -56,13 +56,13 @@ cov.model <- "exponential"
 
 s.pred <- s[!obs, ]
 X.pred <- matrix(1, ntest, nt)
-brier.scores <- array(0, dim=c(nsets, nmethods, nsettings))
+brier.scores.2 <- array(0, dim=c(nsets, nmethods, nsettings))
 
 for (setting in 1:nsettings) {
   for (set in 1:nsets) {
     y.validate   <- y[!obs, , set, setting]
 
-    # 1: Independent probit
+#     # 1: Independent probit
 #     filename <- paste(setting, "-1-", set, ".RData", sep="")
 #     load(filename)
 #     post.prob <- matrix(fit, iters, ntest, byrow = FALSE)
@@ -78,34 +78,45 @@ for (setting in 1:nsettings) {
 #     }
 #     brier.scores[set, 2, setting] <- BrierScore(post.prob, y.validate)
 #     print(paste("Independent GEV - set", set, "finished"))
-
+#
     # 3: Spatial logit
-    filename <- paste(setting, "-3-", set, ".RData", sep="")
+    filename <- paste(setting, "-1-", set, ".RData", sep="")
     load(filename)
     yp.sp.lo <- spPredict(sp.obj = fit, pred.coords = s.pred,
                           pred.covars = X.pred, start = 30001, end = 40000,
                           thin = 1, verbose = TRUE, n.report = 500)
     post.prob <- t(yp.sp.lo$p.y.predictive.samples)
-    brier.scores[set, 3, setting] <- BrierScore(post.prob, y.validate)
+    brier.scores[set, 1, setting] <- BrierScore(post.prob, y.validate)
     print(paste("Spatial logit - set", set, "finished"))
 
     # 4: Spatial probit
-    filename <- paste(setting, "-4-", set, ".RData", sep="")
+    filename <- paste(setting, "-2-", set, ".RData", sep="")
     load(filename)
     post.prob <- pred.spprob(mcmcoutput = fit, X.pred = X.pred,
                              s.pred = s.pred, knots = knots,
                              start = 1, end = 10000, update = 500)
-    brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
+    brier.scores[set, 2, setting] <- BrierScore(post.prob, y.validate)
     print(paste("Spatial probit - set", set, "finished"))
 
     # 5: Spatial GEV
-    filename <- paste(setting, "-5-", set, ".RData", sep="")
+    filename <- paste(setting, "-3-", set, ".RData", sep="")
     load(filename)
     post.prob <- pred.spgev(mcmcoutput = fit, x.pred = X.pred,
                             s.pred = s.pred, knots = knots,
                             start = 1, end = 10000, update = 500)
-    brier.scores[set, 5, setting] <- BrierScore(post.prob, y.validate)
+    brier.scores[set, 3, setting] <- BrierScore(post.prob, y.validate)
     print(paste("Spatial GEV - set", set, "finished"))
+
+    if (setting <= 4) {
+      # 6: Spatial GEV - Fixed alpha and rho
+      filename <- paste(setting, "-4-", set, ".RData", sep="")
+      load(filename)
+      post.prob <- pred.spgev(mcmcoutput = fit, x.pred = X.pred,
+                              s.pred = s.pred, knots = knots,
+                              start = 1, end = 10000, update = 500)
+      brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
+      print(paste("Spatial GEV - set", set, ", fixed alpha & rho, finished"))
+    }
   }
 
   save(brier.scores, file="binary-results.RData")
@@ -114,3 +125,29 @@ for (setting in 1:nsettings) {
 
 load("binary-results.RData")
 apply(brier.scores, c(2, 3), mean)  # right now, only setting 1b is in our favor.
+
+# look at some of the datasets where alpha and rho are fixed
+# Setting 1: Sets 1, 5, 7 have unusually high brier scores
+load("simdata2.RData")
+these.train <- which(y[obs, 1, 1, 1] == 1)
+these.test  <- which(y[!obs, 1, 1, 1] == 1)
+s.o <- s[obs, ]
+s.p <- s[!obs, ]
+plot(s.o[these, ])
+points(s.p[these.test, ], col=2)
+
+these.train <- which(y[obs, 1, 5, 1] == 1)
+these.test  <- which(y[!obs, 1, 5, 1] == 1)
+s.o <- s[obs, ]
+s.p <- s[!obs, ]
+plot(s.o[these, ])
+points(s.p[these.test, ], col=2)
+
+these.train <- which(y[obs, 1, 7, 1] == 1)
+these.test  <- which(y[!obs, 1, 7, 1] == 1)
+s.o <- s[obs, ]
+s.p <- s[!obs, ]
+plot(s.o[these, ], pch=22, bg="dodgerblue1", col="dodgerblue4",
+     xlab="", ylab="", xlim=c(0, 1), ylim=c(0, 1))
+points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
+points(knots)
