@@ -68,7 +68,7 @@ for (setting in 1:nsettings) {
 #     post.prob <- matrix(fit, iters, ntest, byrow = FALSE)
 #     brier.scores[set, 1, setting] <- BrierScore(post.prob, y.validate)
 #     print(paste("Independent probit - set", set, "finished"))
-# 
+#
 #     # 2: Independent GEV
 #     filename <- paste(setting, "-2-", set, ".RData", sep="")
 #     load(filename)
@@ -112,3 +112,5 @@ for (setting in 1:nsettings) {
   print(paste("Setting", setting, "finished"))
 }
 
+load("binary-results.RData")
+apply(brier.scores, c(2, 3), mean)  # right now, only setting 1b is in our favor.
