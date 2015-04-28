@@ -172,7 +172,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       # }
 
       # update alpha
-      if (!fixalpha) {
+      if (!alpha.fix) {
         alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
                                     cur.lly=cur.lly, cur.llps=cur.llps,
                                     z=z, z.star=z.star, w=w, w.star=w.star,
@@ -195,10 +195,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           att.alpha <- mh.update$att
           mh.alpha  <- mh.update$mh
         }
-      }  # fi !fixalpha
+      }  # fi !alpha.fix
 
       # update rho
-      if (!fixrho) {
+      if (!rho.fix) {
         rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
                                 cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
                                 dw2=dw2, rho=rho, rho.upper=rho.upper,
@@ -218,7 +218,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           att.rho   <- mh.update$att
           mh.rho    <- mh.update$mh
         }
-      }
+      }  # fi rho.fix
     }
 
     }  # end thin
