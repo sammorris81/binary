@@ -32,12 +32,14 @@
 rm(list=ls())
 load("simdata2.RData")
 source("initialize.R", chdir=T)  # loads packages and sources files
+library(doMC)
+registerDoMC(6)
 
 # y is ns, nt, nsets, nsettings
-iters <- 100000; burn <- 80000; update <- 500; thin <- 1
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
 nsets <- 10
 nsettings <- 8
-nmethods  <- 6
+nmethods  <- 4
 ntrain <- 3000
 ntest  <- 1000
 obs <- c(rep(T, ntrain), rep(F, ntest))
@@ -56,73 +58,60 @@ cov.model <- "exponential"
 
 s.pred <- s[!obs, ]
 X.pred <- matrix(1, ntest, nt)
-brier.scores.2 <- array(0, dim=c(nsets, nmethods, nsettings))
+# brier.scores <- array(0, dim=c(nsets, nmethods, nsettings))
 
-for (setting in 1:nsettings) {
-  for (set in 1:nsets) {
+results <- foreach (setting = 1:8) %dopar% {
+  brier.scores <- matrix(NA, 10, 4)
+  for (set in 1:6) {
     y.validate   <- y[!obs, , set, setting]
 
-#     # 1: Independent probit
-#     filename <- paste(setting, "-1-", set, ".RData", sep="")
-#     load(filename)
-#     post.prob <- matrix(fit, iters, ntest, byrow = FALSE)
-#     brier.scores[set, 1, setting] <- BrierScore(post.prob, y.validate)
-#     print(paste("Independent probit - set", set, "finished"))
-#
-#     # 2: Independent GEV
-#     filename <- paste(setting, "-2-", set, ".RData", sep="")
-#     load(filename)
-#     for (i in 1:(iters - burn)) {
-#       z <- getZ(xi = fit$xi[i], x.beta = fit$beta[i], thresh = 0)
-#       post.prob[i, ] <- 1 - exp(-1 / z)
-#     }
-#     brier.scores[set, 2, setting] <- BrierScore(post.prob, y.validate)
-#     print(paste("Independent GEV - set", set, "finished"))
-#
-    # 3: Spatial logit
+    # 1: Spatial logit
     filename <- paste(setting, "-1-", set, ".RData", sep="")
     load(filename)
     yp.sp.lo <- spPredict(sp.obj = fit, pred.coords = s.pred,
                           pred.covars = X.pred, start = 30001, end = 40000,
                           thin = 1, verbose = TRUE, n.report = 500)
     post.prob <- t(yp.sp.lo$p.y.predictive.samples)
-    brier.scores[set, 1, setting] <- BrierScore(post.prob, y.validate)
-    print(paste("Spatial logit - set", set, "finished"))
+    brier.scores[set, 1] <- BrierScore(post.prob, y.validate)
+    # print(paste("Spatial logit - set", set, "finished"))
 
-    # 4: Spatial probit
+    # 2: Spatial probit
     filename <- paste(setting, "-2-", set, ".RData", sep="")
     load(filename)
     post.prob <- pred.spprob(mcmcoutput = fit, X.pred = X.pred,
                              s.pred = s.pred, knots = knots,
                              start = 1, end = 10000, update = 500)
-    brier.scores[set, 2, setting] <- BrierScore(post.prob, y.validate)
-    print(paste("Spatial probit - set", set, "finished"))
+    brier.scores[set, 2] <- BrierScore(post.prob, y.validate)
+    # print(paste("Spatial probit - set", set, "finished"))
 
-    # 5: Spatial GEV
+    # 3: Spatial GEV
     filename <- paste(setting, "-3-", set, ".RData", sep="")
     load(filename)
     post.prob <- pred.spgev(mcmcoutput = fit, x.pred = X.pred,
                             s.pred = s.pred, knots = knots,
                             start = 1, end = 10000, update = 500)
-    brier.scores[set, 3, setting] <- BrierScore(post.prob, y.validate)
-    print(paste("Spatial GEV - set", set, "finished"))
+    brier.scores[set, 3] <- BrierScore(post.prob, y.validate)
+    # print(paste("Spatial GEV - set", set, "finished"))
 
     if (setting <= 4) {
-      # 6: Spatial GEV - Fixed alpha and rho
+      # 4: Spatial GEV - Fixed alpha and rho
       filename <- paste(setting, "-4-", set, ".RData", sep="")
       load(filename)
       post.prob <- pred.spgev(mcmcoutput = fit, x.pred = X.pred,
                               s.pred = s.pred, knots = knots,
                               start = 1, end = 10000, update = 500)
-      brier.scores[set, 4, setting] <- BrierScore(post.prob, y.validate)
-      print(paste("Spatial GEV - set", set, ", fixed alpha & rho, finished"))
+      brier.scores[set, 4] <- BrierScore(post.prob, y.validate)
+      # print(paste("Spatial GEV - set", set, ", fixed alpha & rho, finished"))
     }
   }
+  return(brier.scores)
 
-  save(brier.scores, file="binary-results.RData")
-  print(paste("Setting", setting, "finished"))
+#   save(brier.scores, file="binary-results.RData")
+#   print(paste("Setting", setting, "finished"))
 }
 
-load("binary-results.RData")
-apply(brier.scores, c(2, 3), mean)  # right now, only setting 1b is in our favor.
+save(results, file="binary-results.RData")  # saves a list
+
+# load("binary-results.RData")
+# apply(brier.scores, c(2, 3), mean)  # right now, only setting 1b is in our favor.
 
