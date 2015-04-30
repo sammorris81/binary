@@ -59,9 +59,9 @@ cov.model <- "exponential"
 s.pred <- s[!obs, ]
 X.pred <- matrix(1, ntest, nt)
 
-results2 <- foreach (setting = 1:8) %dopar% {
+results2 <- foreach (setting = 1:nsettings) %dopar% {
   brier.scores <- matrix(NA, 10, 4)
-  for (set in 8) {
+  for (set in 1:nsets) {
     y.validate   <- y[!obs, , set, setting]
 
     # 1: Spatial logit
@@ -107,11 +107,6 @@ results2 <- foreach (setting = 1:8) %dopar% {
 
 #   save(brier.scores, file="binary-results.RData")
 #   print(paste("Setting", setting, "finished"))
-}
-
-load("binary-results.RData")
-for (k in 1:nsettings) {
-  results[[k]][8, ] <- results2[[k]][8, ]
 }
 
 save(results, file="binary-results.RData")  # saves a list

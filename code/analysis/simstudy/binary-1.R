@@ -76,7 +76,7 @@ for (d in 1:nsets) {
   save(fit, file = outputfile)
   rm(fit)
   gc()
-  
+
   # spatial probit
   cur.seed <- cur.seed + 1
   set.seed(cur.seed)
@@ -88,8 +88,8 @@ for (d in 1:nsets) {
   save(fit, file = outputfile)
   rm(fit)
   gc()
-  
-  
+
+
   # spatial GEV
   cur.seed <- cur.seed + 1
   set.seed(cur.seed)
