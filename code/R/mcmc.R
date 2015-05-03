@@ -1,6 +1,6 @@
 mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
-                 beta.init = 0, beta.m = 0, beta.s = 20,
-                 xi.init = 0.1, xi.m = 0, xi.s = 0.5,
+                 beta.init = NULL, beta.m = 0, beta.s = 20,
+                 xi.init = NULL, xi.m = 0, xi.s = 0.5,
                  npts = 100, knots = NULL, thresh = 0,
                  beta.tune = 0.01, xi.tune = 0.1,
                  alpha.tune = 0.1, rho.tune = 0.1, A.tune = 1,
@@ -55,12 +55,29 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   }
 
   # get initial z
-  xi     <- xi.init
-  if (length(beta.init) == 1) {
-    beta <- rep(beta.init, p)
+  if (is.null(xi.init)) {
+    xi <- 0
   } else {
-    beta   <- beta.init
+    xi <- xi.init
   }
+
+  if (is.null(beta.init)) {
+    if (xi == 0) {
+      beta.init <- thresh + log(-log(1 - mean(y)))
+      beta <- rep(beta.init, p)
+    } else {
+      beta.init <- thresh + (1 - log(1 - mean(y)))^(-xi) / xi
+      beta <- rep(beta.init, p)
+    }
+  } else {
+    if (length(beta.init) == 1) {
+      beta <- rep(beta.init, p)
+    } else {
+      beta   <- beta.init
+    }
+  }
+
+
 
   x.beta <- matrix(NA, ns, nt)
   for (t in 1:nt) {
@@ -177,7 +194,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     cur.lly=cur.lly, cur.llps=cur.llps,
                                     z=z, z.star=z.star, w=w, w.star=w.star,
                                     mid.points=mid.points, bin.width=bin.width,
-                                    acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+                                    acc=acc.alpha, att=att.alpha, mh=mh.alpha,
+                                    iter=iter)
 
         alpha     <- alpha.update$alpha
         w.star    <- alpha.update$w.star
@@ -202,7 +220,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
                                 cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
                                 dw2=dw2, rho=rho, rho.upper=rho.upper,
-                                acc=acc.rho, att=att.rho, mh=mh.rho)
+                                acc=acc.rho, att=att.rho, mh=mh.rho, iter=iter)
         rho        <- rho.update$rho
         w          <- rho.update$w
         w.star     <- rho.update$w.star

@@ -77,7 +77,23 @@ stdW <- function(x, single=FALSE) {
 # get find the ll for y - returns ns x nt matrix for each site/day
 logLikeY <- function(y, theta.star, z.star) {
   theta.z.star <- -theta.star / z.star
-  ll.y <- (1 - y) * theta.z.star + y * log(1 - exp(theta.z.star))
+  if (!is.null(dim(y))) {
+    ll.y <- matrix(-Inf, dim(y))
+  } else {
+    ll.y <- rep(-Inf, length(y))
+  }
+
+  # numerical stability issue. originally was using
+  # (1 - y) * P(Y = 0) + y * P(Y = 1)
+  # would return NaN because 0 * -Inf is not a number
+  these <- which(y == 1)
+  ll.y[-these] <- theta.z.star[-these]
+  ll.y[these]  <- log(1 - exp(theta.z.star[these]))
+  # if (sum(is.nan(ll.y)) > 0) {
+  #   these <- which(is.nan(ll.y))
+  #   print(theta.z.star[these])
+  #   # print(1 - exp(theta.z.star[these]))
+  # }
   return(ll.y)
 }
 
@@ -277,7 +293,7 @@ mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
 
 
 # ld2 is used in generating positive stable random variables
-ld2 <- function(u, logs, alpha, shift=0, log=T) {
+ld2 <- function(u, logs, alpha, shift=0, log=TRUE) {
 
   logs <- logs - shift / alpha
   s <- exp(logs)
@@ -327,6 +343,48 @@ trunc <- function(x, eps=0.1) {
   x <- ifelse(x < eps, eps, x)
   x <- ifelse(x > 1-eps, 1-eps, x)
   return(x)
+}
+
+#########################################################################
+# Arguments:
+#   mn(nt): mean
+#   sd(nt, nt): standard deviation
+#   lower(1): lower truncation point (default=-Inf)
+#   upper(1): upper truncation point (default=Inf)
+# fudge(1): small number for numerical stability (used for lower bound)
+#
+# Returns:
+#   y(nt): truncated normal data
+#########################################################################
+rTNorm <- function(mn, sd, lower=-Inf, upper=Inf, fudge=0) {
+  lower.u <- pnorm(lower, mn, sd)
+  upper.u <- pnorm(upper, mn, sd)
+
+  # replace <- ((mn / sd) > 5) & (lower == 0)
+  # lower.u[replace] <- 0
+  lower.u <- ifelse( mn / sd > 5 & lower == 0, 0, lower.u )
+  U <- tryCatch(runif(length(mn), lower.u, upper.u),
+                warning=function(e) {
+                  cat("mn =", mn, "\n")
+                  cat("sd =", sd, "\n")
+                  cat("lower.u =", lower.u, "\n")
+                  cat("upper.u =", upper.u, "\n")
+                })
+  y <- qnorm(U, mn, sd)
+
+  return(y)
+}
+
+dTNorm <- function(y, mn, sd, lower=-Inf, upper=Inf, fudge=0, log=TRUE) {
+  lower.u <- pnorm(lower, mn, sd)
+  upper.u <- pnorm(upper, mn, sd)
+
+  ld <- dnorm(y, mn, sd, log=TRUE) - log(upper.u - lower.u)
+  if (!log) {
+    ld <- exp(ld)
+  }
+
+  return(ld)
 }
 
 ################################################################

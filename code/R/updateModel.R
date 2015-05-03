@@ -17,11 +17,20 @@ updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     } else {
       can.x.beta  <- x.beta + x[, , p] * (can.beta - beta[p])
     }
-    can.z       <- getZ(xi=xi, x.beta=can.x.beta, thresh=thresh)
-    can.z.star  <- can.z^(alpha.inv)
 
-    # treat as independent at the moment
-    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+    if (sum(xi * (can.x.beta - thresh) > 1) > 0) {  # numerical stability
+      can.lly <- -Inf
+    } else {
+      can.z       <- getZ(xi=xi, x.beta=can.x.beta, thresh=thresh)
+      can.z.star  <- can.z^(alpha.inv)
+      can.lly     <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+    }
+
+    # if (sum(is.nan(can.lly)) > 0) {
+    #   print("z in beta update")
+    #   print(mean(can.z))
+    #   print(mean(can.z.star))
+    # }
 
     R <- sum(can.lly - cur.lly) +
          dnorm(can.beta, beta.m, beta.s, log=TRUE) -
@@ -50,14 +59,28 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
   alpha.inv <- 1 / alpha
 
   can.xi     <- rnorm(1, xi, mh)
-  can.z      <- getZ(xi=can.xi, x.beta=x.beta, thresh=thresh)
-  can.z.star <- can.z^(alpha.inv)
 
-  can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+  if (sum(can.xi * (x.beta - thresh) > 1) > 0) {  # numerical stability
+    # print("should generate NaNs")
+    can.lly <- -Inf
+  } else {
+    can.z      <- getZ(xi=can.xi, x.beta=x.beta, thresh=thresh)
+    can.z.star <- can.z^(alpha.inv)
+
+    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+
+    # if (sum(is.nan(can.lly)) > 0) {
+    #   print("z in xi update")
+    #   print(mean(can.z))
+    #   print(mean(can.z.star))
+    # }
+  }
 
   R <- sum(can.lly - cur.lly) +
        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
        dnorm(xi, xi.m, xi.s, log=TRUE)
+       # dTNorm(xi, can.xi, mh, log=TRUE) -  # truncated so not symmetric
+       # dTNorm(can.xi, xi, mh, log=TRUE)
 
   if (!is.na(R)) { if (log(runif(1)) < R) {
     xi      <- can.xi
@@ -136,13 +159,13 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
       # can.theta.star only changes at a site when it's near the knot
       can.theta.star <- theta.star[, t] + w.star[, k] * (can.a - cur.a)
       if (sum(can.theta.star <= 0) > 0) {  # numerical stability
-        can.llps <- -Inf
+        can.llps  <- -Inf
         can.lly.t <- -Inf
       } else {
-        can.llps       <- dPS.Rcpp(a=can.a, alpha=alpha,
-                                   mid.points=mid.points, bin.width=bin.width)
-        can.lly.t      <- logLikeY(y=y[, t], theta.star=can.theta.star,
-                                   z.star=z.star[, t])
+        can.llps  <- dPS.Rcpp(a=can.a, alpha=alpha,
+                              mid.points=mid.points, bin.width=bin.width)
+        can.lly.t <- logLikeY(y=y[, t], theta.star=can.theta.star,
+                              z.star=z.star[, t])
       }
 
       R <- sum(can.lly.t - cur.lly.t) +
@@ -161,6 +184,14 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
 
   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
 
+  if (sum(is.nan(cur.lly)) > 0) {
+    cur.lly <<- cur.lly
+    theta.star <<- theta.star
+    z.star <<- z.star
+    a <<- a
+    print("NaN error in lly for a update")
+  }
+
   results <- list(a=a, theta.star=theta.star,
                   cur.lly=cur.lly, cur.llps=cur.llps)
   return(results)
@@ -168,7 +199,7 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
 
 # update the alpha term for theta.star
 updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
-                        w, w.star, mid.points, bin.width, acc, att, mh) {
+                        w, w.star, mid.points, bin.width, acc, att, mh, iter) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -185,6 +216,31 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   can.lly        <- logLikeY(y=y, theta.star=can.theta.star, z.star=can.z.star)
   can.llps       <- matrix(NA, nknots, nt)
   can.llps       <- dPS.Rcpp(a, can.alpha, mid.points, bin.width)
+
+  if (sum(is.nan(can.w.star)) > 0) {
+    print(can.alpha)
+    print(w)
+    stop("NaN error in can.w.star for alpha update")
+  }
+
+  if (sum(is.nan(can.z.star)) > 0) {
+    print(can.alpha)
+    print(z)
+    stop("NaN error in can.z.star for alpha update")
+  }
+
+  if (sum(is.nan(can.lly)) > 0) {
+    can.lly <<- can.lly
+    can.theta.star <<- can.theta.star
+    can.w.star <<- can.w.star
+    can.z.star <<- can.z.star
+    can.theta <<- can.theta.star^can.alpha
+    can.alpha <<- can.alpha
+    z <<- z
+    a <<- a
+    print("NaN error in can.lly for alpha update")
+  }
+
   # for(t in 1:nt) {
   #   for (k in 1:nknots) {
   #     can.llps[k, t] <- dPS(a[k, t], can.alpha, mid.points, bin.width)
@@ -194,6 +250,16 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
        dnorm(can.alpha.star, log=TRUE) -
        dnorm(cur.alpha.star, log=TRUE)
+
+  # if ((iter > 3000) & (iter %% 50 == 0)) {
+  #   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
+  #   cur.llps <- dPS.Rcpp(a, alpha, mid.points, bin.width)
+  #   print(paste("can.alpha = ", can.alpha, sep=""))
+  #   print(paste("alpha = ", alpha, sep=""))
+  #   print(paste("lldiff = ", sum(can.lly - cur.lly), sep=""))
+  #   print(paste("alldiff = ", sum(can.llps - cur.llps), sep=""))
+  #   print(paste("R = ", R, sep=""))
+  # }
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     alpha      <- can.alpha
@@ -212,32 +278,39 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
 }
 
 updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
-                      rho, rho.upper=Inf, acc, att, mh) {
+                      rho, rho.upper=Inf, acc, att, mh, iter) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
   att <- att + 1
-  # rho.star       <- log(rho)
-  # can.rho.star   <- rnorm(1, rho.star, mh)
-  # can.rho        <- exp(can.rho.star)
-  rho.star       <- transform$probit(rho, lower=1e-6, upper=rho.upper)
+  rho.star       <- log(rho)
   can.rho.star   <- rnorm(1, rho.star, mh)
-  can.rho        <- transform$inv.probit(can.rho.star, lower=1e-6, upper=rho.upper)
+  can.rho        <- exp(can.rho.star)
+  # rho.star       <- transform$probit(rho, lower=1e-6, upper=rho.upper)
+  # can.rho.star   <- rnorm(1, rho.star, mh)
+  # can.rho        <- transform$inv.probit(can.rho.star, lower=1e-6, upper=rho.upper)
   can.w          <- stdW(makeW(dw2=dw2, rho=can.rho))
   can.w.star     <- can.w^(1 / alpha)
   can.theta.star <- getThetaStar(w.star=can.w.star, a=a)
   can.lly <- logLikeY(y=y, theta.star=can.theta.star, z.star=z.star)
 
   logrho.m <- -1
-  logrho.s <- 0.1
+  logrho.s <- 2
 
   R <- sum(can.lly - cur.lly) +
-       dnorm(can.rho.star, log=TRUE) - dnorm(rho.star, log=TRUE)
-
-       # dnorm(can.rho.star, logrho.m, logrho.s, log=TRUE) -
-       # dnorm(rho.star, logrho.m, logrho.s, log=TRUE)
+       # dnorm(can.rho.star, log=TRUE) - dnorm(rho.star, log=TRUE)
+       dnorm(can.rho.star, logrho.m, logrho.s, log=TRUE) -
+       dnorm(rho.star, logrho.m, logrho.s, log=TRUE)
        # dgamma(can.rho, 1, 1, log=T) -
        # dgamma(rho, 1, 1, log=T)
+
+  # if ((iter > 3000) & (iter %% 50 == 0)) {
+  #   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
+  #   print(paste("can.rho = ", can.rho, sep=""))
+  #   print(paste("rho = ", rho, sep=""))
+  #   print(paste("lldiff = ", sum(can.lly - cur.lly), sep=""))
+  #   print(paste("R = ", R, sep=""))
+  # }
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     rho        <- can.rho
