@@ -92,18 +92,21 @@ for (d in 1:nsets) {
 
   # spatial GEV
   cur.seed <- cur.seed + 1
-  set.seed(cur.seed)
+  set.seed(103)
+  source("initialize.R", chdir=T)
+  # set.seed(cur.seed)
   cat("Start spatial GEV: Set", d, "\n")
   fit <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
               beta.init = 0, beta.m = 0, beta.s = 100,
-              xi.init = 0.1, xi.m = 0, xi.s = 0.5,
-              knots = knots, beta.tune = 1, xi.tune = 1,
-              alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
+              xi.init = 0, xi.m = 0, xi.s = 0.5,
+              knots = knots, beta.tune = 1, xi.tune = 0.1,
+              alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
               beta.attempts = 50, xi.attempts = 50,
               alpha.attempts = 200, rho.attempts = 200,
-              spatial = TRUE, rho.init = 1, rho.upper = 9,
-              alpha.init = 0.5, a.init = 1, iterplot = FALSE,
-              iters = iters, burn = burn, update = update, thin = 1)
+              spatial = TRUE, rho.init = 0.5, rho.upper = 9,
+              alpha.init = 0.3, a.init = 100, iterplot = TRUE,
+              alpha.fix = TRUE,
+              iters = iters, burn = burn, update = 100, thin = 1)
   cat("End spatial GEV: Set", d, "\n")
   outputfile <- paste(setting, "-5-", d, ".RData", sep="")
   save(fit, file = outputfile)
