@@ -188,15 +188,16 @@ points(knots)
 load("simdata2.RData")
 d <- rdist(s)
 diag(d) <- 0
-bins <- seq(0, max(d), length=100)
-xplot <- (bins[-1] + bins[-100]) / 2
-acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
 
 ns        <- 4000
 nt        <- 1
 np        <- 1
 nsets     <- 200
 nsettings <- 4   # a, b, c, d from above
+
+bins <- seq(0, max(d), length=100)
+xplot <- (bins[-1] + bins[-100]) / 2
+acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
 
 knots.1 <- knots.2 <- seq(from = 0.2, to = 5.8, length = 12)
 knots <- as.matrix(expand.grid(knots.1, knots.2))
