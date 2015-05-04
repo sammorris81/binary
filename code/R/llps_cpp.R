@@ -6,21 +6,20 @@ code <- '
   arma::vec mid_points_c = Rcpp::as<arma::vec>(mid_points);
   arma::vec bin_width_c = Rcpp::as<arma::vec>(bin_width);
   int nbins = mid_points_c.n_elem;
-  double integral; double llst; double psi; double c; double logint;
+  double integral; double llst; double psi; double logc; double logint;
   double a_cst;
   arma::mat ll(ns, nt);
 
   for (int s = 0; s < ns; s++) {
     for (int t = 0; t < nt; t++) {
       a_cst = a_c(s, t);
-      llst = log(alpha_c) - log(1 - alpha_c) - (1 / (1 - alpha_c)) *
-             log(a_cst);
+      llst = log(alpha_c) - log(1 - alpha_c) - log(a_cst) / (1 - alpha_c);
       integral = 0;
       for (int i = 0; i < nbins; i++) {
         psi = PI * mid_points_c[i];
-        c = pow((sin(alpha_c * psi) / sin(psi)), (1 / (1 - alpha_c)));
-        c *= sin((1 - alpha_c) * psi) / sin(alpha_c * psi);
-        logint = log(c) - c * (1 / pow(a_cst, (alpha_c / (1 - alpha_c))));
+        logc = (log(sin(alpha_c * psi)) - log(sin(psi))) / (1 - alpha_c) +
+               log(sin((1 - alpha_c) * psi)) - log(sin(alpha_c * psi));
+        logint = logc - exp(logc) * pow(a_cst, (- alpha_c / (1 - alpha_c)));
         integral += exp(logint) * bin_width_c[i];
       }
       ll(s, t) = llst + log(integral);
