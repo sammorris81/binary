@@ -199,16 +199,16 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
 
 # update the alpha term for theta.star
 updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
-                        w, w.star, mid.points, bin.width, acc, att, mh, iter) {
+                        alpha.a, alpha.b, w, w.star, mid.points, bin.width,
+                        acc, att, mh, iter) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
   att <- att + 1
 
   # not exactly U(0, 1) - using truncation for numerical stability
-  cur.alpha.star <- transform$probit(alpha, 1e-6, 0.999999)
-  can.alpha.star <- rnorm(1, cur.alpha.star, mh)
-  can.alpha      <- transform$inv.probit(can.alpha.star, 1e-6, 0.999999)
+  can.alpha.star <- rnorm(1, log(alpha / (1 - alpha)), mh)
+  can.alpha      <- exp(can.alpha.star) / (1 + exp(can.alpha.star))
   can.alpha.inv  <- 1 / can.alpha
   can.w.star     <- w^can.alpha.inv
   can.z.star     <- z^can.alpha.inv
@@ -248,8 +248,8 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   # }
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
-       dnorm(can.alpha.star, log=TRUE) -
-       dnorm(cur.alpha.star, log=TRUE)
+       dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
+       dbeta(alpha, alpha.a, alpha.b, log=TRUE)
 
   # if ((iter > 3000) & (iter %% 50 == 0)) {
   #   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
