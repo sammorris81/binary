@@ -83,7 +83,9 @@ dPS.Rcpp <- function(a, alpha, mid.points, bin.width) {
   return(results$ll)
 }
 
-npts <- 70
+source("llps.cpp")
+
+npts <- 100
 u.beta     <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
 mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
 bin.width  <- u.beta[-1] - u.beta[-(npts + 1)]
@@ -93,10 +95,15 @@ a <- matrix(1:81, 81, 20)
 
 res.R <- dPS.R(a, alpha, mid.points, bin.width)
 res.Rcpp <- dPS.Rcpp(a, alpha, mid.points, bin.width)
+res.Rcpp.omp <- dPS_wrapper(a, alpha, mid_points = mid.points,
+                            bin_width = bin.width, threads = 3)
 sum( (res.R / res.Rcpp) == 1)
+sum( (res.R / res.Rcpp.omp) == 1)
 
 microbenchmark(dPS.R(a=a, alpha=alpha, mid.points=mid.points,
                      bin.width=bin.width),
                dPS.Rcpp(a=a, alpha=alpha, mid.points=mid.points,
                         bin.width=bin.width),
+               dPS_wrapper(a, alpha, mid_points = mid.points,
+                            bin_width = bin.width, threads = 3),
                times = 100)

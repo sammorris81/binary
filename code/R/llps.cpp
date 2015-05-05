@@ -1,36 +1,36 @@
-#include <Rcpp.h>
+code <- '
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
 using namespace Rcpp;
+using namespace arma;
 
-// Below is a simple example of exporting a C++ function to R. You can
-// source this function into an R session using the Rcpp::sourceCpp 
-// function (or via the Source button on the editor toolbar)
-
-// For more on using Rcpp click the Help button on the editor toolbar
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 // [[Rcpp::export]]
-SEXP dPS_wrapper(SEXP a, SEXP alpha, SEXP mid_points, SEXP bin_width) {
-  arma::mat a_c = Rcpp::as<arma::mat>(a);
-  int ns = a_c.n_rows; int nt = a_c.n_cols;
-  double alpha_c = Rcpp::as<double>(alpha);
-  arma::vec mid_points_c = Rcpp::as<arma::vec>(mid_points);
-  arma::vec bin_width_c = Rcpp::as<arma::vec>(bin_width);
-  int nbins = mid_points_c.n_elem;
-  double integral; double llst; double psi; double c; double logint;
-  double a_cst;
+arma::mat dPS_wrapper(arma::mat a, double alpha, arma::vec mid_points,
+                      arma::vec bin_width, int threads = 1) {
+
+  int ns = a.n_rows; int nt = a.n_cols;
+  int nbins = mid_points.n_elem;
+  int s; int t; int i;
+  double integral; double llst; double psi; double logc; double logint;
+  double ast;
   arma::mat ll(ns, nt);
 
-  for (int s = 0; s < ns; s++) {
-    for (int t = 0; t < nt; t++) {
-      a_cst = a_c(s, t);
-      llst = log(alpha_c) - log(1 - alpha_c) - (1 / (1 - alpha_c)) *
-             log(a_cst);
+  for (s = 0; s < ns; s++) {
+    for (t = 0; t < nt; t++) {
+      ast = a(s, t);
+      llst = log(alpha) - log(1 - alpha) - log(ast) / (1 - alpha);
       integral = 0;
-      for (int i = 0; i < nbins; i++) {
-        psi = PI * mid_points_c[i];
-        c = pow((sin(alpha_c * psi) / sin(psi)), (1 / (1 - alpha_c)));
-        c *= sin((1 - alpha_c) * psi) / sin(alpha_c * psi);
-        logint = log(c) - c * (1 / pow(a_cst, (alpha_c / (1 - alpha_c))));
-        integral += exp(logint) * bin_width_c[i];
+#pragma omp parallel for private(psi, logc, logint) reduction(+:integral) schedule(dynamic)
+      for (i = 0; i < nbins; i++) {
+        psi = PI * mid_points[i];
+        logc = (log(sin(alpha * psi)) - log(sin(psi))) / (1 - alpha) +
+          log(sin((1 - alpha) * psi)) - log(sin(alpha * psi));
+        logint = logc - exp(logc) * pow(ast, (- alpha / (1 - alpha)));
+        integral += exp(logint) * bin_width[i];
       }
       ll(s, t) = llst + log(integral);
     }
@@ -38,3 +38,9 @@ SEXP dPS_wrapper(SEXP a, SEXP alpha, SEXP mid_points, SEXP bin_width) {
 
   return ll;
 }
+'
+
+library(Rcpp)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(code = code)
