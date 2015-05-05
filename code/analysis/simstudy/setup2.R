@@ -226,41 +226,51 @@ rho.logit   <- c(3, 1, 3, 1)
 sigsq.logit <- 1
 nu.logit    <- 0.5
 
+library(doMC)
+registerDoMC(4)
+
 set.seed <- 3181 # data
-for (i in 1:nsets) {
-  for (j in 1:nlinks) {
-    for (k in 1:nsettings) {
-      data <- rRareBinarySpat(x = X, s = s, knots = knots, beta = 0, xi.ms,
-                              alpha = alpha.ms[k], rho.ms,
-                              prob.success = prob.ms[k])
-      a.t[, , i, k] <- data$a
-      int.ms[i, k] <- data$thresh
-      y[, , i, k] <- data$y
-    }
+for (j in 1:nsettings) {
+  for (i in 1:nsets) {
+    data <- rRareBinarySpat(x = X, s = s, knots = knots, beta = 0, xi.ms,
+                            alpha = alpha.ms[j], rho.ms,
+                            prob.success = prob.ms[j])
+    a.t[, , i, j] <- data$a
+    int.ms[i, j] <- data$thresh
+    y[, , i, j] <- data$y
   }
-  cat("Set", i, "finished \n")
+  cat("Seting", j, "finished \n")
 }
 
-for (setting in 1:4) {
-  for (set in 1:200) {
+results <- foreach (setting = 1:4) %dopar% {
+  acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
+  for (set in 1:nsets) {
     for (j in 1:ns) {
       for (i in 1:ns) {
         if (i != j) {
           dij <- d[i, j]  # get the distance
           this.bin <- max(which(dij > bins))  # figure out which bin it belongs to
           if (y[j, , set, setting] == 1) {  # if
-            att[this.bin, set, setting] <- att[this.bin, set, setting] + 1
+            att[this.bin, set] <- att[this.bin, set] + 1
             if (y[i, , set, setting] == 1) {
-              acc[this.bin, set, setting] <- acc[this.bin, set, setting] + 1
+              acc[this.bin, set] <- acc[this.bin, set] + 1
             }
           }
         }
       }
-      if (j %% 100 == 0) {
-        print(paste("Setting", setting, ", set", set, ", site", j))
-      }
+#       if (j %% 100 == 0) {
+#         print(paste("Setting", setting, ", set", set, ", site", j))
+#       }
     }
   }
+  results <- list(acc=acc, att=att)
+  return(results)
+}
+
+save(results, acc, att, xplot, file="simulatedchi.RData")
+for (setting in 1:4) {
+  acc[, , setting] <- results[[setting]]$acc
+  att[, , setting] <- results[[setting]]$att
 }
 
 theta <- 2 - acc / att
