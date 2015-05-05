@@ -33,7 +33,7 @@ rm(list=ls())
 load("simdata2.RData")
 source("initialize.R", chdir=T)  # loads packages and sources files
 library(doMC)
-registerDoMC(6)
+registerDoMC(4)
 
 # y is ns, nt, nsets, nsettings
 iters <- 40000; burn <- 30000; update <- 500; thin <- 1
@@ -59,7 +59,7 @@ cov.model <- "exponential"
 s.pred <- s[!obs, ]
 X.pred <- matrix(1, ntest, nt)
 
-results2 <- foreach (setting = 1:nsettings) %dopar% {
+results <- foreach (setting = 1:nsettings) %dopar% {
   brier.scores <- matrix(NA, 10, 4)
   for (set in 1:nsets) {
     y.validate   <- y[!obs, , set, setting]
@@ -109,14 +109,14 @@ results2 <- foreach (setting = 1:nsettings) %dopar% {
 #   print(paste("Setting", setting, "finished"))
 }
 
-save(results, file="binary-results.RData")  # saves a list
-load("binary-results.RData")
+# we'll unlist everything in the end
 brier.scores <- array(0, dim=c(nsets, nmethods, nsettings))
 
 for (k in 1:nsettings) {
   brier.scores[, , k] <- results[[k]]
 }
 
+save(results, brier.scores, file="binary-results.RData")  # saves a list
+load("binary-results.RData")
+
 apply(brier.scores, c(2, 3), mean, na.rm=T) * 1000
-
-
