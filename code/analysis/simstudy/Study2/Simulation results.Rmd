@@ -1,0 +1,478 @@
+---
+title: "Small-scale sim study results"
+author: "Morris, S."
+date: "May 1, 2015"
+output: pdf_document
+---
+## Simulation study settings
+
+All: $\mbox{\bf s} \in [0, 6] \times [0, 6]$
+
+1. GEV link
+    a. $\alpha = 0.3$, 144 knots, 1% rareness, $\rho = 0.542$, $\xi = 0.25$
+    b. $\alpha = 0.7$, 144 knots, 1% rareness, $\rho = 0.542$, $\xi = 0.25$
+    c. $\alpha = 0.3$, 144 knots, 5% rareness, $\rho = 0.542$, $\xi = 0.25$
+    d. $\alpha = 0.7$, 144 knots, 5% rareness, $\rho = 0.542$, $\xi = 0.25$
+2. Logit link
+    a. $\rho = 3$, 144 knots, 1% rareness
+    b. $\rho = 1$, 144 knots, 1% rareness
+    c. $\rho = 3$, 144 knots, 5% rareness
+    d. $\rho = 1$, 144 knots, 5% rareness
+    
+where $\rho$ is the bandwidth parameter.
+
+## Models fit
+
+We fit three different models using MCMC
+
+1. Spatial logit
+2. Spatial probit
+3. Spatial GEV
+
+The chains ran for 40000 iterations with a burnin period of 30000 iterations.
+
+## Prior distributions
+
+For all models, we fit an intercept-only model. 
+
+For the logit model, we use the following priors:
+
+\begin{align}
+  \beta &\sim \text{N}(0, 100)\\
+  \rho &\sim \text{Unif}(0, 10) \nonumber\\
+  \sigma^2 &\sim \text{IG}(1, 1) \nonumber\\
+  \tau^2 &\sim \text{IG}(1, 1)
+\end{align}
+
+For the probit model, we use the following priors:
+
+\begin{align}
+  \beta &\sim \text{N}(0, 100)\\
+  \rho &\sim \text{log-Normal}(-1, 2) \nonumber
+\end{align}
+
+For the GEV model, we use the following priors:
+
+\begin{align}
+  \xi &\sim \text{N}(0, 0.5)\\
+  \beta &\sim \text{N}(0, 100) \nonumber\\
+  \alpha &\sim \text{Unif}(0, 1) \nonumber\\
+  \rho &\sim \text{Unif}(0, 9) \nonumber
+\end{align}
+
+## Brier skill scores
+
+We average the Brier skill scores across all 10 datasets and multiply them by 1000 in the following tables.
+
+```{r GEVlink, echo=FALSE}
+library(pander)
+load("../binary-results.RData")
+panderOptions("digits", 5)
+allresults <- apply(brier.scores, c(2, 3), mean, na.rm=T) * 1000
+
+rownames(allresults) <- c("Spatial Logit", "Spatial Probit", "Spatial GEV", "Spatial GEV: fixed params")
+colnames(allresults) <- c("1a", "1b", "1c", "1d", "2a", "2b", "2c", "2d")
+set.caption("Results from settings with GEV link")
+pander(allresults[, 1:4])
+```
+
+```{r logitlink, echo=FALSE}
+set.caption("Results from settings with logit link")
+pander(allresults[1:3, 5:8])
+```
+
+So, when we can fix the spatial settings at their true values for the GEV link, we get some very minor improvements over the spatial probit model. However, when we fit them in the MCMC, our method doesn't perform as well. 
+
+\newpage
+
+## Iteration plots
+
+### Data setting 1a
+
+Fit using spatial logit
+
+```{r iterplots-1-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../1-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-1-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../1-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-1-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../1-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 1b
+
+Fit using spatial logit
+
+```{r iterplots-2-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../2-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-2-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../2-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-2-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../2-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 1c
+
+Fit using spatial logit
+
+```{r iterplots-3-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../3-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-3-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../3-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-3-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../3-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 1d
+
+Fit using spatial logit
+
+```{r iterplots-4-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../4-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-4-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../4-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-4-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../4-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 2a
+
+Fit using spatial logit
+
+```{r iterplots-5-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../5-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-5-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../5-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-5-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../5-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 2b
+
+Fit using spatial logit
+
+```{r iterplots-6-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../6-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-6-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../6-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-6-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../6-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 2c
+
+Fit using spatial logit
+
+```{r iterplots-7-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../7-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-7-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../7-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-7-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../7-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+### Data setting 2d
+
+Fit using spatial logit
+
+```{r iterplots-8-1, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../8-1-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$p.beta.theta.samples[30001:40000, 1], type="l", 
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$p.beta.theta.samples[30001:40000, 2], type="l", 
+     main=bquote(paste(sigma^2, " iterplot")), ylab="", xlab="iteration")
+plot(1/fit$p.beta.theta.samples[30001:40000, 3], type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+***
+
+Fit using spatial probit
+
+```{r iterplots-8-2, echo=FALSE, fig.width=8, fig.height=3, cache=TRUE}
+load("../8-2-1.RData")
+par(mfrow=c(1, 3))
+plot(fit$beta[, 1], type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$taua, type="l", 
+     main=bquote(paste(tau, " iterplot")), ylab="", xlab="iteration")
+plot(fit$bw, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
+
+\newpage
+
+Fit using spatial GEV
+ 
+```{r iterplots-8-3, echo=FALSE, fig.width=6, fig.height=6, cache=TRUE}
+load("../8-3-1.RData")
+par(mfrow=c(2, 2))
+plot(fit$beta, type="l",
+     main=bquote(paste(beta, " iterplot")), ylab="", xlab="iteration")
+plot(fit$xi, type="l", 
+     main=bquote(paste(xi, " iterplot")), ylab="", xlab="iteration")
+plot(fit$alpha, type="l", 
+     main=bquote(paste(alpha, " iterplot")), ylab="", xlab="iteration")
+plot(fit$rho, type="l", 
+     main=bquote(paste(rho, " iterplot")), ylab="", xlab="iteration")
+```
