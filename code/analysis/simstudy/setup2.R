@@ -230,7 +230,7 @@ xi.ms    <- 0.25
 rho.ms   <- 6 / 11
 
 library(doMC)
-registerDoMC(4)
+registerDoMC(2)
 
 set.seed <- 3181 # data
 for (j in 1:nsettings) {
@@ -271,8 +271,58 @@ results <- foreach (setting = 1:4) %dopar% {
   return(results)
 }
 
-save(results, file="simulatedchi.RData")
-load("simulatedchi.RData")
+save(results, file="simulatedchi-alpha.RData")
+
+# max-stable % rareness is set with prob.ms
+prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
+int.ms   <- matrix(NA, nsets, nsettings)
+alpha.ms <- c(0.5, 0.5, 0.5, 0.5)
+xi.ms    <- 0.25
+rho.ms   <- c(0.5, 3, 0.5, 3)
+
+library(doMC)
+registerDoMC(2)
+
+set.seed <- 3181 # data
+for (j in 1:nsettings) {
+  for (i in 1:nsets) {
+    data <- rRareBinarySpat(x = X, s = s, knots = knots, beta = 0, xi.ms,
+                            alpha = alpha.ms[j], rho.ms[j],
+                            prob.success = prob.ms[j])
+    a.t[, , i, j] <- data$a
+    int.ms[i, j] <- data$thresh
+    y[, , i, j] <- data$y
+  }
+  cat("Seting", j, "finished \n")
+}
+
+results <- foreach (setting = 1:4) %dopar% {
+  acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
+  # acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
+  # for (setting in 1:2) {
+  for (set in 1:nsets) {
+    these <- which(y[, , set, setting] == 1)
+    for (j in these) {
+      for (i in 1:ns) {
+        if (i != j) {
+          dij <- d[i, j]  # get the distance
+          this.bin <- max(which(dij > bins))  # figure out which bin it belongs to
+          att[this.bin, set] <- att[this.bin, set] + 1
+          # att[this.bin, set, setting] <- att[this.bin, set, setting] + 1
+          acc[this.bin, set] <- acc[this.bin, set] + y[i, , set, setting]
+          # acc[this.bin, set, setting] <- acc[this.bin, set, setting] +
+          # y[i, , set, setting]
+        }
+      }
+      # print(paste("Setting ", setting, ", set ", set, ", site ", j, sep=""))
+    }
+    # print(paste("Setting ", setting, ", set ", set, sep=""))
+  }
+  results <- list(acc=acc, att=att)
+  return(results)
+}
+
+load("simulatedchi-rho.RData")
 
 acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
 for (setting in 1:4) {
