@@ -186,6 +186,11 @@ points(knots)
 
 # get extremal coefficient as function of distance
 load("simdata2.RData")
+library(fields)
+library(evd)
+library(spBayes)
+library(fields)
+library(SpatialTools)
 d <- rdist(s)
 diag(d) <- 0
 
@@ -267,7 +272,10 @@ results <- foreach (setting = 1:4) %dopar% {
   return(results)
 }
 
-save(results, acc, att, xplot, file="simulatedchi.RData")
+save(results, file="simulatedchi.RData")
+load("simulatedchi.RData")
+
+acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
 for (setting in 1:4) {
   acc[, , setting] <- results[[setting]]$acc
   att[, , setting] <- results[[setting]]$att
@@ -279,7 +287,7 @@ for (setting in 1:4) {
   plot(xplot, theta[, 1, setting], type = "l",
        main = bquote(paste(vartheta, "(h)")),
        xlab = "h", ylab = paste("setting", setting), ylim = c(1, 2))
-  for (line in 2:10) {
+  for (line in 2:200) {
     lines(xplot, theta[, line, 1])
   }
 }
