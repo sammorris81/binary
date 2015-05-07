@@ -321,7 +321,7 @@ results <- foreach (setting = 1:4) %dopar% {
   results <- list(acc=acc, att=att)
   return(results)
 }
-
+save(results, file="simulatedchi-rho.RData")
 load("simulatedchi-rho.RData")
 
 acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
