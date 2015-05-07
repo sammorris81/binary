@@ -59,7 +59,7 @@ s <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
 prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
 int.ms   <- matrix(NA, nsets, nsettings)
 alpha.ms <- c(0.3, 0.7, 0.3, 0.7)
-xi.ms    <- 0.1
+xi.ms    <- 0.25
 rho.ms   <- 6 / 11
 
 # to generate logistic data with around 1% rareness, need intercept = -log(99)
@@ -185,14 +185,11 @@ points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
 points(knots)
 
 # get extremal coefficient as function of distance
-load("simdata2.RData")
 library(fields)
 library(evd)
 library(spBayes)
 library(fields)
 library(SpatialTools)
-d <- rdist(s)
-diag(d) <- 0
 
 ns        <- 4000
 nt        <- 1
@@ -217,19 +214,15 @@ w.tilde.t <- array(NA, dim=c(ns, nt, nsets, nsettings))
 set.seed <- 7483 # site
 s <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
 
+d <- rdist(s)
+diag(d) <- 0
+
 # max-stable % rareness is set with prob.ms
 prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
 int.ms   <- matrix(NA, nsets, nsettings)
 alpha.ms <- c(0.3, 0.7, 0.3, 0.7)
-xi.ms    <- 0.1
+xi.ms    <- 0.25
 rho.ms   <- 6 / 11
-
-# to generate logistic data with around 1% rareness, need intercept = -log(99)
-# to generate logistic data with around 5% rareness, need intercept = -log(19)
-int.logit   <- c(-log(99), -log(99), -log(19), -log(19))
-rho.logit   <- c(3, 1, 3, 1)
-sigsq.logit <- 1
-nu.logit    <- 0.5
 
 library(doMC)
 registerDoMC(4)
@@ -247,29 +240,31 @@ for (j in 1:nsettings) {
   cat("Seting", j, "finished \n")
 }
 
-results <- foreach (setting = 1:4) %dopar% {
-  acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
-  for (set in 1:nsets) {
-    for (j in 1:ns) {
+# acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
+acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
+
+
+# results <- foreach (setting = 1:4) %dopar% {
+  # acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
+for (setting in 1:1) {
+  for (set in 1:2) {
+    these <- which(y[, , set, setting] == 1)
+    for (j in these) {
       for (i in 1:ns) {
         if (i != j) {
           dij <- d[i, j]  # get the distance
           this.bin <- max(which(dij > bins))  # figure out which bin it belongs to
-          if (y[j, , set, setting] == 1) {  # if
-            att[this.bin, set] <- att[this.bin, set] + 1
-            if (y[i, , set, setting] == 1) {
-              acc[this.bin, set] <- acc[this.bin, set] + 1
-            }
-          }
+          att[this.bin, set] <- att[this.bin, set] + 1
+          # att[this.bin, set, setting] <- att[this.bin, set, setting] + 1
+          acc[this.bin, set] <- acc[this.bin, set] + y[i, , set, setting]
+          # acc[this.bin, set, setting] <- acc[this.bin, set, setting] + 1
         }
       }
-#       if (j %% 100 == 0) {
-#         print(paste("Setting", setting, ", set", set, ", site", j))
-#       }
+      print(paste("Setting ", setting, ", set ", set, ", site ", j, sep=""))
     }
   }
-  results <- list(acc=acc, att=att)
-  return(results)
+  # results <- list(acc=acc, att=att)
+  # return(results)
 }
 
 save(results, file="simulatedchi.RData")
@@ -280,6 +275,7 @@ for (setting in 1:4) {
   acc[, , setting] <- results[[setting]]$acc
   att[, , setting] <- results[[setting]]$att
 }
+
 
 theta <- 2 - acc / att
 par(mfrow=c(2, 2))
