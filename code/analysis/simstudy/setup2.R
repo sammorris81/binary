@@ -185,21 +185,23 @@ points(s.p[these.test, ], pch=22, bg="firebrick1", col="firebrick4")
 points(knots)
 
 # get extremal coefficient as function of distance
+rm(list=ls())
 library(fields)
 library(evd)
 library(spBayes)
 library(fields)
 library(SpatialTools)
 
+source("../../R/auxfunctions.R", chdir=T)
+source("../../R/updateModel.R", chdir=T)
+source("../../R/mcmc.R", chdir=T)
+source("../../R/probit.R", chdir=T)
+
 ns        <- 4000
 nt        <- 1
 np        <- 1
 nsets     <- 200
 nsettings <- 4   # a, b, c, d from above
-
-bins <- seq(0, max(d), length=100)
-xplot <- (bins[-1] + bins[-100]) / 2
-acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
 
 knots.1 <- knots.2 <- seq(from = 0.2, to = 5.8, length = 12)
 knots <- as.matrix(expand.grid(knots.1, knots.2))
@@ -216,6 +218,9 @@ s <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
 
 d <- rdist(s)
 diag(d) <- 0
+bins <- seq(0, max(d), length=100)
+xplot <- (bins[-1] + bins[-100]) / 2
+acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
 
 # max-stable % rareness is set with prob.ms
 prob.ms  <- c(0.01, 0.01, 0.05, 0.05)
@@ -240,14 +245,11 @@ for (j in 1:nsettings) {
   cat("Seting", j, "finished \n")
 }
 
+results <- foreach (setting = 1:4) %dopar% {
+  acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
 # acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
-acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
-
-
-# results <- foreach (setting = 1:4) %dopar% {
-  # acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
-for (setting in 1:1) {
-  for (set in 1:2) {
+# for (setting in 1:2) {
+  for (set in 1:nsets) {
     these <- which(y[, , set, setting] == 1)
     for (j in these) {
       for (i in 1:ns) {
@@ -257,14 +259,16 @@ for (setting in 1:1) {
           att[this.bin, set] <- att[this.bin, set] + 1
           # att[this.bin, set, setting] <- att[this.bin, set, setting] + 1
           acc[this.bin, set] <- acc[this.bin, set] + y[i, , set, setting]
-          # acc[this.bin, set, setting] <- acc[this.bin, set, setting] + 1
+          # acc[this.bin, set, setting] <- acc[this.bin, set, setting] +
+                                         # y[i, , set, setting]
         }
       }
-      print(paste("Setting ", setting, ", set ", set, ", site ", j, sep=""))
+      # print(paste("Setting ", setting, ", set ", set, ", site ", j, sep=""))
     }
+    # print(paste("Setting ", setting, ", set ", set, sep=""))
   }
-  # results <- list(acc=acc, att=att)
-  # return(results)
+  results <- list(acc=acc, att=att)
+  return(results)
 }
 
 save(results, file="simulatedchi.RData")
@@ -279,7 +283,7 @@ for (setting in 1:4) {
 
 theta <- 2 - acc / att
 par(mfrow=c(2, 2))
-for (setting in 1:4) {
+for (setting in 1:1) {
   plot(xplot, theta[, 1, setting], type = "l",
        main = bquote(paste(vartheta, "(h)")),
        xlab = "h", ylab = paste("setting", setting), ylim = c(1, 2))
@@ -289,7 +293,7 @@ for (setting in 1:4) {
 }
 
 mean.theta <- apply(theta, c(1, 3), mean, na.rm=TRUE)
-for (setting in 1:4) {
+for (setting in 1:1) {
   plot(xplot, mean.theta[, setting], type = "l",
        main = bquote(paste("mean ", vartheta, "(h)")),
        xlab = "h", ylab = paste("setting", setting), ylim = c(1, 2))
