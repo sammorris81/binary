@@ -97,6 +97,7 @@ save.image(file = "simdata2.RData")
 # look at a few of the datasets
 # y[, , set, setting]
 load("simdata2.RData")
+load("simulatedy-alpha.RData")
 ntrain <- 3000
 ntest  <- 1000
 obs <- c(rep(T, ntrain), rep(F, ntest))
@@ -245,6 +246,8 @@ for (j in 1:nsettings) {
   cat("Seting", j, "finished \n")
 }
 
+save(s, y, file="simulatedy-alpha.RData")
+
 results <- foreach (setting = 1:4) %dopar% {
   acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
 # acc <- att <- array(0, dim=c(length(bins) - 1, nsets, 4))
@@ -295,6 +298,8 @@ for (j in 1:nsettings) {
   }
   cat("Seting", j, "finished \n")
 }
+
+save(y, file="simulatedy-rho.RData")
 
 results <- foreach (setting = 1:4) %dopar% {
   acc <- att <- matrix(0, nrow=length(bins) - 1, ncol=nsets)
