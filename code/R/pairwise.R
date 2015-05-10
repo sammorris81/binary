@@ -150,7 +150,7 @@ microbenchmark(pairwise.rarebinary1(par.true, y, dw2, x),
 
 
 results <- optim(c(0.5, 0.2, 0, -4), pairwise.rarebinaryCPP, y = y, dw2 = dw2, x = x,
-                 threads = 4)
+                 threads = 4, hessian = TRUE)
 
 # get gradient and hessian matrices - unnecessary calculations currently causing this to be very slow
 library(numDeriv)
@@ -164,9 +164,10 @@ for (i in 1:(ns - 1)) {
   print(paste("i = ", i))
 }
 
-
-
-
+j <- (d) %*% d
+h <- -h
+asym.var <- solve(results$hessian) %*% j %*% solve(results$hessian)
+asym.var
 system.time(optim(c(0.5, 0.2, 0, -4), pairwise.rarebinary4, y=y, dw2=dw2, x=x, threads = 4))
 
 # timing
