@@ -28,11 +28,11 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   beta  <- par[4:npars]
 
   ns     <- length(y)
-  np     <- ncol(x)
+  np     <- ncol(cov)
   nknots <- ncol(dw2)
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  x.beta <- x %*% beta             # should be ns x np
+  x.beta <- cov %*% beta             # should be ns x np
   z      <- getZ(xi, x.beta)       # should be ns long
 
   # keep estimates in their actual space
@@ -70,7 +70,7 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   return(-ll)
 }
 
-pairwise.rarebinaryCPP <- function(par, y, dw2, x, threads = 1) {
+pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
   # par: parameter vector (alpha, rho, xi, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
@@ -87,11 +87,11 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, x, threads = 1) {
   }
 
   ns     <- length(y)
-  np     <- ncol(x)
+  np     <- ncol(cov)
   nknots <- ncol(dw2)
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  x.beta <- x %*% beta             # should be ns x np
+  x.beta <- cov %*% beta             # should be ns x np
   z      <- getZ(xi, x.beta)       # should be ns long
 
   # keep estimates in their actual space
@@ -121,14 +121,14 @@ getJoint2 <- function(kernel, alpha) {
 }
 
 set.seed(7483)  # site
-ns    <- 50
+ns    <- 400
 s     <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
 x     <- matrix(1, ns, 1)
 
 set.seed(3282)  # data
 data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = 0.25,
-                        alpha = 0.9, rho = 0.1, prob.success = 0.05)
+                        alpha = 0.4, rho = 0.1, prob.success = 0.05)
 
 y <- data$y
 plot(s[which(y == 1), ], pch=19, col=2, ylim=c(0, 1), xlim=c(0, 1))
@@ -143,26 +143,49 @@ xi <- 0.25
 beta <- -thresh
 
 par.true <- c(alpha, rho, xi, beta)
-pairwise.rarebinary1(par.true, y, dw2, x)
-pairwise.rarebinary2(par.true, y, dw2, x, threads = 6)
+pairwise.rarebinaryR(par.true, y, dw2, x)
+pairwise.rarebinaryCPP(par.true, y, dw2, x, threads = 6)
 microbenchmark(pairwise.rarebinary1(par.true, y, dw2, x),
                pairwise.rarebinary2(par.true, y, dw2, x, threads = 6), times = 50)
 
 
-results <- optim(c(0.5, 0.2, 0, -4), pairwise.rarebinaryCPP, y = y, dw2 = dw2, x = x,
-                 threads = 4, hessian = TRUE)
+results <- optim(c(0.5, 0.2, 0, -4), pairwise.rarebinaryCPP, y = y, dw2 = dw2,
+                 cov = x, threads = 4,
+                 # lower = c(1e-6, 1e-6, -1, -Inf),
+                 # upper = c(1 - 1e-6, Inf, 3, Inf),
+                 hessian = TRUE)
+
+results <- nlm(pairwise.rarebinaryCPP, c(0.5, 0.2, 0, -4), y = y, dw2 = dw2,
+               cov = x, threads = 4,
+               # lower = c(1e-6, 1e-6, -1, -Inf),
+               # upper = c(1 - 1e-6, Inf, 3, Inf),
+               hessian = TRUE)
+
+j <- cbind(results$gradient) %*% results$gradient
+h <- -results$hessian
+asym.var <- solve(h) %*% j %*% solve(h)
 
 # get gradient and hessian matrices - unnecessary calculations currently causing this to be very slow
 library(numDeriv)
 d <- matrix(0, 1, 4)
 h <- matrix(0, 4, 4)
+
 for (i in 1:(ns - 1)) {
   for (j in i:(ns)) {
-    d <- d + jacobian(pairwise.rarebinaryR, x=results$par, y=y[c(i, j)], dw2=dw2, cov=x)
-    h <- h + hessian(pairwise.rarebinaryR, x=results$par, y=y[c(i, j)], dw2=dw2, cov=x)
+    d <- d + jacobian(pairwise.rarebinaryCPP, x=results$par, y=y[c(i, j)],
+                      dw2=dw2, cov=x[c(i, j), , drop=F])
+    h <- h + hessian(pairwise.rarebinaryCPP, x=results$par, y=y[c(i, j)],
+                     dw2=dw2, cov=x[c(i, j), , drop=F])
   }
   print(paste("i = ", i))
 }
+
+
+microbenchmark(jacobian(pairwise.rarebinaryCPP, x=results$par, y=y[c(i, j)],
+                      dw2=dw2, cov=x[c(i, j), , drop=F]),
+               jacobian(pairwise.rarebinaryR, x=results$par, y=y[c(i, j)],
+                      dw2=dw2, cov=x[c(i, j), , drop=F])
+  )
 
 j <- (d) %*% d
 h <- -h
