@@ -32,94 +32,109 @@
 \section{Binary regression}\label{s:model}
 Let $Y_i\in\{0,1\}$ be the binary response at spatial location $\bs_i \in \calD$, and $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept.
 The goal in binary regression is to relate a set of covariates with the response using the link function $g$ so that P$(Y_i=1) = \pi_i= g(\bX_i \bbeta)$, where $\bX_i$ is the vector of covariates for observation $i$, and $\bbeta$ is the $p$-vector of regression coefficients.
-Two very commonly used types of binary regression include logistic regression with
-\begin{align}
-  \pi_i = \frac{ \exp{\bX_i \bbeta} }{1 + \exp{\bX_i \bbeta}}
-\end{align}
-and probit regression with
-\begin{align}
-  \pi_i = \Phi(\bX_i \bbeta)
-\end{align}
-where $\Phi(\cdot)$ represents the standard normal distribution function.
-One challenge to these link functions is that they are symmetric, so they may not be appropriate in the case of asymmetric data.
-More recently, \cite{Wang-2010} introduced the generalized extreme value (GEV) link function for rare binary data where
-\begin{align}
-  \pi_i= 1-\exp\left[\left(1-\xi\bX_i\bbeta\right)^{-1/\xi}\right].
+Two very commonly used types of binary regression include logistic regression with $\pi_i = \frac{ \exp{\bX_i \bbeta} }{1 + \exp{\bX_i \bbeta}}$ and probit regression with $\pi_i = \Phi(\bX_i \bbeta)$ where $\Phi(\cdot)$ represents the standard normal distribution function.
+One limitation to these link functions is that they assume the data are symmetric which may not always be the case.
+More recently, \citet{Wang2010} introduced the generalized extreme value (GEV) link function for rare binary data where
+\begin{align} \label{eq:marginalz}
+  \pi_i= 1 - \exp \left[-\left(1 - \xi \bX_i \bbeta \right)^{-1 / \xi} \right].
 \end{align}
 In the case that $\xi = 0$, this is the complementary log-log (cloglog) link function.
-The GEV link function is attractive because it is not asymmetric, and therefore can give a more flexible fit to the data.
+The GEV link function is attractive because it allows for assymetry thereby providing a more flexible model for the data.
 
-\subsection{Spatial dependence}\label{s:spatialdependence}
-For logistic regression
-
-We propose a copula \citep{nelsen-1999} to account for spatial dependence while preserving the marginal event probabilities. Let $Y_i = I(Z_i>z_i)$, where $Z_i$ is a continuous latent variable and $z_i$ is the appropriate threshold so that $P(Y_i=1)=p_i$.  The latent $Z_i$ is modeled using spatial extreme value analysis methods to capture dependence between rare events.  We assume $Z$ follows the max-stable spatial process of \cite{reich-2012}.  Under this model, the marginal distribution of each $Z_i$ is GEV(1,1,1) with P$(Z_i>c) = 1-\exp(-1/c)$.  Therefore, we must set $z_i=-1/\log(1-p_i)$ so that $P(Y_i=1)=p_i$.
-
-Spatial dependence is determined by the joint distribution of $\bZ = (Z_1,\ldots,Z_n)$,
-\beq\label{jointCDF}
+\section{Spatial dependence}\label{s:spatialdependence}
+In this section we extend the GEV link function to allow for spatial correlation.
+First, to simplify the notation, we let $z_i = \left(1 - \xi \bX_i \bbeta \right)^{1 / \xi}$ from (\ref{eq:marginalz}).
+To incorpoate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
+The spatial dependence is determined by the joint distribution of $\bZ = (Z_1,\ldots,Z_n)$,
+\begin{align}\label{jointCDF}
  G(\bz) =  \mbox{P}[Z_1<z_1,\ldots,Z_n<z_n] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z_i}\right)^{1/\alpha}\right]^{\alpha}\right\},
-\eeq
-where $\bz = (z_1,\ldots,z_n)$. This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn-1990}.  The parameter $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence. The weights $w_{li}>0$ determine the spatial dependence structure, and are discussed in detail in Section \ref{s:spatial}.  Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
+\end{align}
+where $\bz = (z_1,\ldots,z_n)$, $w_{l}(\bs_i)$ are a set of weights that determine the spatial dependence structure and are discussed further in Section \ref{s:weights}, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
+This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
+One nice feature to this hierarchical model is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
+More importantly, at a single site $i$, the marginal distribution gives $P(Y_i = 1) = 1 - \exp\left\{ -\frac{ 1 }{ z_i} \right\}$ which is the same as the marginal distributions given by \citet{Wang2010}.
 
-\section{Spatial dependence}\label{s:spatial}
-
-The weights $w_{l}(\bs_i)$ in (\ref{jointCDF}) should vary smoothly across space to induce spatial dependence.  For example, \cite{reich-2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$, that is
-\beq\label{w}
+\subsection{Weight functions}\label{s:weights}
+Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
+The weights $w_{l}(\bs_i)$ in (\ref{jointCDF}) should vary smoothly across space to induce spatial dependence.
+For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$, that is
+\begin{align}\label{w}
    w_{l}(\bs_i) = \frac{\exp\left[-0.5\left(||\bs_i-\bv_l||/\rho\right)^2\right]}
                  {\sum_{j=1}^L\exp\left[-0.5\left(||\bs_i-\bv_j||/\rho\right)^2\right]}.
-\eeq
-To kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
+\end{align}
+The kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
 
+\section{Multivariate distribution}\label{s:multivariate}
+As shown in Appendix \ref{a:likelihoodderivation}, the joint probability mass function of $\bY=(Y_1,\ldots,Y_n)$ has a convenient form when the number of events is small.
+Let $K=\sum_{i=1}^nY_i$ be the number of events, and assume without loss of generality the data are ordered so that the $Y_1=\ldots=Y_K=1$.
+Then
+\begin{align}\label{pmf}
+  P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
+    \begin{array}{ll}
+      G(\bz) & K=0 \\
+      G(\bz_{(1)})-G(\bz) & K=1 \\
+      G(\bz_{(12)})-G(\bz_{(1)})-G(\bz_{(2)})+G(\bz) & K=2
+    \end{array}
+  \right.
+\end{align}
+where $G(\bz_{(1)}) = P(Z_2<z_2,\ldots,Z_n<z_n)$, $G(\bz_{(2)}) = P(Z_1<z_1,Z_3<z_3,\ldots,Z_n<z_n)$, and $G(\bz_{(12)}) = P(Z_3<z_3,\ldots,Z_n<z_n)$.
+Similar expressions can be derived for all $K$, but become cumbersome for large $K$.
+
+\subsection{Bivariate distribution}\label{s:bivariate}
 Then in a bivariate setting, the probability of observing a joint exceedances as a function of $\alpha$ is
-
 \begin{align} \label{biv}
-  \text{P}(Y_i = 1, & Y_j = 1) = 1 - \exp\left\{ - \frac{ 1 }{ z_i } \right\} - \exp \left\{ - \frac{ 1 }{z_j} \right\} + \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z_i } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_i)}{z_j} \right)^{1/\alpha} \right]^{\alpha} \right\} \nonumber \\
-  		&= p_i + p_j - \left( 1 - \exp \left \{ - \sum_{ l = 1 }^{ L } \left( \left[ -\log(1-p_i) w_{l}(\bs_i) \right]^{ 1/\alpha } + \left[ -\log(1 - p_j) w_{ l}(\bs_j) \right]^{ 1/\alpha } \right)^{\alpha} \right \} \right).
+  \text{P}(Y_i = 1, & Y_j = 1) = 1 - \exp\left\{ - \frac{ 1 }{ z_i } \right\} - \exp \left\{ - \frac{ 1 }{z_j} \right\} + \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z_i } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_i)}{z_j} \right)^{1/\alpha} \right]^{\alpha} \right\}
 \end{align}
-
-To describe the tail dependence, we use the $\chi$ statistic of \citet{Coles-1999}.
-Assume that $Y_i$ and $Y_j$ have the same marginal distributions, then $p_i = p_j = p$ for all $i, j$.
-As shown in Appendix A.2,
-
+In the literature on extremes, one common metric to describe the bivariate dependence is the $\chi$ statistic of \citet{Coles1999}.
+The $\chi$ statistic between two observations $z_1$ and $z_2$ is given by
 \begin{align}
-\chi = 2 -  \vartheta(\bs_i, \bs_j).
+  \chi(\bs_1, \bs_2) = \lim_{c \rightarrow \infty} = P(Z_1 > c | Z_2 > c).
 \end{align}
-where $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{reich-2012}.
-In the case of complete dependence, $\chi = 1$, and in the case of complete independence, $\chi = 0$.
-This is relatively easy to show for $\alpha = 1$, but I don't know of a way to prove $\lim_{\alpha \rightarrow 0} \chi = 1$. Any thoughts?
+However, in this latent variable approach, $\lim_{c \rightarrow \infty}$ may not be the most reasonable metric because the observed data are a series of zeros and ones.
+Therefore, we chose the $\kappa$ statistic of \citet{Cohen1960} defined by
+\begin{align}
+  \kappa = \frac{P(A) - P(E)}{1 - P(E)}
+\end{align}
+where $P(A)$ is the joint probability of agreement and $P(E)$ is the joint probability of agreement under an assumption of independence.
+We believe this measure of dependence to be reasonable because,
+\begin{align}
+  \lim_{\beta_0 \rightarrow \infty} \kappa(h) = \chi(h) = 2 - \vartheta(\bs_i, \bs_j)
+\end{align}
+where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see Appendix \ref{a:chi}.
+In the case of complete dependence, $\kappa = 1$, and in the case of complete independence, $\kappa = 0$.
 
 \section{Computation}\label{s:comp}
-
-As shown in Appendix A.1, the joint probability mass function of $\bY=(Y_1,\ldots,Y_n)$ has a convenient form when the number of events is small.  Let $K=\sum_{i=1}^nY_i$ be the number of events, and assume without loss of generality the data are ordered so that the $Y_1=\ldots=Y_K=1$.  Then
-\beq\label{pmf}
-   P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
-                               \begin{array}{ll}
-                                 G(\bz) & K=0 \\
-                                 G(\bz_{(1)})-G(\bz) & K=1 \\
-                                 G(\bz_{(12)})-G(\bz_{(1)})-G(\bz_{(2)})+G(\bz) & K=2
-                               \end{array}
-                             \right.
-\eeq
-where $G(\bz_{(1)}) = P(Z_2<z_2,\ldots,Z_n<z_n)$, $G(\bz_{(2)}) = P(Z_1<z_1,Z_3<z_3,\ldots,Z_n<z_n)$, and $G(\bz_{(12)}) = P(Z_3<z_3,\ldots,Z_n<z_n)$.  Similar expressions can be derived for all $K$, but become cumbersome for large $K$.  Therefore, for small $K$ we can evaluate the likelihood directly.  Most days in our dataset have $K<4$, so we use this expression for those days.  However for days with many events, we must use the latent variable scheme described below (unless you can think of a better way!).
-I think it should be more computationally efficient to use (\ref{pmf}) for any $K$. At most, we have to calculate the $\left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{1/\alpha}$, for all $i, l$. In the random effects model, the expression for the joint density conditional on $\theta$ is
-\beq
+For small $K$ we can evaluate the likelihood directly.
+In the random effects model, the expression for the joint density conditional on $\theta$ is
+\begin{align}
 	P(Y_1=y_1,\ldots,Y_n=y_n) = \prod_{ i = 1 }^{ n } \left[ \exp \left\{ \sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ 1 - Y_i } \left[ 1 - \exp \left\{ \sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ Y_i }.
-\eeq
-So we still need to compute $\left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{1/\alpha}$, but we also need to do the sampling for all the $A_l$ terms as well.
+\end{align}
 
 \section{Simulation study}\label{s:sim}
+For our simulation study, we generate $n_m = 50$ datasets under 8 different settings to explore the impact of spatial dependence, rareness of observations, and misspecification of link function.
+We consider cases of high and low dependence; two degrees of rareness $\pi = 0.01, 0.05$; and two underlying link functions, logit and GEV.
+For each dataset, we fit the model using three different methods, spatial logistic regression, spatial probit regression, and the proposed spatial GEV method.
+In each case, we fit the model using Bayesian methods with proper, but fairly uninformative priors.
+In particular, when selecting a model, we consider how well the method does at estimating the  $\kappa$ function
 
 \section{Data analysis}\label{s:analysis}
+For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
+The data are publicly available from {\tt http://ebird.org}.
+We use data from 2002, and focus specifically on cattle egrets and sanderlings.
 
 \section{Conclusions}\label{s:con}
 
 \section*{Acknowledgments}
 
-\section*{Appendix A.1: Derivation of the likelihood}
-We use the hierarchical max-stable spatial model given by \citet{reich-2012}. If at each margin, $Z_i \sim $ GEV$(1,1,1)$, then $Z_i | \theta_i \indep $ GEV$(\theta, \alpha \theta, \alpha)$. As defined in section \ref{s:comp}, we reorder the data such that $Y_1=\ldots=Y_K=1$, and $Y_{K+1} = \ldots = Y_n = 0$. Then the joint likelihood conditional on the random effect $\theta$ is
+\appendix
+\section{Appendices}
+
+\subsection{Derivation of the likelihood} \label{a:likelihoodderivation}
+We use the hierarchical max-stable spatial model given by \citet{Reich2012}. If at each margin, $Z_i \sim $ GEV$(1,1,1)$, then $Z_i | \theta_i \indep $ GEV$(\theta, \alpha \theta, \alpha)$. As defined in section \ref{s:comp}, we reorder the data such that $Y_1=\ldots=Y_K=1$, and $Y_{K+1} = \ldots = Y_n = 0$. Then the joint likelihood conditional on the random effect $\theta$ is
 
 \begin{align} \label{joint_cond}
-	P(Y_1=y_1,\ldots,Y_n=y_n) &= \prod_{ i \le K } \left\{ 1 - \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \right \} \prod_{ i > K } \exp \left[ -\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \nonumber \\[0.5em]
-		&= \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] - \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ i = 1}^{K} \exp\left[ -\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \nonumber\\
+	P(Y_1=y_1,\ldots,Y_n=y_n) =& \prod_{ i \le K } \left\{ 1 - \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \right \} \prod_{ i > K } \exp \left[ -\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \nonumber \\[0.5em]
+		=& \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] - \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ i = 1}^{K} \exp\left[ -\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \nonumber\\
 		&  + \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ 1 < i < j \le K } \left\{ \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} - \left( \frac{ \theta_j }{ z_j } \right)^{ 1/\alpha } \right] \right \} \nonumber \\[0.5em]
 		& + \cdots + (-1)^K \exp\left[ - \sum_{ i = 1 }^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right]
 \end{align}
@@ -127,8 +142,8 @@ We use the hierarchical max-stable spatial model given by \citet{reich-2012}. If
 Finally marginalizing over the random effect, we obtain
 
 \begin{align} \label{joint}
-    P(Y_1=y_1,\ldots,Y_n=y_n) &=\int G(\bz | \bA) p( \bA | \alpha) d\bA. \nonumber\\[0.5em]
-			&= \int \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] - \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ i = 1}^{K} \exp\left[ -\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \nonumber\\
+    P(Y_1=y_1,\ldots,Y_n=y_n) =&\int G(\bz | \bA) p( \bA | \alpha) d\bA. \nonumber\\[0.5em]
+			=& \int \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] - \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ i = 1}^{K} \exp\left[ -\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \nonumber\\
 		&  + \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ 1 < i < j \le K } \left\{ \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} - \left( \frac{ \theta_j }{ z_j } \right)^{ 1/\alpha } \right] \right \} \nonumber \\[0.5em]
 		& + \cdots + (-1)^K \exp\left[ - \sum_{ i = 1 }^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] p( \bA | \alpha) d\bA.
 \end{align}
@@ -143,7 +158,7 @@ Consider the first term in the summation,
 
 The remaining terms in equation (\ref{joint}) are straightforward to obtain, and after integrating out the random effect, the joint density is the density given in (\ref{pmf}).
 
-\section*{Appendix A.2: Derivation of the $\chi$ statistic}
+\subsection{Derivation of the $\chi$ statistic}\label{a:chi}
 \begin{align} \label{chi}
   \chi &= \lim_{p \rightarrow 0 }\text{P}(Y_i = 1|Y_j = 1)\nonumber \\
    &= \lim_{p \rightarrow \infty }\frac{ p + p - \left( 1 - \exp \left \{ - \sum_{ l = 1 }^{ L } \left[ \left( -\log(1-p) w_{l}(\bs_i) \right)^{ 1/\alpha } + \left( -\log(1 - p) w_{ l}(\bs_j) \right)^{ 1/\alpha } \right]^{\alpha} \right \} \right) }{ p } \nonumber \\[0.5em]
@@ -155,7 +170,7 @@ The remaining terms in equation (\ref{joint}) are straightforward to obtain, and
 
 \begin{singlespace}
 \bibliographystyle{rss}
-\bibliography{spatialbinary}
+\bibliography{library}
 \end{singlespace}
 
 

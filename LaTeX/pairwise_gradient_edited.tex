@@ -1,0 +1,79 @@
+\documentclass[11pt]{article}
+\usepackage{amssymb, amsthm, amsmath}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage[authoryear]{natbib}
+\usepackage{bm}
+\usepackage{verbatim}
+\usepackage{lineno}
+\usepackage{times}
+\usepackage{soul}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{times}
+
+\usepackage[left=1in,top=1in,right=1in]{geometry}
+\pdfpageheight 11in
+\pdfpagewidth 8.5in
+\linespread{1.5}
+\input{mycommands.sty}
+
+
+\begin{document}\linenumbers
+
+\begin{center}
+{\Large {\bf Gradient calculations}}\\
+\today
+\end{center}
+
+Consider the case when $Y_1 = 0$ and $Y_2 = 0$. Then the likelihood is given by
+\begin{align}
+  f = \exp \left\{ \sum_{l = 1}^L \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^\alpha \right\}
+\end{align}
+where $z_i = (1 - \xi \bX^T_i \bbeta)^{1 / \xi}$, $w_l(\bs_i) = \frac{ \exp \left\{ \frac{- ||\bs_i - \bv_l||^2}{2 \rho^2} \right\} }{\sum_{k = 1}^L \exp \left\{ \frac{- ||\bs_i - \bv_k||^2}{2 \rho^2} \right\} }$.
+Then these are the gradients with respect to model parameters $\alpha$, $\bbeta$, $\rho$, and $\xi$. \hl{There's a problem with $\frac{\partial f}{ \partial \beta }$. This is only the gradient in the case that we have a single covariate (i.e. intercept only)}
+
+\begin{align}
+  \frac{\partial f}{\partial \alpha} = -\sum _{l=1}^{L} \left\{
+    \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1}
+    \left[
+      \log \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)
+      -\sum_{i = 1}^2 \left(
+        \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \log  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha}
+      \right)
+    \right]
+  \right\}
+\end{align}
+
+\begin{align}
+   = -\sum _{l=1}^{L} \left\{
+    \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1}
+    \sum_{i = 1}^2 \left( x_{i}  \left[ \frac{ w_l(\bs_i)}{z_i^{\alpha \xi + 1}} \right]^{1 / \alpha} \right)
+  \right\}
+\end{align}
+
+\begin{align}
+  \frac{ \partial f }{ \partial \rho } &= -\sum _{l=1}^{L} \left\{
+    \left( \sum_{i = 1}^2 \left[ \frac{ w_l(\bs_i) }{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1} \right. \times \nonumber \\
+    & \quad \left. \frac{ 1 }{\rho^3} \sum_{i = 1}^2
+    \left( \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha}
+      \left[ ||\bs_i - \bv_l||^{2} -
+        \frac{ \sum_{k=1}^{L} ||\bs_i - \bv_k||^{2} \exp \left \{ -\frac{ ||\bs_i - \bv_k||^{2} }{2\rho^{2}} \right\}}
+             { \sum_{k=1}^{L} \exp \left\{ - \frac{ ||\bs_i - \bv_k||^{2} }{ 2 \rho^{2} } \right\} }
+      \right]
+    \right)
+  \right\}
+\end{align}
+
+\begin{align}
+  \frac{ \partial f }{ \partial \xi } = -\sum _{l=1}^{L} \left\{
+    \left( \sum_{i = 1}^2 \left[ \frac{ w_l(\bs_i) }{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1}
+    \sum_{i = 1}^2 \left(
+      \frac{1}{\xi} \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \left[ \ln  \left( z_i \right) + \frac{ \bX^T_i \bbeta }{ z_i^\xi } \right]
+    \right)
+  \right\}
+\end{align}
+
+\end{document}
+
