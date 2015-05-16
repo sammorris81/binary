@@ -7,17 +7,6 @@ using namespace arma;
 #include <omp.h>
 #endif
 
-double getJoint(arma::mat kernel, int i, int j, double alpha) {
-  double joint = 0;
-  int nknots = (kernel).n_cols;
-
-  for (uword k = 0; k < nknots; k++) {
-    joint += pow((kernel)(i, k) + (kernel)(j, k), alpha);
-  }
-
-  return joint;
-}
-
 double getJointPtr(arma::mat *kernel, int i, int j, double alpha) {
   double joint = 0;
   int nknots = (*kernel).n_cols;
