@@ -415,21 +415,21 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # x: covariates (ns x np)
-  
+
   npars <- length(par)
   alpha <- par[1]
   rho   <- par[2]
   xi    <- par[3]
   beta  <- par[4:npars]
-  
+
   ns     <- length(y)
   np     <- ncol(cov)
   nknots <- ncol(dw2)
-  
+
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
   x.beta <- cov %*% beta           # should be ns x np
   z      <- getZ(xi, x.beta)       # should be ns long
-  
+
   # keep estimates in their actual space
   if (alpha < 0 | alpha > 1) {
     return(1e99)
@@ -440,9 +440,9 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  
+
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-  
+
   ll <- 0
   for (i in 1:(ns - 1)) {
     for (j in (i + 1):ns) {
@@ -461,7 +461,7 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
       }
     }
   }
-  
+
   return(-ll)
 }
 
@@ -470,25 +470,25 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # x: covariates (ns x np)
-  
+
   npars <- length(par)
   alpha <- par[1]
   rho   <- par[2]
   xi    <- par[3]
   beta  <- par[4:npars]
-  
+
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
   }
-  
+
   ns     <- length(y)
   np     <- ncol(cov)
   nknots <- ncol(dw2)
-  
+
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
   x.beta <- cov %*% beta           # should be ns long
   z      <- getZ(xi, x.beta)       # should be ns long
-  
+
   # keep estimates in their actual space
   if (alpha < 1e-10 | alpha > (1 - 1e-10)) {
     return(1e99)
@@ -499,12 +499,12 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  
+
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-  
+
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
                     threads = threads)
-  
+
   return(-ll)
 }
 
@@ -513,69 +513,69 @@ pairwise.rarebinary2CPP <- function(par, alpha, rho, y, W, cov, threads = 1) {
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # cov: covariates (ns x np)
-  
+
   npars <- length(par)
   xi    <- par[1]
   beta  <- par[2:npars]
-  
+
   x.beta <- cov %*% beta           # should be ns long
   z      <- getZ(xi, x.beta)       # should be ns long
-  
+
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  
+
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-  
+
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
                     threads = threads)
-  
+
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
 pairwise.rarebinary3CPP <- function(par, rho, y, W, cov, threads = 1) {
-  # par: parameter vector (xi, beta)
+  # par: parameter vector (xi, alpha, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # cov: covariates (ns x np)
-  
+
   npars <- length(par)
   xi    <- par[1]
   alpha <- par[2]
   beta  <- par[3:npars]
-  
+
   x.beta <- cov %*% beta           # should be ns long
   z      <- getZ(xi, x.beta)       # should be ns long
-  
+
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  
+
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-  
+
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
                     threads = threads)
-  
+
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
 fit.rarebinaryCPP <- function(init.par, rho, y, dw2, cov, threads = 1) {
-  
+
   ns     <- length(y)
   np     <- ncol(cov)
   nknots <- ncol(dw2)
-  
+
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  
+
   results <- optim(init.par, pairwise.rarebinary3CPP, rho = rho,
                    y = y, W = W,
-                   cov = x, threads = 1,
+                   cov = x, threads = threads,
                    # lower = c(1e-6, 1e-6, -1, -Inf),
                    # upper = c(1 - 1e-6, Inf, 3, Inf),
                    hessian = TRUE)
   # results$alpha <- alpha
   results$rho   <- rho
-  
+
   return(results)
 }
 
