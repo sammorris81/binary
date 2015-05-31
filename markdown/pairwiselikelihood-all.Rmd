@@ -1,0 +1,112 @@
+---
+title: "Pairwise Likelihood All Params"
+author: "Sam Morris"
+date: "28 May 2015"
+output: pdf_document
+---
+
+
+```{r setup, echo=FALSE, include=FALSE}
+# libraries
+library(fields)
+library(Rcpp)
+library(evd)
+library(spBayes)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "../code/R/pairwise.cpp")
+
+source("../code/R/auxfunctions.R", chdir = TRUE)
+source("../code/R/updateModel.R")
+source("../code/R/mcmc.R")
+source("../code/R/probit.R", chdir=T)
+
+# knots
+knots.t <- as.matrix(expand.grid(seq(0.00, 1.00, length=12), 
+                                 seq(0.00, 1.00, length=12)))
+knots.1 <- as.matrix(expand.grid(seq(0.00, 1.00, length=10), 
+                                 seq(0.00, 1.00, length=10)))
+knots.2 <- as.matrix(expand.grid(seq(0.00, 1.00, length=15), 
+                                 seq(0.00, 1.00, length=15))) 
+
+# plotting variables
+# xplot <- rep(alphas, each=length(rhos))
+# yplot <- rep(rhos, length(alphas))
+color <- two.colors(n = 256, start = "dodgerblue4", end = "firebrick4", 
+                    middle = "white")
+```
+
+## Likelihood for the data
+
+The bivariate likelihood for the data is given as
+
+\begin{align}
+  f(Y_1, Y_2) = \left\{ \begin{array}{ll}
+    1 - \exp \left\{ - \frac{ 1 }{ z_1 } \right\} - \exp \left\{ - \frac{ 1 }{ z_2 } \right\} + \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 1, Y_2 = 1 \\[0.5em]
+    \exp \left\{ - \frac{ 1 }{ z_2 } \right\} - \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 1, Y_2 = 0 \\[0.5em]
+    \exp \left\{ - \frac{ 1 }{ z_1 } \right\} - \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 0, Y_2 = 1 \\[0.5em]
+    \exp \left\{ -\vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 0, Y_2 = 0
+  \end{array} \right.
+\end{align}
+
+where $z_i = \left(1 - \xi \mbox{\bf X}_i^T \beta \right)^{1 / \xi}$, and $\vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) = \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_l (\mbox{\bf s}_1 ) }{ z_1 } \right)^{1/\alpha} + \left( \frac{ w_{l }(\mbox{\bf s}_2) }{ z_2 } \right)^{1/\alpha} \right]^\alpha$
+ 
+
+## Pairwise composite likelihood with fixed $\rho$
+
+Based on a suggestion from Dan, we're trying to fix $\rho$ and fit $\alpha$ using pairwise composite likelihood. 
+Then we'll make predictions using MCMC.
+I am going to try running this for a few datasets and see how it does.
+At the moment, I am going to try to do something near the true $\rho$ term.
+
+```{r setting-1, echo=FALSE, include=FALSE}
+# get sites and distances from knots
+set.seed(7483)  # sites
+ns      <- 1000
+s       <- cbind(runif(ns), runif(ns))
+dw2.1   <- rdist(s, knots.1)
+dw2.2   <- rdist(s, knots.2)
+x       <- matrix(1, ns, 1)
+
+# settings for results 1 and results 2
+alpha.t <- c(0.25, 0.75)
+knots1.h  <- knots.1[2, 1] - knots.1[1, 1]
+knots2.h  <- knots.2[2, 1] - knots.2[1, 1]
+xi.t    <- 0.25
+rho.t   <- 0.1
+prop    <- c(0.05, 0.01)
+```
+
+## Data settings
+
+Right now, we're fitting $n = `r ns`$ observations with one replication. 
+In the future, it would be nice to allow for multiple replications.
+
+### $\alpha = `r alpha.t[1]`, \pi = `r prop[1]`, \rho = `r rho.t`$
+```{r fit-1, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[1])
+y <- data$y
+
+ntrain <- 750
+ntest  <- 250
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, ]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, ]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+results.1 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots1.h,  y = y.o, 
+                              dw2 = dw2.1, cov = X.o, threads = 1)
+
+results.2 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots2.h,  y = y.o, 
+                              dw2 = dw2.2, cov = X.o, threads = 1)
+```
+
+Our estimates are $\widehat{\alpha} = `r round(results.1$par[2], 2)`$, $\widehat{\xi} = `r round(results.1$par[1], 2)`$, and $\widehat{\beta} = `r round(results.1$par[3], 2)`$ when $\rho = `r round(knots1.h, 2)`$
+
+The estimates are $\widehat{\alpha} = `r round(results.2$par[2], 2)`$, $\widehat{\xi} = `r round(results.2$par[1], 2)`$, and $\widehat{\beta} = `r round(results.2$par[3], 2)`$ when $\rho = `r round(knots2.h, 2)`$
+

@@ -1,0 +1,542 @@
+---
+title: "Pairwise Composite Likelihood"
+author: "Sam Morris"
+date: "18 May 2015"
+output: pdf_document
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+# libraries
+library(fields)
+library(Rcpp)
+library(evd)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "../R/pairwise.cpp")
+
+source("../R/auxfunctions.R", chdir = TRUE)
+source("../R/updateModel.R")
+source("../R/mcmc.R")
+
+# knots and locations
+set.seed(7483)  # site
+ns    <- 200
+s     <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
+dw2   <- rdist(s, knots)
+x     <- matrix(1, ns, 1)
+
+# grid for searching over alpha and rho
+alphas <- seq(0.1, 0.9, by=0.05)
+rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
+
+# plotting variables
+xplot <- rep(alphas, each=length(rhos))
+yplot <- rep(rhos, length(alphas))
+color <- two.colors(n = 256, start = "dodgerblue4", end = "firebrick4", 
+                    middle = "white")
+```
+
+## Likelihood for the data
+
+The bivariate likelihood for the data is given as
+
+\begin{align}
+  f(Y_1, Y_2) = \left\{ \begin{array}{ll}
+    1 - \exp \left\{ - \frac{ 1 }{ z_1 } \right\} - \exp \left\{ - \frac{ 1 }{ z_2 } \right\} + \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 1, Y_2 = 1 \\[0.5em]
+    \exp \left\{ - \frac{ 1 }{ z_2 } \right\} - \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 1, Y_2 = 0 \\[0.5em]
+    \exp \left\{ - \frac{ 1 }{ z_1 } \right\} - \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 0, Y_2 = 1 \\[0.5em]
+    \exp \left\{ -\vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 0, Y_2 = 0
+  \end{array} \right.
+\end{align}
+
+where $z_i = \left(1 - \xi \mbox{\bf X}_i^T \beta \right)^{1 / \xi}$, and $\vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) = \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_l (\mbox{\bf s}_1 ) }{ z_1 } \right)^{1/\alpha} + \left( \frac{ w_{l }(\mbox{\bf s}_2) }{ z_2 } \right)^{1/\alpha} \right]^\alpha$
+ 
+
+## Pairwise composite likelihood
+
+We initially tried using `optim` on the likelihood with four parameters: a) $\alpha$, b) $\rho$, c) $\xi$, and d) $\beta$, but it appears to be challenging for `optim` to find the true values.
+So, we decided to make a grid of $\alpha$ and $\rho$ and run `optim` to only fit $\xi$ and $\beta$
+
+## Data settings
+
+Right now, we're fitting $n = 200$ observations with one replication. In the future, we plan to allow for multiple replications.
+In each plot, we give the optimized value for the negative log likelihood when conducting a grid search.
+To examine accuracy, the true values for $\alpha$ and $\rho$ are given by the circle, and the optimized values for $\alpha$ and $\rho$ are given by the triangle.
+
+```{r setting1, echo=FALSE, include=FALSE}
+# settings for results 1 and results 2
+alpha.t <- 0.3
+rho.t   <- 0.1
+xi.t    <- 0.25
+prop    <- c(0.05, 0.01)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[1]`, \rho = `r rho.t`$
+```{r fit1, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+results1 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results1[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+
+```{r plot1, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results1, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[1]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results1 == min(results1), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[2]`, \rho = `r rho.t`$
+
+```{r fit2, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[2])
+y <- data$y
+results2 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results2[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot2, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results2, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[2]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results2 == min(results2), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+
+```{r setting2, echo=FALSE, include=FALSE}
+# settings for results 3 and results 4
+alpha.t <- 0.3
+rho.t   <- 0.2
+xi.t    <- 0.25
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[1]`, \rho = `r rho.t`$
+
+```{r fit3, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+results3 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results3[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot3, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results3, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[1]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results3 == min(results3), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[2]`, \rho = `r rho.t`$
+
+```{r fit4, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[2])
+y <- data$y
+results4 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results4[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot4, echo=FALSE}
+par(mfrow = c(1, 2))
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results4, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[2]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results4 == min(results4), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+```{r setting3, echo=FALSE, include=FALSE}
+# settings for results 5 and results 6
+alpha.t <- 0.5
+rho.t   <- 0.1
+xi.t    <- 0.25
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[1]`, \rho = `r rho.t`$
+
+```{r fit5, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+results5 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results5[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot5, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results5, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[1]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results5 == min(results5), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[2]`, \rho = `r rho.t`$
+
+```{r fit6, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[2])
+y <- data$y
+results6 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results6[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot6, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results6, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[2]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results6 == min(results6), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+```{r setting4, echo=FALSE, include=FALSE}
+# settings for results 7 and results 8
+alpha.t <- 0.5
+rho.t   <- 0.2
+xi.t    <- 0.25
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[1]`, \rho = `r rho.t`$
+
+```{r fit7, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+results7 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results7[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot7, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results7, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[1]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results7 == min(results7), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[2]`, \rho = `r rho.t`$
+
+```{r fit8, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[2])
+y <- data$y
+results8 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results8[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot8, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results8, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[2]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results8 == min(results8), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+```{r setting5, echo=FALSE, include=FALSE}
+# settings for results 9 and results 10
+alpha.t <- 0.7
+rho.t   <- 0.1
+xi.t    <- 0.25
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[1]`, \rho = `r rho.t`$
+
+```{r fit9, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+results9 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results9[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot9, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results9, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[1]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results9 == min(results9), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[2]`, \rho = `r rho.t`$
+
+```{r fit10, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[2])
+y <- data$y
+results10 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results10[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot10, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results10, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[2]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results10 == min(results10), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+```{r setting6, echo=FALSE, include=FALSE}
+# settings for results 11 and results 12
+alpha.t <- 0.7
+rho.t   <- 0.2
+xi.t    <- 0.25
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[1]`, \rho = `r rho.t`$
+
+```{r fit11, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+results11 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results11[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot11, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results11, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[1]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results11 == min(results11), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```
+
+### $\alpha = `r alpha.t`, \pi = `r prop[2]`, \rho = `r rho.t`$
+
+```{r fit12, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[2])
+y <- data$y
+results12 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results12[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+```
+
+```{r plot12, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+points(s[which(y != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[which(y == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+quilt.plot(x = xplot, y = yplot, z = results12, 
+           nx = length(alphas), ny = length(rhos), col = color,
+           main=bquote(paste("nll grid search (", pi==.(prop[2]), ")")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results12 == min(results12), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+```

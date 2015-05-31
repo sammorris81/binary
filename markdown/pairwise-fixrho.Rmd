@@ -1,0 +1,945 @@
+---
+title: "Pairwise Likelihood Fixed Rho"
+author: "Sam Morris"
+date: "25 May 2015"
+output: pdf_document
+---
+
+
+```{r setup, echo=FALSE, include=FALSE}
+# libraries
+library(fields)
+library(Rcpp)
+library(evd)
+library(spBayes)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "../code/R/pairwise.cpp")
+
+source("../code/R/auxfunctions.R", chdir = TRUE)
+source("../code/R/updateModel.R")
+source("../code/R/mcmc.R")
+source("../code/R/probit.R", chdir=T)
+
+# knots
+knots.t <- as.matrix(expand.grid(seq(0.00, 1.00, length=12), 
+                                 seq(0.00, 1.00, length=12)))
+knots.1 <- as.matrix(expand.grid(seq(0.00, 1.00, length=10), 
+                                 seq(0.00, 1.00, length=10)))
+knots.2 <- as.matrix(expand.grid(seq(0.00, 1.00, length=15), 
+                                 seq(0.00, 1.00, length=15))) 
+
+# plotting variables
+# xplot <- rep(alphas, each=length(rhos))
+# yplot <- rep(rhos, length(alphas))
+color <- two.colors(n = 256, start = "dodgerblue4", end = "firebrick4", 
+                    middle = "white")
+```
+
+## Likelihood for the data
+
+The bivariate likelihood for the data is given as
+
+\begin{align}
+  f(Y_1, Y_2) = \left\{ \begin{array}{ll}
+    1 - \exp \left\{ - \frac{ 1 }{ z_1 } \right\} - \exp \left\{ - \frac{ 1 }{ z_2 } \right\} + \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 1, Y_2 = 1 \\[0.5em]
+    \exp \left\{ - \frac{ 1 }{ z_2 } \right\} - \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 1, Y_2 = 0 \\[0.5em]
+    \exp \left\{ - \frac{ 1 }{ z_1 } \right\} - \exp \left\{ - \vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 0, Y_2 = 1 \\[0.5em]
+    \exp \left\{ -\vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) \right\} \quad & Y_1 = 0, Y_2 = 0
+  \end{array} \right.
+\end{align}
+
+where $z_i = \left(1 - \xi \mbox{\bf X}_i^T \beta \right)^{1 / \xi}$, and $\vartheta(\mbox{\bf s}_1, \mbox{\bf s}_2) = \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_l (\mbox{\bf s}_1 ) }{ z_1 } \right)^{1/\alpha} + \left( \frac{ w_{l }(\mbox{\bf s}_2) }{ z_2 } \right)^{1/\alpha} \right]^\alpha$
+ 
+
+## Pairwise composite likelihood with fixed $\rho$
+
+Based on a suggestion from Dan, we're trying to fix $\rho$ and fit $\alpha$ using pairwise composite likelihood. 
+Then we'll make predictions using MCMC.
+I am going to try running this for a few datasets and see how it does.
+At the moment, I am going to try to do something near the true $\rho$ term.
+
+```{r setting-1, echo=FALSE, include=FALSE}
+# get sites and distances from knots
+set.seed(7483)  # sites
+ns      <- 1000
+s       <- cbind(runif(ns), runif(ns))
+dw2.1   <- rdist(s, knots.1)
+dw2.2   <- rdist(s, knots.2)
+x       <- matrix(1, ns, 1)
+
+# settings for results 1 and results 2
+alpha.t <- c(0.25, 0.75)
+knots1.h  <- knots.1[2, 1] - knots.1[1, 1]
+knots2.h  <- knots.2[2, 1] - knots.2[1, 1]
+xi.t    <- 0.25
+rho.t   <- 0.1
+prop    <- c(0.05, 0.01)
+```
+
+## Data settings
+
+Right now, we're fitting $n = `r ns`$ observations with one replication. 
+In the future, it would be nice to allow for multiple replications.
+
+### $\alpha = `r alpha.t[1]`, \pi = `r prop[1]`, \rho = `r rho.t`$
+```{r fit-1, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[1])
+y <- data$y
+
+ntrain <- 750
+ntest  <- 250
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, ]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, ]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+results.1 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots1.h,  y = y.o, 
+                              dw2 = dw2.1, cov = X.o, threads = 1)
+
+results.2 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots2.h,  y = y.o, 
+                              dw2 = dw2.2, cov = X.o, threads = 1)
+```
+
+Our estimates are $\widehat{\alpha} = `r round(results.1$par[2], 2)`$, $\widehat{\xi} = `r round(results.1$par[1], 2)`$, and $\widehat{\beta} = `r round(results.1$par[3], 2)`$ when $\rho = `r round(knots1.h, 2)`$
+
+The estimates are $\widehat{\alpha} = `r round(results.2$par[2], 2)`$, $\widehat{\xi} = `r round(results.2$par[1], 2)`$, and $\widehat{\beta} = `r round(results.2$par[3], 2)`$ when $\rho = `r round(knots2.h, 2)`$
+
+## Setup MCMC
+
+```{r setup-1, echo=FALSE, include=FALSE, cache=TRUE}
+# y is ns, nt, nsets, nsettings
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
+
+# setup for spGLM
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
+               "beta"=0.1, "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
+                 "beta"=0, "w"=0)
+priors <- list("beta.norm"=list(1, 100),
+               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1))
+cov.model <- "exponential"
+```
+
+We'll start with `r ntrain` training sites, and `r ntest` testing sites. 
+In the following plot, the testing sites are given in red, the training sites are given in blue, and the knots are given as empty circles.
+The only difference between the two plots, is the knots used to fit the data.
+In the simulated data, the knots are placed on a $12 \times 12$ grid.
+In knots 1, the knots are placed on a $10 \times 10$ grid, and in knots 2, the knots are placed on a $15 \times 15$ grid.
+
+```{r plotdata-1, echo=FALSE, fig.width=4, fig.height=4}
+plot(knots.1, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 1", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+plot(knots.2, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 2", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+```
+
+```{r logit1-1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial logit
+cur.seed <- 101
+set.seed(cur.seed)
+fit.logit1 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.1, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r logit2-1, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.logit2 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.2, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r probit1-1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial probit
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit1 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.1,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r probit2-1, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit2 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.2,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r gev1-1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.1$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.1$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.1, beta.tune = 1, xi.tune = 0.1,
+                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots1.h, rho.upper = 9,
+                 alpha.init = results.1$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-1, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.2$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.2$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.2, beta.tune = 1, xi.tune = 1,
+                 alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots2.h, rho.upper = 9,
+                 alpha.init = results.2$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+## MCMC Results
+
+Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r data$thresh`$, and $\xi = `r xi.t`$.
+
+### Knot spacing 1
+
+```{r gev1ters-1, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev1$xi, type="l", main=bquote(xi))
+```
+
+### Knot spacing 2
+
+```{r gev2iters-1, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev2$xi, type="l", main=bquote(xi))
+```
+
+```{r resultslogit1-1, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log1 <- spPredict(sp.obj = fit.logit1, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log1 <- t(yp.sp.log1$p.y.predictive.samples)
+bs.log1        <- BrierScore(post.prob.log1, y.validate)
+```
+
+```{r resultslogit2-1, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log2 <- spPredict(sp.obj = fit.logit2, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log2 <- t(yp.sp.log2$p.y.predictive.samples)
+bs.log2        <- BrierScore(post.prob.log2, y.validate)
+```
+
+```{r resultsprobit1-1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro1 <- pred.spprob(mcmcoutput = fit.probit1, X.pred = X.p,
+                              s.pred = s.p, knots = knots.1,
+                              start = 1, end = 10000, update = 500)
+bs.pro1 <- BrierScore(post.prob.pro1, y.validate)
+```
+
+```{r resultsprobit2-1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro2 <- pred.spprob(mcmcoutput = fit.probit2, X.pred = X.p,
+                              s.pred = s.p, knots = knots.2,
+                              start = 1, end = 10000, update = 500)
+bs.pro2 <- BrierScore(post.prob.pro2, y.validate)
+```
+
+```{r resultsgev1-1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev1 <- pred.spgev(mcmcoutput = fit.gev1, x.pred = X.p,
+                             s.pred = s.p, knots = knots.1,
+                             start = 1, end = 10000, update = 500)
+bs.gev1 <- BrierScore(post.prob.gev1, y.validate)
+```
+
+```{r resultsgev2-1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev2 <- pred.spgev(mcmcoutput = fit.gev2, x.pred = X.p,
+                             s.pred = s.p, knots = knots.2,
+                             start = 1, end = 10000, update = 500)
+bs.gev2 <- BrierScore(post.prob.gev2, y.validate)
+```
+
+## Brier Scores
+
+The brier scores are 
+Logit 1: `r round(bs.log1, 4)`
+Logit 2: `r round(bs.log2, 4)`
+Probit 1: `r round(bs.pro1, 4)`
+Probit 2: `r round(bs.pro2, 4)`
+GEV 1: `r round(bs.gev1, 4)`
+GEV 2: `r round(bs.gev2, 4)`
+
+## Generating another dataset
+
+### $\alpha = `r alpha.t[2]`, \pi = `r prop[1]`, \rho = `r rho.t`$
+```{r fit-2, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3283)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[1])
+y <- data$y
+
+ntrain <- 750
+ntest  <- 250
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, ]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, ]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+results.1 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots1.h,  y = y.o, 
+                              dw2 = dw2.1, cov = X.o, threads = 1)
+
+results.2 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots2.h,  y = y.o, 
+                              dw2 = dw2.2, cov = X.o, threads = 1)
+```
+
+Our estimates are $\widehat{\alpha} = `r round(results.1$par[2], 2)`$, $\widehat{\xi} = `r round(results.1$par[1], 2)`$, and $\widehat{\beta} = `r round(results.1$par[3], 2)`$ when $\rho = `r round(knots1.h, 2)`$
+
+The estimates are $\widehat{\alpha} = `r round(results.2$par[2], 2)`$, $\widehat{\xi} = `r round(results.2$par[1], 2)`$, and $\widehat{\beta} = `r round(results.2$par[3], 2)`$ when $\rho = `r round(knots2.h, 2)`$
+
+## Setup MCMC
+
+```{r setup-2, echo=FALSE, include=FALSE, cache=TRUE}
+# y is ns, nt, nsets, nsettings
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
+
+# setup for spGLM
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
+               "beta"=0.1, "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
+                 "beta"=0, "w"=0)
+priors <- list("beta.norm"=list(1, 100),
+               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1))
+cov.model <- "exponential"
+```
+
+We'll start with `r ntrain` training sites, and `r ntest` testing sites. 
+In the following plot, the testing sites are given in red, the training sites are given in blue, and the knots are given as empty circles.
+The only difference between the two plots, is the knots used to fit the data.
+In the simulated data, the knots are placed on a $12 \times 12$ grid.
+In knots 1, the knots are placed on a $10 \times 10$ grid, and in knots 2, the knots are placed on a $15 \times 15$ grid.
+
+```{r plotdata-2, echo=FALSE, fig.width=4, fig.height=4}
+plot(knots.1, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 1", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+plot(knots.2, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 2", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+```
+
+```{r logit1-2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial logit
+cur.seed <- 101
+set.seed(cur.seed)
+fit.logit1 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.1, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r logit2-2, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.logit2 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.2, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r probit1-2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial probit
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit1 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.1,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r probit2-2, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit2 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.2,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r gev1-2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.1$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.1$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.1, beta.tune = 1, xi.tune = 0.1,
+                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots1.h, rho.upper = 9,
+                 alpha.init = results.1$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-2, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.2$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.2$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.2, beta.tune = 1, xi.tune = 1,
+                 alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots2.h, rho.upper = 9,
+                 alpha.init = results.2$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+## MCMC Results
+
+Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r data$thresh`$, and $\xi = `r xi.t`$.
+
+### Knot spacing 1
+
+```{r gev1ters-2, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev1$xi, type="l", main=bquote(xi))
+```
+
+### Knot spacing 2
+
+```{r gev2iters-2, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev2$xi, type="l", main=bquote(xi))
+```
+
+```{r resultslogit1-2, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log1 <- spPredict(sp.obj = fit.logit1, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log1 <- t(yp.sp.log1$p.y.predictive.samples)
+bs.log1        <- BrierScore(post.prob.log1, y.validate)
+```
+
+```{r resultslogit2-2, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log2 <- spPredict(sp.obj = fit.logit2, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log2 <- t(yp.sp.log2$p.y.predictive.samples)
+bs.log2        <- BrierScore(post.prob.log2, y.validate)
+```
+
+```{r resultsprobit1-2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro1 <- pred.spprob(mcmcoutput = fit.probit1, X.pred = X.p,
+                              s.pred = s.p, knots = knots.1,
+                              start = 1, end = 10000, update = 500)
+bs.pro1 <- BrierScore(post.prob.pro1, y.validate)
+```
+
+```{r resultsprobit2-2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro2 <- pred.spprob(mcmcoutput = fit.probit2, X.pred = X.p,
+                              s.pred = s.p, knots = knots.2,
+                              start = 1, end = 10000, update = 500)
+bs.pro2 <- BrierScore(post.prob.pro2, y.validate)
+```
+
+```{r resultsgev1-2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev1 <- pred.spgev(mcmcoutput = fit.gev1, x.pred = X.p,
+                             s.pred = s.p, knots = knots.1,
+                             start = 1, end = 10000, update = 500)
+bs.gev1 <- BrierScore(post.prob.gev1, y.validate)
+```
+
+```{r resultsgev2-2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev2 <- pred.spgev(mcmcoutput = fit.gev2, x.pred = X.p,
+                             s.pred = s.p, knots = knots.2,
+                             start = 1, end = 10000, update = 500)
+bs.gev2 <- BrierScore(post.prob.gev2, y.validate)
+```
+
+## Brier Scores
+
+The brier scores are 
+Logit 1: `r round(bs.log1, 4)`
+Logit 2: `r round(bs.log2, 4)`
+Probit 1: `r round(bs.pro1, 4)`
+Probit 2: `r round(bs.pro2, 4)`
+GEV 1: `r round(bs.gev1, 4)`
+GEV 2: `r round(bs.gev2, 4)`
+
+## Generating another dataset
+
+### $\alpha = `r alpha.t[1]`, \pi = `r prop[2]`, \rho = `r rho.t`$
+```{r fit-3, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3283)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[2])
+y <- data$y
+
+ntrain <- 750
+ntest  <- 250
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, ]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, ]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+results.1 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots1.h,  y = y.o, 
+                              dw2 = dw2.1, cov = X.o, threads = 1)
+
+results.2 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots2.h,  y = y.o, 
+                              dw2 = dw2.2, cov = X.o, threads = 1)
+```
+
+Our estimates are $\widehat{\alpha} = `r round(results.1$par[2], 2)`$, $\widehat{\xi} = `r round(results.1$par[1], 2)`$, and $\widehat{\beta} = `r round(results.1$par[3], 2)`$ when $\rho = `r round(knots1.h, 2)`$
+
+The estimates are $\widehat{\alpha} = `r round(results.2$par[2], 2)`$, $\widehat{\xi} = `r round(results.2$par[1], 2)`$, and $\widehat{\beta} = `r round(results.2$par[3], 2)`$ when $\rho = `r round(knots2.h, 2)`$
+
+## Setup MCMC
+
+```{r setup-3, echo=FALSE, include=FALSE, cache=TRUE}
+# y is ns, nt, nsets, nsettings
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
+
+# setup for spGLM
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
+               "beta"=0.1, "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
+                 "beta"=0, "w"=0)
+priors <- list("beta.norm"=list(1, 100),
+               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1))
+cov.model <- "exponential"
+```
+
+We'll start with `r ntrain` training sites, and `r ntest` testing sites. 
+In the following plot, the testing sites are given in red, the training sites are given in blue, and the knots are given as empty circles.
+The only difference between the two plots, is the knots used to fit the data.
+In the simulated data, the knots are placed on a $12 \times 12$ grid.
+In knots 1, the knots are placed on a $10 \times 10$ grid, and in knots 2, the knots are placed on a $15 \times 15$ grid.
+
+```{r plotdata-3, echo=FALSE, fig.width=4, fig.height=4}
+plot(knots.1, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 1", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+plot(knots.2, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 2", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+```
+
+```{r logit1-3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial logit
+cur.seed <- 101
+set.seed(cur.seed)
+fit.logit1 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.1, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r logit2-3, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.logit2 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.2, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r probit1-3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial probit
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit1 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.1,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r probit2-3, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit2 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.2,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r gev1-3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.1$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.1$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.1, beta.tune = 1, xi.tune = 0.1,
+                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots1.h, rho.upper = 9,
+                 alpha.init = results.1$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-3, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.2$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.2$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.2, beta.tune = 1, xi.tune = 1,
+                 alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots2.h, rho.upper = 9,
+                 alpha.init = results.2$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+## MCMC Results
+
+Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r data$thresh`$, and $\xi = `r xi.t`$.
+
+### Knot spacing 1
+
+```{r gev1ters-3, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev1$xi, type="l", main=bquote(xi))
+```
+
+### Knot spacing 2
+
+```{r gev2iters-3, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev2$xi, type="l", main=bquote(xi))
+```
+
+```{r resultslogit1-3, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log1 <- spPredict(sp.obj = fit.logit1, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log1 <- t(yp.sp.log1$p.y.predictive.samples)
+bs.log1        <- BrierScore(post.prob.log1, y.validate)
+```
+
+```{r resultslogit2-3, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log2 <- spPredict(sp.obj = fit.logit2, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log2 <- t(yp.sp.log2$p.y.predictive.samples)
+bs.log2        <- BrierScore(post.prob.log2, y.validate)
+```
+
+```{r resultsprobit1-3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro1 <- pred.spprob(mcmcoutput = fit.probit1, X.pred = X.p,
+                              s.pred = s.p, knots = knots.1,
+                              start = 1, end = 10000, update = 500)
+bs.pro1 <- BrierScore(post.prob.pro1, y.validate)
+```
+
+```{r resultsprobit2-3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro2 <- pred.spprob(mcmcoutput = fit.probit2, X.pred = X.p,
+                              s.pred = s.p, knots = knots.2,
+                              start = 1, end = 10000, update = 500)
+bs.pro2 <- BrierScore(post.prob.pro2, y.validate)
+```
+
+```{r resultsgev1-3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev1 <- pred.spgev(mcmcoutput = fit.gev1, x.pred = X.p,
+                             s.pred = s.p, knots = knots.1,
+                             start = 1, end = 10000, update = 500)
+bs.gev1 <- BrierScore(post.prob.gev1, y.validate)
+```
+
+```{r resultsgev2-3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev2 <- pred.spgev(mcmcoutput = fit.gev2, x.pred = X.p,
+                             s.pred = s.p, knots = knots.2,
+                             start = 1, end = 10000, update = 500)
+bs.gev2 <- BrierScore(post.prob.gev2, y.validate)
+```
+
+## Brier Scores
+
+The brier scores are 
+Logit 1: `r round(bs.log1, 4)`
+Logit 2: `r round(bs.log2, 4)`
+Probit 1: `r round(bs.pro1, 4)`
+Probit 2: `r round(bs.pro2, 4)`
+GEV 1: `r round(bs.gev1, 4)`
+GEV 2: `r round(bs.gev2, 4)`
+
+## Generating another dataset
+
+### $\alpha = `r alpha.t[2]`, \pi = `r prop[2]`, \rho = `r rho.t`$
+```{r fit-4, echo=FALSE, include=FALSE, cache=TRUE}
+set.seed(3283)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[2])
+y <- data$y
+
+ntrain <- 750
+ntest  <- 250
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, ]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, ]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+results.1 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots1.h,  y = y.o, 
+                              dw2 = dw2.1, cov = X.o, threads = 1)
+
+results.2 <- fit.rarebinaryCPP(c(0, 0.5, -4), rho = knots2.h,  y = y.o, 
+                              dw2 = dw2.2, cov = X.o, threads = 1)
+```
+
+Our estimates are $\widehat{\alpha} = `r round(results.1$par[2], 2)`$, $\widehat{\xi} = `r round(results.1$par[1], 2)`$, and $\widehat{\beta} = `r round(results.1$par[3], 2)`$ when $\rho = `r round(knots1.h, 2)`$
+
+The estimates are $\widehat{\alpha} = `r round(results.2$par[2], 2)`$, $\widehat{\xi} = `r round(results.2$par[1], 2)`$, and $\widehat{\beta} = `r round(results.2$par[3], 2)`$ when $\rho = `r round(knots2.h, 2)`$
+
+## Setup MCMC
+
+```{r setup-4, echo=FALSE, include=FALSE, cache=TRUE}
+# y is ns, nt, nsets, nsettings
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
+
+# setup for spGLM
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
+               "beta"=0.1, "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
+                 "beta"=0, "w"=0)
+priors <- list("beta.norm"=list(1, 100),
+               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1))
+cov.model <- "exponential"
+```
+
+We'll start with `r ntrain` training sites, and `r ntest` testing sites. 
+In the following plot, the testing sites are given in red, the training sites are given in blue, and the knots are given as empty circles.
+The only difference between the two plots, is the knots used to fit the data.
+In the simulated data, the knots are placed on a $12 \times 12$ grid.
+In knots 1, the knots are placed on a $10 \times 10$ grid, and in knots 2, the knots are placed on a $15 \times 15$ grid.
+
+```{r plotdata-4, echo=FALSE, fig.width=4, fig.height=4}
+plot(knots.1, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 1", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+plot(knots.2, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset - knots 2", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + 750  # need to add 750 to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+```
+
+```{r logit1-4, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial logit
+cur.seed <- 101
+set.seed(cur.seed)
+fit.logit1 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.1, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r logit2-4, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.logit2 <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                    knots = knots.2, starting = starting, tuning = tuning,
+                    priors = priors, cov.model = cov.model,
+                    n.samples = iters, verbose = verbose,
+                    n.report = n.report)
+```
+
+```{r probit1-4, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial probit
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit1 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.1,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r probit2-4, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.probit2 <- probit(Y = y.o, X = X.o, s = s.o, knots = knots.2,
+                     iters = iters, burn = burn, update = update)
+```
+
+```{r gev1-4, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.1$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.1$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.1, beta.tune = 1, xi.tune = 0.1,
+                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots1.h, rho.upper = 9,
+                 alpha.init = results.1$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-4, echo = FALSE, include = FALSE, cache = TRUE}
+cur.seed <- cur.seed + 1
+set.seed(cur.seed)
+fit.gev2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                 beta.init = results.2$par[3], beta.m = 0, beta.s = 100,
+                 xi.init = results.2$par[1], xi.m = 0, xi.s = 0.5,
+                 knots = knots.2, beta.tune = 1, xi.tune = 1,
+                 alpha.tune = 0.05, rho.tune = 0.05, A.tune = 1,
+                 beta.attempts = 50, xi.attempts = 50,
+                 alpha.attempts = 200, rho.attempts = 200,
+                 spatial = TRUE, rho.init = knots2.h, rho.upper = 9,
+                 alpha.init = results.2$par[2], a.init = 100, iterplot = FALSE,
+                 alpha.fix = TRUE, rho.fix = TRUE,
+                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+## MCMC Results
+
+Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r data$thresh`$, and $\xi = `r xi.t`$.
+
+### Knot spacing 1
+
+```{r gev1ters-4, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev1$xi, type="l", main=bquote(xi))
+```
+
+### Knot spacing 2
+
+```{r gev2iters-4, echo=FALSE}
+par(mfrow=c(1, 2))
+plot(fit.gev2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev2$xi, type="l", main=bquote(xi))
+```
+
+```{r resultslogit1-4, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log1 <- spPredict(sp.obj = fit.logit1, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log1 <- t(yp.sp.log1$p.y.predictive.samples)
+bs.log1        <- BrierScore(post.prob.log1, y.validate)
+```
+
+```{r resultslogit2-4, echo=FALSE, include=FALSE, cache=TRUE}
+yp.sp.log2 <- spPredict(sp.obj = fit.logit2, pred.coords = s.p,
+                        pred.covars = X.p, start = 30001, end = 40000,
+                        thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log2 <- t(yp.sp.log2$p.y.predictive.samples)
+bs.log2        <- BrierScore(post.prob.log2, y.validate)
+```
+
+```{r resultsprobit1-4, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro1 <- pred.spprob(mcmcoutput = fit.probit1, X.pred = X.p,
+                              s.pred = s.p, knots = knots.1,
+                              start = 1, end = 10000, update = 500)
+bs.pro1 <- BrierScore(post.prob.pro1, y.validate)
+```
+
+```{r resultsprobit2-4, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.pro2 <- pred.spprob(mcmcoutput = fit.probit2, X.pred = X.p,
+                              s.pred = s.p, knots = knots.2,
+                              start = 1, end = 10000, update = 500)
+bs.pro2 <- BrierScore(post.prob.pro2, y.validate)
+```
+
+```{r resultsgev1-4, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev1 <- pred.spgev(mcmcoutput = fit.gev1, x.pred = X.p,
+                             s.pred = s.p, knots = knots.1,
+                             start = 1, end = 10000, update = 500)
+bs.gev1 <- BrierScore(post.prob.gev1, y.validate)
+```
+
+```{r resultsgev2-4, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev2 <- pred.spgev(mcmcoutput = fit.gev2, x.pred = X.p,
+                             s.pred = s.p, knots = knots.2,
+                             start = 1, end = 10000, update = 500)
+bs.gev2 <- BrierScore(post.prob.gev2, y.validate)
+```
+
+## Brier Scores
+
+The brier scores are 
+Logit 1: `r round(bs.log1, 4)`
+Logit 2: `r round(bs.log2, 4)`
+Probit 1: `r round(bs.pro1, 4)`
+Probit 2: `r round(bs.pro2, 4)`
+GEV 1: `r round(bs.gev1, 4)`
+GEV 2: `r round(bs.gev2, 4)`
