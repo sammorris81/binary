@@ -14,13 +14,18 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   library(fields)
 
   # initial setup
-  if (is.na(dim(X)[3])) {
+  if (is.na(dim(x)[3])) {
     p <- 1
   } else {
     p <- dim(x)[3]
   }
+  if (is.null(dim(y))){
+    y <- matrix(y, length(y), 1)
+  }
+  
   ns <- nrow(y)
   nt <- ncol(y)
+  
   nknots <- dim(knots)[1]
 
   # predictions

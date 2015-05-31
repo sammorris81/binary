@@ -94,54 +94,56 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
   return(results)
 }
 
-# updateBetaXi <- function(y, theta.star, alpha, z, beta, beta.m, beta.s, x,
-#                          xi, xi.m, xi.s, cur.lly, acc.beta, att.beta, mh.beta,
-#                          acc.xi, att.xi, mh.xi, thresh=0) {
-#   np  <- dim(x)[3]
-#   ns  <- nrow(y)
-#   nt  <- dim(x)[2]
-#   att.beta <- att.beta + 1
-#   att.xi   <- att.xi + 1
-#   alpha.inv <- 1 / alpha
-#
-#   can.beta <- rnorm(np, beta, mh.beta)
-#   can.x.beta <- matrix(NA, ns, nt)
-#   for (t in 1:nt) {
-#     if (np > 1) {
-#       can.x.beta[, t] <- x[, t, ] %*% can.beta
-#     } else {
-#       can.x.beta[, t] <- x[, t] * can.beta
-#     }
-#   }
-#
-#   can.xi <- rnorm(1, xi, mh.xi)
-#   can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
-#   can.z.star <- can.z^alpha.inv
-#
-#   can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
-#
-#   R <- sum(can.lly - cur.lly) +
-#        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
-#        sum(dnorm(beta, beta.m, beta.s, log=TRUE))
-#        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
-#        dnorm(xi, xi.m, xi.s, log=TRUE)
-#
-#   if (!is.na(R)) { if (log(runif(1)) < R) {
-#     beta     <- can.beta
-#     x.beta   <- can.x.beta
-#     xi       <- can.xi
-#     z        <- can.z
-#     cur.lly  <- can.lly
-#     acc.beta <- acc.beta + 1
-#     acc.xi   <- acc.xi + 1
-#   }}
-#
-#   results <- list(beta=beta, x.beta=x.beta,
-#                   xi=xi, z=z, cur.lly=cur.lly,
-#                   att.beta=att.beta, acc.beta=acc.beta,
-#                   att.xi=att.xi, acc.xi=acc.xi)
-#   return(results)
-# }
+updateBetaXi <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
+                         x.beta, xi, x, xi.m, xi.s, cur.lly,
+                         rw = TRUE, rw.mean, rw.sdmtx,
+                         acc.beta, att.beta, mh.beta,
+                         acc.xi, att.xi, mh.xi, thresh=0) {
+  np  <- length(beta)
+  ns  <- nrow(y)
+  nt  <- ncol(y)
+  att.beta <- att.beta + 1
+  att.xi   <- att.xi + 1
+  alpha.inv <- 1 / alpha
+
+  can.beta <- rnorm(np, beta, mh.beta)
+  can.x.beta <- matrix(NA, ns, nt)
+  for (t in 1:nt) {
+    if (np > 1) {
+      can.x.beta[, t] <- x[, t, ] %*% can.beta
+    } else {
+      can.x.beta[, t] <- x[, t] * can.beta
+    }
+  }
+
+  can.xi <- rnorm(1, xi, mh.xi)
+  can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
+  can.z.star <- can.z^alpha.inv
+
+  can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+
+  R <- sum(can.lly - cur.lly) +
+       sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
+       sum(dnorm(beta, beta.m, beta.s, log=TRUE))
+       dnorm(can.xi, xi.m, xi.s, log=TRUE) -
+       dnorm(xi, xi.m, xi.s, log=TRUE)
+
+  if (!is.na(R)) { if (log(runif(1)) < R) {
+    beta     <- can.beta
+    x.beta   <- can.x.beta
+    xi       <- can.xi
+    z        <- can.z
+    cur.lly  <- can.lly
+    acc.beta <- acc.beta + 1
+    acc.xi   <- acc.xi + 1
+  }}
+
+  results <- list(beta=beta, x.beta=x.beta,
+                  xi=xi, z=z, cur.lly=cur.lly,
+                  att.beta=att.beta, acc.beta=acc.beta,
+                  att.xi=att.xi, acc.xi=acc.xi)
+  return(results)
+}
 
 # update the random effects for theta.star
 updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
@@ -335,6 +337,16 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
     p <- 1
   } else {
     p <- dim(mcmcoutput$beta)[2]
+  }
+
+  if (is.null(dim(x.pred))) {
+    nt <- 1
+  } else {
+    if (p == 1) {
+      nt <- ncol(x.pred)
+    } else {
+      nt <- dim(x.pred)[2]
+    }
   }
   np    <- nrow(s.pred)
   iters <- end - start + 1

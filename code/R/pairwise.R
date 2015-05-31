@@ -6,6 +6,7 @@ library(spBayes)
 library(fields)
 library(SpatialTools)
 library(microbenchmark)
+library(mvtnorm)
 library(Rcpp)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
@@ -15,145 +16,167 @@ source("auxfunctions.R")
 source("updateModel.R")
 source("mcmc.R")
 
-pairwise.rarebinaryR <- function(par, y, dw2, cov) {
-  # par: parameter vector (alpha, rho, xi, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # x: covariates (ns x np)
-
-  npars <- length(par)
-  alpha <- par[1]
-  rho   <- par[2]
-  xi    <- par[3]
-  beta  <- par[4:npars]
-
-  ns     <- length(y)
-  np     <- ncol(cov)
-  nknots <- ncol(dw2)
-
-  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  x.beta <- cov %*% beta             # should be ns x np
-  z      <- getZ(xi, x.beta)       # should be ns long
-
-  # keep estimates in their actual space
-  if (alpha < 0 | alpha > 1) {
-    return(1e99)
-  }
-  if (rho < 0) {
-    return(1e99)
-  }
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
-  ll <- 0
-  for (i in 1:(ns - 1)) {
-    for (j in (i + 1):ns) {
-      # in all cases, we need the joint
-      # first take the kernel bits and add i and j for each knot
-      # joint <- -sum(apply(kernel[c(i, j), ], 2, sum)^alpha)
-      joint <- -getJoint2(kernel = kernel[c(i, j), ], alpha = alpha)
-      if (y[i] == 0 & y[j] == 0) {
-        ll <- ll + joint
-      } else if (y[i] == 1 & y[j] == 0) {  # add in marginal for i
-        ll <- ll + log(exp(-1 / z[j]) - exp(joint))
-      } else if (y[i] == 0 & y[j] == 1) {
-        ll <- ll + log(exp(-1 / z[i]) - exp(joint))
-      } else if (y[i] == 1 & y[j] == 1) {  # do 1,1 likelihood
-        ll <- ll + log(1 - exp(-1 / z[i]) - exp(-1 / z[j]) + exp(joint))
-      }
-    }
-  }
-
-  return(-ll)
-}
-
-pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
-  # par: parameter vector (alpha, rho, xi, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # x: covariates (ns x np)
-
-  npars <- length(par)
-  alpha <- par[1]
-  rho   <- par[2]
-  xi    <- par[3]
-  beta  <- par[4:npars]
-
-  if (xi < 1e-10 & xi > -1e-10) {
-    xi <- 0
-  }
-
-  ns     <- length(y)
-  np     <- ncol(cov)
-  nknots <- ncol(dw2)
-
-  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  x.beta <- cov %*% beta             # should be ns x np
-  z      <- getZ(xi, x.beta)       # should be ns long
-
-  # keep estimates in their actual space
-  if (alpha < 1e-10 | alpha > (1 - 1e-10)) {
-    return(1e99)
-  }
-  if (rho < 1e-10) {
-    return(1e99)
-  }
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
-  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    threads = threads)
-
-  return(-ll)
-}
-
-getJoint2 <- function(kernel, alpha) {
-  knot.contribute <- colSums(kernel)^alpha
-  # print(knot.contribute)
-  joint <- sum(knot.contribute)
-  return(joint)
-}
-
 set.seed(7483)  # site
-ns    <- 400
+ns    <- 200
 s     <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
 x     <- matrix(1, ns, 1)
 
+alpha.t <- 0.3
+rho.t   <- 0.1
+xi.t    <- 0.25
+
 set.seed(3282)  # data
-data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = 0.25,
-                        alpha = 0.4, rho = 0.1, prob.success = 0.05)
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = 0.2)
 
 y <- data$y
 plot(s[which(y == 1), ], pch=19, col=2, ylim=c(0, 1), xlim=c(0, 1))
 points(knots)
 
 thresh <- data$thresh
-dw2 <- rdist(s, knots)
+dw2    <- rdist(s, knots)
+d      <- rdist(s)
+diag(d) <- 0
 
-alpha <- 0.3
-rho <- 0.1
-xi <- 0.25
-beta <- -thresh
+beta.t <- -thresh
 
-par.true <- c(alpha, rho, xi, beta)
+W.t      <- stdW(makeW(dw2, rho.t))
+par.true <- c(alpha.t, rho.t, xi.t, beta.t)
 pairwise.rarebinaryR(par.true, y, dw2, x)
 pairwise.rarebinaryCPP(par.true, y, dw2, x, threads = 6)
+pairwise.rarebinary2CPP(c(xi.t, beta.t), alpha.t, rho.t, y, W, x, threads=1)
 microbenchmark(pairwise.rarebinary1(par.true, y, dw2, x),
                pairwise.rarebinary2(par.true, y, dw2, x, threads = 6), times = 50)
 
+alpha.t <- 0.2
+rho.t   <- 0.1
+xi.t    <- 0.25
+ns      <- 500
+s       <- cbind(runif(ns), runif(ns))
+knots   <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
+x       <- matrix(1, ns, 1)
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = 0.1)
+dw2    <- rdist(s, knots)
+d      <- rdist(s)
+diag(d) <- 0
+y <- data$y
+plot(s[which(y == 1), ], pch=19, col=2, ylim=c(0, 1), xlim=c(0, 1))
+points(knots)
+rho <- knots[2, 1] - knots[1, 1]
+fit.rarebinaryCPP(c(0, 0.5, -4), rho = rho,  y = y, dw2 = dw2,
+                  cov = x, threads = 1)
 
-results <- optim(c(0.5, 0.2, 0, -4), pairwise.rarebinaryCPP, y = y, dw2 = dw2,
-                 cov = x, threads = 4,
+alphas <- seq(0.1, 0.9, by=0.05)
+rhos    <- (knots[2, 1] - knots[1, 1]) * seq(1, 2.5, 0.5)
+results1 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results1[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rho,  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+
+xplot <- rep(alphas, each=length(rhos))
+yplot <- rep(rhos, length(alphas))
+color <- two.colors(n = 256, start = "dodgerblue4", end = "firebrick4", 
+                    middle = "white")
+quilt.plot(x = xplot, y = yplot, z = results1, 
+           nx = length(alphas), ny = length(rhos), 
+           col = color, 
+           main=bquote(paste("negative log likelihood grid search (", pi, "= 0.2)")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results == min(results), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+
+alpha.t <- 0.3
+rho.t   <- 0.1
+xi.t    <- 0.25
+
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = 0.1)
+
+alphas <- seq(0.1, 0.9, by=0.05)
+rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
+results2 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results2[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+
+xplot <- rep(alphas, each=length(rhos))
+yplot <- rep(rhos, length(alphas))
+color <- two.colors(n = 256, start = "dodgerblue4", end = "firebrick4", 
+                    middle = "white")
+quilt.plot(x = xplot, y = yplot, z = results2, 
+           nx = length(alphas), ny = length(rhos), 
+           col = color, 
+           main=bquote(paste("negative log likelihood grid search (", pi, "= 0.1)")), 
+           xlab=bquote(alpha), ylab=bquote(rho))
+points(alpha.t, rho.t, col = "gray16", bg = "gray60",
+       pch = 21, cex = 1.4)
+min.idx <- which(results == min(results), arr.ind = TRUE)
+points(alphas[min.idx[2]], rhos[min.idx[1]], col = "gray16", bg = "gray60",
+       pch = 24, cex = 1.4)
+
+alpha.t <- 0.3
+rho.t   <- 0.1
+xi.t    <- 0.25
+
+set.seed(3282)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = 0.1)
+
+alphas <- seq(0.1, 0.9, by=0.05)
+rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
+results3 <- matrix(9999999, length(rhos), length(alphas))
+for (j in seq_along(alphas)) {
+  for (i in seq_along(rhos)) {
+    results3[i, j] <- fit.rarebinaryCPP(c(0, -4), alpha = alphas[j], 
+                                        rho = rhos[i],  y = y, dw2 = dw2,
+                                        cov = x, threads = 1)$value
+    print(paste("alpha = ", alphas[j], ", rho = ", round(rhos[i], 3), sep=""))
+  }
+}
+
+
+fit.rarebinaryCPP(c(0, -4), alpha = 0.2, rho = 0.1, y = y, dw2 = dw2, cov = x, 
+                  threads = 1)
+
+
+results <- optim(c(0.5, 0.1, 0, -4), pairwise.rarebinaryCPP, y = y, dw2 = dw2,
+                 cov = x, threads = 1,
                  # lower = c(1e-6, 1e-6, -1, -Inf),
                  # upper = c(1 - 1e-6, Inf, 3, Inf),
                  hessian = TRUE)
+
+
+# to generate logistic data with around 1% rareness, need intercept = -log(99)
+# to generate logistic data with around 5% rareness, need intercept = -log(19)
+int.logit   <- -log(19)
+rho.logit   <- 1
+sigsq.logit <- 1
+nu.logit    <- 0.5
+
+data <- rLogitSpat(x = X, s = s, knots = knots, beta = int.logit,
+                   rho = rho.logit, sigma.sq = sigsq.logit,
+                   nu = nu.logit)
+
+# par = c(gamma, sigmasq, logrho, nu, beta)
+results <- optim(c(0.5, 1, log(0.2), 0.5, -4), pairwise.logisticR, y = y, d = d, 
+                 cov = x, hessian = TRUE)
 
 results <- nlm(pairwise.rarebinaryCPP, c(0.5, 0.2, 0, -4), y = y, dw2 = dw2,
                cov = x, threads = 4,
