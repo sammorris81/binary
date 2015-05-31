@@ -27,15 +27,17 @@
 \today
 \end{center}
 
-Consider the case when $Y_1 = 0$ and $Y_2 = 0$. Then the likelihood is given by
+Consider the case when $Y_1 = 0$ and $Y_2 = 0$.
+Then the bivariate likelihood is given by
 \begin{align}
-  f = \exp \left\{ \sum_{l = 1}^L \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^\alpha \right\}
+  f = \exp \left\{ \sum_{l = 1}^L \left( \sum_{i = 1}^2  k_{i, l} \right)^\alpha \right\}
 \end{align}
-where $z_i = (1 - \xi \bX^T_i \bbeta)^{1 / \xi}$, $w_l(\bs_i) = \frac{ \exp \left\{ \frac{- ||\bs_i - \bv_l||^2}{2 \rho^2} \right\} }{\sum_{k = 1}^L \exp \left\{ \frac{- ||\bs_i - \bv_k||^2}{2 \rho^2} \right\} }$.
-Then these are the gradients with respect to model parameters $\alpha$, $\bbeta$, $\rho$, and $\xi$. \hl{There's a problem with $\frac{\partial f}{ \partial \beta }$. This is only the gradient in the case that we have a single covariate (i.e. intercept only)}
+where $k_{i, l} = \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha}$, $z_i = (1 - \xi \bX^T_i \bbeta)^{1 / \xi}$, and $w_l(\bs_i) = \frac{ \exp \left\{ \frac{- ||\bs_i - \bv_l||^2}{2 \rho^2} \right\} }{\sum_{k = 1}^L \exp \left\{ \frac{- ||\bs_i - \bv_k||^2}{2 \rho^2} \right\} }$.
+Let $\ell = \log(f)$ be the log likelihood function.
+Then these are the gradients with respect to model parameters $\alpha$, $\bbeta$, $\rho$, and $\xi$.
 
 \begin{align}
-  \frac{\partial f}{\partial \alpha} = -\sum _{l=1}^{L} \left\{
+  \frac{\partial \ell}{\partial \alpha} = -\sum _{l=1}^{L} \left\{
     \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1}
     \left[
       \log \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)
@@ -47,14 +49,15 @@ Then these are the gradients with respect to model parameters $\alpha$, $\bbeta$
 \end{align}
 
 \begin{align}
-   = -\sum _{l=1}^{L} \left\{
+  \frac{\partial \ell}{ \partial \beta_p } = -\sum _{l=1}^{L} \left\{
     \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1}
-    \sum_{i = 1}^2 \left( x_{i}  \left[ \frac{ w_l(\bs_i)}{z_i^{\alpha \xi + 1}} \right]^{1 / \alpha} \right)
+    \sum_{i = 1}^2 \left( x_{i, p}  \left[ \frac{ w_l(\bs_i)}{z_i^{\alpha \xi + 1}} \right]^{1 / \alpha} \right)
   \right\}
 \end{align}
+where $\beta_p$ is the $p$th regression coefficient, and $x_{i, p}$ is the $p$th covariate for observation $i$.
 
 \begin{align}
-  \frac{ \partial f }{ \partial \rho } &= -\sum _{l=1}^{L} \left\{
+  \frac{ \partial \ell}{ \partial \rho } &= -\sum _{l=1}^{L} \left\{
     \left( \sum_{i = 1}^2 \left[ \frac{ w_l(\bs_i) }{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1} \right. \times \nonumber \\
     & \quad \left. \frac{ 1 }{\rho^3} \sum_{i = 1}^2
     \left( \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha}
@@ -67,13 +70,39 @@ Then these are the gradients with respect to model parameters $\alpha$, $\bbeta$
 \end{align}
 
 \begin{align}
-  \frac{ \partial f }{ \partial \xi } = -\sum _{l=1}^{L} \left\{
+  \frac{ \partial \ell}{ \partial \xi } = -\sum _{l=1}^{L} \left\{
     \left( \sum_{i = 1}^2 \left[ \frac{ w_l(\bs_i) }{z_i} \right]^{1 / \alpha} \right)^{\alpha - 1}
     \sum_{i = 1}^2 \left(
       \frac{1}{\xi} \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \left[ \ln  \left( z_i \right) + \frac{ \bX^T_i \bbeta }{ z_i^\xi } \right]
     \right)
   \right\}
 \end{align}
+
+Consider the case when $Y_1 = 1$ and $Y_2 = 0$.
+Then the likelihood is given by
+\begin{align}
+  f = \exp\left\{ - \frac{ 1 }{ z_2 } \right\} - \exp \left\{ \sum_{l = 1}^L \left( \sum_{i = 1}^2  \left[ \frac{ w_l(\bs_i)}{z_i} \right]^{1 / \alpha} \right)^\alpha \right\}.
+\end{align}
+Let $\ell = \log(f)$ be the log likelihood function.
+Then these are the gradients with respect to model parameters $\alpha$, $\bbeta$, $\rho$, and $\xi$.
+
+\begin{align}
+  \frac{\partial \ell}{\partial \alpha} = ((  ))
+\end{align}
+
+\begin{align}
+  \frac{\partial \ell}{ \partial \beta_p } =
+\end{align}
+where $\beta_p$ is the $p$th regression coefficient, and $x_{i, p}$ is the $p$th covariate for observation $i$.
+
+\begin{align}
+  \frac{ \partial \ell}{ \partial \rho } =
+\end{align}
+
+\begin{align}
+  \frac{ \partial \ell}{ \partial \xi } =
+\end{align}
+
 
 \end{document}
 
