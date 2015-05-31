@@ -9,6 +9,8 @@
 .Rdata
 *.RData
 *.RDataBak
+*.rdb
+*.rdx
 
 # Profiled output
 Rprof.out
