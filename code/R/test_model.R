@@ -42,12 +42,12 @@ source("mcmc.R")
 set.seed(10)
 ns   <- 2000
 nt   <- 1
-s    <- cbind(runif(ns, 0, 6), runif(ns, 0, 6))
+s    <- cbind(runif(ns, 0, 1), runif(ns, 0, 1))
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
 x[, , 3] <- s[, 2]
-knots.1 <- seq(0, 10, length=12)
-knots.2 <- seq(0, 10, length=12)
+knots.1 <- seq(0, 1, length=12)
+knots.2 <- seq(0, 1, length=12)
 knots <- expand.grid(knots.1, knots.2)
 # knots  <- s
 nknots <- nrow(knots)
@@ -700,17 +700,18 @@ source("auxfunctions.R")
 source("updateModel.R")
 nreps   <- 30000
 burn    <- 15000
-xi.t    <- 0.1
+xi.t    <- 0.25
 beta.t  <- c(0, 0, 0)
 alpha.t <- 0.3
-rho.t   <- 1
+rho.t   <- 0.1
 thresh  <- 0
 x <- array(1, dim=c(ns, nt, 3))
 x[, , 2] <- s[, 1]
 x[, , 3] <- s[, 2]
-data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t, prob.success = 0.50,
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t, prob.success = 0.05,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
 beta.t[1] <- -data$thresh
+plot(s[which(data$y == 1), ], xlim=c(0, 1), ylim=c(0, 1))
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
