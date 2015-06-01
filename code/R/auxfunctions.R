@@ -37,6 +37,58 @@ transform <- list(
   }
 )
 
+adjustX <- function(x, y) {
+  # always want a matrix that has ns * nt rows and np cols
+  # we do this to simplify the multiplication of x %*% beta
+  ns <- nrow(y)
+  nt <- ncol(y)
+
+  if (length(x) %% length(y) != 0) {
+    stop("the number of sites in x is probably not the same as in y")
+  }
+
+  np <- length(x) / length(y)
+  if (is.null(dim(x))) {
+    if (length(x) != length(y)) {
+      stop ("x cannot be coerced to proper dimensions")
+    } else {
+      x <- matrix(x, nrow = ns * nt, ncol = np)
+      return(x)
+    }
+  } else {
+    if (is.na(dim(x)[3])) {  # i.e. x is a matrix
+      if ((nrow(x) == (ns * nt)) & (ncol(x) == np)) {
+        return(x)
+      } else {
+        stop ("if x is a matrix, it should have ns * nt rows and np cols")
+      }
+    } else {
+      if ((dim(x)[3] == np) & (dim(x)[2] == nt)) {
+        x.temp <- matrix(NA, nrow = ns * nt, ncol = np)
+        for (p in 1:np) { for (t in 1:nt) {
+          start <- (t - 1) * ns + 1
+          end   <- t * ns
+          x.temp[start:end, p] <- x[, t, p]
+        } }
+        return(x.temp)
+      }
+    }
+  }
+}
+
+getXBeta <- function(x, ns, nt, beta) {
+  if (nt == 1) {
+    return(x %*% beta)
+  } else {
+    x.beta <- matrix(NA, ns, nt)
+    for (t in 1:nt) {
+      start <- (t - 1) * ns + 1
+      end   <- t * ns
+      x.beta[, t] <- x[start:end, ] %*% beta
+    }
+  }
+}
+
 # TODO: There needs to be more checks here.
 # (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
 getZ <- function(xi, x.beta, thresh=0) {

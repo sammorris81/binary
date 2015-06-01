@@ -5,7 +5,7 @@ updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
   # as individual updates for each beta term separately.
   np  <- length(beta)
   ns  <- nrow(y)
-  nt  <- dim(x)[2]
+  nt  <- ncol(y)
   alpha.inv <- 1 / alpha
 
   for (p in 1:np) {
@@ -15,7 +15,12 @@ updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     if (nt == 1) {
       can.x.beta <- x.beta + x[, p] * (can.beta - beta[p])
     } else {
-      can.x.beta  <- x.beta + x[, , p] * (can.beta - beta[p])
+      can.x.beta <- matrix(NA, ns, nt)
+      for (t in 1:nt) {
+        start <- (t - 1) * ns + 1
+        end   <- t * ns
+        can.x.beta[, t]  <- x.beta[, t] + x[start:end, p] * (can.beta - beta[p])
+      }
     }
 
     if (sum(xi * (can.x.beta - thresh) > 1) > 0) {  # numerical stability
@@ -96,7 +101,6 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
 
 updateBetaXi <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
                          x.beta, xi, x, xi.m, xi.s, cur.lly,
-                         rw = TRUE, rw.mean, rw.sdmtx,
                          acc.beta, att.beta, mh.beta,
                          acc.xi, att.xi, mh.xi, thresh=0) {
   np  <- length(beta)
@@ -106,21 +110,39 @@ updateBetaXi <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
   att.xi   <- att.xi + 1
   alpha.inv <- 1 / alpha
 
-  can.beta <- rnorm(np, beta, mh.beta)
+  can.cov <- diag(c(mh.beta^2, mh.xi^2))
+  can.cov[4, 1] <- can.cov[1, 4] <- -0.999 * mh.beta[1] * mh.xi
+  can.betaxi <- c(beta, xi) + t(chol(can.cov)) %*% rnorm(np + 1, 0, 1)
+
+  can.beta <- can.betaxi[1:np]
+  can.xi   <- can.betaxi[np + 1]
+
   can.x.beta <- matrix(NA, ns, nt)
-  for (t in 1:nt) {
-    if (np > 1) {
-      can.x.beta[, t] <- x[, t, ] %*% can.beta
+  if (nt == 1) {
+    if (np == 1) {
+      can.x.beta <- x * can.beta
     } else {
-      can.x.beta[, t] <- x[, t] * can.beta
+      can.x.beta <- x %*% can.beta
+    }
+  } else {
+    for (t in 1:nt) {
+      start <- (t - 1) * ns + 1
+      end   <- t * ns
+      if (np == 1) {
+        can.x.beta[, t] <- x[start:end, t] * can.beta
+      } else {
+        can.x.beta[, t] <- x[start:end, t] %*% can.beta
+      }
     }
   }
 
-  can.xi <- rnorm(1, xi, mh.xi)
-  can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
-  can.z.star <- can.z^alpha.inv
-
-  can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+  if (any(xi * (can.x.beta - thresh) > 1)) {
+    can.lly <- -Inf
+  } else {
+    can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
+    can.z.star <- can.z^alpha.inv
+    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+  }
 
   R <- sum(can.lly - cur.lly) +
        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
@@ -133,13 +155,14 @@ updateBetaXi <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     x.beta   <- can.x.beta
     xi       <- can.xi
     z        <- can.z
+    z.star   <- can.z.star
     cur.lly  <- can.lly
     acc.beta <- acc.beta + 1
     acc.xi   <- acc.xi + 1
   }}
 
   results <- list(beta=beta, x.beta=x.beta,
-                  xi=xi, z=z, cur.lly=cur.lly,
+                  xi=xi, z=z, z.star=z.star, cur.lly=cur.lly,
                   att.beta=att.beta, acc.beta=acc.beta,
                   att.xi=att.xi, acc.xi=acc.xi)
   return(results)

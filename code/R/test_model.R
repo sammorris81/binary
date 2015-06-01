@@ -27,6 +27,14 @@ library(evd)
 library(spBayes)
 library(fields)
 library(SpatialTools)
+library(fields)
+library(microbenchmark)
+library(mvtnorm)
+library(Rcpp)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "./pairwise.cpp")
+
 
 source("auxfunctions.R")
 source("updateModel.R")
@@ -442,17 +450,23 @@ source("updateModel.R")
 nreps   <- 20000
 burn    <- 10000
 xi.t    <- 0.1
-beta.t  <- c(1, -1, 0)
+beta.t  <- c(0, 0, 0)
 alpha.t <- 0.7
 rho.t   <- 1
 thresh  <- 0
+x <- array(1, dim=c(ns, nt, 3))
+x[, , 2] <- s[, 1]
+x[, , 3] <- s[, 2]
 data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
                         xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
+beta.t[1] <- -data$thresh
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
 w.star.t <- w.t^(1 / alpha.t)
 theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
+
+x   <- adjustX(x, data$y)
 
 # initialization and prior distribution
 beta <- c(0, 0, 0)
@@ -471,7 +485,8 @@ beta.keep <- matrix(NA, nreps, 3)
 
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
-                            z=z, z.star=z.star, beta=beta, beta.m=beta.m,
+                            x.beta = x.beta, z=z, z.star=z.star,
+                            beta=beta, beta.m=beta.m,
                             beta.s=beta.s, xi=xi.t, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta, thresh=0)
   beta     <- beta.update$beta
@@ -511,21 +526,24 @@ source("updateModel.R")
 nreps   <- 20000
 burn    <- 10000
 xi.t    <- 0.1
-beta.t  <- c(1, -1, 0)
+beta.t  <- c(0, 0, 0)
 alpha.t <- 0.7
 rho.t   <- 1
 thresh  <- 0
-data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t, prob.success = 0.50,
                         xi=xi.t, alpha=alpha.t, rho=rho.t)
+beta.t[1] <- -data$thresh
 dw2  <- as.matrix(rdist(s, knots))^2
 w.t  <- stdW(makeW(dw2=dw2, rho=rho.t))
 w.star.t <- w.t^(1 / alpha.t)
 theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
 
+x   <- adjustX(x, data$y)
+
 # initialization and prior distribution
 xi   <- 0.1
 xi.m <- 0
-xi.s <- 1
+xi.s <- 0.5
 x.beta.t <- matrix(0, ns, nt)
 for (t in 1:nt) {
   x.beta.t[, t] <- x[, t, ] %*% beta.t
@@ -578,17 +596,23 @@ source("updateModel.R")
 nreps   <- 20000
 burn    <- 10000
 xi.t    <- 0.1
-beta.t  <- c(1, -1, 0)
+beta.t  <- c(0, 0, 0)
 alpha.t <- 0.7
 rho.t   <- 1
 thresh  <- 0
-data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t,
-                        xi=xi.t, alpha=alpha.t, rho=rho.t, thresh=thresh)
+x <- array(1, dim=c(ns, nt, 3))
+x[, , 2] <- s[, 1]
+x[, , 3] <- s[, 2]
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t, prob.success = 0.50,
+                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+
+beta.t[1] <- -data$thresh
 
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
 w.star.t <- w.t^(1 / alpha.t)
 theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
+x   <- adjustX(x, data$y)
 
 # initialization and prior distribution
 beta   <- c(0, 0, 0)
@@ -597,7 +621,7 @@ beta.s <- 10
 x.beta <- matrix(0, ns, nt)
 xi     <- 0
 xi.m   <- 0
-xi.s   <- 1
+xi.s   <- 0.3
 z <- getZ(xi=xi, x.beta=x.beta)
 z.star <- z^(1 / alpha.t)
 cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star)
@@ -610,12 +634,14 @@ acc.xi <- att.xi <- mh.xi <- 0.1
 beta.keep <- matrix(NA, nreps, 3)
 xi.keep   <- rep(NA, nreps)
 
+
 for (i in 1:nreps) {
   beta.update <- updateBeta(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
-                            z=z, z.star=z.star, beta=beta, beta.m=beta.m,
-                            beta.s=beta.s, xi=xi, x=x, cur.lly=cur.lly,
+                            z=z, z.star=z.star,
+                            beta=beta, beta.m=beta.m, beta.s=beta.s,
+                            x.beta=x.beta, xi=xi, x=x, cur.lly=cur.lly,
                             acc=acc.beta, att=att.beta, mh=mh.beta,
-                            thresh=thresh)
+                            thresh=0)
   beta     <- beta.update$beta
   x.beta   <- beta.update$x.beta
   z        <- beta.update$z
@@ -629,7 +655,7 @@ for (i in 1:nreps) {
   xi.update <- updateXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
                         z=z, z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m,
                         xi.s=xi.s, cur.lly=cur.lly,
-                        acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
+                        acc=acc.xi, att=att.xi, mh=mh.xi, thresh=0)
   xi      <- xi.update$xi
   z       <- xi.update$z
   z.star  <- xi.update$z.star
@@ -665,6 +691,101 @@ for (i in 1:nreps) {
     plot(xi.keep[start:i], type="l", main="xi")
   }
 
+}
+
+
+# test joint beta and xi update with spatial dependence
+set.seed(15)
+source("auxfunctions.R")
+source("updateModel.R")
+nreps   <- 30000
+burn    <- 15000
+xi.t    <- 0.1
+beta.t  <- c(0, 0, 0)
+alpha.t <- 0.3
+rho.t   <- 1
+thresh  <- 0
+x <- array(1, dim=c(ns, nt, 3))
+x[, , 2] <- s[, 1]
+x[, , 3] <- s[, 2]
+data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t, prob.success = 0.50,
+                        xi=xi.t, alpha=alpha.t, rho=rho.t)
+beta.t[1] <- -data$thresh
+
+dw2 <- as.matrix(rdist(s, knots))^2
+w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
+w.star.t <- w.t^(1 / alpha.t)
+theta.star.t <- getThetaStar(w.star=w.star.t, a=data$a)
+
+# initialization and prior distribution
+beta   <- c(0, 0, 0)
+beta.m <- 0
+beta.s <- 10
+x.beta <- matrix(0, ns, nt)
+xi     <- 0
+xi.m   <- 0
+xi.s   <- 0.3
+z <- getZ(xi=xi, x.beta=x.beta)
+z.star <- z^(1 / alpha.t)
+cur.lly <- logLikeY(y=data$y, theta.star=theta.star.t, z.star=z.star)
+
+# MH adjustments
+acc.beta <- att.beta <- mh.beta <- rep(0.1, 3)
+acc.xi <- att.xi <- mh.xi <- 0.1
+
+# storage
+beta.keep <- matrix(NA, nreps, 3)
+xi.keep   <- rep(NA, nreps)
+
+knots.h <- knots[2, 1] - knots[1, 1]
+x <- adjustX(x, data$y)
+pairwise <- fit.rarebinaryCPP(c(0, 0.5, beta.t), rho = knots.h,  y = data$y,
+                              dw2 = dw2, cov = x, threads = 6)
+
+for (i in 1:nreps) {
+  betaxi.update <- updateBetaXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
+                                z=z, z.star=z.star,
+                                beta=beta, beta.m=beta.m, beta.s=beta.s,
+                                x.beta=x.beta, xi=xi, x=x,
+                                xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+                                acc.beta=acc.beta, att.beta=att.beta,
+                                mh.beta=mh.beta,
+                                acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+                                thresh=0)
+  beta     <- betaxi.update$beta
+  x.beta   <- betaxi.update$x.beta
+  xi       <- betaxi.update$xi
+  z        <- betaxi.update$z
+  z.star   <- betaxi.update$z.star
+  cur.lly  <- betaxi.update$cur.lly
+  att.beta <- betaxi.update$att.beta
+  acc.beta <- betaxi.update$acc.beta
+  att.xi   <- betaxi.update$att.xi
+  acc.xi   <- betaxi.update$acc.xi
+
+  if (i < burn / 2) {
+    mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta)
+    acc.beta  <- mh.update$acc
+    att.beta  <- mh.update$att
+    mh.beta   <- mh.update$mh
+  }
+
+  beta.keep[i, ] <- beta
+  xi.keep[i] <- xi
+
+  if (i %% 500 == 0) {
+    print(i)
+    if (i < 3000) {
+      start <- 1
+    } else {
+      start <- i - 3000
+    }
+    par(mfrow=c(2, 2))
+    plot(beta.keep[start:i, 1], type="l", main="beta 0")
+    plot(beta.keep[start:i, 2], type="l", main="beta 1")
+    plot(beta.keep[start:i, 3], type="l", main="beta 2")
+    plot(xi.keep[start:i], type="l", main="xi")
+  }
 }
 
 # test update for alpha

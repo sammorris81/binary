@@ -8,34 +8,33 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  alpha.attempts = 200, rho.attempts = 200,
                  spatial = TRUE,
                  rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
-                 rho.fix = FALSE, alpha.fix = FALSE, # for debug
+                 beta.fix = FALSE, xi.fix = FALSE,   # debug
+                 rho.fix = FALSE, alpha.fix = FALSE, # debug
+                 betaxi.joint = FALSE,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
 
   # initial setup
-  if (is.na(dim(x)[3])) {
-    p <- 1
-  } else {
-    p <- dim(x)[3]
-  }
   if (is.null(dim(y))){
     y <- matrix(y, length(y), 1)
   }
-  
+
   ns <- nrow(y)
   nt <- ncol(y)
-  
+
+  x <- adjustX(x=x, y=y)
+
   nknots <- dim(knots)[1]
 
   # predictions
   predictions <- !is.null(s.pred) & !is.null(x.pred)
   if (predictions) {
-    np   <- nrow(s.pred)
-    dw2p <- as.matrix(rdist(s.pred, knots))^2
-    keepers.y.pred <- array(0, c((iters - burn), np, nt))
+    npred <- nrow(s.pred)
+    dw2p  <- as.matrix(rdist(s.pred, knots))^2
+    keepers.y.pred <- array(0, c((iters - burn), npred, nt))
   } else {
-    np <- 0
+    npred <- 0
     keepers.y.pred <- NULL
   }
 
@@ -69,29 +68,21 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   if (is.null(beta.init)) {
     if (xi == 0) {
       beta.init <- thresh + log(-log(1 - mean(y)))
-      beta <- rep(beta.init, p)
+      beta <- rep(beta.init, np)
     } else {
       beta.init <- thresh + (1 - log(1 - mean(y)))^(-xi) / xi
-      beta <- rep(beta.init, p)
+      beta <- rep(beta.init, np)
     }
   } else {
     if (length(beta.init) == 1) {
-      beta <- rep(beta.init, p)
+      beta <- rep(beta.init, np)
     } else {
       beta   <- beta.init
     }
   }
 
+  x.beta <- getXBeta(x, ns, nt, beta)
 
-
-  x.beta <- matrix(NA, ns, nt)
-  for (t in 1:nt) {
-    if (p > 1) {
-      x.beta[, t] <- x[, t, ] %*% beta
-    } else {
-      x.beta[, t] <- x[, t] * beta
-    }
-  }
   z <- getZ(xi=xi, x.beta=x.beta)
   z.star <- z^(1 / alpha)
 
@@ -107,7 +98,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
   # MH tuning parameters
   if (length(beta.tune) == 1) {
-    acc.beta <- att.beta <- mh.beta <- rep(beta.tune, p)
+    acc.beta <- att.beta <- mh.beta <- rep(beta.tune, np)
   } else {
     acc.beta <- att.beta <- mh.beta <- beta.tune
   }
@@ -119,54 +110,87 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   acc.rho   <- att.rho   <- mh.rho   <- rho.tune
 
   # storage
-  keepers.beta  <- matrix(NA, nrow=iters, ncol=p)
+  keepers.beta  <- matrix(NA, nrow=iters, ncol=np)
   keepers.xi    <- rep(NA, iters)
   keepers.a     <- array(NA, dim=c(iters, nknots, nt))
   keepers.alpha <- rep(NA, iters)
   keepers.rho   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:thin) {
-    # update beta and xi
-    # update beta
-    beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha,
-                              z=z, z.star=z.star, beta=beta,
-                              beta.m=beta.m, beta.s=beta.s, x.beta=x.beta,
-                              xi=xi, x=x, cur.lly=cur.lly, acc=acc.beta,
-                              att=att.beta, mh=mh.beta, thresh=thresh)
-    beta     <- beta.update$beta
-    x.beta   <- beta.update$x.beta
-    z        <- beta.update$z
-    z.star   <- beta.update$z.star
-    cur.lly  <- beta.update$cur.lly
-    att.beta <- beta.update$att
-    acc.beta <- beta.update$acc
+    if (betaxi.joint) {  # update beta and xi
+      betaxi.update <- updateBetaXi(y=y, theta.star=theta.star, alpha=alpha,
+                                    z=z, z.star=z.star,
+                                    beta=beta, beta.m=beta.m, beta.s=beta.s,
+                                    x.beta=x.beta, xi=xi, x=x,
+                                    xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+                                    acc.beta=acc.beta, att.beta=att.beta,
+                                    mh.beta=mh.beta,
+                                    acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+                                    thresh=0)
+      beta     <- betaxi.update$beta
+      x.beta   <- betaxi.update$x.beta
+      xi       <- betaxi.update$xi
+      z        <- betaxi.update$z
+      z.star   <- betaxi.update$z.star
+      cur.lly  <- betaxi.update$cur.lly
+      att.beta <- betaxi.update$att.beta
+      acc.beta <- betaxi.update$acc.beta
+      att.xi   <- betaxi.update$att.xi
+      acc.xi   <- betaxi.update$acc.xi
 
-    if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
-                            nattempts=beta.attempts)
-      acc.beta  <- mh.update$acc
-      att.beta  <- mh.update$att
-      mh.beta   <- mh.update$mh
-    }
+      if (iter < burn / 2) {
+        mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+                              nattempts=beta.attempts)
+        acc.beta  <- mh.update$acc
+        att.beta  <- mh.update$att
+        mh.beta   <- mh.update$mh
+      }
 
-    # update xi
-    xi.update <- updateXi(y=y, theta.star=theta.star, alpha=alpha, z=z,
-                          z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m,
-                          xi.s=xi.s, cur.lly=cur.lly,
-                          acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
-    xi      <- xi.update$xi
-    z       <- xi.update$z
-    z.star  <- xi.update$z.star
-    cur.lly <- xi.update$cur.lly
-    att.xi  <- xi.update$att
-    acc.xi  <- xi.update$acc
+    } else {  # update beta
+      if (!beta.fix) {
+        beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha,
+                                  z=z, z.star=z.star, beta=beta,
+                                  beta.m=beta.m, beta.s=beta.s, x.beta=x.beta,
+                                  xi=xi, x=x, cur.lly=cur.lly, acc=acc.beta,
+                                  att=att.beta, mh=mh.beta, thresh=thresh)
+        beta     <- beta.update$beta
+        x.beta   <- beta.update$x.beta
+        z        <- beta.update$z
+        z.star   <- beta.update$z.star
+        cur.lly  <- beta.update$cur.lly
+        att.beta <- beta.update$att
+        acc.beta <- beta.update$acc
 
-    if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
-                            nattempts=xi.attempts)
-      acc.xi  <- mh.update$acc
-      att.xi  <- mh.update$att
-      mh.xi   <- mh.update$mh
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+                                nattempts=beta.attempts)
+          acc.beta  <- mh.update$acc
+          att.beta  <- mh.update$att
+          mh.beta   <- mh.update$mh
+        }
+      }
+
+      # update xi
+      if (!xi.fix) {
+        xi.update <- updateXi(y=y, theta.star=theta.star, alpha=alpha, z=z,
+                              z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m,
+                              xi.s=xi.s, cur.lly=cur.lly,
+                              acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
+        xi      <- xi.update$xi
+        z       <- xi.update$z
+        z.star  <- xi.update$z.star
+        cur.lly <- xi.update$cur.lly
+        att.xi  <- xi.update$att
+        acc.xi  <- xi.update$acc
+
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
+                                nattempts=xi.attempts)
+          acc.xi  <- mh.update$acc
+          att.xi  <- mh.update$att
+          mh.xi   <- mh.update$mh
+        }
+      }
     }
 
     if (spatial) {
@@ -279,11 +303,11 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         par(mfrow=c(3, 6))
         plot(keepers.beta[begin:iter, 1], type="l", main=bquote(beta[0]),
              xlab=round(mh.beta[1], 4), ylab=acc.rate.beta[1])
-        if (p > 1) {
+        if (np > 1) {
           plot(keepers.beta[begin:iter, 2], type="l", main=bquote(beta[1]),
                xlab=round(mh.beta[2], 4), ylab=acc.rate.beta[2])
         }
-        if (p > 2) {
+        if (np > 2) {
           plot(keepers.beta[begin:iter, 3], type="l", main=bquote(beta[2]),
                xlab=round(mh.beta[3], 4), ylab=acc.rate.beta[3])
         }
