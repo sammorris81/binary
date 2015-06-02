@@ -40,7 +40,7 @@ source("auxfunctions.R")
 source("updateModel.R")
 source("mcmc.R")
 set.seed(10)
-ns   <- 2000
+ns   <- 1000
 nt   <- 1
 s    <- cbind(runif(ns, 0, 1), runif(ns, 0, 1))
 x <- array(1, dim=c(ns, nt, 3))
@@ -702,7 +702,7 @@ nreps   <- 30000
 burn    <- 15000
 xi.t    <- 0.25
 beta.t  <- c(0, 0, 0)
-alpha.t <- 0.3
+alpha.t <- 0.2
 rho.t   <- 0.1
 thresh  <- 0
 x <- array(1, dim=c(ns, nt, 3))
@@ -713,6 +713,7 @@ data <- rRareBinarySpat(x, s=s, knots=knots, beta=beta.t, prob.success = 0.05,
 beta.t[1] <- -data$thresh
 plot(s[which(data$y == 1), ], xlim=c(0, 1), ylim=c(0, 1))
 
+d   <- as.matrix(rdist(s))
 dw2 <- as.matrix(rdist(s, knots))^2
 w.t <- stdW(makeW(dw2=dw2, rho=rho.t))
 w.star.t <- w.t^(1 / alpha.t)
@@ -740,8 +741,9 @@ xi.keep   <- rep(NA, nreps)
 
 knots.h <- knots[2, 1] - knots[1, 1]
 x <- adjustX(x, data$y)
-pairwise <- fit.rarebinaryCPP(c(0, 0.5, beta.t), rho = knots.h,  y = data$y,
-                              dw2 = dw2, cov = x, threads = 6)
+pairwise <- fit.rarebinaryCPP(c(0, 0.5, beta.t[1]), rho = knots.h,  y = data$y,
+                              d = d, dw2 = dw2, cov = x[, 1], threads = 1)
+# get the gradient and hessian to find the asymptotic variance
 
 for (i in 1:nreps) {
   betaxi.update <- updateBetaXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
@@ -1484,6 +1486,7 @@ checkStrict(ld2)
 checkStrict(dlognormal)
 checkStrict(get.level)
 checkStrict(mcmc)
+checkStrict(pairwise.rarebinary3CPP)
 
 # timing tests with ijulia
 # Looking at timing

@@ -24,6 +24,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   nt <- ncol(y)
 
   x <- adjustX(x=x, y=y)
+  np <- ncol(x)
 
   nknots <- dim(knots)[1]
 

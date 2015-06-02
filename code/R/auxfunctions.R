@@ -479,7 +479,11 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   nknots <- ncol(dw2)
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  x.beta <- cov %*% beta           # should be ns x np
+  if (length(beta) == 1) {
+    x.beta <- cov * beta
+  } else {
+    x.beta <- cov %*% beta           # should be ns x np
+  }
   z      <- getZ(xi, x.beta)       # should be ns long
 
   # keep estimates in their actual space
@@ -494,6 +498,7 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
+  print(kernel[1:5, 1:5])
 
   ll <- 0
   for (i in 1:(ns - 1)) {
@@ -538,7 +543,11 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
   nknots <- ncol(dw2)
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  x.beta <- cov %*% beta           # should be ns long
+  if (length(beta) == 1) {
+    x.beta <- cov * beta
+  } else {
+    x.beta <- cov %*% beta           # should be ns long
+  }
   z      <- getZ(xi, x.beta)       # should be ns long
 
   # keep estimates in their actual space
@@ -585,7 +594,7 @@ pairwise.rarebinary2CPP <- function(par, alpha, rho, y, W, cov, threads = 1) {
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
-pairwise.rarebinary3CPP <- function(par, rho, y, W, cov, threads = 1) {
+pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, threads = 1) {
   # par: parameter vector (xi, alpha, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
@@ -595,8 +604,16 @@ pairwise.rarebinary3CPP <- function(par, rho, y, W, cov, threads = 1) {
   xi    <- par[1]
   alpha <- par[2]
   beta  <- par[3:npars]
+  
+  ns <- nrow(y)
+  nt <- ncol(y)
 
-  x.beta <- cov %*% beta           # should be ns long
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta
+  }
+
   z      <- getZ(xi, x.beta)       # should be ns long
 
   if (any((xi * x.beta) > 1)) {
@@ -606,21 +623,23 @@ pairwise.rarebinary3CPP <- function(par, rho, y, W, cov, threads = 1) {
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    threads = threads)
+                    rho = rho, d = d, threads = threads)
 
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
-fit.rarebinaryCPP <- function(init.par, rho, y, dw2, cov, threads = 1) {
+# traditionally, they only use sites that are close together. 
+# adding in d to the optim call so we can only include sites within 2 * bw
+fit.rarebinaryCPP <- function(init.par, rho, y, d, dw2, cov, threads = 1) {
 
-  ns     <- length(y)
-  np     <- ncol(cov)
-  nknots <- ncol(dw2)
+  # ns     <- length(y)
+  # np     <- ncol(cov)
+  # nknots <- ncol(dw2)
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
 
   results <- optim(init.par, pairwise.rarebinary3CPP, rho = rho,
-                   y = y, W = W,
+                   y = y, W = W, d = d, 
                    cov = x, threads = threads,
                    # lower = c(1e-6, 1e-6, -1, -Inf),
                    # upper = c(1 - 1e-6, Inf, 3, Inf),
