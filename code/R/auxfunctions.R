@@ -168,7 +168,7 @@ ld <- function(u, a, alpha) {
   c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
   c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
   logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
-          log(c) - c * (1 / a^(alpha / (1 - alpha)))
+    log(c) - c * (1 / a^(alpha / (1 - alpha)))
 
   return(exp(logd))
 }
@@ -178,8 +178,8 @@ rPS <- function(n, alpha) {
   unif <- runif(n) * pi
   stdexp.ps <- rexp(n, 1)
   logs <- (1 - alpha) / alpha * log(sin((1 - alpha) * unif)) +
-          log(sin(alpha * unif)) - (1 - alpha) / alpha * log(stdexp.ps) -
-          1 / alpha * log(sin(unif))
+    log(sin(alpha * unif)) - (1 - alpha) / alpha * log(stdexp.ps) -
+    1 / alpha * log(sin(unif))
   return(exp(logs))
 }
 
@@ -354,8 +354,8 @@ ld2 <- function(u, logs, alpha, shift=0, log=TRUE) {
   c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
 
   logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * logs +
-          log(c) - c * (1 / s^(alpha / (1 - alpha))) +
-          logs
+    log(c) - c * (1 / s^(alpha / (1 - alpha))) +
+    logs
 
   return(logd)
 }
@@ -544,11 +544,11 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
   if (length(beta) == 1) {
-    x.beta <- cov * beta
+    x.beta <- matrix(cov * beta, ns, nt)
   } else {
     x.beta <- cov %*% beta           # should be ns long
   }
-  z      <- getZ(xi, x.beta)       # should be ns long
+  z <- getZ(xi, x.beta)       # should be ns long
 
   # keep estimates in their actual space
   if (alpha < 1e-10 | alpha > (1 - 1e-10)) {
@@ -564,7 +564,7 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    threads = threads)
+                    rho = rho, d = d, threads = threads)
 
   return(-ll)
 }
@@ -589,22 +589,23 @@ pairwise.rarebinary2CPP <- function(par, alpha, rho, y, W, cov, threads = 1) {
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    threads = threads)
+                    rho = rho, d = d, threads = threads)
 
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
-pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, threads = 1) {
+pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, max.dist,
+                                    threads = 1) {
   # par: parameter vector (xi, alpha, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # cov: covariates (ns x np)
 
   npars <- length(par)
-  xi    <- par[1]
-  alpha <- par[2]
+  alpha <- par[1]
+  xi    <- par[2]
   beta  <- par[3:npars]
-  
+
   ns <- nrow(y)
   nt <- ncol(y)
 
@@ -623,24 +624,28 @@ pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, threads = 1) {
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
-# traditionally, they only use sites that are close together. 
+# traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinaryCPP <- function(init.par, rho, y, d, dw2, cov, threads = 1) {
+fit.rarebinaryCPP <- function(init.par, y, rho, d, dw2, cov, max.dist = NULL,
+                              threads = 1) {
 
   # ns     <- length(y)
   # np     <- ncol(cov)
   # nknots <- ncol(dw2)
 
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
+  if (is.null(max.dist)) {
+    max.dist <- max(d)
+  }
 
-  results <- optim(init.par, pairwise.rarebinary3CPP, rho = rho,
-                   y = y, W = W, d = d, 
-                   cov = x, threads = threads,
+  results <- optim(init.par, pairwise.rarebinary3CPP,
+                   y = y, W = W, d = d, rho = rho,
+                   cov = x, max.dist = max.dist, threads = threads,
                    # lower = c(1e-6, 1e-6, -1, -Inf),
                    # upper = c(1 - 1e-6, Inf, 3, Inf),
                    hessian = TRUE)
@@ -648,6 +653,59 @@ fit.rarebinaryCPP <- function(init.par, rho, y, d, dw2, cov, threads = 1) {
   results$rho   <- rho
 
   return(results)
+}
+
+# needs to loop over all pairs of sites and calculate the hessian
+rarebinary.ij <- function(par, y, rho, dw2, cov, threads=1) {
+  npars <- length(par)
+  alpha <- par[1]
+  xi    <- par[2]
+  beta  <- par[3:npars]
+
+  W <- stdW(makeW(dw2, rho))
+  ns <- length(y)
+
+  H <- matrix(0, npars, npars)
+
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, 2, 1)
+  } else {
+    x.beta <- cov %*% beta
+  }
+
+  kernel <- exp((log(W) - log(as.vector(z))) / alpha)  # should be a matrix
+  z      <- getZ(xi, x.beta)
+
+  ll <- pairwiseCPPij(kernel = kernel[c(i, j), ], alpha = alpha,
+                      z1 = z[1, 1], z2 = z[2, 1], y1 = y[1], y2 = y[2])
+
+  return(ll)
+}
+
+# needs to loop over all pairs of sites and calculate the jacobian
+jacobian.rarebinaryCPP <- function(par, y, rho, d, dw2, cov, threads=1) {
+  alpha <- par[1]
+  xi    <- par[2]
+  beta  <- par[3:npars]
+
+  W <- stdW(makeW(dw2, rho))
+  ns <- length(y)
+
+  D <- matrix(0, 1, length(par))
+
+  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
+  z      <- getZ(xi, x.beta)
+
+  for (i in 1:(ns - 1)) {
+    for (j in 1:ns) {
+      if (d[i, j] < 0.4) {
+        D <- D + jacobian(pairwiseCPPij(kernel = kernel[c(i, j), ],
+                                        alpha = alpha,
+                                        z1 = z[i], z2 = z[j],
+                                        y1 = y[i], y2 = y[j]))
+      }
+    }
+  }
 }
 
 

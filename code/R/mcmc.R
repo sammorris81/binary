@@ -222,7 +222,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       if (!alpha.fix) {
         alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
                                     cur.lly=cur.lly, cur.llps=cur.llps,
-                                    z=z, z.star=z.star, w=w, w.star=w.star,
+                                    z=z, z.star=z.star, alpha.a = 1, alpha.b = 1,
+                                    w=w, w.star=w.star,
                                     mid.points=mid.points, bin.width=bin.width,
                                     acc=acc.alpha, att=att.alpha, mh=mh.alpha,
                                     iter=iter)

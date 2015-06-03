@@ -31,6 +31,7 @@ library(fields)
 library(microbenchmark)
 library(mvtnorm)
 library(Rcpp)
+library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp(file = "./pairwise.cpp")
@@ -40,7 +41,7 @@ source("auxfunctions.R")
 source("updateModel.R")
 source("mcmc.R")
 set.seed(10)
-ns   <- 1000
+ns   <- 5000
 nt   <- 1
 s    <- cbind(runif(ns, 0, 1), runif(ns, 0, 1))
 x <- array(1, dim=c(ns, nt, 3))
@@ -741,9 +742,16 @@ xi.keep   <- rep(NA, nreps)
 
 knots.h <- knots[2, 1] - knots[1, 1]
 x <- adjustX(x, data$y)
-pairwise <- fit.rarebinaryCPP(c(0, 0.5, beta.t[1]), rho = knots.h,  y = data$y,
-                              d = d, dw2 = dw2, cov = x[, 1], threads = 1)
+pairwise <- fit.rarebinaryCPP(c(0.3, 0, beta.t[1]), rho = knots.h, y = data$y,
+                              d = d, dw2 = dw2, cov = x[, 1], max.dist = 0.1,
+                              threads = 6)
 # get the gradient and hessian to find the asymptotic variance
+W <- stdW(makeW(dw2, knots.h))  # should be ns x nknots
+H <- hessian(func = pairwise.rarebinary3CPP, x = pairwise$par, rho = knots.h,
+             d = d, y = data$y, W = W, cov = x[, 1], threads = 6)
+D <- jacobian(func = pairwise.rarebinary3CPP, x = pairwise$par, rho = knots.h,
+              d = d, y = data$y, W = W, cov = x[, 1], threads = 6)
+
 
 for (i in 1:nreps) {
   betaxi.update <- updateBetaXi(y=data$y, theta.star=theta.star.t, alpha=alpha.t,
