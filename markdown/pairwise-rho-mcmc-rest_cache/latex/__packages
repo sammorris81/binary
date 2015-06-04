@@ -1,11 +1,4 @@
 base
-methods
-datasets
-utils
-grDevices
-graphics
-stats
-grid
 spam
 maps
 fields
@@ -18,3 +11,4 @@ Formula
 spBayes
 inline
 RcppArmadillo
+mvtnorm

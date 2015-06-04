@@ -11,6 +11,7 @@ library(fields)
 library(Rcpp)
 library(evd)
 library(spBayes)
+library(mvtnorm)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp(file = "../code/R/pairwise.cpp")
@@ -23,7 +24,6 @@ source("../code/R/probit.R", chdir=T)
 # true knots
 knots.t <- as.matrix(expand.grid(seq(0.00, 1.00, length=12), 
                                  seq(0.00, 1.00, length=12)))
-rho.t   <- 0.085
 
 # knots used to fit model
 knots <- as.matrix(expand.grid(seq(0.00, 1.00, length=15), 
@@ -50,7 +50,7 @@ rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
 ```
 
-```{r mcmcsetup, echo=FALSE, include=FALSE, cache=TRUE}
+```{r mcmcsetup, echo=FALSE, include=FALSE}
 # y is ns, nt, nsets, nsettings
 iters <- 40000; burn <- 30000; update <- 500; thin <- 1
 # iters <- 100; burn <- 50; update <- 10; thin <- 1
@@ -67,11 +67,32 @@ priors <- list("beta.norm"=list(1, 100),
 cov.model <- "exponential"
 ```
 
+# Current challenges
+
 So far, I have not been able to really find a good approach that works consistently.
-There appears to be some challenges when trying to estimate $\alpha$ using the pairwise likelihood.
-Based on some of my previous research, it would appear that the pairwise likelihood does a reasonably good job estimating the bandwidth term $\rho$.
-Brian and I had originally discussed fixing both $\rho$ and $\alpha$ in the simulation study, because when they're fixed, we can outperform spatial probit and logit.
-The purpose of this document is to explore what happens when we search over a grid of $\rho$ terms and fix rho in the MCMC to ${\arg \min}_\rho \ell$.
+Brian and I had originally discussed fixing both $\rho$ and $\alpha$ in the simulation study, because when they're fixed to the true values, we can outperform spatial probit and logit.
+There appears to be some challenges when trying to estimate $\alpha$ using the pairwise likelihood, but it would appear that the pairwise likelihood does a reasonably good job estimating the bandwidth term $\rho$.
+I've been spending time trying to better understand how this will impact the results from the MCMC, and overall, I think the impact of fixing $\alpha$ (even if the value is not correct) will be minimal.
+
+## The role of $\alpha$
+
+One of the roles of $\alpha$ in the conditional likelihood for the MCMC (i.e. conditional on knowing $\theta$) is to allow for more variability in the positive stable random variables.
+As $\alpha \rightarrow 0$, var$(A) \nearrow$, and as $\alpha \rightarrow 1$, the density converges to a point mass at 1.
+In the binary framework, I do not think it is important that we get the actual intensity of the $A$ terms correct.
+However, we do want to ensure that we can maintain the relative intensities of the knots.
+While running some test cases of MCMC, it seems as if $\alpha = 0.5$ would result in a sequence of knots like $\{1, 4, 5, 2, 8}$ whereas $\alpha = 0.2$ would result in a sequence of knots like $\{100, 400, 500, 200, 800\}$. 
+
+# Goal
+
+This document explores two changes to how we're conducting the analysis.
+The first change is to fix $\alpha$ and $\rho$ to the estimates from the pairwise composite likelihood.
+To estimate rho, we do a grid search using `optim` at 5 different values of $\rho$ based on knot spacing.
+Then we take the value for $\rho$ that minimizes the negative log pairwise composite likelihood (PCL).
+The second change is to try a new candidate distribution for the $\beta$ and $\xi$ terms.
+Initially, we just used a random walk metropolis step for each term.
+In this update, we are using a candidate distribution based on the estimates and hessian matrix from the PCL.
+We will be drawing candidates for $\beta$ and $\xi$ using a multivariate $t$ distribution with $\nu = 15$ degrees of freedom that has been shifted to $(\widehat{\beta}, \widehat{xi}$, and has dispersion matrix $H^{-1}$ where $H$ is the hessian matrix from the PCL.
+Although there may be some concerns about fully exploring the posterior density, Brian and I thought this would be a reasonable way to work around convergence issues that present themselves when using a random walk.
 
 ## Setting 1:
 
@@ -107,11 +128,10 @@ for (i in seq_along(rhos)) {
     fit <- temp
   }
 }
-
-rho.mcmc <- fit$rho
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(rho.mcmc, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata1-1, echo=FALSE, fig.width=4, fig.height=4}
 plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
@@ -142,6 +162,9 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev1-1, echo = FALSE, include = FALSE, cache = TRUE}
+xibeta.hat <- fit$par[2:3]
+xibeta.var <- solve(fit$hessian)[2:3, 2:3]
+
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -154,7 +177,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
                 alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = FALSE, rho.fix = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
@@ -162,7 +186,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 
 Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 
-```{r gev1ters1-1, echo=FALSE}
+```{r gev1ters1-1, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
@@ -221,11 +245,10 @@ for (i in seq_along(rhos)) {
     fit <- temp
   }
 }
-
-rho.mcmc <- fit$rho
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(rho.mcmc, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata2-1, echo=FALSE, fig.width=4, fig.height=4}
 plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
@@ -256,6 +279,9 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev2-1, echo = FALSE, include = FALSE, cache = TRUE}
+xibeta.hat <- fit$par[2:3]
+xibeta.var <- solve(fit$hessian)[2:3, 2:3]
+
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -268,7 +294,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
                 alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = FALSE, rho.fix = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
@@ -276,7 +303,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 
 Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 
-```{r gev1ters2-1, echo=FALSE}
+```{r gev1ters2-1, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
@@ -335,11 +362,10 @@ for (i in seq_along(rhos)) {
     fit <- temp
   }
 }
-
-rho.mcmc <- fit$rho
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(rho.mcmc, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata3-1, echo=FALSE, fig.width=4, fig.height=4}
 plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
@@ -370,6 +396,9 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev3-1, echo = FALSE, include = FALSE, cache = TRUE}
+xibeta.hat <- fit$par[2:3]
+xibeta.var <- solve(fit$hessian)[2:3, 2:3]
+
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -382,7 +411,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
                 alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = FALSE, rho.fix = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
@@ -390,7 +420,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 
 Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 
-```{r gev1ters3-1, echo=FALSE}
+```{r gev1ters3-1, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
@@ -479,11 +509,10 @@ for (i in seq_along(rhos)) {
     fit <- temp
   }
 }
-
-rho.mcmc <- fit$rho
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(rho.mcmc, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata1-2, echo=FALSE, fig.width=4, fig.height=4}
 plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
@@ -514,6 +543,9 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev1-2, echo = FALSE, include = FALSE, cache = TRUE}
+xibeta.hat <- fit$par[2:3]
+xibeta.var <- solve(fit$hessian)[2:3, 2:3]
+
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -526,15 +558,18 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
                 alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = FALSE, rho.fix = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
 ## MCMC Results
 
-Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
+Here are the iteration plots from the two GEV models. 
+The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
-```{r gev1ters1-2, echo=FALSE}
+```{r gev1ters1-2, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
@@ -593,11 +628,10 @@ for (i in seq_along(rhos)) {
     fit <- temp
   }
 }
-
-rho.mcmc <- fit$rho
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(rho.mcmc, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata2-2, echo=FALSE, fig.width=4, fig.height=4}
 plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
@@ -628,6 +662,9 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev2-2, echo = FALSE, include = FALSE, cache = TRUE}
+xibeta.hat <- fit$par[2:3]
+xibeta.var <- solve(fit$hessian)[2:3, 2:3]
+
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -640,7 +677,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
                 alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = FALSE, rho.fix = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
@@ -648,7 +686,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 
 Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 
-```{r geviters2-2, echo=FALSE}
+```{r gev1ters2-2, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
@@ -707,11 +745,10 @@ for (i in seq_along(rhos)) {
     fit <- temp
   }
 }
-
-rho.mcmc <- fit$rho
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(rho.mcmc, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata3-2, echo=FALSE, fig.width=4, fig.height=4}
 plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
@@ -742,6 +779,9 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev3-2, echo = FALSE, include = FALSE, cache = TRUE}
+xibeta.hat <- fit$par[2:3]
+xibeta.var <- solve(fit$hessian)[2:3, 2:3]
+
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -754,7 +794,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
                 alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = FALSE, rho.fix = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
@@ -762,7 +803,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 
 Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 
-```{r geviters3-2, echo=FALSE}
+```{r gev1ters3-2, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
