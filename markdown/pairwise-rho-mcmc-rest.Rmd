@@ -394,7 +394,8 @@ set.seed(mcmc.seed)
 fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
                      iters = iters, burn = burn, update = update)
 ```
- 
+
+
 ```{r gev3-1, echo = FALSE, include = FALSE, cache = TRUE}
 xibeta.hat <- fit$par[2:3]
 xibeta.var <- solve(fit$hessian)[2:3, 2:3]
