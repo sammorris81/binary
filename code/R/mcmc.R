@@ -10,7 +10,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
                  beta.fix = FALSE, xi.fix = FALSE,   # debug
                  rho.fix = FALSE, alpha.fix = FALSE, # debug
-                 betaxi.joint = FALSE,
+                 xibeta.joint = FALSE, xibeta.hat, xibeta.var,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
@@ -118,34 +118,35 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   keepers.rho   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:thin) {
-    if (betaxi.joint) {  # update beta and xi
-      betaxi.update <- updateBetaXi(y=y, theta.star=theta.star, alpha=alpha,
-                                    z=z, z.star=z.star,
-                                    beta=beta, beta.m=beta.m, beta.s=beta.s,
+    if (xibeta.joint) {  # update beta and xi
+      xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
+                                    z=z, z.star=z.star, beta=beta,
+                                    beta.m=beta.m, beta.s=beta.s,
                                     x.beta=x.beta, xi=xi, x=x,
                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+                                    can.mean=xibeta.hat, can.var=xibeta.var,
                                     acc.beta=acc.beta, att.beta=att.beta,
                                     mh.beta=mh.beta,
                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
                                     thresh=0)
-      beta     <- betaxi.update$beta
-      x.beta   <- betaxi.update$x.beta
-      xi       <- betaxi.update$xi
-      z        <- betaxi.update$z
-      z.star   <- betaxi.update$z.star
-      cur.lly  <- betaxi.update$cur.lly
-      att.beta <- betaxi.update$att.beta
-      acc.beta <- betaxi.update$acc.beta
-      att.xi   <- betaxi.update$att.xi
-      acc.xi   <- betaxi.update$acc.xi
+      beta     <- xibeta.update$beta
+      x.beta   <- xibeta.update$x.beta
+      xi       <- xibeta.update$xi
+      z        <- xibeta.update$z
+      z.star   <- xibeta.update$z.star
+      cur.lly  <- xibeta.update$cur.lly
+      att.beta <- xibeta.update$att.beta
+      acc.beta <- xibeta.update$acc.beta
+      att.xi   <- xibeta.update$att.xi
+      acc.xi   <- xibeta.update$acc.xi
 
-      if (iter < burn / 2) {
-        mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
-                              nattempts=beta.attempts)
-        acc.beta  <- mh.update$acc
-        att.beta  <- mh.update$att
-        mh.beta   <- mh.update$mh
-      }
+#       if (iter < burn / 2) {
+#         mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+#                               nattempts=beta.attempts)
+#         acc.beta  <- mh.update$acc
+#         att.beta  <- mh.update$att
+#         mh.beta   <- mh.update$mh
+#       }
 
     } else {  # update beta
       if (!beta.fix) {
@@ -207,16 +208,18 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       cur.llps   <- a.update$cur.llps
 
       # not going to worry about tuning the a terms at the moment
-      # level <- get.level(old.a, cuts)
-      # for (j in 1:length(mh.a)) {
-      #   acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
-      #   att.a[j] <- att.a[j] + sum(level == j)
-      #   if ((i < burn / 2) & (att.a[j] > 100)) {
-      #     if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
-      #     if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
-      #     acc.a[j] <- att.a[j] <- 0
-      #   }
-      # }
+      if (iter < burn / 2) {
+        level <- get.level.1(old.a, cuts)
+        for (j in 1:length(mh.a)) {
+          acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
+          att.a[j] <- att.a[j] + sum(level == j)
+          if (att.a[j] > 100) {
+            if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
+            if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
+            acc.a[j] <- att.a[j] <- 0
+          }
+        }
+      }
 
       # update alpha
       if (!alpha.fix) {

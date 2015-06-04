@@ -99,23 +99,22 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
   return(results)
 }
 
-updateBetaXi <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
+updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
                          x.beta, xi, x, xi.m, xi.s, cur.lly,
+                         can.mean, can.var,
                          acc.beta, att.beta, mh.beta,
                          acc.xi, att.xi, mh.xi, thresh=0) {
-  np  <- length(beta)
+  np  <- length(beta) + 1  # using later to get the end of the vector
   ns  <- nrow(y)
   nt  <- ncol(y)
   att.beta <- att.beta + 1
   att.xi   <- att.xi + 1
   alpha.inv <- 1 / alpha
 
-  can.cov <- diag(c(mh.beta^2, mh.xi^2))
-  can.cov[4, 1] <- can.cov[1, 4] <- -0.999 * mh.beta[1] * mh.xi
-  can.betaxi <- c(beta, xi) + t(chol(can.cov)) %*% rnorm(np + 1, 0, 1)
+  can.xibeta <- rmvt(n = 1, sigma = can.var, df = 15, delta = can.mean)
 
-  can.beta <- can.betaxi[1:np]
-  can.xi   <- can.betaxi[np + 1]
+  can.xi   <- can.xibeta[1]
+  can.beta <- can.xibeta[2:np]
 
   can.x.beta <- matrix(NA, ns, nt)
   if (nt == 1) {
@@ -136,7 +135,7 @@ updateBetaXi <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     }
   }
 
-  if (any(xi * (can.x.beta - thresh) > 1)) {
+  if (any(can.xi * (can.x.beta - thresh) > 1)) {
     can.lly <- -Inf
   } else {
     can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
@@ -232,8 +231,11 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   att <- att + 1
 
   # not exactly U(0, 1) - using truncation for numerical stability
-  can.alpha.star <- rnorm(1, log(alpha / (1 - alpha)), mh)
-  can.alpha      <- exp(can.alpha.star) / (1 + exp(can.alpha.star))
+  # can.alpha.star <- rnorm(1, log(alpha / (1 - alpha)), mh)
+  # can.alpha      <- exp(can.alpha.star) / (1 + exp(can.alpha.star))
+  alpha.star     <- qnorm(alpha)
+  can.alpha.star <- rnorm(1, alpha.star, mh)
+  can.alpha      <- pnorm(can.alpha.star)
   can.alpha.inv  <- 1 / can.alpha
   can.w.star     <- w^can.alpha.inv
   can.z.star     <- z^can.alpha.inv
@@ -273,8 +275,9 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   # }
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
-       dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
-       dbeta(alpha, alpha.a, alpha.b, log=TRUE)
+       dnorm(can.alpha.star, log=TRUE) - dnorm(alpha.star, log=TRUE)
+       # dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
+       # dbeta(alpha, alpha.a, alpha.b, log=TRUE)
 
   # if ((iter > 3000) & (iter %% 50 == 0)) {
   #   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)

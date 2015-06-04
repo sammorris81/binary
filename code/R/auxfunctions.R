@@ -107,6 +107,7 @@ getThetaStar <- function(w.star, a) {
   # w.star = w^(1 / alpha) is ns x nknots
   # a is nknots x nt
   # alpha in (0,1)
+  w.star <- ifelse(w.star < 1e-7, 0, w.star)
   if (length(a) == 1) {theta.star <- w.star * a}
   if (length(a) > 1) {theta.star <- w.star %*% a}
   return(theta.star)
@@ -122,6 +123,12 @@ makeW <- function(dw2, rho) {
 stdW <- function(x, single=FALSE) {
   if (single) {x <- x / sum(x)}
   if (!single) {x <- sweep(x, 1, rowSums(x), "/")}
+  while (any((x < 1e-7) & (x != 0))) {  # numerical stability
+    small <- which(x < 1e-7)
+    x[small] <- 0
+    if (single) {x <- x / sum(x)}
+    if (!single) {x < sweep(x, 1, rowSums(x), "/")}
+  }
   return(x)
 }
 
@@ -645,7 +652,7 @@ fit.rarebinaryCPP <- function(init.par, y, rho, d, dw2, cov, max.dist = NULL,
 
   results <- optim(init.par, pairwise.rarebinary3CPP,
                    y = y, W = W, d = d, rho = rho,
-                   cov = x, max.dist = max.dist, threads = threads,
+                   cov = cov, max.dist = max.dist, threads = threads,
                    # lower = c(1e-6, 1e-6, -1, -Inf),
                    # upper = c(1 - 1e-6, Inf, 3, Inf),
                    hessian = TRUE)
