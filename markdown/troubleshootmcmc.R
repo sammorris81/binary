@@ -28,7 +28,7 @@ rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
 
 # get sites and distances from knots
 set.seed(7483)  # sites
-ns  <- 1500
+ns  <- 500
 s   <- cbind(runif(ns), runif(ns))
 dw2 <- rdist(s, knots)
 d   <- as.matrix(rdist(s))
@@ -42,7 +42,7 @@ rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
 
 # y is ns, nt, nsets, nsettings
-iters <- 40000; burn <- 30000; update <- 500; thin <- 1
+iters <- 15000; burn <- 10000; update <- 500; thin <- 1
 # iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
 n.report <- 500
@@ -58,6 +58,12 @@ cov.model <- "exponential"
 
 
 data.seed <- 3282
+set.seed(data.seed)  # data
+data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
+                        alpha = alpha.t, rho = rho.t, prob.success = prop[1])
+y <- data$y
+
+data.seed <- data.seed + 1
 set.seed(data.seed)  # data
 data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
                         alpha = alpha.t, rho = rho.t, prob.success = prop[1])
@@ -83,25 +89,79 @@ for (i in seq_along(rhos)) {
   }
 }
 
+W <- stdW(makeW(dw2 = dw2, rho = rho.t))
 fit <- fit.rarebinaryCPP(c(0.5, 0, -4), rho=rho.t, y = y.o, dw2 = dw2, d = d, cov=X.o, threads=6)
-rho.mcmc <- fit$rho
-
+pairwise.rarebinary3CPP(par = c(alpha.t, xi.t, -data$thresh), rho = rho.t, 
+                        y = y.o, d = d, max.dist = max(d), W = W, 
+                        cov = X.o[, 1], threads = 1)
+pairwise.rarebinary3CPP(par = c(0.1, xi.t, -data$thresh), rho = rho.t, 
+                        y = y.o, d = d, max.dist = max(d), W = W, 
+                        cov = X.o[, 1], threads = 1)
 
 xibeta.hat <- fit$par[2:3]
 xibeta.var <- solve(fit$hessian)[2:3, 2:3]
 
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
 # spatial GEV
 mcmc.seed <- 1
 set.seed(mcmc.seed)
-fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[3], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[2], xi.m = 0, xi.s = 0.5,
-                knots = knots, beta.tune = 1, xi.tune = 0.1,
-                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 50, xi.attempts = 50,
-                alpha.attempts = 200, rho.attempts = 200,
-                spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
-                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
-                iters = iters, burn = burn, update = update, thin = 1)
+fit.gev.1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                  beta.init = fit$par[3], beta.m = 0, beta.s = 100,
+                  xi.init = fit$par[2], xi.m = 0, xi.s = 0.5,
+                  knots = knots, beta.tune = 1, xi.tune = 0.1,
+                  alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                  beta.attempts = 50, xi.attempts = 50,
+                  alpha.attempts = 200, rho.attempts = 200,
+                  spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
+                  alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                  alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                  iters = iters, burn = burn, update = update, thin = 1)
+
+fit.gev.2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                  beta.init = fit$par[3], beta.m = 0, beta.s = 100,
+                  xi.init = fit$par[2], xi.m = 0, xi.s = 0.5,
+                  knots = knots, beta.tune = 1, xi.tune = 0.1,
+                  alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                  beta.attempts = 50, xi.attempts = 50,
+                  alpha.attempts = 200, rho.attempts = 200,
+                  spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
+                  alpha.init = 0.5, a.init = 100, iterplot = TRUE,
+                  alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                  iters = iters, burn = burn, update = update, thin = 1)
+
+fit.gev.3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                  beta.init = fit$par[3], beta.m = 0, beta.s = 100,
+                  xi.init = fit$par[2], xi.m = 0, xi.s = 0.5,
+                  knots = knots, beta.tune = 1, xi.tune = 0.1,
+                  alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                  beta.attempts = 50, xi.attempts = 50,
+                  alpha.attempts = 200, rho.attempts = 200,
+                  spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
+                  alpha.init = 0.7, a.init = 100, iterplot = TRUE,
+                  alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                  iters = iters, burn = burn, update = update, thin = 1)
+
+post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev.1, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = 500)
+
+post.prob.gev.2 <- pred.spgev(mcmcoutput = fit.gev.2, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = 500)
+
+post.prob.gev.3 <- pred.spgev(mcmcoutput = fit.gev.3, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = 500)
+
+bs.gev.1 <- BrierScore(post.prob.gev.1, y.validate)
+bs.gev.2 <- BrierScore(post.prob.gev.2, y.validate)
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)
