@@ -43,9 +43,9 @@ diag(d) <- 0
 x   <- matrix(1, ns, 1)
 
 # only focusing on the case of strong dependence
-alpha.t <- 0.3
-alpha.min <- 0.3
-alpha.max <- 0.9
+alpha.t <- 0.35
+alpha.min <- 0
+alpha.max <- 1
 alpha.rng <- alpha.max - alpha.min
 xi.t    <- 0.25
 rho.t   <- 0.15
@@ -108,6 +108,11 @@ fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
 
 alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
                alpha.rng + alpha.min
+if (alpha.hat < 0.3) {
+  alpha.hat <- 0.3
+} else if (alpha.hat > 0.9) {
+  alpha.hat <- 0.9
+}
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
@@ -183,8 +188,8 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0339
-bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0309
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0343
+bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0344
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
 bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0332
 
@@ -246,6 +251,11 @@ fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
 
 alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
                alpha.rng + alpha.min
+if (alpha.hat < 0.3) {
+  alpha.hat <- 0.3
+} else if (alpha.hat > 0.9) {
+  alpha.hat <- 0.9
+}
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
@@ -321,10 +331,10 @@ post.prob.pro.2 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0117
-bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0103
-bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
-bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0125
+bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0112
+bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0101
+bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0184
+bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0122
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -387,6 +397,11 @@ fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
 
 alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
                alpha.rng + alpha.min
+if (alpha.hat < 0.3) {
+  alpha.hat <- 0.3
+} else if (alpha.hat > 0.9) {
+  alpha.hat <- 0.9
+}
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
@@ -507,6 +522,11 @@ fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
 
 alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
                alpha.rng + alpha.min
+if (alpha.hat < 0.3) {
+  alpha.hat <- 0.3
+} else if (alpha.hat > 0.9) {
+  alpha.hat <- 0.9
+}
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
