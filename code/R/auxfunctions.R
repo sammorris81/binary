@@ -563,6 +563,9 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
+  if (rho > 0.2 * max(d)) {
+    return(1e99)
+  }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
@@ -635,13 +638,14 @@ pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, max.dist,
 # traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
 fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov,
-                              threads = 1) {
+                              alpha.min = 0, alpha.max = 1, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
 
   results <- optim(init.par, pairwise.rarebinaryCPP, y = y, dw2 = dw2,
                    d = d, max.dist = max.dist, cov = cov, threads = threads,
+                   alpha.min = alpha.min, alpha.max = alpha.max, 
                    method = "BFGS", hessian = TRUE)
 
   return(results)

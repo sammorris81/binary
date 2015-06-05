@@ -27,8 +27,8 @@ knots.t <- as.matrix(expand.grid(seq(0.00, 1.00, length=12),
                                  seq(0.00, 1.00, length=12)))
 
 # knots used to fit model
-knots <- as.matrix(expand.grid(seq(0.00, 1.00, length=15),
-                               seq(0.00, 1.00, length=15)))
+knots <- as.matrix(expand.grid(seq(0.00, 1.00, length=16),
+                               seq(0.00, 1.00, length=16)))
 
 # grid for searching over rho
 rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
@@ -43,10 +43,15 @@ diag(d) <- 0
 x   <- matrix(1, ns, 1)
 
 # only focusing on the case of strong dependence
-alpha.t <- 0.30
+alpha.t <- 0.3
+alpha.min <- 0.3
+alpha.max <- 0.9
+alpha.rng <- alpha.max - alpha.min
 xi.t    <- 0.25
 rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
+knots.h <- knots[2, 1] - knots[1, 1]
+rho.init <- log(knots.h)
 
 data.seed <- 3282
 set.seed(data.seed)  # data
@@ -57,10 +62,13 @@ y <- data$y
 # testing vs training
 ntrain <- floor(0.75 * ns)
 ntest  <- ns - ntrain
-obs <- c(rep(T, ntrain), rep(F, ntest))
-y.o <- y[obs, , drop = FALSE]
-X.o <- matrix(x[obs], ntrain, 1)
-s.o <- s[obs, ]
+obs   <- c(rep(T, ntrain), rep(F, ntest))
+y.o   <- y[obs, , drop = FALSE]
+X.o   <- matrix(x[obs], ntrain, 1)
+s.o   <- s[obs, ]
+dw2.o <- rdist(s.o, knots)
+d.o   <- as.matrix(rdist(s.o))
+diag(d.o) <- 0
 y.validate <- y[!obs, , drop = FALSE]
 X.p <- matrix(x[!obs, ], ntest, 1)
 s.p <- s[!obs, ]
@@ -94,10 +102,12 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
-                         cov=X.o, threads=6)
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+                         threads=6)
 
-alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+               alpha.rng + alpha.min
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
@@ -173,10 +183,10 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0229
-bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0197
-bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0457
-bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0206
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0339
+bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0309
+bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
+bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0332
 
 ####################################################################
 #### Try with fewer 1s
@@ -190,10 +200,13 @@ y <- data$y
 # testing vs training
 ntrain <- floor(0.75 * ns)
 ntest  <- ns - ntrain
-obs <- c(rep(T, ntrain), rep(F, ntest))
-y.o <- y[obs, , drop = FALSE]
-X.o <- matrix(x[obs], ntrain, 1)
-s.o <- s[obs, ]
+obs   <- c(rep(T, ntrain), rep(F, ntest))
+y.o   <- y[obs, , drop = FALSE]
+X.o   <- matrix(x[obs], ntrain, 1)
+s.o   <- s[obs, ]
+dw2.o <- rdist(s.o, knots)
+d.o   <- as.matrix(rdist(s.o))
+diag(d.o) <- 0
 y.validate <- y[!obs, , drop = FALSE]
 X.p <- matrix(x[!obs, ], ntest, 1)
 s.p <- s[!obs, ]
@@ -227,10 +240,12 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
-                         cov=X.o, threads=6)
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+                         threads=6)
 
-alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+               alpha.rng + alpha.min
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
@@ -306,18 +321,18 @@ post.prob.pro.2 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 
-bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 
-bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 
-bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 
+bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0117
+bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0103
+bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
+bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0125
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
 ####################################################################
-data.seed <- 3282
+data.seed <- data.seed + 1
 set.seed(data.seed)  # data
 center <- c(runif(1), runif(1))
-radius <- 0.13
+radius <- 0.16
 s.dist <- sqrt((s[, 1] - center[1])^2 + (s[, 2] - center[2])^2)
 mean(s.dist < radius)
 prob <- (s.dist < radius) * 0.85 + (1 - s.dist < radius) * 0.001
@@ -326,10 +341,13 @@ y    <- matrix(rbinom(n = ns, size = 1, prob = prob), ns, 1)
 # testing vs training
 ntrain <- floor(0.75 * ns)
 ntest  <- ns - ntrain
-obs <- c(rep(T, ntrain), rep(F, ntest))
-y.o <- y[obs, , drop = FALSE]
-X.o <- matrix(x[obs], ntrain, 1)
-s.o <- s[obs, ]
+obs   <- c(rep(T, ntrain), rep(F, ntest))
+y.o   <- y[obs, , drop = FALSE]
+X.o   <- matrix(x[obs], ntrain, 1)
+s.o   <- s[obs, ]
+dw2.o <- rdist(s.o, knots)
+d.o   <- as.matrix(rdist(s.o))
+diag(d.o) <- 0
 y.validate <- y[!obs, , drop = FALSE]
 X.p <- matrix(x[!obs, ], ntest, 1)
 s.p <- s[!obs, ]
@@ -363,10 +381,12 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
-                         cov=X.o, threads=6)
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+                         threads=6)
 
-alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+               alpha.rng + alpha.min
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
@@ -422,9 +442,9 @@ post.prob.pro.3 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0105
-bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0102
-bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0094
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 
+bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 
+bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -432,7 +452,7 @@ bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0094
 data.seed <- data.seed + 1
 set.seed(data.seed)  # data
 center <- c(runif(1), runif(1))
-radius <- 0.1
+radius <- 0.13
 s.dist <- sqrt((s[, 1] - center[1])^2 + (s[, 2] - center[2])^2)
 mean(s.dist < radius)
 prob <- (s.dist < radius) * 0.90 + (1 - s.dist < radius) * 0.001
@@ -441,10 +461,13 @@ y    <- matrix(rbinom(n = ns, size = 1, prob = prob), ns, 1)
 # testing vs training
 ntrain <- floor(0.75 * ns)
 ntest  <- ns - ntrain
-obs <- c(rep(T, ntrain), rep(F, ntest))
-y.o <- y[obs, , drop = FALSE]
-X.o <- matrix(x[obs], ntrain, 1)
-s.o <- s[obs, ]
+obs   <- c(rep(T, ntrain), rep(F, ntest))
+y.o   <- y[obs, , drop = FALSE]
+X.o   <- matrix(x[obs], ntrain, 1)
+s.o   <- s[obs, ]
+dw2.o <- rdist(s.o, knots)
+d.o   <- as.matrix(rdist(s.o))
+diag(d.o) <- 0
 y.validate <- y[!obs, , drop = FALSE]
 X.p <- matrix(x[!obs, ], ntest, 1)
 s.p <- s[!obs, ]
@@ -478,10 +501,12 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
-                         cov=X.o, threads=6)
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+                         threads=6)
 
-alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+               alpha.rng + alpha.min
 rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
