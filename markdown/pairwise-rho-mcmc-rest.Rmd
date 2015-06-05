@@ -116,9 +116,11 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit1-1, echo=FALSE, include=FALSE, cache=TRUE}
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+fit <- fit.rarebinaryCPP(c(0, 0, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
@@ -166,7 +168,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 1000, iterplot = TRUE,
+                alpha.init = fit$par[1], a.init = 1000, iterplot = FALSE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
@@ -184,7 +186,7 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.3, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -202,7 +204,7 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.5, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -220,7 +222,7 @@ fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.7, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -303,9 +305,11 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit2-1, echo=FALSE, include=FALSE, cache=TRUE}
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+fit <- fit.rarebinaryCPP(c(0, 0, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
@@ -342,9 +346,6 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev2-1, echo = FALSE, include = FALSE, cache = TRUE}
-xibeta.hat <- fit$par[2:3]
-xibeta.var <- solve(fit$hessian)[2:3, 2:3]
-
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -374,7 +375,7 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.3, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -392,7 +393,7 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.5, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -410,7 +411,7 @@ fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.7, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -493,9 +494,11 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit3-1, echo=FALSE, include=FALSE, cache=TRUE}
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+fit <- fit.rarebinaryCPP(c(0, 0, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
@@ -533,9 +536,6 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 
 
 ```{r gev3-1, echo = FALSE, include = FALSE, cache = TRUE}
-xibeta.hat <- fit$par[2:3]
-xibeta.var <- solve(fit$hessian)[2:3, 2:3]
-
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -565,7 +565,7 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.3, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -583,7 +583,7 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.5, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -601,7 +601,7 @@ fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.7, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -732,9 +732,11 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit1-2, echo=FALSE, include=FALSE, cache=TRUE}
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+fit <- fit.rarebinaryCPP(c(0, 0, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
@@ -771,9 +773,6 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev1-2, echo = FALSE, include = FALSE, cache = TRUE}
-xibeta.hat <- fit$par[2:3]
-xibeta.var <- solve(fit$hessian)[2:3, 2:3]
-
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -803,7 +802,7 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.3, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -821,7 +820,7 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.5, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -839,7 +838,7 @@ fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.7, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -922,9 +921,11 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit2-2, echo=FALSE, include=FALSE, cache=TRUE}
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+fit <- fit.rarebinaryCPP(c(0, 0, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
@@ -961,9 +962,6 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev2-2, echo = FALSE, include = FALSE, cache = TRUE}
-xibeta.hat <- fit$par[2:3]
-xibeta.var <- solve(fit$hessian)[2:3, 2:3]
-
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -993,7 +991,7 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.3, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -1011,7 +1009,7 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.5, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -1029,7 +1027,7 @@ fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.7, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -1112,9 +1110,11 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit3-2, echo=FALSE, include=FALSE, cache=TRUE}
-fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+fit <- fit.rarebinaryCPP(c(0, 0, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
@@ -1151,9 +1151,6 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev3-2, echo = FALSE, include = FALSE, cache = TRUE}
-xibeta.hat <- fit$par[2:3]
-xibeta.var <- solve(fit$hessian)[2:3, 2:3]
-
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -1183,7 +1180,7 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.3, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -1201,7 +1198,7 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.5, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
@@ -1219,7 +1216,7 @@ fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                    beta.attempts = 50, xi.attempts = 50,
                    alpha.attempts = 200, rho.attempts = 200,
                    spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.init = 0.7, a.init = 1000, iterplot = FALSE,
                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                    iters = iters, burn = burn, update = update, thin = 1)
