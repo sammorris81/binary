@@ -523,21 +523,28 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   return(-ll)
 }
 
-pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1) {
+pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1,
+                                   alpha.min = 0.2, alpha.max = 0.9) {
   # par: parameter vector (alpha, rho, xi, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # x: covariates (ns x np)
 
   npars <- length(par)
-  alpha <- par[1]
-  rho   <- par[2]
-  xi    <- par[3]
-  beta  <- par[4:npars]
+  alpha.star <- par[1]
+  rho.star   <- par[2]
+  xi         <- par[3]
+  beta       <- par[4:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
   }
+  
+  # transform to actual space
+  # alpha in (alpha.min, alpha.max)
+  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) * 
+    (alpha.max - alpha.min) + alpha.min
+  rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -553,12 +560,6 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1) {
   z <- getZ(xi, x.beta)       # should be ns long
 
   # keep estimates in their actual space
-  if (alpha < 1e-10 | alpha > (1 - 1e-10)) {
-    return(1e99)
-  }
-  if (rho < 1e-10) {
-    return(1e99)
-  }
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
