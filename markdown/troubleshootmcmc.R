@@ -43,7 +43,7 @@ diag(d) <- 0
 x   <- matrix(1, ns, 1)
 
 # only focusing on the case of strong dependence
-alpha.t <- 0.20
+alpha.t <- 0.30
 xi.t    <- 0.25
 rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
@@ -97,8 +97,10 @@ points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
-xibeta.var <- solve(fit$hessian)[3:4, 3:4]
+xibeta.var <- solve(fit$hessian[3:4, 3:4])
 
 ####################################################################
 #### Fit MCMC
@@ -113,8 +115,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
-                spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 1000, iterplot = TRUE,
+                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
@@ -134,7 +136,7 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.attempts = 50, xi.attempts = 50,
                   alpha.attempts = 200, rho.attempts = 200,
                   spatial = TRUE, rho.init = rho.t, rho.upper = 9,
-                  alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                  alpha.init = alpha.t, a.init = 1000, iterplot = TRUE,
                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
@@ -179,7 +181,7 @@ bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0206
 ####################################################################
 #### Try with fewer 1s
 ####################################################################
-data.seed <- 3282
+data.seed <- data.seed + 1
 set.seed(data.seed)  # data
 data <- rRareBinarySpat(x, s = s, knots = knots.t, beta = 0, xi = xi.t,
                         alpha = alpha.t, rho = rho.t, prob.success = prop[2])
@@ -228,8 +230,10 @@ points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
                          cov=X.o, threads=6)
 
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
 xibeta.hat <- fit$par[3:4]
-xibeta.var <- solve(fit$hessian)[3:4, 3:4]
+xibeta.var <- solve(fit$hessian[3:4, 3:4])
 
 ####################################################################
 #### Fit MCMC
@@ -244,8 +248,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
-                spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 1000, iterplot = TRUE,
+                spatial = TRUE, rho.init = rho.t, rho.upper = 9,
+                alpha.init = alpha.t, a.init = 1000, iterplot = TRUE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
@@ -264,7 +268,7 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
                   beta.attempts = 50, xi.attempts = 50,
                   alpha.attempts = 200, rho.attempts = 200,
-                  spatial = TRUE, rho.init = rho.t, rho.upper = 9,
+                  spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
@@ -306,3 +310,239 @@ bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   #
 bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 
 bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 
 bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 
+
+####################################################################
+#### Try when the occurrences are only in a certain location
+####################################################################
+data.seed <- 3282
+set.seed(data.seed)  # data
+center <- c(runif(1), runif(1))
+radius <- 0.13
+s.dist <- sqrt((s[, 1] - center[1])^2 + (s[, 2] - center[2])^2)
+mean(s.dist < radius)
+prob <- (s.dist < radius) * 0.85 + (1 - s.dist < radius) * 0.001
+y    <- matrix(rbinom(n = ns, size = 1, prob = prob), ns, 1)
+
+# testing vs training
+ntrain <- floor(0.75 * ns)
+ntest  <- ns - ntrain
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, , drop = FALSE]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, , drop = FALSE]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+####################################################################
+#### Start MCMC setup: Most of this is used for the spBayes package
+####################################################################
+iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+
+# setup for spGLM
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
+               "beta"=0.1, "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
+                 "beta"=0, "w"=0)
+priors <- list("beta.norm"=list(1, 100),
+               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1))
+cov.model <- "exponential"
+
+####################################################################
+#### Get ML estimates for candidate distribution for GEV
+####################################################################
+# plot the data
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+# get initial values and fit pcl. parameter order: alpha, rho, xi, beta
+fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+                         cov=X.o, threads=6)
+
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
+xibeta.hat <- fit$par[3:4]
+xibeta.var <- solve(fit$hessian[3:4, 3:4])
+
+####################################################################
+#### Fit MCMC
+####################################################################
+# spatial GEV
+mcmc.seed <- 1
+set.seed(mcmc.seed)
+fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                knots = knots, beta.tune = 1, xi.tune = 0.1,
+                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                beta.attempts = 50, xi.attempts = 50,
+                alpha.attempts = 200, rho.attempts = 200,
+                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                iters = iters, burn = burn, update = update, thin = 1)
+
+post.prob.gev.3 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = 500)
+
+# spatial logit
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.logit <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                   knots = knots, starting = starting, tuning = tuning,
+                   priors = priors, cov.model = cov.model,
+                   n.samples = iters, verbose = verbose,
+                   n.report = n.report)
+
+yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+                       pred.covars = X.p, start = burn + 1, end = iters,
+                       thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log.3 <- t(yp.sp.log$p.y.predictive.samples)
+
+# spatial probit
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
+                     iters = iters, burn = burn, update = update)
+
+post.prob.pro.3 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+                               s.pred = s.p, knots = knots,
+                               start = 1, end = iters - burn, update = 500)
+
+####################################################################
+#### Get Brier scores
+####################################################################
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0105
+bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0102
+bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0094
+
+####################################################################
+#### Try when the occurrences are only in a certain location
+####################################################################
+data.seed <- data.seed + 1
+set.seed(data.seed)  # data
+center <- c(runif(1), runif(1))
+radius <- 0.1
+s.dist <- sqrt((s[, 1] - center[1])^2 + (s[, 2] - center[2])^2)
+mean(s.dist < radius)
+prob <- (s.dist < radius) * 0.90 + (1 - s.dist < radius) * 0.001
+y    <- matrix(rbinom(n = ns, size = 1, prob = prob), ns, 1)
+
+# testing vs training
+ntrain <- floor(0.75 * ns)
+ntest  <- ns - ntrain
+obs <- c(rep(T, ntrain), rep(F, ntest))
+y.o <- y[obs, , drop = FALSE]
+X.o <- matrix(x[obs], ntrain, 1)
+s.o <- s[obs, ]
+y.validate <- y[!obs, , drop = FALSE]
+X.p <- matrix(x[!obs, ], ntest, 1)
+s.p <- s[!obs, ]
+
+####################################################################
+#### Start MCMC setup: Most of this is used for the spBayes package
+####################################################################
+iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+
+# setup for spGLM
+n.report <- 500
+verbose <- TRUE
+tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
+               "beta"=0.1, "w"=0.1)
+starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
+                 "beta"=0, "w"=0)
+priors <- list("beta.norm"=list(1, 100),
+               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
+               "tau.sq.ig"=c(1, 1))
+cov.model <- "exponential"
+
+####################################################################
+#### Get ML estimates for candidate distribution for GEV
+####################################################################
+# plot the data
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+     main = "simulated dataset", xlab="", ylab="")
+train1.idx <- which(y[obs] == 1)
+test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
+points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+
+# get initial values and fit pcl. parameter order: alpha, rho, xi, beta
+fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+                         cov=X.o, threads=6)
+
+alpha.hat  <- exp(fit$par[1]) / (1 + exp(fit$par[1]))
+rho.hat    <- exp(fit$par[2])
+xibeta.hat <- fit$par[3:4]
+xibeta.var <- solve(fit$hessian[3:4, 3:4])
+
+####################################################################
+#### Fit MCMC
+####################################################################
+# spatial GEV
+mcmc.seed <- 1
+set.seed(mcmc.seed)
+fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                knots = knots, beta.tune = 1, xi.tune = 0.1,
+                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                beta.attempts = 50, xi.attempts = 50,
+                alpha.attempts = 200, rho.attempts = 200,
+                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                iters = iters, burn = burn, update = update, thin = 1)
+
+post.prob.gev.4 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = 500)
+
+# spatial logit
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.logit <- spGLM(formula = y.o ~ 1, family = "binomial", coords = s.o,
+                   knots = knots, starting = starting, tuning = tuning,
+                   priors = priors, cov.model = cov.model,
+                   n.samples = iters, verbose = verbose,
+                   n.report = n.report)
+
+yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+                       pred.covars = X.p, start = burn + 1, end = iters,
+                       thin = 1, verbose = TRUE, n.report = 500)
+
+post.prob.log.4 <- t(yp.sp.log$p.y.predictive.samples)
+
+# spatial probit
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
+                     iters = iters, burn = burn, update = update)
+
+post.prob.pro.4 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+                               s.pred = s.p, knots = knots,
+                               start = 1, end = iters - burn, update = 500)
+
+####################################################################
+#### Get Brier scores
+####################################################################
+bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 
+bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 
+bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 
+
+####################################################################
+#### Find DIC
+####################################################################
+dic.log.4 <- spDiag(sp.obj = fit.logit, start = burn + 1, end = iters, 
+                    thin = 1, verbose = TRUE, n.report = 500)
