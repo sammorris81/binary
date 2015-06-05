@@ -529,26 +529,27 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   return(-ll)
 }
 
-pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
+pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1) {
   # par: parameter vector (alpha, rho, xi, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # x: covariates (ns x np)
-
+  
   npars <- length(par)
   alpha <- par[1]
   rho   <- par[2]
   xi    <- par[3]
   beta  <- par[4:npars]
-
+  
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
   }
-
-  ns     <- length(y)
+  
+  ns     <- nrow(y)
+  nt     <- ncol(y)
   np     <- ncol(cov)
   nknots <- ncol(dw2)
-
+  
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
   if (length(beta) == 1) {
     x.beta <- matrix(cov * beta, ns, nt)
@@ -556,7 +557,7 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
     x.beta <- cov %*% beta           # should be ns long
   }
   z <- getZ(xi, x.beta)       # should be ns long
-
+  
   # keep estimates in their actual space
   if (alpha < 1e-10 | alpha > (1 - 1e-10)) {
     return(1e99)
@@ -567,12 +568,12 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, cov, threads = 1) {
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-
+  
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
+  
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, threads = threads)
-
+                    rho = rho, d = d, max_dist = max(d), threads = threads)
+  
   return(-ll)
 }
 
@@ -638,27 +639,16 @@ pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, max.dist,
 
 # traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinaryCPP <- function(init.par, y, rho, d, dw2, cov, max.dist = NULL,
+fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov, 
                               threads = 1) {
-
-  # ns     <- length(y)
-  # np     <- ncol(cov)
-  # nknots <- ncol(dw2)
-
-  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
-
-  results <- optim(init.par, pairwise.rarebinary3CPP,
-                   y = y, W = W, d = d, rho = rho,
-                   cov = cov, max.dist = max.dist, threads = threads,
-                   # lower = c(1e-6, 1e-6, -1, -Inf),
-                   # upper = c(1 - 1e-6, Inf, 3, Inf),
-                   hessian = TRUE)
-  # results$alpha <- alpha
-  results$rho   <- rho
-
+  
+  results <- optim(init.par, pairwise.rarebinaryCPP, y = y, dw2 = dw2, 
+                   d = d, max.dist = max.dist, cov = cov, threads = threads,
+                   method = "BFGS", hessian = TRUE)
+  
   return(results)
 }
 
