@@ -2,7 +2,7 @@ make.B <- function(d, rho){
   exp(-(d / rho)^2)
 }
 
-#Main MCMC function
+# predictions
 pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
                         start = 1, end = NULL, update = NULL) {
 
@@ -32,6 +32,7 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   return(prob.success)
 }
 
+# predictions
 probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                    logbw.mn=-1, logbw.sd=2, eps=0.01, a=0.1, b=0.1,
                    iters=5000, burn=1000, thin=1, update=2, iterplot=FALSE){

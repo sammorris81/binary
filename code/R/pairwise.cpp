@@ -53,24 +53,25 @@ double pairwiseCPP(arma::mat kernel, double alpha, arma::vec z, arma::vec y,
     return ll;
 }
 
-// [[Rcpp::export]]
-double pairwiseCPPij(arma::mat kernel, double alpha, double z1, double z2,
-                     int y1, int y2) {
-  /* This is the likelihood evaluated for a single pair. Will be using this
-     to evaluate the hessian and gradient in R */
 
-  double ll; double joint;
-
-  joint = -getJointPtr(&kernel, 0, 1, alpha);
-  if (y1 == 0 && y2 == 0) {
-    ll = joint;
-  } else if (y1 == 1 && y2 == 0) {
-    ll = log(exp(-1 / z2) - exp(joint));
-  } else if (y1 == 0 && y2 == 1) {
-    ll = log(exp(-1 / z1) - exp(joint));
-  } else if (y1 == 1 && y2 == 1) {
-    ll = log(1 - exp(-1 / z1) - exp(-1 / z2) + exp(joint));
-  }
-
-  return ll;
-}
+// // [[Rcpp::export]]
+// double pairwiseCPPij(arma::mat kernel, double alpha, double z1, double z2,
+//                      int y1, int y2) {
+//   // This is the likelihood evaluated for a single pair. Will be using this
+//   //   to evaluate the hessian and gradient in R
+// 
+//   double ll; double joint;
+// 
+//   joint = -getJointPtr(&kernel, 0, 1, alpha);
+//   if (y1 == 0 && y2 == 0) {
+//     ll = joint;
+//   } else if (y1 == 1 && y2 == 0) {
+//     ll = log(exp(-1 / z2) - exp(joint));
+//   } else if (y1 == 0 && y2 == 1) {
+//     ll = log(exp(-1 / z1) - exp(joint));
+//   } else if (y1 == 1 && y2 == 1) {
+//     ll = log(1 - exp(-1 / z1) - exp(-1 / z2) + exp(joint));
+//   }
+// 
+//   return ll;
+// }
