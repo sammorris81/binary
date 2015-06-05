@@ -28,9 +28,6 @@ knots.t <- as.matrix(expand.grid(seq(0.00, 1.00, length=12),
 # knots used to fit model
 knots <- as.matrix(expand.grid(seq(0.00, 1.00, length=15), 
                                seq(0.00, 1.00, length=15))) 
-
-# grid for searching over alpha and rho
-rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
 ```
 
 ```{r setting-1, echo=FALSE, include=FALSE}
@@ -44,7 +41,7 @@ diag(d) <- 0
 x   <- matrix(1, ns, 1)
 
 # only focusing on the case of strong dependence
-alpha.t <- 0.20
+alpha.t <- 0.30
 xi.t    <- 0.25
 rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
@@ -53,7 +50,7 @@ prop    <- c(0.05, 0.01)
 ```{r mcmcsetup, echo=FALSE, include=FALSE}
 # y is ns, nt, nsets, nsettings
 iters <- 40000; burn <- 30000; update <- 500; thin <- 1
-# iters <- 100; burn <- 50; update <- 10; thin <- 1
+
 # setup for spGLM
 n.report <- 500
 verbose <- TRUE
@@ -119,18 +116,14 @@ s.p <- s[!obs, ]
 ```
 
 ```{r fit1-1, echo=FALSE, include=FALSE, cache=TRUE}
-nll <- rep(9999999, length(rhos))
-for (i in seq_along(rhos)) {
-  temp <- fit.rarebinaryCPP(c(0.5, 0, -4), rho = rhos[i],  y = y.o, 
-                            dw2 = dw2, d = d, cov = X.o, threads = 6)
-  nll[i] <- temp$value
-  if (nll[i] == min(nll)) {
-    fit <- temp
-  }
-}
+fit <- fit.rarebinaryCPP(c(0.5, 0.15, 0, -4), y = y.o, dw2 = dw2, d = d, 
+                         cov=X.o, threads=6)
+
+xibeta.hat <- fit$par[3:4]
+xibeta.var <- solve(fit$hessian)[3:4, 3:4]
 ```
 
-From the pairwise likelihood, we'll be using $\rho = `r round(fit$rho, 4)`$.
+From the pairwise likelihood, we'll be using $\rho = `r round(fit$par[2], 4)`$.
 The estimates for the other parameters are $\widehat{\alpha} = `r round(fit$par[1], 3)`$, $\widehat{\xi} = `r round(fit$par[2], 3)`$, and $\widehat{\beta}_0 = `r round(fit$par[3], 3)`$.
 
 ```{r plotdata1-1, echo=FALSE, fig.width=4, fig.height=4}
@@ -162,29 +155,82 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 ```
  
 ```{r gev1-1, echo = FALSE, include = FALSE, cache = TRUE}
-xibeta.hat <- fit$par[2:3]
-xibeta.var <- solve(fit$hessian)[2:3, 2:3]
-
 # spatial GEV
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[3], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[2], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
-                spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
-                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
+                spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                alpha.init = fit$par[1], a.init = 1000, iterplot = TRUE,
+                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 ```
 
+```{r gev1-1-g1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev1-1-g2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev1-1-g3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
 ## MCMC Results
 
-Here are the iteration plots from the two GEV models. The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
+Here are the iteration plots from the GEV model. 
+The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
+This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
 ```{r gev1ters1-1, echo=FALSE, fig.width=7, fig.height=2}
 par(mfrow=c(1, 2))
@@ -212,7 +258,28 @@ bs.pro1.1 <- BrierScore(post.prob.pro, y.validate)
 post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = 500)
-bs.gev1.1 <- BrierScore(post.prob.gev, y.validate)
+bs.gev1.1.1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev1-1-g1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g1, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev1.1.g1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev1-1-g2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g2, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev1.1.g2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev1-1-g3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g3, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev1.1.g3 <- BrierScore(post.prob.gev, y.validate)
 ```
 
 ### Dataset 2
@@ -293,10 +360,64 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
+                alpha.init = 0.3, a.init = 500, iterplot = FALSE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-1-g1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-1-g2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-1-g3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
 ```
 
 ## MCMC Results
@@ -330,6 +451,27 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = 500)
 bs.gev2.1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev2-1-g1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g1, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev2.1.g1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev2-1-g2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g2, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev2.1.g2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev2-1-g3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g3, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev2.1.g3 <- BrierScore(post.prob.gev, y.validate)
 ```
 
 ### Dataset 3
@@ -411,10 +553,64 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
+                alpha.init = 0.3, a.init = 500, iterplot = FALSE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev3-1-g1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev3-1-g2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev3-1-g3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
 ```
 
 ## MCMC Results
@@ -450,6 +646,27 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
 bs.gev3.1 <- BrierScore(post.prob.gev, y.validate)
 ```
 
+```{r resultsgev3-1-g1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g1, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev3.1.g1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev3-1-g2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g2, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev3.1.g2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev3-1-g3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g3, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev3.1.g3 <- BrierScore(post.prob.gev, y.validate)
+```
+
 ## Brier Scores
 
 The brier scores are 
@@ -460,6 +677,12 @@ Probit 1-1: `r round(bs.pro1.1, 4)`
 
 GEV 1-1: `r round(bs.gev1.1, 4)`
 
+GEV 1-1-g1: `r round(bs.gev1.1.g1, 4)`
+
+GEV 1-1-g2: `r round(bs.gev1.1.g2, 4)`
+
+GEV 1-1-g3: `r round(bs.gev1.1.g3, 4)`
+
 The brier scores are 
 
 Logit 2-1: `r round(bs.log2.1, 4)`
@@ -468,6 +691,12 @@ Probit 2-1: `r round(bs.pro2.1, 4)`
 
 GEV 2-1: `r round(bs.gev2.1, 4)`
 
+GEV 2-1-g1: `r round(bs.gev2.1.g1, 4)`
+
+GEV 2-1-g2: `r round(bs.gev2.1.g2, 4)`
+
+GEV 2-1-g3: `r round(bs.gev2.1.g3, 4)`
+
 The brier scores are 
 
 Logit 3-1: `r round(bs.log3.1, 4)`
@@ -475,6 +704,12 @@ Logit 3-1: `r round(bs.log3.1, 4)`
 Probit 3-1: `r round(bs.pro3.1, 4)`
 
 GEV 3-1: `r round(bs.gev3.1, 4)`
+
+GEV 3-1-g1: `r round(bs.gev3.1.g1, 4)`
+
+GEV 3-1-g2: `r round(bs.gev3.1.g2, 4)`
+
+GEV 3-1-g3: `r round(bs.gev3.1.g3, 4)`
 
 ## Setting 2:
 
@@ -558,10 +793,64 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
+                alpha.init = 0.3, a.init = 500, iterplot = FALSE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev1-2-g1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev1-2-g2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev1-2-g3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
 ```
 
 ## MCMC Results
@@ -597,6 +886,27 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = 500)
 bs.gev1.2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev1-2-g1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g1, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev1.2.g1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev1-2-g2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g2, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev1.2.g2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev1-2-g3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g3, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev1.2.g3 <- BrierScore(post.prob.gev, y.validate)
 ```
 
 ### Dataset 2
@@ -677,10 +987,64 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
+                alpha.init = 0.3, a.init = 500, iterplot = FALSE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-2-g1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-2-g2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev2-2-g3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
 ```
 
 ## MCMC Results
@@ -714,6 +1078,27 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = 500)
 bs.gev2.2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev2-2-g1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g1, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev2.2.g1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev2-2-g2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g2, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev2.2.g2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev2-2-g3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g3, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev2.2.g3 <- BrierScore(post.prob.gev, y.validate)
 ```
 
 ### Dataset 3
@@ -794,10 +1179,64 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 200, rho.attempts = 200,
                 spatial = TRUE, rho.init = fit$rho, rho.upper = 9,
-                alpha.init = fit$par[1], a.init = 100, iterplot = FALSE,
+                alpha.init = 0.3, a.init = 500, iterplot = FALSE,
                 alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE, 
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev3-2-g1, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev3-2-g2, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
+```
+
+```{r gev3-2-g3, echo = FALSE, include = FALSE, cache = TRUE}
+# spatial GEV
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   knots = knots, beta.tune = 1, xi.tune = 0.1,
+                   alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
+                   beta.attempts = 50, xi.attempts = 50,
+                   alpha.attempts = 200, rho.attempts = 200,
+                   spatial = TRUE, rho.init = fit$par[2], rho.upper = 9,
+                   alpha.init = 0.7, a.init = 1000, iterplot = TRUE,
+                   alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                   iters = iters, burn = burn, update = update, thin = 1)
 ```
 
 ## MCMC Results
@@ -833,6 +1272,27 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
 bs.gev3.2 <- BrierScore(post.prob.gev, y.validate)
 ```
 
+```{r resultsgev3-2-g1, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g1, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev3.2.g1 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev3-2-g2, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g2, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev3.2.g2 <- BrierScore(post.prob.gev, y.validate)
+```
+
+```{r resultsgev3-2-g3, echo=FALSE, include=FALSE, cache=TRUE}
+post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.g3, x.pred = X.p,
+                            s.pred = s.p, knots = knots,
+                            start = 1, end = iters - burn, update = 500)
+bs.gev3.2.g3 <- BrierScore(post.prob.gev, y.validate)
+```
+
 ## Brier Scores
 
 The brier scores are 
@@ -843,6 +1303,12 @@ Probit 1-2: $`r round(bs.pro1.2 * 1000, 2)`$
 
 GEV 1-2: $`r round(bs.gev1.2 * 1000, 2)`$
 
+GEV 1-2-g1: $`r round(bs.gev1.2.g1 * 1000, 2)`$
+
+GEV 1-2-g2: $`r round(bs.gev1.2.g2 * 1000, 2)`$
+
+GEV 1-2-g3: $`r round(bs.gev1.2.g3 * 1000, 2)`$
+
 The brier scores are 
 
 Logit 2-2: $`r round(bs.log2.2 * 1000, 2)`$
@@ -851,6 +1317,12 @@ Probit 2-2: $`r round(bs.pro2.2 * 1000, 2)`$
 
 GEV 2-2: $`r round(bs.gev2.2 * 1000, 2)`$
 
+GEV 2-2-g1: $`r round(bs.gev2.2.g1 * 1000, 2)`$
+
+GEV 2-2-g2: $`r round(bs.gev2.2.g2 * 1000, 2)`$
+
+GEV 2-2-g3: $`r round(bs.gev2.2.g3 * 1000, 2)`$
+
 The brier scores are 
 
 Logit 3-2: $`r round(bs.log3.2 * 1000, 2)`$
@@ -858,3 +1330,9 @@ Logit 3-2: $`r round(bs.log3.2 * 1000, 2)`$
 Probit 3-2: $`r round(bs.pro3.2 * 1000, 2)`$
 
 GEV 3-2: $`r round(bs.gev3.2 * 1000, 2)`$
+
+GEV 3-2-g1: $`r round(bs.gev3.2.g1 * 1000, 2)`$
+
+GEV 3-2-g2: $`r round(bs.gev3.2.g2 * 1000, 2)`$
+
+GEV 3-2-g3: $`r round(bs.gev3.2.g3 * 1000, 2)`$
