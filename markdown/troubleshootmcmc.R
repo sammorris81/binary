@@ -189,10 +189,10 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0343
-bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0344
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0506
+bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0504
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
-bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0332
+bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0360
 
 ####################################################################
 #### Try with fewer 1s
@@ -332,8 +332,8 @@ post.prob.pro.2 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0135
-bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0129
+bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0187
+bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0187
 bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
 bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0147
 
@@ -458,9 +458,9 @@ post.prob.pro.3 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 
-bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 
-bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0242
+bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0195
+bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0198
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
