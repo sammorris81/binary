@@ -99,6 +99,77 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
   return(results)
 }
 
+updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
+                         x.beta, xi, x, xi.m, xi.s, cur.lly,
+                         can.mean, can.var,
+                         acc.beta, att.beta, mh.beta,
+                         acc.xi, att.xi, mh.xi, thresh=0) {
+  np  <- length(beta) + 1  # using later to get the end of the vector
+  ns  <- nrow(y)
+  nt  <- ncol(y)
+  att.beta <- att.beta + 1
+  att.xi   <- att.xi + 1
+  alpha.inv <- 1 / alpha
+  
+  cor <- diag(rep(1, np))
+  cor[1, 2] <- cor[2, 1] <- -0.5
+  cov <- diag(c(mh.xi, mh.beta)) %*% cor %*% diag(c(mh.xi, mh.beta))
+  can.xibeta <- c(xi, beta) + t(chol(cov)) %*% rnorm(np)
+  
+  can.xi   <- can.xibeta[1]
+  can.beta <- can.xibeta[2:np]
+  
+  can.x.beta <- matrix(NA, ns, nt)
+  if (nt == 1) {
+    if (np == 1) {
+      can.x.beta <- x * can.beta
+    } else {
+      can.x.beta <- x %*% can.beta
+    }
+  } else {
+    for (t in 1:nt) {
+      start <- (t - 1) * ns + 1
+      end   <- t * ns
+      if (np == 1) {
+        can.x.beta[, t] <- x[start:end, t] * can.beta
+      } else {
+        can.x.beta[, t] <- x[start:end, t] %*% can.beta
+      }
+    }
+  }
+  
+  if (any(can.xi * (can.x.beta - thresh) > 1)) {
+    can.lly <- -Inf
+  } else {
+    can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
+    can.z.star <- can.z^alpha.inv
+    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+  }
+  
+  R <- sum(can.lly - cur.lly) +
+    sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
+    sum(dnorm(beta, beta.m, beta.s, log=TRUE))
+  dnorm(can.xi, xi.m, xi.s, log=TRUE) -
+    dnorm(xi, xi.m, xi.s, log=TRUE)
+  
+  if (!is.na(R)) { if (log(runif(1)) < R) {
+    beta     <- can.beta
+    x.beta   <- can.x.beta
+    xi       <- can.xi
+    z        <- can.z
+    z.star   <- can.z.star
+    cur.lly  <- can.lly
+    acc.beta <- acc.beta + 1
+    acc.xi   <- acc.xi + 1
+  }}
+  
+  results <- list(beta=beta, x.beta=x.beta,
+                  xi=xi, z=z, z.star=z.star, cur.lly=cur.lly,
+                  att.beta=att.beta, acc.beta=acc.beta,
+                  att.xi=att.xi, acc.xi=acc.xi)
+  return(results)
+}
+
 updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
                          x.beta, xi, x, xi.m, xi.s, cur.lly,
                          can.mean, can.var,

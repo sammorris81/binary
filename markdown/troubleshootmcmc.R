@@ -9,6 +9,7 @@ library(Rcpp)
 library(evd)
 library(spBayes)
 library(mvtnorm)
+library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp(file = "../code/R/pairwise.cpp")
@@ -127,12 +128,12 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
-                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 50, xi.attempts = 50,
-                alpha.attempts = 200, rho.attempts = 200,
+                alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                beta.attempts = 200, xi.attempts = 200,
+                alpha.attempts = 7500, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
-                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -147,12 +148,12 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
-                  alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                  beta.attempts = 50, xi.attempts = 50,
-                  alpha.attempts = 200, rho.attempts = 200,
+                  alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                  beta.attempts = 200, xi.attempts = 200,
+                  alpha.attempts = 7500, rho.attempts = 100,
                   spatial = TRUE, rho.init = rho.t, rho.upper = 9,
-                  alpha.init = alpha.t, a.init = 1000, iterplot = TRUE,
-                  alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                  alpha.init = alpha.t, a.init = 10000, iterplot = TRUE,
+                  alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
 
@@ -270,12 +271,12 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
-                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 50, xi.attempts = 50,
-                alpha.attempts = 200, rho.attempts = 200,
-                spatial = TRUE, rho.init = rho.t, rho.upper = 9,
-                alpha.init = alpha.t, a.init = 1000, iterplot = TRUE,
-                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                beta.attempts = 200, xi.attempts = 200,
+                alpha.attempts = 7500, rho.attempts = 100,
+                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -290,12 +291,12 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
-                  alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                  beta.attempts = 50, xi.attempts = 50,
-                  alpha.attempts = 200, rho.attempts = 200,
-                  spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                  alpha.init = 0.3, a.init = 1000, iterplot = TRUE,
-                  alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                  alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                  beta.attempts = 200, xi.attempts = 200,
+                  alpha.attempts = 7500, rho.attempts = 100,
+                  spatial = TRUE, rho.init = rho.t, rho.upper = 9,
+                  alpha.init = alpha.t, a.init = 10000, iterplot = TRUE,
+                  alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
 
@@ -331,10 +332,10 @@ post.prob.pro.2 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0112
-bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0101
-bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0184
-bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0122
+bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0135
+bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0129
+bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
+bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0147
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -416,12 +417,12 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
-                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 50, xi.attempts = 50,
-                alpha.attempts = 200, rho.attempts = 200,
+                alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                beta.attempts = 200, xi.attempts = 200,
+                alpha.attempts = 7500, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
-                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -528,6 +529,7 @@ if (alpha.hat < 0.3) {
   alpha.hat <- 0.9
 }
 rho.hat    <- exp(fit$par[2])
+
 xibeta.hat <- fit$par[3:4]
 xibeta.var <- solve(fit$hessian[3:4, 3:4])
 
@@ -541,12 +543,12 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
-                alpha.tune = 0.01, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 50, xi.attempts = 50,
-                alpha.attempts = 200, rho.attempts = 200,
+                alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                beta.attempts = 200, xi.attempts = 200,
+                alpha.attempts = 7500, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
-                alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -582,9 +584,9 @@ post.prob.pro.4 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 
-bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 
-bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 
+bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 0.0152
+bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 0.0166
+bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 0.0146
 
 ####################################################################
 #### Find DIC

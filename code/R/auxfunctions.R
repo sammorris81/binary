@@ -575,7 +575,8 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1,
   return(-ll)
 }
 
-pairwise.rarebinary2CPP <- function(par, alpha, rho, y, W, cov, threads = 1) {
+pairwise.rarebinary2CPP <- function(par, alpha, rho, d, y, W, cov, max.dist,
+                                    threads = 1) {
   # par: parameter vector (xi, beta)
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
@@ -595,7 +596,7 @@ pairwise.rarebinary2CPP <- function(par, alpha, rho, y, W, cov, threads = 1) {
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)  # optim minimizes, so return neg loglike
 }
@@ -635,6 +636,45 @@ pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, max.dist,
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
+pairwise.rarebinary4CPP <- function(par, alpha, d, dw2, y, cov, max.dist,
+                                    threads = 1) {
+  # par: parameter vector (xi, alpha, beta)
+  # y: observed data (ns)
+  # dw2: squared distance between sites and knots (ns x nknots)
+  # cov: covariates (ns x np)
+  
+  npars  <- length(par)
+  logrho <- par[1]
+  xi     <- par[2]
+  beta   <- par[3:npars]
+  
+  rho <- exp(logrho)
+  
+  ns <- nrow(y)
+  nt <- ncol(y)
+  
+  W  <- stdW(makeW(dw2, rho))  # should be ns x nknots
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta
+  }
+  
+  z      <- getZ(xi, x.beta)       # should be ns long
+  
+  if (any((xi * x.beta) > 1)) {
+    return(1e99)
+  }
+
+  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
+  
+  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
+  
+  return(-ll)  # optim minimizes, so return neg loglike
+}
+
+
 # traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
 fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov,
@@ -649,6 +689,45 @@ fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov,
                    method = "BFGS", hessian = TRUE)
 
   return(results)
+}
+
+# traditionally, they only use sites that are close together.
+# adding in d to the optim call so we can only include sites within 2 * bw
+fit.rarebinary2CPP <- function(init.par, alpha, rho, y, dw2, d, 
+                               max.dist = NULL, cov, threads = 1) {
+  if (is.null(max.dist)) {
+    max.dist <- max(d)
+  }
+  
+  W <- stdW(makeW(rho, dw2))
+  
+  results <- optim(init.par, pairwise.rarebinary2CPP, 
+                   alpha = alpha, rho = rho,
+                   d = d, y = y, W = W, cov = cov, 
+                   max.dist = max.dist, threads = threads,
+                   method = "BFGS", hessian = TRUE)
+  
+  return(results)
+}
+
+# traditionally, they only use sites that are close together.
+# adding in d to the optim call so we can only include sites within 2 * bw
+fit.rarebinary4CPP <- function(init.par, alpha, y, dw2, d, 
+                               max.dist = NULL, cov, threads = 1) {
+  if (is.null(max.dist)) {
+    max.dist <- max(d)
+  }
+  
+  results <- optim(init.par, pairwise.rarebinary4CPP, 
+                   alpha = alpha, d=d, y = y, dw2 = dw2, cov = cov, 
+                   max.dist = max.dist, threads = threads,
+                   method = "BFGS", hessian = TRUE)
+  
+  return(results)
+}
+
+fit.rarebinaryInd <- function(init.par, y, dw2) {
+  
 }
 
 # needs to loop over all pairs of sites and calculate the hessian

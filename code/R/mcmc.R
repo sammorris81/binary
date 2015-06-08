@@ -116,15 +116,26 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   keepers.a     <- array(NA, dim=c(iters, nknots, nt))
   keepers.alpha <- rep(NA, iters)
   keepers.rho   <- rep(NA, iters)
+  keepers.lly   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:thin) {
     if (xibeta.joint) {  # update beta and xi
-      xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
+#       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
+#                                     z=z, z.star=z.star, beta=beta,
+#                                     beta.m=beta.m, beta.s=beta.s,
+#                                     x.beta=x.beta, xi=xi, x=x,
+#                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+#                                     can.mean=xibeta.hat, can.var=xibeta.var,
+#                                     acc.beta=acc.beta, att.beta=att.beta,
+#                                     mh.beta=mh.beta,
+#                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+#                                     thresh=0)
+      xibeta.update <- updateXiBeta2(y=y, theta.star=theta.star, alpha=alpha,
                                     z=z, z.star=z.star, beta=beta,
                                     beta.m=beta.m, beta.s=beta.s,
                                     x.beta=x.beta, xi=xi, x=x,
                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-                                    can.mean=xibeta.hat, can.var=xibeta.var,
+                                    #can.mean=xibeta.hat, can.var=xibeta.var,
                                     acc.beta=acc.beta, att.beta=att.beta,
                                     mh.beta=mh.beta,
                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
@@ -140,13 +151,19 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       att.xi   <- xibeta.update$att.xi
       acc.xi   <- xibeta.update$acc.xi
 
-#       if (iter < burn / 2) {
-#         mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
-#                               nattempts=beta.attempts)
-#         acc.beta  <- mh.update$acc
-#         att.beta  <- mh.update$att
-#         mh.beta   <- mh.update$mh
-#       }
+      if (iter < burn / 2) {
+        mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+                              nattempts=beta.attempts)
+        acc.beta  <- mh.update$acc
+        att.beta  <- mh.update$att
+        mh.beta   <- mh.update$mh
+
+        mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
+                              nattempts=xi.attempts)
+        acc.xi  <- mh.update$acc
+        att.xi  <- mh.update$att
+        mh.xi   <- mh.update$mh
+      }
 
     } else {  # update beta
       if (!beta.fix) {
@@ -289,6 +306,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       keepers.alpha[iter]  <- alpha
       keepers.rho[iter]    <- rho
     }
+    keepers.lly[iter] <- sum(cur.lly)
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)
@@ -347,6 +365,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                     a=keepers.a[return.iters, , ],
                     alpha=keepers.alpha[return.iters],
                     rho=keepers.rho[return.iters],
+                    lly=keepers.lly[return.iters],
                     y.pred=keepers.y.pred)
   } else {
     results <- list(beta=keepers.beta[return.iters, ],
@@ -354,6 +373,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                     a=NULL,
                     alpha=NULL,
                     rho=NULL,
+                    lly=keepers.lly[return.iters],
                     y.pred=keepers.y.pred)
   }
 
