@@ -275,7 +275,7 @@ bs.pro1.1 <- BrierScore(post.prob.pro, y.validate)
 post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = 500)
-bs.gev1.1.1 <- BrierScore(post.prob.gev, y.validate)
+bs.gev1.1 <- BrierScore(post.prob.gev, y.validate)
 ```
 
 ```{r resultsgev1-1-g1, echo=FALSE, include=FALSE, cache=TRUE}
