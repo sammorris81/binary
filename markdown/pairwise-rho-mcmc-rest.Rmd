@@ -82,7 +82,7 @@ One of the roles of $\alpha$ in the conditional likelihood for the MCMC (i.e. co
 As $\alpha \rightarrow 0$, var$(A) \nearrow$, and as $\alpha \rightarrow 1$, the density converges to a point mass at 1.
 In the binary framework, I do not think it is important that we get the actual intensity of the $A$ terms correct.
 However, we do want to ensure that we can maintain the relative intensities of the knots.
-While running some test cases of MCMC, it seems as if $\alpha = 0.5$ would result in a sequence of knots like $\{1, 4, 5, 2, 8}$ whereas $\alpha = 0.2$ would result in a sequence of knots like $\{100, 400, 500, 200, 800\}$. 
+While running some test cases of MCMC, it seems as if $\alpha = 0.5$ would result in a sequence of knots like $\{1, 4, 5, 2, 8\}$ whereas $\alpha = 0.2$ would result in a sequence of knots like $\{100, 400, 500, 200, 800\}$. 
 
 # Goal
 
@@ -176,8 +176,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
@@ -194,8 +194,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -212,8 +212,8 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -230,8 +230,8 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -249,10 +249,28 @@ Here are the iteration plots from the GEV model.
 The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
-```{r gev1ters1-1, echo=FALSE, fig.width=7, fig.height=2}
+```{r gev1ters1-1, echo=FALSE, fig.width=7, fig.height=3}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters1-1-g1, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g1$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters1-1-g2, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g2$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters1-1-g3, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g3$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g3$xi, type="l", main=bquote(xi))
 ```
 
 ```{r resultslogit1-1, echo=FALSE, include=FALSE, cache=TRUE}
@@ -375,8 +393,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
@@ -393,8 +411,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -411,8 +429,8 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -429,8 +447,8 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -448,10 +466,28 @@ Here are the iteration plots from the GEV model.
 The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
-```{r gev1ters2-1, echo=FALSE, fig.width=7, fig.height=2}
+```{r gev1ters2-1, echo=FALSE, fig.width=7, fig.height=3}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters2-1-g1, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g1$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters2-1-g2, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g2$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters2-1-g3, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g3$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g3$xi, type="l", main=bquote(xi))
 ```
 
 ```{r resultslogit2-1, echo=FALSE, include=FALSE, cache=TRUE}
@@ -575,8 +611,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
@@ -593,8 +629,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -611,8 +647,8 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -629,8 +665,8 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -648,10 +684,28 @@ Here are the iteration plots from the GEV model.
 The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
-```{r gev1ters3-1, echo=FALSE, fig.width=7, fig.height=2}
+```{r gev1ters3-1, echo=FALSE, fig.width=7, fig.height=3}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters3-1-g1, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g1$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters3-1-g2, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g2$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters3-1-g3, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g3$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g3$xi, type="l", main=bquote(xi))
 ```
 
 ```{r resultslogit3-1, echo=FALSE, include=FALSE, cache=TRUE}
@@ -822,8 +876,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
@@ -840,8 +894,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -858,8 +912,8 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -876,8 +930,8 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -895,10 +949,28 @@ Here are the iteration plots from the GEV model.
 The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
-```{r gev1ters1-2, echo=FALSE, fig.width=7, fig.height=2}
+```{r gev1ters1-2, echo=FALSE, fig.width=7, fig.height=3}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters1-2-g1, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g1$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters1-2-g2, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g2$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters1-2-g3, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g3$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g3$xi, type="l", main=bquote(xi))
 ```
 
 ```{r resultslogit1-2, echo=FALSE, include=FALSE, cache=TRUE}
@@ -1021,8 +1093,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
@@ -1039,8 +1111,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -1057,8 +1129,8 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -1075,8 +1147,8 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -1094,10 +1166,28 @@ Here are the iteration plots from the GEV model.
 The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
-```{r gev1ters2-2, echo=FALSE, fig.width=7, fig.height=2}
+```{r gev1ters2-2, echo=FALSE, fig.width=7, fig.height=3}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters2-2-g1, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g1$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters2-2-g2, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g2$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters2-2-g3, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g3$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g3$xi, type="l", main=bquote(xi))
 ```
 
 ```{r resultslogit2-2, echo=FALSE, include=FALSE, cache=TRUE}
@@ -1220,8 +1310,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
@@ -1238,8 +1328,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -1256,8 +1346,8 @@ fit.gev.g1 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -1274,8 +1364,8 @@ fit.gev.g2 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.g3 <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                   beta.init = fit$par[4], beta.m = 0, beta.s = 10,
+                   xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                    knots = knots, beta.tune = 1, xi.tune = 0.1,
                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                    beta.attempts = 200, xi.attempts = 200,
@@ -1293,10 +1383,28 @@ Here are the iteration plots from the GEV model.
 The true values are $\beta_0 = `r round(-data$thresh, 3)`$, and $\xi = `r xi.t`$.
 This is using $\widehat{\alpha}$ and $\widehat{\rho}$ from the PCL fit.
 
-```{r gev1ters3-2, echo=FALSE, fig.width=7, fig.height=2}
+```{r gev1ters3-2, echo=FALSE, fig.width=7, fig.height=3}
 par(mfrow=c(1, 2))
 plot(fit.gev$beta, type="l", main=bquote(beta[0]))
 plot(fit.gev$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters3-2-g1, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g1$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g1$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters3-2-g2, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g2$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g2$xi, type="l", main=bquote(xi))
+```
+
+```{r gev1ters3-2-g3, echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1, 2))
+plot(fit.gev.g3$beta, type="l", main=bquote(beta[0]))
+plot(fit.gev.g3$xi, type="l", main=bquote(xi))
 ```
 
 ```{r resultslogit3-2, echo=FALSE, include=FALSE, cache=TRUE}
