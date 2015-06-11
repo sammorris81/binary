@@ -135,7 +135,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     beta.m=beta.m, beta.s=beta.s,
                                     x.beta=x.beta, xi=xi, x=x,
                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-                                    #can.mean=xibeta.hat, can.var=xibeta.var,
+                                    can.mean=xibeta.hat, can.var=xibeta.var,
                                     acc.beta=acc.beta, att.beta=att.beta,
                                     mh.beta=mh.beta,
                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
@@ -360,15 +360,15 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   return.iters <- (burn + 1):iters
 
   if (spatial) {
-    results <- list(beta=keepers.beta[return.iters, ],
+    results <- list(beta=keepers.beta[return.iters, , drop = F],
                     xi=keepers.xi[return.iters],
-                    a=keepers.a[return.iters, , ],
+                    a=keepers.a[return.iters, , , drop = F],
                     alpha=keepers.alpha[return.iters],
                     rho=keepers.rho[return.iters],
                     lly=keepers.lly[return.iters],
                     y.pred=keepers.y.pred)
   } else {
-    results <- list(beta=keepers.beta[return.iters, ],
+    results <- list(beta=keepers.beta[return.iters, , drop = F],
                     xi=keepers.xi[return.iters],
                     a=NULL,
                     alpha=NULL,

@@ -208,22 +208,22 @@ rRareBinaryInd <- function(x, beta, xi, prob.success = 0.05) {
 }
 
 # generate dependent rare binary data
-rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho,
+rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
                             prob.success = 0.05, dw2 = NULL, a = NULL) {
-  ns     <- dim(x)[1]
-  nt     <- dim(x)[2]
-  p      <- length(beta)
+  p <- length(beta)
+  if (nt == 1) {
+    ns <- nrow(x)
+  } else {
+    if (nrow(x) %% nt != 0) {
+      stop("The number of rows of x must be a multiple of the number of days")
+    }
+    ns <- nrow(x) / nt
+  }
+  
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
 
-  x.beta <- matrix(NA, ns, nt)
-  for (t in 1:nt) {
-    if (p > 1) {
-      x.beta[, t] <- x[, t, ] %*% beta
-    } else {
-      x.beta[, t] <- x[, t] * beta
-    }
-  }
+  x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = beta)
 
   # get weights
   if (is.null(dw2)) {  # for predictions, already have dw2
@@ -674,6 +674,34 @@ pairwise.rarebinary4CPP <- function(par, alpha, d, dw2, y, cov, max.dist,
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
+ind.rarebinary <- function(par, y, cov) {
+  npars <- length(par)
+  xi    <- par[1]
+  beta  <- par[2:npars]
+  
+  ns <- nrow(y)
+  nt <- ncol(y)
+  
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta
+  }
+  
+  if (any((xi * x.beta) > 1)) {
+    return(1e99)
+  }
+  
+  z <- getZ(xi, x.beta)
+  
+  these <- which(y == 1)
+  ll.y <- matrix(NA, ns, nt)
+  ll.y[-these] <- -1 / z[-these]
+  ll.y[these]  <- log(1 - exp(-1 / z[these]))
+  
+  return(-sum(ll.y))
+}
+
 
 # traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
@@ -726,8 +754,9 @@ fit.rarebinary4CPP <- function(init.par, alpha, y, dw2, d,
   return(results)
 }
 
-fit.rarebinaryInd <- function(init.par, y, dw2) {
-  
+fit.rarebinaryInd <- function(init.par, y, cov) {
+  results <- optim(init.par, ind.rarebinary, y = y, cov = cov,
+                   method = "BFGS", hessian = TRUE)
 }
 
 # needs to loop over all pairs of sites and calculate the hessian
@@ -789,4 +818,48 @@ getJoint2 <- function(kernel, alpha) {
   # print(knot.contribute)
   joint <- sum(knot.contribute)
   return(joint)
+}
+
+dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1, 
+                      thresh=0, update=NULL) {
+  
+  ns <- nrow(y)
+  nt <- ncol(y)
+  
+  if (is.null(end)) {
+    end <- length(mcmcoutput$xi)
+  }
+  dbar     <- mean(mcmcoutput$lly[start:end])
+  
+  if (is.null(dim(mcmcoutput$beta))) {
+    p <- 1
+    betabar  <- mean(mcmcoutput$beta[start:end])
+  } else {
+    p <- ncol(mcmcoutput$beta)
+    betabar  <- apply(mcmcoutput$beta[start:end, ], 2, mean)
+  }
+  
+  xibar <- mean(mcmcoutput$xi[start:end])
+  
+  if (nt == 1) {
+    abar <- apply(mcmcoutput$a[start:end, ], 2, mean)
+  } else {
+    abar <- apply(mcmcoutput$a[start:end, , ], c(2, 3), mean)
+  }
+  
+  alphabar <- mean(mcmcoutput$alpha[start:end])
+  rhobar   <- mean(mcmcoutput$rho[start:end])
+  
+  x.beta     <- getXBeta(x = x, ns = ns, nt = nt, beta = betabar)
+  z          <- getZ(xi = xibar, x.beta=x.beta, thresh=thresh)
+  z.star     <- z^(1 / alphabar)
+  w          <- stdW(makeW(dw2 = dw2, rho = rhobar))
+  w.star     <- w^(1 / alphabar)
+  theta.star <- getThetaStar(w.star = w.star, a = abar)
+  dthetabar  <- sum(logLikeY(y = y, theta.star = theta.star, z.star = z.star))
+  
+  pd  <- dbar - dthetabar
+  dic <- dbar + pd
+  
+  return(list(dic = dic, pd = pd, dbar = dbar, dthetabar = dthetabar))
 }

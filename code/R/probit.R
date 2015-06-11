@@ -32,6 +32,12 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   return(prob.success)
 }
 
+dic.spprob <- function(mcmcoutput, y, X, start = 1, end = NULL, update = NULL) {
+  if (is.null(end)) {
+    end <- length(mcmcoutput$bw)
+  }
+}
+
 # predictions
 probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                    logbw.mn=-1, logbw.sd=2, eps=0.01, a=0.1, b=0.1,

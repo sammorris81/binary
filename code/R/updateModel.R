@@ -147,10 +147,10 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
   }
   
   R <- sum(can.lly - cur.lly) +
-    sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
-    sum(dnorm(beta, beta.m, beta.s, log=TRUE))
-  dnorm(can.xi, xi.m, xi.s, log=TRUE) -
-    dnorm(xi, xi.m, xi.s, log=TRUE)
+       sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
+       sum(dnorm(beta, beta.m, beta.s, log=TRUE))
+       dnorm(can.xi, xi.m, xi.s, log=TRUE) -
+       dnorm(xi, xi.m, xi.s, log=TRUE)
   
   if (!is.na(R)) { if (log(runif(1)) < R) {
     beta     <- can.beta
