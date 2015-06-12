@@ -141,7 +141,7 @@ post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = 500)
 
-dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
+dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
 
 # fixing alpha and rho to be the true values
 mcmc.seed <- mcmc.seed + 1
@@ -163,6 +163,8 @@ post.prob.gev.1t <- pred.spgev(mcmcoutput = fit.gev.t, x.pred = X.p,
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = 500)
 
+dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)
+
 # spatial logit
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -178,6 +180,8 @@ yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
 
 post.prob.log.1 <- t(yp.sp.log$p.y.predictive.samples)
 
+dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)
+
 # spatial probit
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -187,6 +191,8 @@ fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
 post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = 500)
+
+dic.pro.1 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o, knots = knots)
 
 ####################################################################
 #### Get Brier scores
