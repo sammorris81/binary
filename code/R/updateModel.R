@@ -428,8 +428,13 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
 pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
                         thin=1, thresh=0, update=NULL) {
   if (is.null(end)) {
-    end <- nrow(mcmcoutput$beta)
+    end <- length(mcmcoutput$xi)
   }
+  
+  np     <- nrow(s.pred)
+  niters <- length(start:end)
+  nknots <- dim(mcmcoutput$a)[2]
+  
   if (is.null(dim(mcmcoutput$beta))) {
     p <- 1
   } else {
@@ -445,26 +450,25 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
       nt <- dim(x.pred)[2]
     }
   }
-  np    <- nrow(s.pred)
-  iters <- end - start + 1
+  
+  niters <- length(start:end)
+  beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
+  xi    <- mcmcoutput$xi[start:end]
+  a     <- mcmcoutput$a[start:end, , , drop = F]
+  alpha <- mcmcoutput$alpha[start:end]
+  rho   <- mcmcoutput$rho[start:end]
+  
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
-  prob.success <- matrix(NA, nrow=iters, ncol=np)
+  prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
 
-  for (i in start:end) {
-    for (t in 1:nt) {
-      if (p > 1) {
-        x.beta[, t] <- x.pred[, t, ] %*% mcmcoutput$beta[i, ]
-      } else {
-        x.beta[, t] <- x.pred[, t] * mcmcoutput$beta[i]
-      }
-    }
-
-    z <- getZ(xi = mcmcoutput$xi[i], x.beta=x.beta, thresh=thresh)
-    z.star       <- z^(1 / mcmcoutput$alpha[i])
-    w            <- stdW(makeW(dw2 = dw2p, rho = mcmcoutput$rho[i]))
-    w.star       <- w^(1 / mcmcoutput$alpha[i])
-    theta.star   <- getThetaStar(w.star = w.star, a = mcmcoutput$a[i, ])
+  for (i in 1:length(start:end)) {
+    x.beta       <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
+    z            <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
+    z.star       <- z^(1 / alpha[i])
+    w            <- stdW(makeW(dw2 = dw2p, rho = rho[i]))
+    w.star       <- w^(1 / alpha[i])
+    theta.star   <- getThetaStar(w.star = w.star, a = a[i, , ])
     theta.z.star <- -theta.star / z.star
     prob.success[i, ] <- 1 - exp(theta.z.star)
 

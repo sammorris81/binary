@@ -837,20 +837,13 @@ dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1,
 
   if (is.null(dim(mcmcoutput$beta))) {
     p    <- 1
-    beta <- matrix(mcmcoutput$beta[start:end], niters, 1)
   } else {
     p    <- ncol(mcmcoutput$beta)
-    beta <- mcmcoutput$beta[start:end, ]
   }
-
-  xi <- mcmcoutput$xi[start:end]
-
-  if (nt == 1) {
-    a <- array(mcmcoutput$a[start:end, ], dim=c(niters, nknots, 1))
-  } else {
-    a <- mcmcoutput$a[start:end, , ]
-  }
-
+  
+  beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
+  xi    <- mcmcoutput$xi[start:end]
+  a     <- mcmcoutput$a[start:end, , , drop = F]
   alpha <- mcmcoutput$alpha[start:end]
   rho   <- mcmcoutput$rho[start:end]
 
