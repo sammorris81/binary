@@ -119,6 +119,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   keepers.lly   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:thin) {
+    
     if (xibeta.joint) {  # update beta and xi
 #       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
 #                                     z=z, z.star=z.star, beta=beta,

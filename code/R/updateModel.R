@@ -148,7 +148,7 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
   
   R <- sum(can.lly - cur.lly) +
        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
-       sum(dnorm(beta, beta.m, beta.s, log=TRUE))
+       sum(dnorm(beta, beta.m, beta.s, log=TRUE)) + 
        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
        dnorm(xi, xi.m, xi.s, log=TRUE)
   
@@ -168,6 +168,54 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
                   att.beta=att.beta, acc.beta=acc.beta,
                   att.xi=att.xi, acc.xi=acc.xi)
   return(results)
+}
+
+updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, 
+                         x.beta, xi, x, xt, xtx.inv, xi.m, xi.s, cur.lly,
+                         acc.p, att.p, mh.p, acc.xi, att.xi, mh.xi, thresh=0) {
+  # xtx.inv = solve(t(x) %*% x)
+  # xt = t(x)
+  
+  # z should be ns x nt
+  
+  ns <- nrow(y)
+  nt <- ncol(y)
+  np <- length(beta)
+
+  # trying to get xi and beta using the marginal P(Y = 1)
+  cur.p     <- 1 - exp(-1 / z)  # will be ns x nt matrix
+  if (np == 1) {  
+    # intercept only model all elements in cur.p should be the same
+    can.pstar <- matrix(rnorm(1, log(cur.p[1]/(1 - cur.p[1])), mh.p), ns, nt)
+  } else {  # covariates in the model
+    can.pstar <- matrix(rnorm(ns * nt, log(cur.p / (1 - cur.p)), mh.p), ns, nt)
+  }
+  
+  can.p  <- 1 / (1 + exp(-can.pstar))  # ns x nt
+  
+  # extract beta for the new xi term
+  can.xi <- rnorm(1, xi, mh.xi)
+  can.x.beta <- (1 - (-1 / log(1 - can.p))^can.xi) / can.xi
+  
+  if (any(can.xi * (can.x.beta - thresh) > 1)) {
+    can.lly <- -Inf
+  } else {
+    can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
+    can.z.star <- can.z^alpha.inv
+    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+  }
+  
+  R <- sum(can.lly - cur.lly) +
+       dbeta(can.p[1], 1, 1, log=TRUE) - dbeta(cur.p[1], 1, 1, log=TRUE) +
+       dnorm(can.xi, xi.m, xi.s, log=TRUE) - dnorm(xi, xi.m, xi.s, log=TRUE)
+  
+  if (!is.na(R)) { if (log(runif(1)) < R) {
+    xi     <- can.xi
+    x.beta <- can.x.beta
+    beta   <- xtx.inv %*% xt * can.x.beta
+  }}
+  
+  
 }
 
 updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
@@ -216,7 +264,7 @@ updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
 
   R <- sum(can.lly - cur.lly) +
        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
-       sum(dnorm(beta, beta.m, beta.s, log=TRUE))
+       sum(dnorm(beta, beta.m, beta.s, log=TRUE)) +
        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
        dnorm(xi, xi.m, xi.s, log=TRUE)
 
