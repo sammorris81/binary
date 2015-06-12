@@ -95,7 +95,7 @@ cov.model <- "exponential"
 #### Get ML estimates for candidate distribution for GEV
 ####################################################################
 # plot the data
-plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1),
      main = "simulated dataset", xlab="", ylab="")
 train1.idx <- which(y[obs] == 1)
 test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
@@ -103,11 +103,11 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
-                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max,
                          threads=6)
 
-alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) *
                alpha.rng + alpha.min
 if (alpha.hat < 0.3) {
   alpha.hat <- 0.3
@@ -140,6 +140,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = 500)
+
+dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
 
 # fixing alpha and rho to be the true values
 mcmc.seed <- mcmc.seed + 1
@@ -238,7 +240,7 @@ cov.model <- "exponential"
 #### Get ML estimates for candidate distribution for GEV
 ####################################################################
 # plot the data
-plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1),
      main = "simulated dataset", xlab="", ylab="")
 train1.idx <- which(y[obs] == 1)
 test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
@@ -246,11 +248,11 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
-                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max,
                          threads=6)
 
-alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) *
                alpha.rng + alpha.min
 if (alpha.hat < 0.3) {
   alpha.hat <- 0.3
@@ -384,7 +386,7 @@ cov.model <- "exponential"
 #### Get ML estimates for candidate distribution for GEV
 ####################################################################
 # plot the data
-plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1),
      main = "simulated dataset", xlab="", ylab="")
 train1.idx <- which(y[obs] == 1)
 test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
@@ -392,11 +394,11 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
-                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max,
                          threads=6)
 
-alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) *
                alpha.rng + alpha.min
 if (alpha.hat < 0.3) {
   alpha.hat <- 0.3
@@ -509,7 +511,7 @@ cov.model <- "exponential"
 #### Get ML estimates for candidate distribution for GEV
 ####################################################################
 # plot the data
-plot(knots.t, ylim = c(0, 1), xlim = c(0, 1), 
+plot(knots.t, ylim = c(0, 1), xlim = c(0, 1),
      main = "simulated dataset", xlab="", ylab="")
 train1.idx <- which(y[obs] == 1)
 test1.idx <- which(y[!obs] == 1) + ntrain  # to get to the testing
@@ -517,11 +519,11 @@ points(s[train1.idx, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[test1.idx, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 # get initial values and fit pcl. parameter order: alpha, rho, xi, beta
-fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o, 
-                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max, 
+fit <- fit.rarebinaryCPP(c(0, rho.init, 0, -4), y = y.o, dw2 = dw2.o, d = d.o,
+                         cov=X.o, alpha.min = alpha.min, alpha.max = alpha.max,
                          threads=6)
 
-alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) * 
+alpha.hat  <- (exp(fit$par[1]) / (1 + exp(fit$par[1]))) *
                alpha.rng + alpha.min
 if (alpha.hat < 0.3) {
   alpha.hat <- 0.3
@@ -591,5 +593,5 @@ bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 0.0146
 ####################################################################
 #### Find DIC
 ####################################################################
-dic.log.4 <- spDiag(sp.obj = fit.logit, start = burn + 1, end = iters, 
+dic.log.4 <- spDiag(sp.obj = fit.logit, start = burn + 1, end = iters,
                     thin = 1, verbose = TRUE, n.report = 500)

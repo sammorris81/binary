@@ -16,10 +16,13 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   dp    <- as.matrix(rdist(s.pred, knots))
   prob.success <- matrix(NA, nrow=iters, ncol=np)
 
+  beta <- mcmcoutput$beta[start:end, , drop = F]
+  bw   <- mcmcoutput$bw[start:end]
+  alpha <- mcmcoutput$alpha[start:end, , drop = F]
+
   for (i in 1:iters) {
     # beta and bandwidth come directly from output
-    z.pred <- X.pred %*% mcmcoutput$beta[i, ] +
-              make.B(dp, mcmcoutput$bw[i]) %*% mcmcoutput$alpha[i, ]
+    z.pred <- X.pred %*% beta[i, ] + make.B(dp, bw[i]) %*% alpha[i, ]
     prob.success[i, ] <- pnorm(z.pred)
 
     if (!is.null(update)) {
@@ -32,10 +35,50 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   return(prob.success)
 }
 
-dic.spprob <- function(mcmcoutput, y, X, start = 1, end = NULL, update = NULL) {
+dic.spprob <- function(mcmcoutput, Y, X, s, knots,
+                       start = 1, end = NULL, update = NULL) {
   if (is.null(end)) {
     end <- length(mcmcoutput$bw)
   }
+
+  d <- rdist(s, knots)
+
+  beta  <- mcmcoutput$beta[start:end, , drop = F]
+  bw    <- mcmcoutput$bw[start:end]
+  alpha <- mcmcoutput$alpha[start:end, , drop = F]
+
+  betabar  <- apply(beta, 2, mean)
+  bwbar    <- mean(bw)
+  alphabar <- apply(alpha, 2, mean)
+  Bbar     <- make.B(d, bwbar)
+  BAbar    <- Bbar %*% alphabar
+  XBbar    <- X %*% betabar
+
+  dthetabar <- -2 * sum(dbinom(Y, 1, pnorm(XBbar + BAbar), log = TRUE))
+
+  niters <- length(start:end)
+  dbar   <- 0
+  for (i in 1:end) {
+    beta.i  <- beta[i, ]
+    bw.i    <- bw[i]
+    alpha.i <- alpha[i, ]
+    B       <- make.B(d, bw.i)
+    BA      <- B %*% alpha.i
+    XB      <- X %*% beta.i
+
+    dbar  <- dbar - 2 * sum(dbinom(Y, 1, pnorm(XB + BA), log = TRUE)) / niters
+    if (!is.null(update)) {
+      if (i %% update == 0) {
+        cat("\t Iter", i, "\n")
+      }
+    }
+  }
+
+  pd  <- dbar - dthetabar
+  dic <- dbar + pd
+
+  results <- list(dic = dic, pd = pd, dbar = dbar, dthetabar = dthetabar)
+  return(results)
 }
 
 # predictions

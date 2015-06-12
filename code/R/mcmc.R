@@ -269,9 +269,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       # update rho
       if (!rho.fix) {
         rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                cur.lly=cur.lly, z.star=z.star, w=w, w.star=w.star,
-                                dw2=dw2, rho=rho, rho.upper=rho.upper,
-                                acc=acc.rho, att=att.rho, mh=mh.rho, iter=iter)
+                                cur.lly=cur.lly, z.star=z.star, w=w,
+                                w.star=w.star, dw2=dw2, rho=rho,
+                                rho.upper=rho.upper, acc=acc.rho, att=att.rho,
+                                mh=mh.rho, iter=iter)
         rho        <- rho.update$rho
         w          <- rho.update$w
         w.star     <- rho.update$w.star
@@ -306,7 +307,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       keepers.alpha[iter]  <- alpha
       keepers.rho[iter]    <- rho
     }
-    keepers.lly[iter] <- sum(cur.lly)
+    keepers.lly[iter] <- sum(logLikeY(y = y, theta.star = theta.star,
+                                      z.star = z.star))
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)

@@ -219,7 +219,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
     }
     ns <- nrow(x) / nt
   }
-  
+
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
 
@@ -539,10 +539,10 @@ pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1,
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
   }
-  
+
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) * 
+  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
     (alpha.max - alpha.min) + alpha.min
   rho <- exp(rho.star)
 
@@ -642,35 +642,35 @@ pairwise.rarebinary4CPP <- function(par, alpha, d, dw2, y, cov, max.dist,
   # y: observed data (ns)
   # dw2: squared distance between sites and knots (ns x nknots)
   # cov: covariates (ns x np)
-  
+
   npars  <- length(par)
   logrho <- par[1]
   xi     <- par[2]
   beta   <- par[3:npars]
-  
+
   rho <- exp(logrho)
-  
+
   ns <- nrow(y)
   nt <- ncol(y)
-  
+
   W  <- stdW(makeW(dw2, rho))  # should be ns x nknots
   if (length(beta) == 1) {
     x.beta <- matrix(cov * beta, ns, nt)
   } else {
     x.beta <- cov %*% beta
   }
-  
+
   z      <- getZ(xi, x.beta)       # should be ns long
-  
+
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-  
+
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
                     rho = rho, d = d, max_dist = max.dist, threads = threads)
-  
+
   return(-ll)  # optim minimizes, so return neg loglike
 }
 
@@ -678,27 +678,27 @@ ind.rarebinary <- function(par, y, cov) {
   npars <- length(par)
   xi    <- par[1]
   beta  <- par[2:npars]
-  
+
   ns <- nrow(y)
   nt <- ncol(y)
-  
+
   if (length(beta) == 1) {
     x.beta <- matrix(cov * beta, ns, nt)
   } else {
     x.beta <- cov %*% beta
   }
-  
+
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  
+
   z <- getZ(xi, x.beta)
-  
+
   these <- which(y == 1)
   ll.y <- matrix(NA, ns, nt)
   ll.y[-these] <- -1 / z[-these]
   ll.y[these]  <- log(1 - exp(-1 / z[these]))
-  
+
   return(-sum(ll.y))
 }
 
@@ -713,7 +713,7 @@ fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov,
 
   results <- optim(init.par, pairwise.rarebinaryCPP, y = y, dw2 = dw2,
                    d = d, max.dist = max.dist, cov = cov, threads = threads,
-                   alpha.min = alpha.min, alpha.max = alpha.max, 
+                   alpha.min = alpha.min, alpha.max = alpha.max,
                    method = "BFGS", hessian = TRUE)
 
   return(results)
@@ -721,36 +721,36 @@ fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov,
 
 # traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinary2CPP <- function(init.par, alpha, rho, y, dw2, d, 
+fit.rarebinary2CPP <- function(init.par, alpha, rho, y, dw2, d,
                                max.dist = NULL, cov, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
-  
+
   W <- stdW(makeW(rho, dw2))
-  
-  results <- optim(init.par, pairwise.rarebinary2CPP, 
+
+  results <- optim(init.par, pairwise.rarebinary2CPP,
                    alpha = alpha, rho = rho,
-                   d = d, y = y, W = W, cov = cov, 
+                   d = d, y = y, W = W, cov = cov,
                    max.dist = max.dist, threads = threads,
                    method = "BFGS", hessian = TRUE)
-  
+
   return(results)
 }
 
 # traditionally, they only use sites that are close together.
 # adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinary4CPP <- function(init.par, alpha, y, dw2, d, 
+fit.rarebinary4CPP <- function(init.par, alpha, y, dw2, d,
                                max.dist = NULL, cov, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
-  
-  results <- optim(init.par, pairwise.rarebinary4CPP, 
-                   alpha = alpha, d=d, y = y, dw2 = dw2, cov = cov, 
+
+  results <- optim(init.par, pairwise.rarebinary4CPP,
+                   alpha = alpha, d=d, y = y, dw2 = dw2, cov = cov,
                    max.dist = max.dist, threads = threads,
                    method = "BFGS", hessian = TRUE)
-  
+
   return(results)
 }
 
@@ -820,46 +820,59 @@ getJoint2 <- function(kernel, alpha) {
   return(joint)
 }
 
-dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1, 
+dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1,
                       thresh=0, update=NULL) {
-  
+
   ns <- nrow(y)
   nt <- ncol(y)
-  
+
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
   }
-  dbar     <- mean(mcmcoutput$lly[start:end])
-  
+
+  niters <- length(start:end)
+  nknots <- dim(mcmcoutput$a)[2]
+
+  dbar <- -2 * mean(mcmcoutput$lly[start:end])
+
   if (is.null(dim(mcmcoutput$beta))) {
-    p <- 1
-    betabar  <- mean(mcmcoutput$beta[start:end])
+    p    <- 1
+    beta <- matrix(mcmcoutput$beta[start:end], niters, 1)
   } else {
-    p <- ncol(mcmcoutput$beta)
-    betabar  <- apply(mcmcoutput$beta[start:end, ], 2, mean)
+    p    <- ncol(mcmcoutput$beta)
+    beta <- mcmcoutput$beta[start:end, ]
   }
-  
-  xibar <- mean(mcmcoutput$xi[start:end])
-  
+
+  xi <- mcmcoutput$xi[start:end]
+
   if (nt == 1) {
-    abar <- apply(mcmcoutput$a[start:end, ], 2, mean)
+    a <- array(mcmcoutput$a[start:end, ], dim=c(niters, nknots, 1))
   } else {
-    abar <- apply(mcmcoutput$a[start:end, , ], c(2, 3), mean)
+    a <- mcmcoutput$a[start:end, , ]
   }
-  
-  alphabar <- mean(mcmcoutput$alpha[start:end])
-  rhobar   <- mean(mcmcoutput$rho[start:end])
-  
-  x.beta     <- getXBeta(x = x, ns = ns, nt = nt, beta = betabar)
+
+  alpha <- mcmcoutput$alpha[start:end]
+  rho   <- mcmcoutput$rho[start:end]
+
+  betabar  <- apply(beta, 2, mean)
+  xibar    <- mean(xi)
+  abar     <- apply(a, c(2, 3), mean)
+  alphabar <- mean(alpha)
+  rhobar   <- mean(rho)
+
+  x.beta     <- x %*% betabar
   z          <- getZ(xi = xibar, x.beta=x.beta, thresh=thresh)
   z.star     <- z^(1 / alphabar)
   w          <- stdW(makeW(dw2 = dw2, rho = rhobar))
   w.star     <- w^(1 / alphabar)
   theta.star <- getThetaStar(w.star = w.star, a = abar)
-  dthetabar  <- sum(logLikeY(y = y, theta.star = theta.star, z.star = z.star))
-  
+  prob       <- 1 - exp(-theta.star / z.star)
+  dthetabar  <- -2 * sum(logLikeY(y, theta.star = theta.star,
+                                    z.star = z.star))
+
   pd  <- dbar - dthetabar
   dic <- dbar + pd
-  
-  return(list(dic = dic, pd = pd, dbar = dbar, dthetabar = dthetabar))
+
+  results <- list(dic = dic, pd = pd, dbar = dbar, dthetabar = dthetabar)
+  return(results)
 }
