@@ -141,8 +141,6 @@ post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = 500)
 
-dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
-
 # fixing alpha and rho to be the true values
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -163,8 +161,6 @@ post.prob.gev.1t <- pred.spgev(mcmcoutput = fit.gev.t, x.pred = X.p,
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = 500)
 
-dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)
-
 # spatial logit
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -180,8 +176,6 @@ yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
 
 post.prob.log.1 <- t(yp.sp.log$p.y.predictive.samples)
 
-dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)
-
 # spatial probit
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
@@ -192,7 +186,7 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = 500)
 
-dic.pro.1 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o, knots = knots)
+
 
 ####################################################################
 #### Get Brier scores
@@ -201,6 +195,12 @@ bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0506
 bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0504
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
 bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0360
+dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
+dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)
+dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.pro.1 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
+                        knots = knots)
+
 
 ####################################################################
 #### Try with fewer 1s
@@ -344,6 +344,11 @@ bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0187
 bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0187
 bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
 bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0147
+dic.gev.2 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
+dic.gev.2t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)
+dic.log.2 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.pro.2 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
+                        knots = knots)
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -469,6 +474,10 @@ post.prob.pro.3 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0242
 bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0195
 bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0198
+dic.gev.3 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
+dic.log.3 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.pro.3 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
+                        knots = knots)
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -595,6 +604,10 @@ post.prob.pro.4 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 0.0152
 bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 0.0166
 bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 0.0146
+dic.gev.4 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
+dic.log.4 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.pro.4 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
+                        knots = knots)
 
 ####################################################################
 #### Find DIC
