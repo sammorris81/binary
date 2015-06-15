@@ -178,24 +178,29 @@ updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta,
   
   # z should be ns x nt
   
+  att.p  <- att.p + 1
+  att.xi <- att.xi + 1
+  
   ns <- nrow(y)
   nt <- ncol(y)
   np <- length(beta)
+  alpha.inv <- 1 / alpha
 
-  # trying to get xi and beta using the marginal P(Y = 1)
-  cur.p     <- 1 - exp(-1 / z)  # will be ns x nt matrix
+  # trying to get xi and beta using the marginal P(Y = 0)
+  cur.p     <- exp(-1 / z)  # will be ns x nt matrix
   if (np == 1) {  
     # intercept only model all elements in cur.p should be the same
-    can.pstar <- matrix(rnorm(1, log(cur.p[1]/(1 - cur.p[1])), mh.p), ns, nt)
+    can.pstar <- rnorm(1, log(cur.p[1]/(1 - cur.p[1])), mh.p)
+    can.p     <- 1 / (1 + exp(-can.pstar))
+    can.p     <- matrix(can.p, ns, nt)
   } else {  # covariates in the model
     can.pstar <- matrix(rnorm(ns * nt, log(cur.p / (1 - cur.p)), mh.p), ns, nt)
+    can.p     <- 1 / (1 + exp(-can.pstar))
   }
-  
-  can.p  <- 1 / (1 + exp(-can.pstar))  # ns x nt
   
   # extract beta for the new xi term
   can.xi <- rnorm(1, xi, mh.xi)
-  can.x.beta <- (1 - (-1 / log(1 - can.p))^can.xi) / can.xi
+  can.x.beta <- (1 - (-1 / log(can.p))^can.xi) / can.xi
   
   if (any(can.xi * (can.x.beta - thresh) > 1)) {
     can.lly <- -Inf
@@ -210,81 +215,88 @@ updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta,
        dnorm(can.xi, xi.m, xi.s, log=TRUE) - dnorm(xi, xi.m, xi.s, log=TRUE)
   
   if (!is.na(R)) { if (log(runif(1)) < R) {
-    xi     <- can.xi
-    x.beta <- can.x.beta
-    beta   <- xtx.inv %*% xt * can.x.beta
+    beta    <- xtx.inv %*% (xt %*% can.x.beta)
+    x.beta  <- can.x.beta
+    xi      <- can.xi
+    z       <- can.z
+    z.star  <- can.z.star
+    cur.lly <- can.lly
+    acc.xi  <- acc.xi + 1
+    acc.p   <- acc.p + 1
   }}
   
-  
-}
-
-updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
-                         x.beta, xi, x, xi.m, xi.s, cur.lly,
-                         can.mean, can.var,
-                         acc.beta, att.beta, mh.beta,
-                         acc.xi, att.xi, mh.xi, thresh=0) {
-  np  <- length(beta) + 1  # using later to get the end of the vector
-  ns  <- nrow(y)
-  nt  <- ncol(y)
-  att.beta <- att.beta + 1
-  att.xi   <- att.xi + 1
-  alpha.inv <- 1 / alpha
-
-  can.xibeta <- rmvt(n = 1, sigma = can.var, df = 15, delta = can.mean)
-
-  can.xi   <- can.xibeta[1]
-  can.beta <- can.xibeta[2:np]
-
-  can.x.beta <- matrix(NA, ns, nt)
-  if (nt == 1) {
-    if (np == 1) {
-      can.x.beta <- x * can.beta
-    } else {
-      can.x.beta <- x %*% can.beta
-    }
-  } else {
-    for (t in 1:nt) {
-      start <- (t - 1) * ns + 1
-      end   <- t * ns
-      if (np == 1) {
-        can.x.beta[, t] <- x[start:end, t] * can.beta
-      } else {
-        can.x.beta[, t] <- x[start:end, t] %*% can.beta
-      }
-    }
-  }
-
-  if (any(can.xi * (can.x.beta - thresh) > 1)) {
-    can.lly <- -Inf
-  } else {
-    can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
-    can.z.star <- can.z^alpha.inv
-    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
-  }
-
-  R <- sum(can.lly - cur.lly) +
-       sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
-       sum(dnorm(beta, beta.m, beta.s, log=TRUE)) +
-       dnorm(can.xi, xi.m, xi.s, log=TRUE) -
-       dnorm(xi, xi.m, xi.s, log=TRUE)
-
-  if (!is.na(R)) { if (log(runif(1)) < R) {
-    beta     <- can.beta
-    x.beta   <- can.x.beta
-    xi       <- can.xi
-    z        <- can.z
-    z.star   <- can.z.star
-    cur.lly  <- can.lly
-    acc.beta <- acc.beta + 1
-    acc.xi   <- acc.xi + 1
-  }}
-
-  results <- list(beta=beta, x.beta=x.beta,
-                  xi=xi, z=z, z.star=z.star, cur.lly=cur.lly,
-                  att.beta=att.beta, acc.beta=acc.beta,
+  results <- list(beta=beta, x.beta=x.beta, xi=xi, z=z, z.star=z.star,
+                  cur.lly=cur.lly, att.p=att.p, acc.p=acc.p,
                   att.xi=att.xi, acc.xi=acc.xi)
-  return(results)
 }
+
+# updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
+#                          x.beta, xi, x, xi.m, xi.s, cur.lly,
+#                          can.mean, can.var,
+#                          acc.beta, att.beta, mh.beta,
+#                          acc.xi, att.xi, mh.xi, thresh=0) {
+#   np  <- length(beta) + 1  # using later to get the end of the vector
+#   ns  <- nrow(y)
+#   nt  <- ncol(y)
+#   att.beta <- att.beta + 1
+#   att.xi   <- att.xi + 1
+#   alpha.inv <- 1 / alpha
+# 
+#   can.xibeta <- rmvt(n = 1, sigma = can.var, df = 15, delta = can.mean)
+# 
+#   can.xi   <- can.xibeta[1]
+#   can.beta <- can.xibeta[2:np]
+# 
+#   can.x.beta <- matrix(NA, ns, nt)
+#   if (nt == 1) {
+#     if (np == 1) {
+#       can.x.beta <- x * can.beta
+#     } else {
+#       can.x.beta <- x %*% can.beta
+#     }
+#   } else {
+#     for (t in 1:nt) {
+#       start <- (t - 1) * ns + 1
+#       end   <- t * ns
+#       if (np == 1) {
+#         can.x.beta[, t] <- x[start:end, t] * can.beta
+#       } else {
+#         can.x.beta[, t] <- x[start:end, t] %*% can.beta
+#       }
+#     }
+#   }
+# 
+#   if (any(can.xi * (can.x.beta - thresh) > 1)) {
+#     can.lly <- -Inf
+#   } else {
+#     can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
+#     can.z.star <- can.z^alpha.inv
+#     can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+#   }
+# 
+#   R <- sum(can.lly - cur.lly) +
+#        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
+#        sum(dnorm(beta, beta.m, beta.s, log=TRUE)) +
+#        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
+#        dnorm(xi, xi.m, xi.s, log=TRUE)
+# 
+#   if (!is.na(R)) { if (log(runif(1)) < R) {
+#     beta     <- can.beta
+#     x.beta   <- can.x.beta
+#     xi       <- can.xi
+#     z        <- can.z
+#     z.star   <- can.z.star
+#     cur.lly  <- can.lly
+#     acc.beta <- acc.beta + 1
+#     acc.xi   <- acc.xi + 1
+#   }}
+# 
+#   results <- list(beta=beta, x.beta=x.beta,
+#                   xi=xi, z=z, z.star=z.star, cur.lly=cur.lly,
+#                   att.beta=att.beta, acc.beta=acc.beta,
+#                   att.xi=att.xi, acc.xi=acc.xi)
+#   return(results)
+# }
 
 # update the random effects for theta.star
 updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
@@ -362,6 +374,11 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   can.lly        <- logLikeY(y=y, theta.star=can.theta.star, z.star=can.z.star)
   can.llps       <- matrix(NA, nknots, nt)
   can.llps       <- dPS.Rcpp(a, can.alpha, mid.points, bin.width)
+  
+  can.kernel <- kernelCalc(z = z, w = w, a = a, alpha = can.alpha)
+  cur.kernel <- kernelCalc(z = z, w = w, a = a, alpha = alpha)
+  cur.lly    <- logLikeY2(y = y, kernel = cur.kernel)
+  can.lly    <- logLikeY2(y = y, kernel = can.kernel)
 
   if (sum(is.nan(can.w.star)) > 0) {
     print(can.alpha)
@@ -384,7 +401,7 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
     can.alpha <<- can.alpha
     z <<- z
     a <<- a
-    print("NaN error in can.lly for alpha update")
+    stop("NaN error in can.lly for alpha update")
   }
 
   # for(t in 1:nt) {
@@ -394,24 +411,27 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   # }
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
-       dnorm(can.alpha.star, log=TRUE) - dnorm(alpha.star, log=TRUE)
-       # dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
-       # dbeta(alpha, alpha.a, alpha.b, log=TRUE)
+       # dnorm(can.alpha.star, log=TRUE) - dnorm(alpha.star, log=TRUE)
+       dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
+       dbeta(alpha, alpha.a, alpha.b, log=TRUE)
 
-  # if ((iter > 3000) & (iter %% 50 == 0)) {
-  #   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
-  #   cur.llps <- dPS.Rcpp(a, alpha, mid.points, bin.width)
-  #   print(paste("can.alpha = ", can.alpha, sep=""))
-  #   print(paste("alpha = ", alpha, sep=""))
-  #   print(paste("lldiff = ", sum(can.lly - cur.lly), sep=""))
-  #   print(paste("alldiff = ", sum(can.llps - cur.llps), sep=""))
-  #   print(paste("R = ", R, sep=""))
-  # }
+#   if ((iter > 3000) & (iter %% 50 == 0)) {
+#     can.lly <- logLikeY(y = y, theta.star = can.theta.star, z.star = can.z.star, 
+#                         print = TRUE)
+#     cur.lly <- logLikeY(y = y, theta.star = theta.star, z.star = z.star, 
+#                         print = TRUE)
+#     cur.llps <- dPS.Rcpp(a, alpha, mid.points, bin.width)
+#     print(paste("can.alpha = ", can.alpha, sep=""))
+#     print(paste("alpha = ", alpha, sep=""))
+#     print(paste("lldiff = ", sum(can.lly - cur.lly), sep=""))
+#     print(paste("alldiff = ", sum(can.llps - cur.llps), sep=""))
+#     print(paste("R = ", R, sep=""))
+#   }
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     alpha      <- can.alpha
-    w.star     <- can.w.star
-    z.star     <- can.z.star
+    w.star     <- w^can.alpha.inv
+    z.star     <- z^can.alpha.inv
     theta.star <- can.theta.star
     cur.lly    <- can.lly
     cur.llps   <- can.llps

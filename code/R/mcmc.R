@@ -83,6 +83,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   }
 
   x.beta <- getXBeta(x, ns, nt, beta)
+  xt <- t(x)
+  xtx.inv <- solve(xt %*% x)
 
   z <- getZ(xi=xi, x.beta=x.beta)
   z.star <- z^(1 / alpha)
@@ -121,7 +123,28 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   for (iter in 1:iters) { for (ttt in 1:thin) {
     
     if (xibeta.joint) {  # update beta and xi
+      xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
+                                    z=z, z.star=z.star, beta=beta,
+                                    #beta.m=beta.m, beta.s=beta.s,
+                                    x.beta=x.beta, xi=xi, x=x, 
+                                    xt=xt, xtx.inv=xtx.inv,
+                                    xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+                                    acc.p=acc.beta, att.p=att.beta,
+                                    mh.p=mh.beta,
+                                    acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+                                    thresh=0)
 #       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
+#                                     z=z, z.star=z.star, beta=beta,
+#                                     beta.m=beta.m, beta.s=beta.s,
+#                                     x.beta=x.beta, xi=xi, x=x, 
+#                                     xt=xt, xtx.inv=xtx.inv,
+#                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+#                                     can.mean=xibeta.hat, can.var=xibeta.var,
+#                                     acc.beta=acc.beta, att.beta=att.beta,
+#                                     mh.beta=mh.beta,
+#                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+#                                     thresh=0)
+#       xibeta.update <- updateXiBeta2(y=y, theta.star=theta.star, alpha=alpha,
 #                                     z=z, z.star=z.star, beta=beta,
 #                                     beta.m=beta.m, beta.s=beta.s,
 #                                     x.beta=x.beta, xi=xi, x=x,
@@ -131,24 +154,14 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 #                                     mh.beta=mh.beta,
 #                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
 #                                     thresh=0)
-      xibeta.update <- updateXiBeta2(y=y, theta.star=theta.star, alpha=alpha,
-                                    z=z, z.star=z.star, beta=beta,
-                                    beta.m=beta.m, beta.s=beta.s,
-                                    x.beta=x.beta, xi=xi, x=x,
-                                    xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-                                    can.mean=xibeta.hat, can.var=xibeta.var,
-                                    acc.beta=acc.beta, att.beta=att.beta,
-                                    mh.beta=mh.beta,
-                                    acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
-                                    thresh=0)
       beta     <- xibeta.update$beta
       x.beta   <- xibeta.update$x.beta
       xi       <- xibeta.update$xi
       z        <- xibeta.update$z
       z.star   <- xibeta.update$z.star
       cur.lly  <- xibeta.update$cur.lly
-      att.beta <- xibeta.update$att.beta
-      acc.beta <- xibeta.update$acc.beta
+      att.beta <- xibeta.update$att.p
+      acc.beta <- xibeta.update$acc.p
       att.xi   <- xibeta.update$att.xi
       acc.xi   <- xibeta.update$acc.xi
 
@@ -225,7 +238,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       cur.lly    <- a.update$cur.lly
       cur.llps   <- a.update$cur.llps
 
-      # not going to worry about tuning the a terms at the moment
+      # adjust the candidate standard deviations
       if (iter < burn / 2) {
         level <- get.level.1(old.a, cuts)
         for (j in 1:length(mh.a)) {

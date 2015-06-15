@@ -113,6 +113,19 @@ getThetaStar <- function(w.star, a) {
   return(theta.star)
 }
 
+# trying a slightly different calculation
+kernelCalc <- function(z, w, a, alpha) {
+  nknots <- ncol(w)
+  ns     <- nrow(w)
+  z <- matrix(rep(z, nknots), ns, nknots)
+  wz.star <- exp((log(w) - log(z)) / alpha)
+  wz.star <- ifelse(wz.star < 1e-7, 0, wz.star)
+  if (length(a) == 1) {kernel <- wz.star * a}
+  if (length(a) > 1) {kernel <- wz.star %*% a}
+  
+  return(kernel)
+}
+
 # get the kernel weighting
 makeW <- function(dw2, rho) {
   w <- exp(-0.5 * dw2 / (rho^2))
@@ -128,8 +141,9 @@ stdW <- function(x, single=FALSE) {
 
 
 # get find the ll for y - returns ns x nt matrix for each site/day
-logLikeY <- function(y, theta.star, z.star) {
+logLikeY <- function(y, theta.star, z.star, print = F) {
   theta.z.star <- -theta.star / z.star
+  
   if (!is.null(dim(y))) {
     ll.y <- matrix(-Inf, dim(y))
   } else {
@@ -140,6 +154,10 @@ logLikeY <- function(y, theta.star, z.star) {
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
   these <- which(y == 1)
+  if (print) {
+    print(as.vector(theta.star))
+    print(unique(z.star))
+  }
   ll.y[-these] <- theta.z.star[-these]
   ll.y[these]  <- log(1 - exp(theta.z.star[these]))
   # if (sum(is.nan(ll.y)) > 0) {
@@ -147,6 +165,22 @@ logLikeY <- function(y, theta.star, z.star) {
   #   print(theta.z.star[these])
   #   # print(1 - exp(theta.z.star[these]))
   # }
+  return(ll.y)
+}
+
+logLikeY2 <- function(y, kernel, print = F) {
+  if (!is.null(dim(y))) {
+    ll.y <- matrix(-Inf, dim(y))
+  } else {
+    ll.y <- rep(-Inf, length(y))
+  }
+  
+  # numerical stability issue. originally was using
+  # (1 - y) * P(Y = 0) + y * P(Y = 1)
+  # would return NaN because 0 * -Inf is not a number
+  these <- which(y == 1)
+  ll.y[-these] <- -kernel[-these]
+  ll.y[these]  <- log(1 - exp(-kernel[these]))
   return(ll.y)
 }
 

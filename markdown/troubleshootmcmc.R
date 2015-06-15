@@ -122,20 +122,32 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 #### Fit MCMC
 ####################################################################
 # spatial GEV
+rho.hat <- rho.t
+alpha.hat <- alpha.t
+xibeta.hat <- c(xi.t, -data$thresh)
+xibeta.var <- matrix(c(0.4, -0.2, -0.2, 1.4))
+fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
+
 mcmc.seed <- 1
 set.seed(mcmc.seed)
+iters <- 500
+update <- 50
+burn <- 100
+Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 200, xi.attempts = 200,
-                alpha.attempts = 7500, rho.attempts = 100,
+                beta.attempts = 50, xi.attempts = 50,
+                alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
                 alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
+Rprof(NULL)
+summaryRprof(filename = "Rprof.out", lines = "show")
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
@@ -191,15 +203,15 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0506
-bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0504
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0474
+bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0470
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
 bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0360
-dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
-dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)
-dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -738
+dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)  # 134
+dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 446.68
 dic.pro.1 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
-                        knots = knots)
+                        knots = knots)  # 268
 
 
 ####################################################################
@@ -344,11 +356,11 @@ bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0187
 bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0187
 bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
 bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0147
-dic.gev.2 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
-dic.gev.2t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)
-dic.log.2 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.gev.2 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # 26.7
+dic.gev.2t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)  # -33.4
+dic.log.2 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 96.68
 dic.pro.2 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
-                        knots = knots)
+                        knots = knots)  # 60.8
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -471,13 +483,13 @@ post.prob.pro.3 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0242
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0237
 bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0195
 bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0198
-dic.gev.3 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
-dic.log.3 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.gev.3 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -7328
+dic.log.3 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 138.7
 dic.pro.3 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
-                        knots = knots)
+                        knots = knots)  # 151
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -601,13 +613,13 @@ post.prob.pro.4 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 0.0152
+bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 0.0159
 bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 0.0166
 bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 0.0146
-dic.gev.4 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)
-dic.log.4 <- spDiag(fit.logit, start = burn + 1, end = iters)
+dic.gev.4 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -4522
+dic.log.4 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 78.6
 dic.pro.4 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
-                        knots = knots)
+                        knots = knots)  # 73.4
 
 ####################################################################
 #### Find DIC
