@@ -3,6 +3,10 @@ if (!exists("dPS.Rcpp")) {
   source('llps_cpp.R')
 }
 
+if (!exists("ifelsematCPP")) {
+  sourceCpp(file = "ifelse.cpp")
+}
+
 ################################################################################
 # Common data transformations
 ################################################################################
@@ -113,15 +117,37 @@ getThetaStar <- function(w.star, a) {
   return(theta.star)
 }
 
+# storing each day as an element of a list
+getwzStar <- function(z, w, alpha) {
+  nknots  <- ncol(w)
+  ns      <- nrow(w)
+  nt      <- ncol(z)
+  
+  wz.star <- array(NA, dim=c(ns, nknots, nt))
+  for (t in 1:nt) {
+    z.t          <- matrix(rep(z[, t], knots), ns, nknots)
+    wz.star[, , t] <- exp((log(w) - log(z.t)) / alpha)
+    wz.star[, , t] <- ifelsematCPP(wz.star[[t]], 1e-7)
+  }
+  
+  return(wz.star)
+}
+
 # trying a slightly different calculation
-kernelCalc <- function(z, w, a, alpha) {
-  nknots <- ncol(w)
-  ns     <- nrow(w)
-  z <- matrix(rep(z, nknots), ns, nknots)
-  wz.star <- exp((log(w) - log(z)) / alpha)
-  wz.star <- ifelse(wz.star < 1e-7, 0, wz.star)
-  if (length(a) == 1) {kernel <- wz.star * a}
-  if (length(a) > 1) {kernel <- wz.star %*% a}
+getKernel <- function(wz.star, a) {
+  nt <- dim(wz.star)[3]
+  nknots <- dim(wz.star)[2]
+  ns <- dim(wz.star)[1]
+  
+  kernel <- matrix(NA, nrow = ns, ncol = nt)
+  for (t in 1:nt) {
+    a.t <- a[, t]
+    if (nknots == 1) {
+      kernel[, t] <- wz.star[, , t] * a.t  # wz.star will be length ns
+    } else if (nknots > 1) {
+      kernel[, t] <- wz.star[, , t] %*% a.t  # wz.star will be ns x nknots
+    }
+  }
   
   return(kernel)
 }
@@ -170,7 +196,7 @@ logLikeY <- function(y, theta.star, z.star, print = F) {
 
 logLikeY2 <- function(y, kernel, print = F) {
   if (!is.null(dim(y))) {
-    ll.y <- matrix(-Inf, dim(y))
+    ll.y <- matrix(-Inf, nrow(y), ncol(y))
   } else {
     ll.y <- rep(-Inf, length(y))
   }
@@ -179,6 +205,7 @@ logLikeY2 <- function(y, kernel, print = F) {
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
   these <- which(y == 1)
+  for (t in 1:nt)
   ll.y[-these] <- -kernel[-these]
   ll.y[these]  <- log(1 - exp(-kernel[these]))
   return(ll.y)

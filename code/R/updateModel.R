@@ -1,4 +1,5 @@
 # update the beta term for the linear model
+# TODO: still need to update this for using the kernel of logLikeY2
 updateBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
                        x.beta, xi, x, cur.lly, acc, att, mh, thresh=0) {
   # tried a block update for the beta update, but it doesn't do as well
@@ -299,7 +300,7 @@ updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta,
 # }
 
 # update the random effects for theta.star
-updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
+updateA <- function(y, kernel, a, alpha, cur.lly, cur.llps, wz.star,
                     mid.points, bin.width, mh, cuts) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -312,15 +313,14 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
       can.a          <- exp(rnorm(1, log(cur.a), mh[l1]))
       l2             <- get.level(can.a, cuts)
       # can.theta.star only changes at a site when it's near the knot
-      can.theta.star <- theta.star[, t] + w.star[, k] * (can.a - cur.a)
+      can.kernel <- kernel[, t] + wz.star[, k, t] * (can.a - cur.a)
       if (sum(can.theta.star <= 0) > 0) {  # numerical stability
         can.llps  <- -Inf
         can.lly.t <- -Inf
       } else {
         can.llps  <- dPS.Rcpp(a=can.a, alpha=alpha,
                               mid.points=mid.points, bin.width=bin.width)
-        can.lly.t <- logLikeY(y=y[, t], theta.star=can.theta.star,
-                              z.star=z.star[, t])
+        can.lly.t <- logLikeY2(y=y[, t], kernel = can.kernel)
       }
 
       R <- sum(can.lly.t - cur.lly.t) +
@@ -330,7 +330,7 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
 
       if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
         a[k, t]         <- can.a
-        theta.star[, t] <- can.theta.star
+        kernel[, t]     <- can.kernel
         cur.lly.t       <- can.lly.t
         cur.llps[k, t]  <- can.llps
       }}
@@ -347,8 +347,8 @@ updateA <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z.star, w.star,
     print("NaN error in lly for a update")
   }
 
-  results <- list(a=a, theta.star=theta.star,
-                  cur.lly=cur.lly, cur.llps=cur.llps)
+  results <- list(a = a, kernel = kernel, 
+                  cur.lly = cur.lly, cur.llps = cur.llps)
   return(results)
 }
 
