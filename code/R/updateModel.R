@@ -171,9 +171,10 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
   return(results)
 }
 
-updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, 
-                         x.beta, xi, x, xt, xtx.inv, xi.m, xi.s, cur.lly,
-                         acc.p, att.p, mh.p, acc.xi, att.xi, mh.xi, thresh=0) {
+updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel, 
+                         a, x.beta, xi, x, xt, xtx.inv, xi.m, xi.s, cur.lly,
+                         acc.p, att.p, mh.p, acc.xi, att.xi, mh.xi, 
+                         thresh = 0) {
   # xtx.inv = solve(t(x) %*% x)
   # xt = t(x)
   
@@ -206,29 +207,32 @@ updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta,
   if (any(can.xi * (can.x.beta - thresh) > 1)) {
     can.lly <- -Inf
   } else {
-    can.z <- getZ(xi=can.xi, x.beta=can.x.beta, thresh=thresh)
-    can.z.star <- can.z^alpha.inv
-    can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
+    can.z <- getZ(xi = can.xi, x.beta = can.x.beta, thresh = thresh)
+    can.wz.star <- getwzStar(z = can.z, w = w, alpha = alpha)
+    can.kernel  <- getKernel(wz.star = can.wz.star, a = a)
+    can.lly <- logLikeY2(y = y, kernel = can.kernel)
   }
   
   R <- sum(can.lly - cur.lly) +
-       dbeta(can.p[1], 1, 1, log=TRUE) - dbeta(cur.p[1], 1, 1, log=TRUE) +
-       dnorm(can.xi, xi.m, xi.s, log=TRUE) - dnorm(xi, xi.m, xi.s, log=TRUE)
+       dbeta(can.p[1], 1, 1, log = TRUE) - dbeta(cur.p[1], 1, 1, log = TRUE) +
+       dnorm(can.xi, xi.m, xi.s, log = TRUE) - dnorm(xi, xi.m, xi.s, log = TRUE)
   
   if (!is.na(R)) { if (log(runif(1)) < R) {
     beta    <- xtx.inv %*% (xt %*% can.x.beta)
     x.beta  <- can.x.beta
     xi      <- can.xi
     z       <- can.z
-    z.star  <- can.z.star
+    wz.star <- can.wz.star
+    kernel  <- can.kernel
     cur.lly <- can.lly
     acc.xi  <- acc.xi + 1
     acc.p   <- acc.p + 1
   }}
   
-  results <- list(beta=beta, x.beta=x.beta, xi=xi, z=z, z.star=z.star,
-                  cur.lly=cur.lly, att.p=att.p, acc.p=acc.p,
-                  att.xi=att.xi, acc.xi=acc.xi)
+  results <- list(beta = beta, x.beta = x.beta, xi = xi, z = z, 
+                  wz.star = wz.star, kernel = kernel, cur.lly = cur.lly, 
+                  att.p = att.p, acc.p = acc.p,
+                  att.xi = att.xi, acc.xi = acc.xi)
 }
 
 # updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
@@ -300,7 +304,7 @@ updateXiBeta <- function(y, theta.star, alpha, z, z.star, beta,
 # }
 
 # update the random effects for theta.star
-updateA <- function(y, kernel, a, alpha, cur.lly, cur.llps, wz.star,
+updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps, 
                     mid.points, bin.width, mh, cuts) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -312,15 +316,17 @@ updateA <- function(y, kernel, a, alpha, cur.lly, cur.llps, wz.star,
       l1             <- get.level(cur.a, cuts)  # keeps sd reasonable
       can.a          <- exp(rnorm(1, log(cur.a), mh[l1]))
       l2             <- get.level(can.a, cuts)
-      # can.theta.star only changes at a site when it's near the knot
+      
+      # can.kernel only changes at a site when it's near the knot
+      # just a vector for the day's kernel values
       can.kernel <- kernel[, t] + wz.star[, k, t] * (can.a - cur.a)
-      if (sum(can.theta.star <= 0) > 0) {  # numerical stability
+      if (any(can.kernel <= 0)) {  # numerical stability
         can.llps  <- -Inf
         can.lly.t <- -Inf
       } else {
         can.llps  <- dPS.Rcpp(a=can.a, alpha=alpha,
                               mid.points=mid.points, bin.width=bin.width)
-        can.lly.t <- logLikeY2(y=y[, t], kernel = can.kernel)
+        can.lly.t <- logLikeY2(y=y[, t, drop = F], kernel = can.kernel)
       }
 
       R <- sum(can.lly.t - cur.lly.t) +
@@ -329,15 +335,15 @@ updateA <- function(y, kernel, a, alpha, cur.lly, cur.llps, wz.star,
            dlognormal(can.a, cur.a, mh[l1])
 
       if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
-        a[k, t]         <- can.a
-        kernel[, t]     <- can.kernel
-        cur.lly.t       <- can.lly.t
-        cur.llps[k, t]  <- can.llps
+        a[k, t]        <- can.a
+        kernel[, t]    <- can.kernel
+        cur.lly.t      <- can.lly.t
+        cur.llps[k, t] <- can.llps
       }}
     }
   }
 
-  cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
+  cur.lly <- logLikeY2(y = y, kernel = kernel)
 
   if (sum(is.nan(cur.lly)) > 0) {
     cur.lly <<- cur.lly
@@ -353,8 +359,8 @@ updateA <- function(y, kernel, a, alpha, cur.lly, cur.llps, wz.star,
 }
 
 # update the alpha term for theta.star
-updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
-                        alpha.a, alpha.b, w, w.star, mid.points, bin.width,
+updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b, 
+                        cur.lly, cur.llps, mid.points, bin.width,
                         acc, att, mh, iter) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -368,36 +374,22 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   can.alpha.star <- rnorm(1, alpha.star, mh)
   can.alpha      <- pnorm(can.alpha.star)
   can.alpha.inv  <- 1 / can.alpha
-  can.w.star     <- w^can.alpha.inv
-  can.z.star     <- z^can.alpha.inv
-  can.theta.star <- getThetaStar(can.w.star, a)
-  can.lly        <- logLikeY(y=y, theta.star=can.theta.star, z.star=can.z.star)
-  can.llps       <- matrix(NA, nknots, nt)
+  can.wz.star    <- getwzStar(z = z, w = w, alpha = can.alpha)
+  can.kernel     <- getKernel(wz.star = can.wz.star, a = a)
+  can.lly        <- logLikeY2(y = y, kernel = can.kernel)
   can.llps       <- dPS.Rcpp(a, can.alpha, mid.points, bin.width)
-  
-  can.kernel <- kernelCalc(z = z, w = w, a = a, alpha = can.alpha)
-  cur.kernel <- kernelCalc(z = z, w = w, a = a, alpha = alpha)
-  cur.lly    <- logLikeY2(y = y, kernel = cur.kernel)
-  can.lly    <- logLikeY2(y = y, kernel = can.kernel)
 
-  if (sum(is.nan(can.w.star)) > 0) {
+  if (sum(is.nan(can.wz.star)) > 0) {
     print(can.alpha)
     print(w)
-    stop("NaN error in can.w.star for alpha update")
-  }
-
-  if (sum(is.nan(can.z.star)) > 0) {
-    print(can.alpha)
     print(z)
-    stop("NaN error in can.z.star for alpha update")
+    stop("NaN error in can.w.star for alpha update")
   }
 
   if (sum(is.nan(can.lly)) > 0) {
     can.lly <<- can.lly
-    can.theta.star <<- can.theta.star
-    can.w.star <<- can.w.star
-    can.z.star <<- can.z.star
-    can.theta <<- can.theta.star^can.alpha
+    can.kernel <<- can.kernel
+    can.wz.star <<- can.wz.star
     can.alpha <<- can.alpha
     z <<- z
     a <<- a
@@ -429,22 +421,21 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
 #   }
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
-    alpha      <- can.alpha
-    w.star     <- w^can.alpha.inv
-    z.star     <- z^can.alpha.inv
-    theta.star <- can.theta.star
-    cur.lly    <- can.lly
-    cur.llps   <- can.llps
-    acc        <- acc + 1
+    alpha    <- can.alpha
+    wz.star  <- can.wz.star
+    kernel   <- can.kernel
+    cur.lly  <- can.lly
+    cur.llps <- can.llps
+    acc      <- acc + 1
   }}
 
-  results <- list(alpha=alpha, w.star=w.star, z.star=z.star,
-                  theta.star=theta.star, cur.lly=cur.lly, cur.llps=cur.llps,
-                  att=att, acc=acc)
+  results <- list(alpha = alpha, wz.star = wz.star, kernel = kernel, 
+                  cur.lly = cur.lly, cur.llps = cur.llps,
+                  att = att, acc = acc)
   return(results)
 }
 
-updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
+updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
                       rho, rho.upper=Inf, acc, att, mh, iter) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -457,9 +448,9 @@ updateRho <- function(y, theta.star, a, alpha, cur.lly, z.star, w, w.star, dw2,
   # can.rho.star   <- rnorm(1, rho.star, mh)
   # can.rho        <- transform$inv.probit(can.rho.star, lower=1e-6, upper=rho.upper)
   can.w          <- stdW(makeW(dw2=dw2, rho=can.rho))
-  can.w.star     <- can.w^(1 / alpha)
-  can.theta.star <- getThetaStar(w.star=can.w.star, a=a)
-  can.lly <- logLikeY(y=y, theta.star=can.theta.star, z.star=z.star)
+  can.wz.star    <- getwzStar(z = z, w = can.w, alpha = alpha)
+  can.kernel     <- getKernel(wz.star = can.wz.star, a = a)
+  can.lly        <- logLikeY2(y = y, kernel = can.kernel)
 
   logrho.m <- -1
   logrho.s <- 2

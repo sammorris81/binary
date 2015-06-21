@@ -32,12 +32,12 @@ transform <- list(
   log = function(x) log(x),
   exp = function(x) exp(x),
   copula = function(dens) {
-    this.dens <- paste("p", dens, sep="")
-    function(x, ...) qnorm(do.call(this.dens, args=list(x, ...)))
+    this.dens <- paste("p", dens, sep = "")
+    function(x, ...) qnorm(do.call(this.dens, args = list(x, ...)))
   },
   inv.copula = function(dens) {
-    this.dens <- paste("q", dens, sep="")
-    function(x, ...) do.call(this.dens, args=list(pnorm(x), ...))
+    this.dens <- paste("q", dens, sep = "")
+    function(x, ...) do.call(this.dens, args = list(pnorm(x), ...))
   }
 )
 
@@ -54,7 +54,7 @@ adjustX <- function(x, y) {
   np <- length(x) / length(y)
   if (is.null(dim(x))) {
     if (length(x) != length(y)) {
-      stop ("x cannot be coerced to proper dimensions")
+      stop("x cannot be coerced to proper dimensions")
     } else {
       x <- matrix(x, nrow = ns * nt, ncol = np)
       return(x)
@@ -64,7 +64,7 @@ adjustX <- function(x, y) {
       if ((nrow(x) == (ns * nt)) & (ncol(x) == np)) {
         return(x)
       } else {
-        stop ("if x is a matrix, it should have ns * nt rows and np cols")
+        stop("if x is a matrix, it should have ns * nt rows and np cols")
       }
     } else {
       if ((dim(x)[3] == np) & (dim(x)[2] == nt)) {
@@ -125,9 +125,9 @@ getwzStar <- function(z, w, alpha) {
   
   wz.star <- array(NA, dim=c(ns, nknots, nt))
   for (t in 1:nt) {
-    z.t          <- matrix(rep(z[, t], knots), ns, nknots)
+    z.t            <- matrix(rep(z[, t], nknots), ns, nknots)
     wz.star[, , t] <- exp((log(w) - log(z.t)) / alpha)
-    wz.star[, , t] <- ifelsematCPP(wz.star[[t]], 1e-7)
+    wz.star[, , t] <- ifelsematCPP(wz.star[, , t], 1e-7)
   }
   
   return(wz.star)
@@ -195,19 +195,16 @@ logLikeY <- function(y, theta.star, z.star, print = F) {
 }
 
 logLikeY2 <- function(y, kernel, print = F) {
-  if (!is.null(dim(y))) {
-    ll.y <- matrix(-Inf, nrow(y), ncol(y))
-  } else {
-    ll.y <- rep(-Inf, length(y))
-  }
+  nt   <- ncol(y)
+  ll.y <- matrix(-Inf, nrow(y), ncol(y))
   
   # numerical stability issue. originally was using
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
   these <- which(y == 1)
-  for (t in 1:nt)
   ll.y[-these] <- -kernel[-these]
   ll.y[these]  <- log(1 - exp(-kernel[these]))
+  
   return(ll.y)
 }
 

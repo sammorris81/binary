@@ -123,16 +123,15 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   for (iter in 1:iters) { for (ttt in 1:thin) {
     
     if (xibeta.joint) {  # update beta and xi
-      xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
-                                    z=z, z.star=z.star, beta=beta,
-                                    #beta.m=beta.m, beta.s=beta.s,
-                                    x.beta=x.beta, xi=xi, x=x, 
-                                    xt=xt, xtx.inv=xtx.inv,
-                                    xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-                                    acc.p=acc.beta, att.p=att.beta,
-                                    mh.p=mh.beta,
-                                    acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
-                                    thresh=0)
+      xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w, 
+                                    wz.star = wz.star, beta = beta,
+                                    kernel = kernel, a = a, x.beta = x.beta, 
+                                    xi = xi, x = x, xt = xt, xtx.inv = xtx.inv,
+                                    xi.m = xi.m, xi.s = xi.s, cur.lly = cur.lly,
+                                    acc.p = acc.beta, att.p = att.beta,
+                                    mh.p = mh.beta,
+                                    acc.xi = acc.xi, att.xi = att.xi, 
+                                    mh.xi = mh.xi, thresh = 0)
 #       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
 #                                     z=z, z.star=z.star, beta=beta,
 #                                     beta.m=beta.m, beta.s=beta.s,
@@ -158,7 +157,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       x.beta   <- xibeta.update$x.beta
       xi       <- xibeta.update$xi
       z        <- xibeta.update$z
-      z.star   <- xibeta.update$z.star
+      kernel   <- xibeta.update$kernel
+      wz.star  <- xibeta.update$wz.star
       cur.lly  <- xibeta.update$cur.lly
       att.beta <- xibeta.update$att.p
       acc.beta <- xibeta.update$acc.p
@@ -229,14 +229,14 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     if (spatial) {
       # update a - NOTE: does not use acc, att, and mh like usual
       old.a    <- a
-      a.update <- updateA(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                          cur.lly=cur.lly, cur.llps=cur.llps, z.star=z.star,
-                          w.star=w.star, mid.points=mid.points,
-                          bin.width=bin.width, mh=mh.a, cuts=cuts)
-      a          <- a.update$a
-      theta.star <- a.update$theta.star
-      cur.lly    <- a.update$cur.lly
-      cur.llps   <- a.update$cur.llps
+      a.update <- updateA(y = y, kernel = kernel, a = a, alpha = alpha,
+                          wz.star = wz.star, cur.lly = cur.lly, 
+                          cur.llps = cur.llps, mid.points = mid.points, 
+                          bin.width = bin.width, mh = mh.a, cuts = cuts)
+      a        <- a.update$a
+      kernel   <- a.update$kernel
+      cur.lly  <- a.update$cur.lly
+      cur.llps <- a.update$cur.llps
 
       # adjust the candidate standard deviations
       if (iter < burn / 2) {
@@ -254,18 +254,17 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update alpha
       if (!alpha.fix) {
-        alpha.update <- updateAlpha(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                    cur.lly=cur.lly, cur.llps=cur.llps,
-                                    z=z, z.star=z.star, alpha.a = 1, alpha.b = 1,
-                                    w=w, w.star=w.star,
+        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a, 
+                                    alpha = alpha, z = z, w = w, 
+                                    wz.star = wz.star, alpha.a = 1, alpha.b = 1,
+                                    cur.lly = cur.lly, cur.llps = cur.llps, 
                                     mid.points=mid.points, bin.width=bin.width,
                                     acc=acc.alpha, att=att.alpha, mh=mh.alpha,
                                     iter=iter)
 
         alpha     <- alpha.update$alpha
-        w.star    <- alpha.update$w.star
-        z.star    <- alpha.update$z.star
-        theta     <- alpha.update$theta.star
+        wz.star   <- alpha.update$wz.star
+        kernel    <- alpha.update$kernel
         cur.lly   <- alpha.update$cur.lly
         cur.llps  <- alpha.update$cur.llps
         att.alpha <- alpha.update$att

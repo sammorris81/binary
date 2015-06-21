@@ -130,10 +130,8 @@ fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
 
 mcmc.seed <- 1
 set.seed(mcmc.seed)
-iters <- 500
-update <- 50
-burn <- 100
-Rprof(filename = "Rprof.out", line.profiling = TRUE)
+
+# Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
@@ -146,8 +144,8 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
-Rprof(NULL)
-summaryRprof(filename = "Rprof.out", lines = "show")
+# Rprof(NULL)
+# summaryRprof(filename = "Rprof.out", lines = "show")
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
