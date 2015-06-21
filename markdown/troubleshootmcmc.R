@@ -77,7 +77,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -122,13 +122,6 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 #### Fit MCMC
 ####################################################################
 # spatial GEV
-rho.hat <- rho.t
-alpha.hat <- alpha.t
-xibeta.hat <- c(xi.t, -data$thresh)
-xibeta.var <- matrix(c(0.4, -0.2, -0.2, 1.4))
-fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
-
-mcmc.seed <- 1# spatial GEV
 rho.hat <- rho.t
 alpha.hat <- alpha.t
 xibeta.hat <- c(xi.t, -data$thresh)
