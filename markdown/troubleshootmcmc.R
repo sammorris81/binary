@@ -140,7 +140,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.init = 0.40, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
@@ -201,7 +201,8 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0474
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0474 - before change
+                                                       # 0.0377 - after change
 bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0470
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
 bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0360
