@@ -11,6 +11,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  beta.fix = FALSE, xi.fix = FALSE,   # debug
                  rho.fix = FALSE, alpha.fix = FALSE, # debug
                  xibeta.joint = FALSE, xibeta.hat, xibeta.var,
+                 xibeta.cor = NULL,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
@@ -82,6 +83,9 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     }
   }
 
+  if (is.null(xibeta.cor)) {
+    xibeta.cor <- -0.5
+  }
   x.beta <- getXBeta(x, ns, nt, beta)
 
   z <- getZ(xi=xi, x.beta=x.beta)
@@ -135,7 +139,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     beta.m=beta.m, beta.s=beta.s,
                                     x.beta=x.beta, xi=xi, x=x,
                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-                                    can.mean=xibeta.hat, can.var=xibeta.var,
+                                    xibeta.cor=xibeta.cor,
                                     acc.beta=acc.beta, att.beta=att.beta,
                                     mh.beta=mh.beta,
                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
@@ -248,14 +252,14 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     acc=acc.alpha, att=att.alpha, mh=mh.alpha,
                                     iter=iter)
 
-        alpha     <- alpha.update$alpha
-        w.star    <- alpha.update$w.star
-        z.star    <- alpha.update$z.star
-        theta     <- alpha.update$theta.star
-        cur.lly   <- alpha.update$cur.lly
-        cur.llps  <- alpha.update$cur.llps
-        att.alpha <- alpha.update$att
-        acc.alpha <- alpha.update$acc
+        alpha      <- alpha.update$alpha
+        w.star     <- alpha.update$w.star
+        z.star     <- alpha.update$z.star
+        theta.star <- alpha.update$theta.star
+        cur.lly    <- alpha.update$cur.lly
+        cur.llps   <- alpha.update$cur.llps
+        att.alpha  <- alpha.update$att
+        acc.alpha  <- alpha.update$acc
 
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,

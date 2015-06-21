@@ -124,17 +124,31 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 # spatial GEV
 mcmc.seed <- 1
 set.seed(mcmc.seed)
+# fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+#                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+#                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+#                 knots = knots, beta.tune = 1, xi.tune = 0.1,
+#                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+#                 beta.attempts = 200, xi.attempts = 200,
+#                 alpha.attempts = 7500, rho.attempts = 100,
+#                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+#                 alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+#                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
+#                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+#                 iters = iters, burn = burn, update = update, thin = 1)
+
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                beta.init = -4, beta.m = 0, beta.s = 100,
+                xi.init = 0.1, xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
-                alpha.attempts = 7500, rho.attempts = 100,
-                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.attempts = 500, rho.attempts = 100,
+                spatial = TRUE, rho.init = rho.t, rho.upper = 9,
+                alpha.init = 0.50, a.init = 10, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                xibeta.cor = 0,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,

@@ -100,8 +100,7 @@ updateXi <- function(y, theta.star, alpha, z, z.star, x.beta, xi, xi.m, xi.s,
 }
 
 updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
-                         x.beta, xi, x, xi.m, xi.s, cur.lly,
-                         can.mean, can.var,
+                         x.beta, xi, x, xi.m, xi.s, cur.lly, xibeta.cor,
                          acc.beta, att.beta, mh.beta,
                          acc.xi, att.xi, mh.xi, thresh=0) {
   np  <- length(beta) + 1  # using later to get the end of the vector
@@ -110,15 +109,15 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
   att.beta <- att.beta + 1
   att.xi   <- att.xi + 1
   alpha.inv <- 1 / alpha
-  
+
   cor <- diag(rep(1, np))
-  cor[1, 2] <- cor[2, 1] <- -0.5
+  cor[1, 2] <- cor[2, 1] <- xibeta.cor
   cov <- diag(c(mh.xi, mh.beta)) %*% cor %*% diag(c(mh.xi, mh.beta))
   can.xibeta <- c(xi, beta) + t(chol(cov)) %*% rnorm(np)
-  
+
   can.xi   <- can.xibeta[1]
   can.beta <- can.xibeta[2:np]
-  
+
   can.x.beta <- matrix(NA, ns, nt)
   if (nt == 1) {
     if (np == 1) {
@@ -137,7 +136,7 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
       }
     }
   }
-  
+
   if (any(can.xi * (can.x.beta - thresh) > 1)) {
     can.lly <- -Inf
   } else {
@@ -145,13 +144,13 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     can.z.star <- can.z^alpha.inv
     can.lly <- logLikeY(y=y, theta.star=theta.star, z.star=can.z.star)
   }
-  
+
   R <- sum(can.lly - cur.lly) +
        sum(dnorm(can.beta, beta.m, beta.s, log=TRUE)) -
        sum(dnorm(beta, beta.m, beta.s, log=TRUE))
        dnorm(can.xi, xi.m, xi.s, log=TRUE) -
        dnorm(xi, xi.m, xi.s, log=TRUE)
-  
+
   if (!is.na(R)) { if (log(runif(1)) < R) {
     beta     <- can.beta
     x.beta   <- can.x.beta
@@ -162,7 +161,7 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
     acc.beta <- acc.beta + 1
     acc.xi   <- acc.xi + 1
   }}
-  
+
   results <- list(beta=beta, x.beta=x.beta,
                   xi=xi, z=z, z.star=z.star, cur.lly=cur.lly,
                   att.beta=att.beta, acc.beta=acc.beta,
@@ -302,11 +301,12 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
   att <- att + 1
 
   # not exactly U(0, 1) - using truncation for numerical stability
-  # can.alpha.star <- rnorm(1, log(alpha / (1 - alpha)), mh)
-  # can.alpha      <- exp(can.alpha.star) / (1 + exp(can.alpha.star))
-  alpha.star     <- qnorm(alpha)
+  alpha.star     <- log(alpha / (1 - alpha))
   can.alpha.star <- rnorm(1, alpha.star, mh)
-  can.alpha      <- pnorm(can.alpha.star)
+  can.alpha      <- 1 / (1 + exp(-can.alpha.star))
+  # alpha.star     <- qnorm(alpha)
+  # can.alpha.star <- rnorm(1, alpha.star, mh)
+  # can.alpha      <- pnorm(can.alpha.star)
   can.alpha.inv  <- 1 / can.alpha
   can.w.star     <- w^can.alpha.inv
   can.z.star     <- z^can.alpha.inv
@@ -347,8 +347,8 @@ updateAlpha <- function(y, theta.star, a, alpha, cur.lly, cur.llps, z, z.star,
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
        dnorm(can.alpha.star, log=TRUE) - dnorm(alpha.star, log=TRUE)
-       # dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
-       # dbeta(alpha, alpha.a, alpha.b, log=TRUE)
+#        dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
+#        dbeta(alpha, alpha.a, alpha.b, log=TRUE)
 
   # if ((iter > 3000) & (iter %% 50 == 0)) {
   #   cur.lly <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
@@ -430,11 +430,11 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
   }
-  
+
   np     <- nrow(s.pred)
   niters <- length(start:end)
   nknots <- dim(mcmcoutput$a)[2]
-  
+
   if (is.null(dim(mcmcoutput$beta))) {
     p <- 1
   } else {
@@ -450,14 +450,14 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
       nt <- dim(x.pred)[2]
     }
   }
-  
+
   niters <- length(start:end)
   beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
   xi    <- mcmcoutput$xi[start:end]
   a     <- mcmcoutput$a[start:end, , , drop = F]
   alpha <- mcmcoutput$alpha[start:end]
   rho   <- mcmcoutput$rho[start:end]
-  
+
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
   prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
