@@ -77,7 +77,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+iters <- 45000; burn <- 35000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -122,16 +122,9 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 #### Fit MCMC
 ####################################################################
 # spatial GEV
-rho.hat <- rho.t
-alpha.hat <- alpha.t
-xibeta.hat <- c(xi.t, -data$thresh)
-xibeta.var <- matrix(c(0.4, -0.2, -0.2, 1.4))
-fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
-
 mcmc.seed <- 1
 set.seed(mcmc.seed)
 
-# Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
@@ -142,10 +135,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
                 alpha.init = 0.40, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
-# Rprof(NULL)
-# summaryRprof(filename = "Rprof.out", lines = "show")
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
@@ -156,7 +146,7 @@ mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                  xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                  xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
                   alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                   beta.attempts = 200, xi.attempts = 200,
@@ -164,7 +154,6 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   spatial = TRUE, rho.init = rho.t, rho.upper = 9,
                   alpha.init = alpha.t, a.init = 10000, iterplot = TRUE,
                   alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.1t <- pred.spgev(mcmcoutput = fit.gev.t, x.pred = X.p,
@@ -211,7 +200,7 @@ dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)  
 dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 446.68
 dic.pro.1 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
                         knots = knots)  # 268
-
+save.image("troubleshoot1.RData")
 
 ####################################################################
 #### Try with fewer 1s
@@ -296,7 +285,6 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
                 alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.2 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
@@ -316,7 +304,6 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   spatial = TRUE, rho.init = rho.t, rho.upper = 9,
                   alpha.init = alpha.t, a.init = 10000, iterplot = TRUE,
                   alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.2t <- pred.spgev(mcmcoutput = fit.gev.t, x.pred = X.p,
@@ -360,6 +347,7 @@ dic.gev.2t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)  
 dic.log.2 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 96.68
 dic.pro.2 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
                         knots = knots)  # 60.8
+save.image("troubleshoot2.RData")
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -447,7 +435,6 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
                 alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.3 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
@@ -489,6 +476,7 @@ dic.gev.3 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -
 dic.log.3 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 138.7
 dic.pro.3 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
                         knots = knots)  # 151
+save.image("troubleshoot3.RData")
 
 ####################################################################
 #### Try when the occurrences are only in a certain location
@@ -577,7 +565,6 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
                 alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.4 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
@@ -619,6 +606,7 @@ dic.gev.4 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -
 dic.log.4 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 78.6
 dic.pro.4 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
                         knots = knots)  # 73.4
+save.image("troubleshoot4.RData")
 
 ####################################################################
 #### Find DIC
