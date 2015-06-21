@@ -122,33 +122,34 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 #### Fit MCMC
 ####################################################################
 # spatial GEV
+rho.hat <- rho.t
+alpha.hat <- alpha.t
+xibeta.hat <- c(xi.t, -data$thresh)
+xibeta.var <- matrix(c(0.4, -0.2, -0.2, 1.4))
+fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
+
+mcmc.seed <- 1# spatial GEV
+rho.hat <- rho.t
+alpha.hat <- alpha.t
+xibeta.hat <- c(xi.t, -data$thresh)
+xibeta.var <- matrix(c(0.4, -0.2, -0.2, 1.4))
+fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
+
 mcmc.seed <- 1
 set.seed(mcmc.seed)
-# fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-#                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-#                 xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
-#                 knots = knots, beta.tune = 1, xi.tune = 0.1,
-#                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
-#                 beta.attempts = 200, xi.attempts = 200,
-#                 alpha.attempts = 7500, rho.attempts = 100,
-#                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-#                 alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
-#                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
-#                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
-#                 iters = iters, burn = burn, update = update, thin = 1)
 
+# Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = -4, beta.m = 0, beta.s = 100,
-                xi.init = 0.1, xi.m = 0, xi.s = 0.5,
+                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
-                beta.attempts = 200, xi.attempts = 200,
-                alpha.attempts = 500, rho.attempts = 100,
-                spatial = TRUE, rho.init = rho.t, rho.upper = 9,
-                alpha.init = 0.50, a.init = 10, iterplot = TRUE,
+                beta.attempts = 50, xi.attempts = 50,
+                alpha.attempts = 300, rho.attempts = 100,
+                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+                alpha.init = 0.40, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
-                xibeta.cor = 0,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
@@ -205,7 +206,7 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0506
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0506 (0.0377)
 bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0504
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
 bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0360
