@@ -77,7 +77,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -130,9 +130,6 @@ fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
 
 mcmc.seed <- 1
 set.seed(mcmc.seed)
-iters <- 500
-update <- 50
-burn <- 100
 Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
