@@ -1,4 +1,5 @@
-rm(list=ls())
+rm(list = ls())
+options(warn = 2)
 
 ####################################################################
 #### loading libraries and necessary files
@@ -127,13 +128,13 @@ set.seed(mcmc.seed)
 
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -150,9 +151,9 @@ fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
                   alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                   beta.attempts = 200, xi.attempts = 200,
-                  alpha.attempts = 7500, rho.attempts = 100,
+                  alpha.attempts = 300, rho.attempts = 100,
                   spatial = TRUE, rho.init = rho.t, rho.upper = 9,
-                  alpha.init = alpha.t, a.init = 10000, iterplot = TRUE,
+                  alpha.init = alpha.t, a.init = 1000, iterplot = TRUE,
                   alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                   iters = iters, burn = burn, update = update, thin = 1)
 
@@ -190,10 +191,10 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0474 (0.0377)
-bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0470
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0374
+bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0379
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
-bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0360
+bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0356
 dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -738
 dic.gev.1t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)  # 134
 dic.log.1 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 446.68
@@ -227,7 +228,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+iters <- 45000; burn <- 35000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -276,13 +277,13 @@ mcmc.seed <- 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
-                alpha.attempts = 7500, rho.attempts = 100,
+                alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -295,13 +296,13 @@ mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 fit.gev.t <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                  xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                  xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
                   alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                   beta.attempts = 200, xi.attempts = 200,
-                  alpha.attempts = 7500, rho.attempts = 100,
+                  alpha.attempts = 300, rho.attempts = 100,
                   spatial = TRUE, rho.init = rho.t, rho.upper = 9,
-                  alpha.init = alpha.t, a.init = 10000, iterplot = TRUE,
+                  alpha.init = alpha.t, a.init = 1000, iterplot = TRUE,
                   alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                   iters = iters, burn = burn, update = update, thin = 1)
 
@@ -337,10 +338,10 @@ post.prob.pro.2 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0187
-bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0187
-bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0185
-bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0147
+bs.gev.2  <- BrierScore(post.prob.gev.2, y.validate)   # 0.0012
+bs.gev.2t <- BrierScore(post.prob.gev.2t, y.validate)  # 0.0015
+bs.log.2  <- BrierScore(post.prob.log.2, y.validate)   # 0.0002
+bs.pro.2  <- BrierScore(post.prob.pro.2, y.validate)   # 0.0019
 dic.gev.2 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # 26.7
 dic.gev.2t <- dic.spgev(mcmcoutput = fit.gev.t, y = y.o, x = X.o, dw2 = dw2.o)  # -33.4
 dic.log.2 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 96.68
@@ -377,7 +378,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+iters <- 45000; burn <- 35000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -426,13 +427,13 @@ mcmc.seed <- 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
-                alpha.attempts = 7500, rho.attempts = 100,
+                alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -468,9 +469,9 @@ post.prob.pro.3 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0237
-bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0195
-bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0198
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.validate)   # 0.0273
+bs.log.3 <- BrierScore(post.prob.log.3, y.validate)   # 0.0211
+bs.pro.3 <- BrierScore(post.prob.pro.3, y.validate)   # 0.0200
 dic.gev.3 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -7328
 dic.log.3 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 138.7
 dic.pro.3 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,
@@ -506,7 +507,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 15000; burn <- 10000; update <- 500; thin <- 1
+iters <- 45000; burn <- 35000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -556,13 +557,13 @@ mcmc.seed <- 1
 set.seed(mcmc.seed)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.5,
+                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 200, xi.attempts = 200,
-                alpha.attempts = 7500, rho.attempts = 100,
+                alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = 0.40, a.init = 10000, iterplot = TRUE,
+                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
                 iters = iters, burn = burn, update = update, thin = 1)
 
@@ -598,9 +599,9 @@ post.prob.pro.4 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 0.0159
-bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 0.0166
-bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 0.0146
+bs.gev.4 <- BrierScore(post.prob.gev.4, y.validate)   # 0.0181
+bs.log.4 <- BrierScore(post.prob.log.4, y.validate)   # 0.0090
+bs.pro.4 <- BrierScore(post.prob.pro.4, y.validate)   # 0.0078
 dic.gev.4 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -4522
 dic.log.4 <- spDiag(fit.logit, start = burn + 1, end = iters)  # 78.6
 dic.pro.4 <- dic.spprob(mcmcoutput = fit.probit, Y = y.o, X = X.o, s = s.o,

@@ -81,7 +81,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       beta   <- beta.init
     }
   }
-
+  
   x.beta <- getXBeta(x, ns, nt, beta)
   xt <- t(x)
   xtx.inv <- solve(xt %*% x)
@@ -89,6 +89,9 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   z <- getZ(xi=xi, x.beta=x.beta)
   z.star <- z^(1 / alpha)
 
+  wz.star <- getwzStar(z = z, w = w, alpha = alpha)
+  kernel  <- getKernel(wz.star = wz.star, a = a)
+  
   # keep current likelihood values in mcmc for time savings
   cur.lly  <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
   if (spatial) {
