@@ -299,8 +299,12 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   # get underlying latent variable
   u <- matrix(rgev(n = ns * nt, 1, alpha, alpha), ns, nt)
   z <- u * theta.star^alpha
-
-  h <- x.beta + (z^xi - 1) / xi
+  
+  if (xi == 0) {
+    h <- x.beta + log(z)
+  } else {
+    h <- x.beta + (z^xi - 1) / xi
+  }
 
   # set the threshold for success at whatever value will give us
   # our desired percentage of 1s.

@@ -49,7 +49,7 @@ alpha.t <- 0.35
 alpha.min <- 0
 alpha.max <- 1
 alpha.rng <- alpha.max - alpha.min
-xi.t    <- 0.25
+xi.t    <- 1
 rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
 knots.h <- knots[2, 1] - knots[1, 1]
@@ -128,14 +128,16 @@ set.seed(mcmc.seed)
 
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = fit$par[3], xi.m = 0, xi.s = 0.3,
+                xi.init = 1, xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
-                alpha.init = alpha.hat, a.init = 1000, iterplot = TRUE,
+                alpha.init = 0.40, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
+                xi.fix = TRUE,
+                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,

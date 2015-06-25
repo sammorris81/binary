@@ -173,15 +173,16 @@ updateXiBeta2 <- function(y, theta.star, alpha, z, z.star, beta, beta.m, beta.s,
 
 updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel, 
                          a, x.beta, xi, x, xt, xtx.inv, xi.m, xi.s, cur.lly,
-                         acc.p, att.p, mh.p, acc.xi, att.xi, mh.xi, 
-                         thresh = 0) {
+                         xi.fix, beta.fix, acc.p, att.p, mh.p, acc.xi, att.xi, 
+                         mh.xi, thresh = 0) {
   # xtx.inv = solve(t(x) %*% x)
   # xt = t(x)
   
   # z should be ns x nt
-  
   att.p  <- att.p + 1
-  att.xi <- att.xi + 1
+  if (!xi.fix) {
+    att.xi <- att.xi + 1
+  }
   
   ns <- nrow(y)
   nt <- ncol(y)
@@ -201,8 +202,17 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
   }
   
   # extract beta for the new xi term
-  can.xi <- rnorm(1, xi, mh.xi)
-  can.x.beta <- (1 - (-1 / log(can.p))^can.xi) / can.xi
+  if (xi.fix) {
+    can.xi <- xi
+  } else {
+    can.xi <- rnorm(1, xi, mh.xi)
+  }
+  
+  if (xi < 1e-6 & xi > -1e-6) {
+    can.x.beta <- log(-log(can.p))
+  } else {
+    can.x.beta <- (1 - (-1 / log(can.p))^can.xi) / can.xi
+  }
   
   if (any(can.xi * (can.x.beta - thresh) > 1)) {
     can.lly <- -Inf
@@ -214,18 +224,24 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
   }
   
   R <- sum(can.lly - cur.lly) +
-       dbeta(can.p[1], 1, 1, log = TRUE) - dbeta(cur.p[1], 1, 1, log = TRUE) +
-       dnorm(can.xi, xi.m, xi.s, log = TRUE) - dnorm(xi, xi.m, xi.s, log = TRUE)
+       dbeta(can.p[1], 1, 1, log = TRUE) - dbeta(cur.p[1], 1, 1, log = TRUE)
+  
+  if (!xi.fix) {
+    R <- R + dnorm(can.xi, xi.m, xi.s, log = TRUE) - 
+             dnorm(xi, xi.m, xi.s, log = TRUE)
+  }
   
   if (!is.na(R)) { if (log(runif(1)) < R) {
     beta    <- xtx.inv %*% (xt %*% can.x.beta)
     x.beta  <- can.x.beta
-    xi      <- can.xi
     z       <- can.z
     wz.star <- can.wz.star
     kernel  <- can.kernel
     cur.lly <- can.lly
-    acc.xi  <- acc.xi + 1
+    if (!xi.fix) { 
+      xi      <- can.xi
+      acc.xi  <- acc.xi + 1
+    }
     acc.p   <- acc.p + 1
   }}
   

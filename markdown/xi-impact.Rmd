@@ -1,0 +1,293 @@
+---
+title: "Impact of shape parameter"
+author: "Sam Morris"
+date: "23 June 2015"
+output: pdf_document
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+# libraries
+library(fields)
+library(Rcpp)
+library(evd)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "../code/R/pairwise.cpp")
+
+source("../code/R/auxfunctions.R", chdir = TRUE)
+source("../code/R/updateModel.R")
+source("../code/R/mcmc.R")
+
+# knots and locations
+set.seed(7483)  # site
+ns    <- 4000
+s     <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
+dw2   <- rdist(s, knots)
+x     <- matrix(1, ns, 1)
+```
+
+```{r setting1, echo=FALSE, include=FALSE}
+# settings for results 1 and results 2
+alpha.t <- c(0.2, 0.8)
+rho.t   <- 0.1
+xi.t    <- c(-0.5, 0.0, 0.5)
+prop    <- c(0.01, 0.05)
+```
+
+# Data settings:
+
+We are exploring how $\xi$ impacts the realizations.
+For each of the following plots, the open circles are the knot locations, the red circles represent a location where the response is 1, and the blue circles represent a location where the response is 0.
+
+\newpage
+
+## Strong spatial dependence: $\alpha = `r alpha.t[1]`$ with $\pi = `r prop[1]`$
+
+### Sample datasets
+
+```{r data1-1, echo=FALSE, include=FALSE, cache=FALSE}
+set.seed(3282)  # data
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[1])
+  y[, i] <- data$y
+}
+```
+
+```{r plot1-1, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data1-2, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[1])
+  y[, i] <- data$y
+}
+```
+
+
+```{r plot1-2, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data1-3, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[1])
+  y[, i] <- data$y
+}
+```
+
+
+```{r plot1-3, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+## Strong spatial dependence: $\alpha = `r alpha.t[1]`$ with $\pi = `r prop[2]`$
+
+### Sample datasets
+
+```{r data2-1, echo=FALSE, include=FALSE, cache=FALSE}
+set.seed(3282)  # data
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[2])
+  y[, i] <- data$y
+}
+```
+
+```{r plot2-1, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data2-2, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[2])
+  y[, i] <- data$y
+}
+```
+
+
+```{r plot2-2, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data2-3, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[1], rho = rho.t, prob.success = prop[2])
+  y[, i] <- data$y
+}
+```
+
+
+```{r plot2-3, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+## Weak spatial dependence: $\alpha = `r alpha.t[2]`$ with $\pi = `r prop[1]`$
+
+### Sample datasets
+
+```{r data3-1, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[1])
+  y[, i] <- data$y
+}
+```
+
+```{r plot3-1, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data3-2, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[1])
+  y[, i] <- data$y
+}
+```
+
+```{r plot3-2, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data3-3, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[1])
+  y[, i] <- data$y
+}
+```
+
+```{r plot3-3, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+## Weak spatial dependence: $\alpha = `r alpha.t[2]`$ with $\pi = `r prop[2]`$
+
+### Sample datasets
+
+```{r data4-1, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[2])
+  y[, i] <- data$y
+}
+```
+
+```{r plot4-1, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data4-2, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[2])
+  y[, i] <- data$y
+}
+```
+
+```{r plot4-2, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+```{r data4-3, echo=FALSE, include=FALSE, cache=FALSE}
+y <- matrix(NA, ns, 3)
+for (i in 1:3) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t[i],
+                        alpha = alpha.t[2], rho = rho.t, prob.success = prop[2])
+  y[, i] <- data$y
+}
+```
+
+```{r plot4-3, echo=FALSE, cache=FALSE, fig.height=3, fig.width=7}
+par(mfrow = c(1, 3))
+for (i in 1:3) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = bquote(paste("simulated dataset: ", xi ==.(xi.t[i]))), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
