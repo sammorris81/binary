@@ -54,7 +54,7 @@ for (i in 1:10) {
                                   alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = FALSE, 
                                   rho.fix = FALSE,
-                                  y = y, dw2 = dw2, d = d, cov = x,
+                                  y = y[, i], dw2 = dw2, d = d, cov = x,
                                   alpha.min = 0, alpha.max = 1, threads = 20)
   print("    fit.2")
   
@@ -62,7 +62,7 @@ for (i in 1:10) {
                                   alpha.init = alpha.t, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = TRUE, 
                                   rho.fix = FALSE,
-                                  y = y, dw2 = dw2, d = d, cov = x,
+                                  y = y[, i], dw2 = dw2, d = d, cov = x,
                                   alpha.min = 0, alpha.max = 1, threads = 20)
   print("    fit.5")
   
@@ -70,7 +70,7 @@ for (i in 1:10) {
                                   alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = FALSE, 
                                   rho.fix = TRUE,
-                                  y = y, dw2 = dw2, d = d, cov = x,
+                                  y = y[, i], dw2 = dw2, d = d, cov = x,
                                   alpha.min = 0, alpha.max = 1, threads = 20)
   print("    fit.6")
   
@@ -78,7 +78,7 @@ for (i in 1:10) {
                                   alpha.init = alpha.t, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = TRUE, 
                                   rho.fix = TRUE,
-                                  y = y, dw2 = dw2, d = d, cov = x,
+                                  y = y[, i], dw2 = dw2, d = d, cov = x,
                                   alpha.min = 0, alpha.max = 1, threads = 20)
   print("    fit.8")
   print(paste("Finished: Set ", i, sep = ""))
