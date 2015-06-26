@@ -5,7 +5,7 @@ library(evd)
 library(spBayes)
 library(fields)
 library(SpatialTools)
-library(microbenchmark)
+# library(microbenchmark)
 library(mvtnorm)
 library(Rcpp)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
@@ -20,7 +20,7 @@ set.seed(7483)  # site
 ns    <- 1000
 s     <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
-knots.h <- knots[1, 1] - knots[2, 1]
+knots.h <- abs(knots[1, 1] - knots[2, 1])
 x     <- matrix(1, ns, 1)
 
 alpha.t <- 0.25
@@ -49,33 +49,39 @@ beta.t <- -thresh
 fit.2 <- fit.5 <- fit.6 <- fit.8 <- vector(mode = "list", length = 10)
 
 for (i in 1:10) {
+  print(paste("Starting: Set ", i, sep = ""))
   fit.2[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
                                   alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = FALSE, 
                                   rho.fix = FALSE,
                                   y = y, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0, alpha.max = 1, threads = 6)
+                                  alpha.min = 0, alpha.max = 1, threads = 20)
+  print("    fit.2")
   
   fit.5[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
                                   alpha.init = alpha.t, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = TRUE, 
                                   rho.fix = FALSE,
                                   y = y, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0, alpha.max = 1, threads = 6)
+                                  alpha.min = 0, alpha.max = 1, threads = 20)
+  print("    fit.5")
   
   fit.6[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
                                   alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = FALSE, 
                                   rho.fix = TRUE,
                                   y = y, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0, alpha.max = 1, threads = 6)
+                                  alpha.min = 0, alpha.max = 1, threads = 20)
+  print("    fit.6")
   
   fit.8[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
                                   alpha.init = alpha.t, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = TRUE, 
                                   rho.fix = TRUE,
                                   y = y, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0, alpha.max = 1, threads = 6)
+                                  alpha.min = 0, alpha.max = 1, threads = 20)
+  print("    fit.8")
+  print(paste("Finished: Set ", i, sep = ""))
 }
 
 save(y, fit.2, fit.5, fit.6, fit.8, file = "pairwisetest.RData")
