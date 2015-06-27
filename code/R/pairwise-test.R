@@ -8,6 +8,7 @@ library(SpatialTools)
 # library(microbenchmark)
 library(mvtnorm)
 library(Rcpp)
+library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 sourceCpp(file = "./pairwise.cpp")
@@ -46,7 +47,7 @@ diag(d) <- 0
 
 beta.t <- -thresh
 
-fit.2 <- fit.5 <- fit.6 <- fit.8 <- vector(mode = "list", length = 10)
+fit.2 <- fit.5 <- fit.6 <- fit.8 <- fit.9 <- fit.10 <- vector(mode = "list", length = 10)
 
 for (i in 1:10) {
   y.i <- y[, i, drop = FALSE]
@@ -56,86 +57,131 @@ for (i in 1:10) {
                                   xi.fix = TRUE, alpha.fix = FALSE,
                                   rho.fix = FALSE,
                                   y = y.i, dw2 = dw2, d = d,
-                                  cov = x,
-                                  alpha.min = 0.2, alpha.max = 0.9,
-                                  threads = 20)
+                                  cov = x, max.dist = knots.h,
+                                  alpha.min = 0.1, alpha.max = 0.9,
+                                  threads = 6)
   print("    fit.2")
 
   fit.5[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
-                                  alpha.init = alpha.t, rho.init = knots.h,
+                                  alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = TRUE,
                                   rho.fix = FALSE,
-                                  y = y.i, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0.2, alpha.max = 0.9,
-                                  threads = 20)
+                                  y = y.i, dw2 = dw2, d = d,
+                                  cov = x, max.dist = knots.h,
+                                  alpha.min = 0.1, alpha.max = 0.9,
+                                  threads = 6)
   print("    fit.5")
 
   fit.6[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
                                   alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = FALSE,
                                   rho.fix = TRUE,
-                                  y = y.i, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0.2, alpha.max = 0.9,
-                                  threads = 20)
+                                  y = y.i, dw2 = dw2, d = d,
+                                  cov = x, max.dist = knots.h,
+                                  alpha.min = 0.1, alpha.max = 0.9,
+                                  threads = 6)
   print("    fit.6")
 
   fit.8[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
-                                  alpha.init = alpha.t, rho.init = knots.h,
+                                  alpha.init = 0.5, rho.init = knots.h,
                                   xi.fix = TRUE, alpha.fix = TRUE,
                                   rho.fix = TRUE,
-                                  y = y.i, dw2 = dw2, d = d, cov = x,
-                                  alpha.min = 0.2, alpha.max = 0.9,
-                                  threads = 20)
+                                  y = y.i, dw2 = dw2, d = d,
+                                  cov = x, max.dist = knots.h,
+                                  alpha.min = 0.1, alpha.max = 0.9,
+                                  threads = 6)
   print("    fit.8")
+
+  fit.9[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
+                                   alpha.init = 0.5, rho.init = knots.h,
+                                   xi.fix = TRUE, alpha.fix = FALSE,
+                                   rho.fix = FALSE, beta.fix = TRUE,
+                                   y = y.i, dw2 = dw2, d = d,
+                                   cov = x, max.dist = knots.h,
+                                   alpha.min = 0.1, alpha.max = 0.9,
+                                   threads = 6)
+  print("    fit.9")
+
+  fit.10[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
+                                   alpha.init = 0.5, rho.init = knots.h,
+                                   xi.fix = TRUE, alpha.fix = FALSE,
+                                   rho.fix = TRUE, beta.fix = TRUE,
+                                   y = y.i, dw2 = dw2, d = d,
+                                   cov = x, max.dist = knots.h,
+                                   alpha.min = 0.1, alpha.max = 0.9,
+                                   threads = 6)
+  print("    fit.10")
+
+
   print(paste("Finished: Set ", i, sep = ""))
 }
 
-save(y, s, knots, fit.2, fit.5, fit.6, fit.8, file = "pairwisetest.RData")
+save(y, s, knots, fit.2, fit.5, fit.6, fit.8, fit.9, fit.10, file = "pairwisetest-maxd.RData")
 
-# rm(list=ls())
-# load(file = "pairwisetest.RData")
-#
-# # str(fit.6)  # really want fit.6 to be reliable because fits alpha and beta
-#
-# # unlist results
-# alpha.hat.2 <- alpha.se.2 <- beta.hat.2 <- beta.se.2 <- rep(NA, length(fit.2))
-# rho.hat.2 <- rho.se.2 <- rep(NA, length(fit.2))
-# for (i in 1:10) {
-#   # varcov <- solve(fit.2[[i]]$hessian)
-#   alpha.hat.2[i] <- 1 / (1 + exp(-fit.2[[i]]$par[1]))
-#   # alpha.se.2[i]  <- 1 / (1 + exp(-sqrt(varcov[1, 1])))
-#   rho.hat.2[i] <- exp(fit.2[[i]]$par[2])
-#   # rho.se.2[i]  <- exp(sqrt(varcov[2, 2]))
-#   beta.hat.2[i] <- fit.2[[i]]$par[3]
-#   # beta.se.2[i]  <- sqrt(varcov[3, 3])
-# }
-# rbind(alpha.hat.2, rho.hat.2, beta.hat.2)
-#
-# alpha.hat.6 <- alpha.se.6 <- beta.hat.6 <- beta.se.6 <- rep(NA, length(fit.6))
-# for (i in 1:10) {
-#   varcov <- solve(fit.6[[i]]$hessian)
-#   alpha.hat.6[i] <- 1 / (1 + exp(-fit.6[[i]]$par[1]))
-#   # alpha.se.6[i]  <- 1 / (1 + exp(-sqrt(varcov[1, 1])))
-#   beta.hat.6[i] <- fit.6[[i]]$par[2]
-#   # beta.se.6[i]  <- sqrt(varcov[2, 2])
-# }
-# rbind(alpha.hat.6, beta.hat.6)
-#
-# beta.hat.8 <- beta.se.8 <- rep(NA, length(fit.8))
-# for (i in 1:10) {
-#   varcov <- solve(fit.8[[i]]$hessian)
-#   beta.hat.8[i] <- fit.8[[i]]$par[1]
-#   beta.se.8[i]  <- sqrt(varcov[1, 1])
-# }
-# beta.hat.8
-# beta.se.8
-#
-# par(mfrow=c(3, 4))
-# for (i in 1:10) {
-#   plot(knots, ylim=c(0, 1), xlim=c(0, 1))
-#   points(s[y[, i] == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-#   points(s[y[, i] == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-# }
+rm(list=ls())
+load(file = "pairwisetest-maxd.RData")
+
+# str(fit.6)  # really want fit.6 to be reliable because fits alpha and beta
+
+# unlist results
+alpha.hat.2 <- alpha.se.2 <- beta.hat.2 <- beta.se.2 <- rep(NA, length(fit.2))
+rho.hat.2 <- rho.se.2 <- rep(NA, length(fit.2))
+for (i in 1:10) {
+  # varcov <- solve(fit.2[[i]]$hessian)
+  alpha.hat.2[i] <- fit.2[[i]]$par[1]
+  # alpha.se.2[i]  <- sqrt(varcov[1, 1])
+  rho.hat.2[i] <- fit.2[[i]]$par[2]
+  # rho.se.2[i]  <- sqrt(varcov[2, 2])
+  beta.hat.2[i] <- fit.2[[i]]$par[3]
+  # beta.se.2[i]  <- sqrt(varcov[3, 3])
+}
+rbind(round(alpha.hat.2, 3), round(rho.hat.2, 3), round(beta.hat.2, 3))
+
+alpha.hat.6 <- alpha.se.6 <- beta.hat.6 <- beta.se.6 <- rep(NA, length(fit.6))
+for (i in 1:10) {
+  # varcov <- solve(fit.6[[i]]$hessian)
+  alpha.hat.6[i] <- fit.6[[i]]$par[1]
+  # alpha.se.6[i]  <- sqrt(varcov[1, 1])
+  beta.hat.6[i] <- fit.6[[i]]$par[2]
+  # beta.se.6[i]  <- sqrt(varcov[2, 2])
+}
+rbind(round(alpha.hat.6, 3), round(beta.hat.6, 3))
+
+beta.hat.8 <- beta.se.8 <- rep(NA, length(fit.8))
+for (i in 1:10) {
+  # varcov <- solve(fit.8[[i]]$hessian)
+  beta.hat.8[i] <- fit.8[[i]]$par[1]
+  # beta.se.8[i]  <- sqrt(varcov[1, 1])
+}
+beta.hat.8
+
+alpha.hat.9 <- alpha.se.9 <- beta.hat.9 <- beta.se.9 <- rep(NA, length(fit.9))
+rho.hat.9 <- rho.se.9 <- rep(NA, length(fit.9))
+for (i in 1:10) {
+  varcov <- solve(fit.9[[i]]$hessian)
+  alpha.hat.9[i] <- fit.9[[i]]$par[1]
+  alpha.se.9[i]  <- sqrt(varcov[1, 1])
+  rho.hat.9[i] <- fit.9[[i]]$par[2]
+  rho.se.9[i]  <- sqrt(varcov[2, 2])
+  beta.hat.9[i] <- fit.9[[i]]$beta
+  beta.se.9[i]  <- sqrt(fit.9[[i]]$beta.cov)
+}
+rbind(round(alpha.hat.9, 3), round(rho.hat.9, 3), round(beta.hat.9, 3))
+rbind(round(alpha.se.9, 3), round(rho.se.9, 3), round(beta.se.9, 3))
+
+alpha.hat.10 <- alpha.se.10 <- beta.hat.10 <- beta.se.10 <- rep(NA, length(fit.10))
+for (i in 1:10) {
+  varcov <- solve(fit.10[[i]]$hessian)
+  alpha.hat.10[i] <- fit.10[[i]]$par[1]
+  alpha.se.10[i]  <- sqrt(varcov[1, 1])
+  beta.hat.10[i]  <- fit.10[[i]]$beta
+  beta.se.10[i]   <- sqrt(fit.10[[i]]$beta.cov)
+}
+rbind(round(alpha.hat.10, 3), round(beta.hat.10, 3))
+# [,1]   [,2]   [,3]   [,4]   [,5]   [,6]   [,7]   [,8]   [,9]  [,10]
+# [1,]  0.436  0.539  0.257  0.495  0.334  0.201  0.290  0.201  0.568  0.201
+# [2,] -4.405 -4.405 -4.405 -4.405 -4.405 -4.405 -4.405 -4.405 -4.405 -4.405
+rbind(round(alpha.se.10, 3), round(beta.se.10, 3))
 
 # W.t      <- stdW(makeW(dw2, rho.t))
 # par.true <- c(alpha.t, rho.t, xi.t, beta.t)

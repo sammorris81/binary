@@ -58,9 +58,33 @@ pairwise.rarebinaryR <- function(par, y, dw2, cov) {
   return(-ll)
 }
 
+beta.hat <- function(par, y, cov, xi) {
+  beta <- par
+
+  ns     <- nrow(y)
+  nt     <- ncol(y)
+  np     <- ncol(cov)
+
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta           # should be ns long
+  }
+  z <- getZ(xi, x.beta)       # should be ns long
+
+  if (any((xi * x.beta) > 1)) {
+    return(1e99)
+  }
+
+  prob <- 1 - exp(-1 / z)  # P(Y = 1)
+
+  ll <- -sum(dbinom(x = y, size = 1, prob = prob, log = TRUE))
+  return(ll)
+}
+
 pairwise.rarebinaryCPP.1 <- function(par, y,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (xi, alpha, rho, beta)
   # y: observed data (ns)
@@ -68,20 +92,20 @@ pairwise.rarebinaryCPP.1 <- function(par, y,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  xi         <- par[1]
-  alpha.star <- par[2]
-  rho.star   <- par[3]
-  beta       <- par[4:npars]
+  xi    <- par[1]
+  alpha <- par[2]
+  rho   <- par[3]
+  beta  <- par[4:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
   }
 
-  # transform to actual space
-  # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   # transform to actual space
+#   # alpha in (alpha.min, alpha.max)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -100,21 +124,24 @@ pairwise.rarebinaryCPP.1 <- function(par, y,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha < alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
 pairwise.rarebinaryCPP.2 <- function(par, y, xi,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (alpha, rho, beta)
   # y: observed data (ns)
@@ -122,9 +149,9 @@ pairwise.rarebinaryCPP.2 <- function(par, y, xi,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  alpha.star <- par[1]
-  rho.star   <- par[2]
-  beta       <- par[3:npars]
+  alpha <- par[1]
+  rho   <- par[2]
+  beta  <- par[3:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
@@ -132,9 +159,9 @@ pairwise.rarebinaryCPP.2 <- function(par, y, xi,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -153,21 +180,24 @@ pairwise.rarebinaryCPP.2 <- function(par, y, xi,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
-pairwise.rarebinaryCPP.3 <- function(par, y, alpha.star,
+pairwise.rarebinaryCPP.3 <- function(par, y, alpha,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (xi, rho, beta)
   # y: observed data (ns)
@@ -175,9 +205,9 @@ pairwise.rarebinaryCPP.3 <- function(par, y, alpha.star,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  xi         <- par[1]
-  rho.star   <- par[2]
-  beta       <- par[3:npars]
+  xi    <- par[1]
+  rho   <- par[2]
+  beta  <- par[3:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
@@ -185,9 +215,9 @@ pairwise.rarebinaryCPP.3 <- function(par, y, alpha.star,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -206,21 +236,24 @@ pairwise.rarebinaryCPP.3 <- function(par, y, alpha.star,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
-pairwise.rarebinaryCPP.4 <- function(par, y, rho.star,
+pairwise.rarebinaryCPP.4 <- function(par, y, rho,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (xi, alpha, beta)
   # y: observed data (ns)
@@ -228,9 +261,9 @@ pairwise.rarebinaryCPP.4 <- function(par, y, rho.star,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  xi         <- par[1]
-  alpha.star <- par[2]
-  beta       <- par[3:npars]
+  xi    <- par[1]
+  alpha <- par[2]
+  beta  <- par[3:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
@@ -238,9 +271,9 @@ pairwise.rarebinaryCPP.4 <- function(par, y, rho.star,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -259,21 +292,24 @@ pairwise.rarebinaryCPP.4 <- function(par, y, rho.star,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
-pairwise.rarebinaryCPP.5 <- function(par, y, xi, alpha.star,
+pairwise.rarebinaryCPP.5 <- function(par, y, xi, alpha,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (rho, beta)
   # y: observed data (ns)
@@ -281,8 +317,8 @@ pairwise.rarebinaryCPP.5 <- function(par, y, xi, alpha.star,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  rho.star   <- par[1]
-  beta       <- par[2:npars]
+  rho   <- par[1]
+  beta  <- par[2:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
@@ -290,9 +326,9 @@ pairwise.rarebinaryCPP.5 <- function(par, y, xi, alpha.star,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -311,21 +347,24 @@ pairwise.rarebinaryCPP.5 <- function(par, y, xi, alpha.star,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
-pairwise.rarebinaryCPP.6 <- function(par, y, xi, rho.star,
+pairwise.rarebinaryCPP.6 <- function(par, y, xi, rho,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (alpha, beta)
   # y: observed data (ns)
@@ -333,8 +372,8 @@ pairwise.rarebinaryCPP.6 <- function(par, y, xi, rho.star,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  alpha.star <- par[1]
-  beta       <- par[2:npars]
+  alpha <- par[1]
+  beta  <- par[2:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
@@ -342,9 +381,9 @@ pairwise.rarebinaryCPP.6 <- function(par, y, xi, rho.star,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -363,21 +402,24 @@ pairwise.rarebinaryCPP.6 <- function(par, y, xi, rho.star,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
-pairwise.rarebinaryCPP.7 <- function(par, y, alpha.star, rho.star,
+pairwise.rarebinaryCPP.7 <- function(par, y, alpha, rho,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (xi, beta)
   # y: observed data (ns)
@@ -385,8 +427,8 @@ pairwise.rarebinaryCPP.7 <- function(par, y, alpha.star, rho.star,
   # x: covariates (ns x np)
 
   npars <- length(par)
-  xi         <- par[1]
-  beta       <- par[2:npars]
+  xi    <- par[1]
+  beta  <- par[2:npars]
 
   if (xi < 1e-10 & xi > -1e-10) {
     xi <- 0
@@ -394,9 +436,9 @@ pairwise.rarebinaryCPP.7 <- function(par, y, alpha.star, rho.star,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -406,7 +448,12 @@ pairwise.rarebinaryCPP.7 <- function(par, y, alpha.star, rho.star,
   W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
   if (length(beta) == 1) {
     x.beta <- matrix(cov * beta, ns, nt)
-  } else {
+  } else {if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+    if (alpha < alpha.min | alpha > alpha.max) {
+      return(1e99)
+    }
     x.beta <- cov %*% beta           # should be ns long
   }
   z <- getZ(xi, x.beta)       # should be ns long
@@ -415,21 +462,24 @@ pairwise.rarebinaryCPP.7 <- function(par, y, alpha.star, rho.star,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }
 
-pairwise.rarebinaryCPP.8 <- function(par, y, xi, alpha.star, rho.star,
+pairwise.rarebinaryCPP.8 <- function(par, y, xi, alpha, rho,
                                      dw2, d, cov, max.dist,
-                                     alpha.min = 0.2, alpha.max = 0.9,
+                                     alpha.min = 0, alpha.max = 1,
                                      threads = 1) {
   # par: parameter vector (beta)
   # y: observed data (ns)
@@ -445,9 +495,9 @@ pairwise.rarebinaryCPP.8 <- function(par, y, xi, alpha.star, rho.star,
 
   # transform to actual space
   # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
 
   ns     <- nrow(y)
   nt     <- ncol(y)
@@ -466,14 +516,178 @@ pairwise.rarebinaryCPP.8 <- function(par, y, xi, alpha.star, rho.star,
   if (any((xi * x.beta) > 1)) {
     return(1e99)
   }
-  if (rho > 0.2 * max(d)) {
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
     return(1e99)
   }
 
   kernel <- exp((log(W) - log(as.vector(z))) / alpha)
 
   ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
+
+  return(-ll)
+}
+
+pairwise.rarebinaryCPP.9 <- function(par, y, xi, beta,
+                                     dw2, d, cov, max.dist,
+                                     alpha.min = 0, alpha.max = 1,
+                                     threads = 1) {
+  # par: parameter vector (alpha, rho)
+  # y: observed data (ns)
+  # dw2: squared distance between sites and knots (ns x nknots)
+  # x: covariates (ns x np)
+
+  npars <- length(par)
+  alpha <- par[1]
+  rho   <- par[2]
+
+  if (xi < 1e-10 & xi > -1e-10) {
+    xi <- 0
+  }
+
+  # transform to actual space
+  # alpha in (alpha.min, alpha.max)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
+
+  ns     <- nrow(y)
+  nt     <- ncol(y)
+  np     <- ncol(cov)
+  nknots <- ncol(dw2)
+
+  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta           # should be ns long
+  }
+  z <- getZ(xi, x.beta)       # should be ns long
+
+  # keep estimates in their actual space
+  if (any((xi * x.beta) > 1)) {
+    return(1e99)
+  }
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
+    return(1e99)
+  }
+
+  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
+
+  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
+
+  return(-ll)
+}
+
+pairwise.rarebinaryCPP.10 <- function(par, y, xi, rho, beta,
+                                     dw2, d, cov, max.dist,
+                                     alpha.min = 0, alpha.max = 1,
+                                     threads = 1) {
+  # par: parameter vector (alpha)
+  # y: observed data (ns)
+  # dw2: squared distance between sites and knots (ns x nknots)
+  # x: covariates (ns x np)
+
+  npars <- length(par)
+  alpha <- par
+
+  if (xi < 1e-10 & xi > -1e-10) {
+    xi <- 0
+  }
+
+  # transform to actual space
+  # alpha in (alpha.min, alpha.max)
+  # rho <- exp(rho.star)
+
+  ns     <- nrow(y)
+  nt     <- ncol(y)
+  np     <- ncol(cov)
+  nknots <- ncol(dw2)
+
+  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta           # should be ns long
+  }
+  z <- getZ(xi, x.beta)       # should be ns long
+
+  # keep estimates in their actual space
+  if (any((xi * x.beta) > 1)) {
+    return(1e99)
+  }
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
+    return(1e99)
+  }
+
+  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
+
+  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
+
+  return(-ll)
+}
+
+pairwise.rarebinaryCPP.11 <- function(par, y, xi, alpha.star, beta,
+                                     dw2, d, cov, max.dist,
+                                     alpha.min = 0, alpha.max = 1,
+                                     threads = 1) {
+  # par: parameter vector (rho)
+  # y: observed data (ns)
+  # dw2: squared distance between sites and knots (ns x nknots)
+  # x: covariates (ns x np)
+
+  npars <- length(par)
+  rho   <- par
+
+  if (xi < 1e-10 & xi > -1e-10) {
+    xi <- 0
+  }
+
+  # transform to actual space
+  # alpha in (alpha.min, alpha.max)
+#   alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
+#     (alpha.max - alpha.min) + alpha.min
+#   rho <- exp(rho.star)
+
+  ns     <- nrow(y)
+  nt     <- ncol(y)
+  np     <- ncol(cov)
+  nknots <- ncol(dw2)
+
+  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
+  if (length(beta) == 1) {
+    x.beta <- matrix(cov * beta, ns, nt)
+  } else {
+    x.beta <- cov %*% beta           # should be ns long
+  }
+  z <- getZ(xi, x.beta)       # should be ns long
+
+  # keep estimates in their actual space
+  if (any((xi * x.beta) > 1)) {
+    return(1e99)
+  }
+  if ((rho > 0.2 * max(d)) | (rho < 1e-6)) {
+    return(1e99)
+  }
+  if (alpha < alpha.min | alpha > alpha.max) {
+    return(1e99)
+  }
+
+  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
+
+  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
+                    rho = rho, d = d, max_dist = max.dist, threads = threads)
 
   return(-ll)
 }

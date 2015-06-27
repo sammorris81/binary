@@ -528,106 +528,142 @@ BrierScore <- function(post.prob, validate) {
 
 
 
-fit.rarebinaryCPP <- function(beta.init, xi.init, alpha.init, rho.init,
+fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                               xi.fix = FALSE, alpha.fix = FALSE,
-                              rho.fix = FALSE,
+                              rho.fix = FALSE, beta.fix = FALSE,
                               y, dw2, d, max.dist = NULL, cov,
                               alpha.min = 0, alpha.max = 1, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
 
-  alpha.star.init <- log(alpha.init / (1 - alpha.init))
-  rho.star.init <- log(rho.init)
+#   alpha.star.init <- log(alpha.init / (1 - alpha.init))
+#   rho.star.init <- log(rho.init)
 
   # different combinations of parameters for fixing
-  if (!xi.fix & !alpha.fix & !rho.fix) {  # xi, alpha, rho, beta
+  if (!xi.fix & !alpha.fix & !rho.fix & !beta.fix) {  # xi, alpha, rho, beta
 
-    init.par <- c(xi.init, alpha.star.init, rho.star.init, beta.init)
+    init.par <- c(xi.init, alpha.init, rho.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.1, y = y,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
     results$fixed <- "none"
-    results$param.names <- c("xi", "logit.alpha", "log.rho", "beta")
+    results$param.names <- c("xi", "alpha", "rho", "beta")
 
-  } else if (xi.fix & !alpha.fix & !rho.fix) {  # alpha, rho, and beta
+  } else if (xi.fix & !alpha.fix & !rho.fix & !beta.fix) {  # alpha, rho, and beta
 
-    init.par <- c(alpha.star.init, rho.star.init, beta.init)
+    init.par <- c(alpha.init, rho.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.2, y = y,
                       xi = xi.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
     results$fixed <- "xi"
-    results$param.names <- c("logit.alpha", "log.rho", "beta")
+    results$param.names <- c("alpha", "rho", "beta")
 
-  } else if (!xi.fix & alpha.fix & !rho.fix) {  # xi, rho, and beta
+  } else if (!xi.fix & alpha.fix & !rho.fix & !beta.fix) {  # xi, rho, and beta
 
-    init.par <- c(xi.init, rho.star.init, beta.init)
+    init.par <- c(xi.init, rho.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.3, y = y,
-                      alpha.star = alpha.star.init,
+                      alpha = alpha.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
-    results$fixed <- "logit.alpha"
-    results$param.names <- c("xi", "log.rho", "beta")
+    results$fixed <- "alpha"
+    results$param.names <- c("xi", "rho", "beta")
 
-  } else if (!xi.fix & !alpha.fix & rho.fix) {  # xi, alpha, and beta
+  } else if (!xi.fix & !alpha.fix & rho.fix & !beta.fix) {  # xi, alpha, and beta
 
-    init.par <- c(xi.init, alpha.star.init, beta.init)
+    init.par <- c(xi.init, alpha.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.4, y = y,
-                      rho.star = rho.star.init,
+                      rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
-    results$fixed <- "log.rho"
-    results$param.names <- c("xi", "logit.alpha", "beta")
+    results$fixed <- "rho"
+    results$param.names <- c("xi", "alpha", "beta")
 
-  } else if (xi.fix & alpha.fix & !rho.fix) {  # rho and beta
+  } else if (xi.fix & alpha.fix & !rho.fix & !beta.fix) {  # rho and beta
 
-    init.par <- c(rho.star.init, beta.init)
+    init.par <- c(rho.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.5, y = y,
-                      xi = xi.init, alpha.star = alpha.star.init,
+                      xi = xi.init, alpha = alpha.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
-    results$fixed <- "xi and logit.alpha"
-    results$param.names <- c("log.rho", "beta")
+    results$fixed <- "xi and alpha"
+    results$param.names <- c("rho", "beta")
 
-  } else if (xi.fix & !alpha.fix & rho.fix) {  # alpha and beta
+  } else if (xi.fix & !alpha.fix & rho.fix & !beta.fix) {  # alpha and beta
 
-    init.par <- c(alpha.star.init, beta.init)
+    init.par <- c(alpha.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.6, y = y,
-                      xi = xi.init, rho.star = rho.star.init,
+                      xi = xi.init, rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
-    results$fixed <- "xi and log.rho"
-    results$param.names <- c("logit.alpha", "beta")
+    results$fixed <- "xi and rho"
+    results$param.names <- c("alpha", "beta")
 
-  } else if (!xi.fix & alpha.fix & rho.fix) {  # xi and beta
+  } else if (!xi.fix & alpha.fix & rho.fix & !beta.fix) {  # xi and beta
 
     init.par <- c(xi.init, beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.7, y = y,
-                      alpha.star = alpha.star.init, rho.star = rho.star.init,
+                      alpha = alpha.init, rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
-    results$fixed <- "logit.alpha and log.rho"
+    results$fixed <- "alpha and rho"
     results$param.names <- c("xi", "beta")
 
-  } else {  # beta only
+  } else if (xi.fix & alpha.fix & rho.fix & !beta.fix) {  # beta only
 
     init.par <- c(beta.init)
     results  <- optim(init.par, pairwise.rarebinaryCPP.8, y = y,
-                      xi = xi.init, alpha.star = alpha.star.init,
-                      rho.star = rho.star.init,
+                      xi = xi.init, alpha = alpha.init,
+                      rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
                       threads = threads, method = "BFGS", hessian = TRUE)
-    results$fixed <- "xi, logit.alpha, and log.rho"
+    results$fixed <- "xi, alpha, and rho"
     results$param.names <- "beta"
+
+  } else if (xi.fix & !alpha.fix & !rho.fix & beta.fix) {
+
+    results.beta <- optim(par = beta.init, beta.hat, y = y,
+                          cov = cov, xi = xi.init, method = "BFGS",
+                          hessian = TRUE)
+    beta.hat <- results.beta$par
+    init.par <- c(alpha.init, rho.init)
+    results <- optim(init.par, pairwise.rarebinaryCPP.9, y = y,
+                     xi = xi.init, beta = beta.hat,
+                     dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                     alpha.min = alpha.min, alpha.max = alpha.max,
+                     threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi"
+    results$param.names <- c("alpha", "rho")
+    results$beta <- beta.hat
+    results$beta.cov <- solve(results.beta$hessian)
+
+  } else if (xi.fix & !alpha.fix & rho.fix & beta.fix) {
+
+    results.beta <- optim(par = beta.init, beta.hat, y = y,
+                          cov = cov, xi = xi.init, method = "BFGS",
+                          hessian = TRUE)
+    beta.hat <- results.beta$par
+    init.par <- alpha.init
+    results <- optim(init.par, pairwise.rarebinaryCPP.10, y = y,
+                     xi = xi.init, rho = rho.init, beta = beta.hat,
+                     dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                     alpha.min = alpha.min, alpha.max = alpha.max,
+                     threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi, rho"
+    results$param.names <- c("alpha")
+    results$beta <- beta.hat
+    results$beta.cov <- solve(results.beta$hessian)
+
+  } else if (xi.fix & alpha.fix & !rho.fix & beta.fix) {
 
   }
 
