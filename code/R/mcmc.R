@@ -285,18 +285,18 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       
       # update rho
       if (!rho.fix) {
-        rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
-                                cur.lly=cur.lly, z.star=z.star, w=w,
-                                w.star=w.star, dw2=dw2, rho=rho,
-                                rho.upper=rho.upper, acc=acc.rho, att=att.rho,
-                                mh=mh.rho, iter=iter)
-        rho        <- rho.update$rho
-        w          <- rho.update$w
-        w.star     <- rho.update$w.star
-        theta.star <- rho.update$theta.star
-        cur.lly    <- rho.update$cur.lly
-        att.rho    <- rho.update$att
-        acc.rho    <- rho.update$acc
+        rho.update <- updateRho(y = y, kernel = kernel, a = a, alpha = alpha,
+                                cur.lly = cur.lly, w = w, z = z, 
+                                wz.star = wz.star, dw2 = dw2, rho = rho,
+                                rho.upper = rho.upper, acc = acc.rho, 
+                                att = att.rho, mh = mh.rho, iter = iter)
+        rho     <- rho.update$rho
+        w       <- rho.update$w
+        wz.star <- rho.update$wz.star
+        kernel  <- rho.update$kernel
+        cur.lly <- rho.update$cur.lly
+        att.rho <- rho.update$att
+        acc.rho <- rho.update$acc
 
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
