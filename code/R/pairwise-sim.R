@@ -78,7 +78,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 5:6) {
+for (i in 9:10) {
   filename <- paste("pairwise-sim-", i, ".RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -97,7 +97,12 @@ for (i in 5:6) {
   # spatial GEV
   mcmc.seed <- 1
   set.seed(mcmc.seed)
-
+  
+  if (fit.9$par[1] < 0.3) {
+    alpha.init <- 0.25
+  } else {
+    alpha.init <- fit.9$par[1]
+  }
   fit.gev.9 <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                     beta.init = fit.9$beta, beta.m = 0, beta.s = 100,
                     xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -106,7 +111,7 @@ for (i in 5:6) {
                     beta.attempts = 50, xi.attempts = 50,
                     alpha.attempts = 300, rho.attempts = 100,
                     spatial = TRUE, rho.init = fit.9$par[2], rho.upper = 9,
-                    alpha.init = fit.9$par[1], a.init = 1000, iterplot = TRUE,
+                    alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
                     alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                     xi.fix = TRUE,
                     xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
@@ -128,7 +133,11 @@ for (i in 5:6) {
 
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-
+  if (fit.10$par[1] < 0.3) {
+    alpha.init <- 0.25
+  } else {
+    alpha.init <- fit.10$par[1]
+  }
   fit.gev.10 <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                      beta.init = fit.10$beta, beta.m = 0, beta.s = 100,
                      xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -137,7 +146,7 @@ for (i in 5:6) {
                      beta.attempts = 50, xi.attempts = 50,
                      alpha.attempts = 300, rho.attempts = 100,
                      spatial = TRUE, rho.init = knots.h, rho.upper = 9,
-                     alpha.init = fit.10$par[1], a.init = 1000, iterplot = TRUE,
+                     alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
                      alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
                      xi.fix = TRUE,
                      xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
