@@ -119,7 +119,7 @@ for (i in 3:4) {
 
   post.prob.gev.9 <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
                                 s.pred = s.p, knots = knots,
-                                start = 1, end = iters - burn, update = 500)
+                                start = 1, end = iters - burn, update = update)
 
   fit.10 <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                                    alpha.init = 0.5, rho.init = knots.h,
@@ -191,6 +191,43 @@ for (i in 3:4) {
 }
 
 
+for (i in c(1, 3, 5, 7)) {
+  filename <- paste("pairwise-sim-", i, ".RData", sep = "")
+  load(filename)
+  mcmc.seed <- i
+  set.seed(mcmc.seed)
+
+  y.i.o <- y.o[, i, drop = FALSE]
+  y.i.p <- y.validate[, i, drop = FALSE]
+  print(paste("Starting: Set ", i, sep = ""))
+
+  fit.gev <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                  beta.init = 0, beta.m = 0, beta.s = 100,
+                  xi.init = 0, xi.m = 0, xi.s = 0.5,
+                  knots = knots, beta.tune = 1, xi.tune = 0.1,
+                  alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                  beta.attempts = 50, xi.attempts = 50,
+                  alpha.attempts = 300, rho.attempts = 100,
+                  spatial = TRUE, rho.init = knots.h, rho.upper = 9,
+                  alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
+                  alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = TRUE,
+                  xi.fix = TRUE,
+                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                  iters = iters, burn = burn, update = update, thin = 1)
+
+  post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = update)
+
+  save(fit.9, fit.gev.9, post.prob.gev.9,
+       fit.10, fit.gev.10, post.prob.gev.10,
+       fit.gev, post.prob.gev,
+       fit.logit, post.prob.log,
+       fit.probit, post.prob.pro,
+       y.i.p, s,
+       file = filename)
+
+}
 
 # rm(list=ls())
 # load(file = "pairwisetest-sim.RData")
