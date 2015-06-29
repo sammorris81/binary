@@ -487,16 +487,16 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
   # }
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
-    rho        <- can.rho
-    w          <- can.w
-    w.star     <- can.w.star
-    theta.star <- can.theta.star
-    cur.lly    <- can.lly
-    acc        <- acc + 1
+    rho     <- can.rho
+    w       <- can.w
+    wz.star <- can.wz.star
+    kernel  <- can.kernel
+    cur.lly <- can.lly
+    acc     <- acc + 1
   }}
 
-  results <- list(rho=rho, w=w, w.star=w.star, theta.star=theta.star,
-                  cur.lly=cur.lly, att=att, acc=acc)
+  results <- list(rho = rho, w = w, wz.star = wz.star, kernel = kernel,
+                  cur.lly = cur.lly, att = att, acc = acc)
   return(results)
 }
 

@@ -282,7 +282,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           mh.alpha  <- mh.update$mh
         }
       }  # fi !alpha.fix
-
+      
       # update rho
       if (!rho.fix) {
         rho.update <- updateRho(y=y, theta.star=theta.star, a=a, alpha=alpha,
@@ -324,8 +324,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       keepers.alpha[iter]  <- alpha
       keepers.rho[iter]    <- rho
     }
-    keepers.lly[iter] <- sum(logLikeY(y = y, theta.star = theta.star,
-                                      z.star = z.star))
+    keepers.lly[iter] <- sum(logLikeY2(y = y, kernel = kernel))
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)
