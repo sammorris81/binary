@@ -78,7 +78,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 9:10) {
+for (i in 3:4) {
   filename <- paste("pairwise-sim-", i, ".RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -97,7 +97,7 @@ for (i in 9:10) {
   # spatial GEV
   mcmc.seed <- 1
   set.seed(mcmc.seed)
-  
+
   if (fit.9$par[1] < 0.3) {
     alpha.init <- 0.25
   } else {
