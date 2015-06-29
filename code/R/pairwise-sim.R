@@ -78,9 +78,10 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 1:2) {
+for (i in 5:6) {
   filename <- paste("pairwise-sim-", i, ".RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
+  y.i.p <- y.validate[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
 
   fit.9 <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
@@ -176,6 +177,7 @@ for (i in 1:2) {
        fit.10, fit.gev.10, post.prob.gev.10,
        fit.logit, post.prob.log,
        fit.probit, post.prob.pro,
+       y.i.p, s,
        file = filename)
 }
 
