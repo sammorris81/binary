@@ -67,7 +67,7 @@ s.p <- s[!obs, ]
 iters <- 45000; burn <- 35000; update <- 1000; thin <- 1
 # iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
-n.report <- 500
+n.report <- update
 verbose <- TRUE
 tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
                "beta"=0.1, "w"=0.1)
@@ -78,19 +78,19 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 1:10) {
+for (i in 1:2) {
   filename <- paste("pairwise-sim-", i, ".RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
 
-  fit.9 <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
+  fit.9 <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                              alpha.init = 0.5, rho.init = knots.h,
                              xi.fix = TRUE, alpha.fix = FALSE,
                              rho.fix = FALSE, beta.fix = TRUE,
                              y = y.i.o, dw2 = dw2.o, d = d.o,
-                             cov = X.o, max.dist = knots.h,
+                             cov = X.o, max.dist = 2.5 * knots.h,
                              alpha.min = 0.1, alpha.max = 0.9,
-                             threads = 7)
+                             threads = 3)
   print("    fit.9")
 
   # spatial GEV
@@ -99,7 +99,7 @@ for (i in 1:10) {
 
   fit.gev.9 <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                     beta.init = fit.9$beta, beta.m = 0, beta.s = 100,
-                    xi.init = 1, xi.m = 0, xi.s = 0.5,
+                    xi.init = 0, xi.m = 0, xi.s = 0.5,
                     knots = knots, beta.tune = 1, xi.tune = 0.1,
                     alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                     beta.attempts = 50, xi.attempts = 50,
@@ -115,14 +115,14 @@ for (i in 1:10) {
                                 s.pred = s.p, knots = knots,
                                 start = 1, end = iters - burn, update = 500)
 
-  fit.10 <- fit.rarebinaryCPP(beta.init = 0, xi.init = xi.t,
+  fit.10 <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                                    alpha.init = 0.5, rho.init = knots.h,
                                    xi.fix = TRUE, alpha.fix = FALSE,
                                    rho.fix = TRUE, beta.fix = TRUE,
                                    y = y.i.o, dw2 = dw2.o, d = d.o,
-                                   cov = X.o, max.dist = knots.h,
+                                   cov = X.o, max.dist = 2.5 * knots.h,
                                    alpha.min = 0.1, alpha.max = 0.9,
-                                   threads = 7)
+                                   threads = 3)
   print("    fit.10")
 
   mcmc.seed <- mcmc.seed + 1
@@ -130,7 +130,7 @@ for (i in 1:10) {
 
   fit.gev.10 <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                      beta.init = fit.10$beta, beta.m = 0, beta.s = 100,
-                     xi.init = 1, xi.m = 0, xi.s = 0.5,
+                     xi.init = 0, xi.m = 0, xi.s = 0.5,
                      knots = knots, beta.tune = 1, xi.tune = 0.1,
                      alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                      beta.attempts = 50, xi.attempts = 50,
