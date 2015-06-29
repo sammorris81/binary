@@ -19,7 +19,7 @@ source("mcmc.R")
 source("probit.R", chdir=T)
 
 set.seed(7483)  # site
-ns    <- 1500
+ns    <- 2000
 s     <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
 knots <- as.matrix(knots)
@@ -64,8 +64,8 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-# iters <- 45000; burn <- 35000; update <- 500; thin <- 1
-iters <- 100; burn <- 50; update <- 10; thin <- 1
+iters <- 45000; burn <- 35000; update <- 1000; thin <- 1
+# iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
 n.report <- 500
 verbose <- TRUE
@@ -90,7 +90,7 @@ for (i in 1:10) {
                              y = y.i.o, dw2 = dw2.o, d = d.o,
                              cov = X.o, max.dist = knots.h,
                              alpha.min = 0.1, alpha.max = 0.9,
-                             threads = 20)
+                             threads = 7)
   print("    fit.9")
 
   # spatial GEV
@@ -122,7 +122,7 @@ for (i in 1:10) {
                                    y = y.i.o, dw2 = dw2.o, d = d.o,
                                    cov = X.o, max.dist = knots.h,
                                    alpha.min = 0.1, alpha.max = 0.9,
-                                   threads = 20)
+                                   threads = 7)
   print("    fit.10")
 
   mcmc.seed <- mcmc.seed + 1
@@ -144,7 +144,7 @@ for (i in 1:10) {
 
   post.prob.gev.10 <- pred.spgev(mcmcoutput = fit.gev.10, x.pred = X.p,
                                  s.pred = s.p, knots = knots,
-                                 start = 1, end = iters - burn, update = 500)
+                                 start = 1, end = iters - burn, update = update)
 
   # spatial logit
   mcmc.seed <- mcmc.seed + 1
@@ -168,7 +168,7 @@ for (i in 1:10) {
 
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                s.pred = s.p, knots = knots,
-                               start = 1, end = iters - burn, update = 500)
+                               start = 1, end = iters - burn, update = update)
 
 
   print(paste("Finished: Set ", i, sep = ""))
