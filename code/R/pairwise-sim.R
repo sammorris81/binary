@@ -215,7 +215,7 @@ for (i in c(1, 3, 5, 7)) {
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
 
-  post.prob.gev <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
+  post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = update)
 
@@ -226,7 +226,6 @@ for (i in c(1, 3, 5, 7)) {
        fit.probit, post.prob.pro,
        y.i.p, s,
        file = filename)
-
 }
 
 # rm(list=ls())
