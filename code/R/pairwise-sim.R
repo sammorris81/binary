@@ -28,7 +28,7 @@ x     <- matrix(1, ns, 1)
 
 alpha.t <- 0.3
 rho.t   <- 0.1
-xi.t    <- 0.25
+xi.t    <- 0
 
 set.seed(3282)  # data
 y <- matrix(data = NA, nrow = ns, ncol = 10)
@@ -115,7 +115,7 @@ for (i in 1:10) {
                     alpha.attempts = 300, rho.attempts = 100,
                     spatial = TRUE, rho.init = fit.9$par[2], rho.upper = 9,
                     alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = FALSE,
                     xi.fix = TRUE,
                     xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                     iters = iters, burn = burn, update = update, thin = 1)
@@ -154,7 +154,7 @@ for (i in 1:10) {
                      alpha.attempts = 300, rho.attempts = 100,
                      spatial = TRUE, rho.init = knots.h, rho.upper = 9,
                      alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                     alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = TRUE,
+                     alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = FALSE,
                      xi.fix = TRUE,
                      xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                      iters = iters, burn = burn, update = update, thin = 1)
@@ -179,7 +179,7 @@ for (i in 1:10) {
                   alpha.attempts = 300, rho.attempts = 100,
                   spatial = TRUE, rho.init = knots.h, rho.upper = 9,
                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
-                  alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = TRUE,
+                  alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                   xi.fix = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
