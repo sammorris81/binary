@@ -331,11 +331,11 @@ bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0592
 
 # set 10
 load("pairwise-sim-10.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 0.0598
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 0.0600
 bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 
+bs.log    <- BrierScore(post.prob.log, y.validate)     # 0.0610
+bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0592
 
 # rm(list=ls())
 # load(file = "pairwisetest-sim.RData")
