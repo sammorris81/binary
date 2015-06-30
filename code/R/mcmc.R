@@ -185,15 +185,17 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
     } else {  # update beta
       if (!beta.fix) {
-        beta.update <- updateBeta(y=y, theta.star=theta.star, alpha=alpha,
-                                  z=z, z.star=z.star, beta=beta,
-                                  beta.m=beta.m, beta.s=beta.s, x.beta=x.beta,
-                                  xi=xi, x=x, cur.lly=cur.lly, acc=acc.beta,
-                                  att=att.beta, mh=mh.beta, thresh=thresh)
+        beta.update <- updateBeta(y = y, kernel = kernel, alpha = alpha,
+                                  a = a, z = z, w = w, wz.star = wz.star, 
+                                  beta = beta, beta.m = beta.m, beta.s = beta.s, 
+                                  x.beta = x.beta, xi = xi, x = x, 
+                                  cur.lly = cur.lly, acc = acc.beta,
+                                  att = att.beta, mh = mh.beta, thresh = thresh)
         beta     <- beta.update$beta
         x.beta   <- beta.update$x.beta
         z        <- beta.update$z
-        z.star   <- beta.update$z.star
+        wz.star  <- beta.update$wz.star
+        kernel   <- beta.update$kernel
         cur.lly  <- beta.update$cur.lly
         att.beta <- beta.update$att
         acc.beta <- beta.update$acc
@@ -209,20 +211,22 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update xi
       if (!xi.fix) {
-        xi.update <- updateXi(y=y, theta.star=theta.star, alpha=alpha, z=z,
-                              z.star=z.star, x.beta=x.beta, xi=xi, xi.m=xi.m,
-                              xi.s=xi.s, cur.lly=cur.lly,
-                              acc=acc.xi, att=att.xi, mh=mh.xi, thresh=thresh)
+        xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha, 
+                              a = a, z = z, w = w, wz.star = wz.star, 
+                              x.beta = x.beta, xi = xi, xi.m = xi.m, 
+                              xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi, 
+                              att = att.xi, mh = mh.xi, thresh = thresh)
         xi      <- xi.update$xi
         z       <- xi.update$z
-        z.star  <- xi.update$z.star
+        wz.star <- xi.update$wz.star
+        kernel  <- xi.update$kernel
         cur.lly <- xi.update$cur.lly
         att.xi  <- xi.update$att
         acc.xi  <- xi.update$acc
 
         if (iter < burn / 2) {
-          mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
-                                nattempts=xi.attempts)
+          mh.update <- mhUpdate(acc = acc.xi, att = att.xi, mh = mh.xi,
+                                nattempts = xi.attempts)
           acc.xi  <- mh.update$acc
           att.xi  <- mh.update$att
           mh.xi   <- mh.update$mh
@@ -275,8 +279,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         acc.alpha <- alpha.update$acc
 
         if (iter < burn / 2) {
-          mh.update <- mhUpdate(acc=acc.alpha, att=att.alpha, mh=mh.alpha,
-                                nattempts=alpha.attempts)
+          mh.update <- mhUpdate(acc = acc.alpha, att = att.alpha, mh = mh.alpha,
+                                nattempts = alpha.attempts)
           acc.alpha <- mh.update$acc
           att.alpha <- mh.update$att
           mh.alpha  <- mh.update$mh
@@ -299,8 +303,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         acc.rho <- rho.update$acc
 
         if (iter < burn / 2) {
-          mh.update <- mhUpdate(acc=acc.rho, att=att.rho, mh=mh.rho,
-                                nattempts=rho.attempts)
+          mh.update <- mhUpdate(acc = acc.rho, att = att.rho, mh = mh.rho,
+                                nattempts = rho.attempts)
           acc.rho   <- mh.update$acc
           att.rho   <- mh.update$att
           mh.rho    <- mh.update$mh
@@ -311,8 +315,9 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     }  # end thin
 
     if ((iter > burn) & predictions) {
-      yp <- rRareBinarySpat(x=x.pred, s=s.pred, knots=knots, beta=beta, xi=xi,
-                            alpha=alpha, rho=rho, thresh=thresh, dw2=dw2p, a=a)
+      yp <- rRareBinarySpat(x = x.pred, s = s.pred, knots = knots, 
+                            beta = beta, xi = xi, alpha = alpha, rho = rho, 
+                            thresh = thresh, dw2 = dw2p, a = a)
       keepers.y.pred[(iter - burn), , ] <- yp$y
     }
 
@@ -378,21 +383,19 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   return.iters <- (burn + 1):iters
 
   if (spatial) {
-    results <- list(beta=keepers.beta[return.iters, , drop = F],
-                    xi=keepers.xi[return.iters],
-                    a=keepers.a[return.iters, , , drop = F],
-                    alpha=keepers.alpha[return.iters],
-                    rho=keepers.rho[return.iters],
-                    lly=keepers.lly[return.iters],
-                    y.pred=keepers.y.pred)
+    results <- list(beta = keepers.beta[return.iters, , drop = F],
+                    xi = keepers.xi[return.iters],
+                    a = keepers.a[return.iters, , , drop = F],
+                    alpha = keepers.alpha[return.iters],
+                    rho = keepers.rho[return.iters],
+                    lly = keepers.lly[return.iters],
+                    y.pred = keepers.y.pred)
   } else {
-    results <- list(beta=keepers.beta[return.iters, , drop = F],
-                    xi=keepers.xi[return.iters],
-                    a=NULL,
-                    alpha=NULL,
-                    rho=NULL,
-                    lly=keepers.lly[return.iters],
-                    y.pred=keepers.y.pred)
+    results <- list(beta = keepers.beta[return.iters, , drop = F],
+                    xi = keepers.xi[return.iters],
+                    a = NULL, alpha = NULL, rho = NULL,
+                    lly = keepers.lly[return.iters],
+                    y.pred = keepers.y.pred)
   }
 
   return(results)

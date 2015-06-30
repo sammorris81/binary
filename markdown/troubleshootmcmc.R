@@ -37,7 +37,7 @@ rhos   <- (knots[2, 1] - knots[1, 1]) * seq(1, 3, by = 0.5)
 
 # get sites and distances from knots
 set.seed(7483)  # sites
-ns  <- 1500
+ns  <- 2000
 s   <- cbind(runif(ns), runif(ns))
 dw2 <- rdist(s, knots)
 d   <- as.matrix(rdist(s))
@@ -49,7 +49,7 @@ alpha.t <- 0.35
 alpha.min <- 0
 alpha.max <- 1
 alpha.rng <- alpha.max - alpha.min
-xi.t    <- 1
+xi.t    <- 0
 rho.t   <- 0.15
 prop    <- c(0.05, 0.01)
 knots.h <- knots[2, 1] - knots[1, 1]
@@ -127,15 +127,15 @@ mcmc.seed <- 1
 set.seed(mcmc.seed)
 
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                beta.init = fit$par[4], beta.m = 0, beta.s = 100,
-                xi.init = 1, xi.m = 0, xi.s = 0.5,
+                beta.init = -4.0, beta.m = 0, beta.s = 100,
+                xi.init = 0, xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
                 alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 300, rho.attempts = 100,
-                spatial = TRUE, rho.init = rho.hat, rho.upper = 9,
+                spatial = TRUE, rho.init = 0.2, rho.upper = 9,
                 alpha.init = 0.40, a.init = 1000, iterplot = TRUE,
-                alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = TRUE,
+                alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                 xi.fix = TRUE,
                 xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
