@@ -84,6 +84,9 @@ for (i in 3:4) {
   y.i.p <- y.validate[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
 
+  print("  start fit.9")
+  # fit alpha and rho
+  print("    start pcl fit")
   fit.9 <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                              alpha.init = 0.5, rho.init = knots.h,
                              xi.fix = TRUE, alpha.fix = FALSE,
@@ -92,10 +95,10 @@ for (i in 3:4) {
                              cov = X.o, max.dist = 2.5 * knots.h,
                              alpha.min = 0.1, alpha.max = 0.9,
                              threads = 3)
-  print("    fit.9")
 
   # spatial GEV
-  mcmc.seed <- 1
+  print("    start mcmc fit")
+  mcmc.seed <- i * 10
   set.seed(mcmc.seed)
 
   if (fit.9$par[1] < 0.3) {
@@ -117,10 +120,14 @@ for (i in 3:4) {
                     xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                     iters = iters, burn = burn, update = update, thin = 1)
 
+  print("    start mcmc predict")
   post.prob.gev.9 <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
                                 s.pred = s.p, knots = knots,
                                 start = 1, end = iters - burn, update = update)
 
+  # fit alpha only with rho set at knot spacing
+  print("  start fit.10")
+  print("    start pcl fit")
   fit.10 <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                                    alpha.init = 0.5, rho.init = knots.h,
                                    xi.fix = TRUE, alpha.fix = FALSE,
@@ -129,8 +136,8 @@ for (i in 3:4) {
                                    cov = X.o, max.dist = 2.5 * knots.h,
                                    alpha.min = 0.1, alpha.max = 0.9,
                                    threads = 3)
-  print("    fit.10")
 
+  print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   if (fit.10$par[1] < 0.3) {
@@ -152,55 +159,17 @@ for (i in 3:4) {
                      xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                      iters = iters, burn = burn, update = update, thin = 1)
 
+  print("    start mcmc predict")
   post.prob.gev.10 <- pred.spgev(mcmcoutput = fit.gev.10, x.pred = X.p,
                                  s.pred = s.p, knots = knots,
                                  start = 1, end = iters - burn, update = update)
 
-  # spatial logit
+  print("  start no pcl")
+
+  print("    start mcmc fit")
+  # don't use the pairwise likelihood at all
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
-                     knots = knots, starting = starting, tuning = tuning,
-                     priors = priors, cov.model = cov.model,
-                     n.samples = iters, verbose = verbose,
-                     n.report = n.report)
-
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                         pred.covars = X.p, start = burn + 1, end = iters,
-                         thin = 1, verbose = TRUE, n.report = 500)
-
-  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
-                       iters = iters, burn = burn, update = update)
-
-  post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.p, knots = knots,
-                               start = 1, end = iters - burn, update = update)
-
-
-  print(paste("Finished: Set ", i, sep = ""))
-  save(fit.9, fit.gev.9, post.prob.gev.9,
-       fit.10, fit.gev.10, post.prob.gev.10,
-       fit.logit, post.prob.log,
-       fit.probit, post.prob.pro,
-       y.i.p, s,
-       file = filename)
-}
-
-
-for (i in c(1, 3, 5, 7)) {
-  filename <- paste("pairwise-sim-", i, ".RData", sep = "")
-  load(filename)
-  mcmc.seed <- i
-  set.seed(mcmc.seed)
-  
-  y.i.o <- y.o[, i, drop = FALSE]
-  y.i.p <- y.validate[, i, drop = FALSE]
-  print(paste("Starting: Set ", i, sep = ""))
-  
   fit.gev <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.init = 0, beta.m = 0, beta.s = 100,
                   xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -214,12 +183,16 @@ for (i in c(1, 3, 5, 7)) {
                   xi.fix = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
-  
+
+  print("    start mcmc predict")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = update)
-  
+
   # spatial logit
+  print("  start logit")
+
+  print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
@@ -227,115 +200,118 @@ for (i in c(1, 3, 5, 7)) {
                      priors = priors, cov.model = cov.model,
                      n.samples = iters, verbose = verbose,
                      n.report = n.report)
-  
+
+  print("    start mcmc predict")
   yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
                          pred.covars = X.p, start = burn + 1, end = iters,
                          thin = 1, verbose = TRUE, n.report = 500)
-  
+
   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-  
+
+  # spatial probit
+  print("  start probit")
+
+  print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
                        iters = iters, burn = burn, update = update)
-  
+
+  print("    start mcmc predict")
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = update)
-  
-  #   save(fit.9, fit.gev.9, post.prob.gev.9,
-  #        fit.10, fit.gev.10, post.prob.gev.10,
-  #        fit.gev, post.prob.gev,
-  #        fit.logit, post.prob.log,
-  #        fit.probit, post.prob.pro,
-  #        y.i.p, s,
-  #        file = filename)
-  save(fit.gev, post.prob.gev,
+
+
+  print(paste("Finished: Set ", i, sep = ""))
+  save(fit.9, fit.gev.9, post.prob.gev.9,
+       fit.10, fit.gev.10, post.prob.gev.10,
+       fit.gev, post.prob.gev,
        fit.logit, post.prob.log,
        fit.probit, post.prob.pro,
-       y.i.p, s,
+       y.i.p, y.i.o, s,
        file = filename)
 }
 
 # set 1
 load("pairwise-sim-1.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0274
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0236
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0233
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0244
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0235
 
 # set 2
 load("pairwise-sim-2.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0205
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0188
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0723
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0164
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0175
 
 # set 3
 load("pairwise-sim-3.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0393
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0380
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0381
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0370
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0376
 
 # set 4
 load("pairwise-sim-4.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0219
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0193
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0582
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0183
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0197
 
 # set 5
 load("pairwise-sim-5.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 0.0781
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 0.0650
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 0.0652
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0625
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0190
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0095
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0087
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0103
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0097
 
 # set 6
 load("pairwise-sim-6.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 0.0652
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 0.0707
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 0.0681
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0676
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0061
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0022
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     #
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0026
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0035
 
 # set 7
 load("pairwise-sim-7.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 0.0781
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 0.0650
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 0.0652
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0625
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0201
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0175
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0174
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0183
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0183
 
 # set 8
-load("pairwise-sim-8.RData")  
+load("pairwise-sim-8.RData")
 # no bs.gev.9 or bs.gev.10 because MCMC died
 # bs.gev is different than other bs.gev because using a single beta update
-bs.gev    <- BrierScore(post.prob.gev, y.validate)  # 0.0758
-bs.log    <- BrierScore(post.prob.log, y.validate)  # 0.0730
-bs.pro    <- BrierScore(post.prob.pro, y.validate)  # 0.0744
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0080
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0058
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0063
 
 # set 9
 load("pairwise-sim-9.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 0.0598
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 0.0600
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 0.0610
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0592
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0266
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0254
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     #
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0267
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0264
 
 # set 10
 load("pairwise-sim-10.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.validate)   # 0.0598
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.validate)  # 0.0600
-bs.gev    <- BrierScore(post.prob.gev, y.validate)     # 
-bs.log    <- BrierScore(post.prob.log, y.validate)     # 0.0610
-bs.pro    <- BrierScore(post.prob.pro, y.validate)     # 0.0592
+bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0510
+bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0562
+bs.gev    <- BrierScore(post.prob.gev, y.i.p)     #
+bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0554
+bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0519
 
 # rm(list=ls())
 # load(file = "pairwisetest-sim.RData")
