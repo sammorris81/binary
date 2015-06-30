@@ -196,11 +196,11 @@ for (i in c(1, 3, 5, 7)) {
   load(filename)
   mcmc.seed <- i
   set.seed(mcmc.seed)
-
+  
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
-
+  
   fit.gev <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                   beta.init = 0, beta.m = 0, beta.s = 100,
                   xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -214,14 +214,43 @@ for (i in c(1, 3, 5, 7)) {
                   xi.fix = TRUE,
                   xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
-
+  
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = update)
-
-  save(fit.9, fit.gev.9, post.prob.gev.9,
-       fit.10, fit.gev.10, post.prob.gev.10,
-       fit.gev, post.prob.gev,
+  
+  # spatial logit
+  mcmc.seed <- mcmc.seed + 1
+  set.seed(mcmc.seed)
+  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
+                     knots = knots, starting = starting, tuning = tuning,
+                     priors = priors, cov.model = cov.model,
+                     n.samples = iters, verbose = verbose,
+                     n.report = n.report)
+  
+  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+                         pred.covars = X.p, start = burn + 1, end = iters,
+                         thin = 1, verbose = TRUE, n.report = 500)
+  
+  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+  
+  mcmc.seed <- mcmc.seed + 1
+  set.seed(mcmc.seed)
+  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
+                       iters = iters, burn = burn, update = update)
+  
+  post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+                               s.pred = s.p, knots = knots,
+                               start = 1, end = iters - burn, update = update)
+  
+  #   save(fit.9, fit.gev.9, post.prob.gev.9,
+  #        fit.10, fit.gev.10, post.prob.gev.10,
+  #        fit.gev, post.prob.gev,
+  #        fit.logit, post.prob.log,
+  #        fit.probit, post.prob.pro,
+  #        y.i.p, s,
+  #        file = filename)
+  save(fit.gev, post.prob.gev,
        fit.logit, post.prob.log,
        fit.probit, post.prob.pro,
        y.i.p, s,
