@@ -241,7 +241,7 @@ updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
 }
 
 updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
-                      rho, rho.upper=Inf, acc, att, mh) {
+                      rho, logrho.m, logrho.s, rho.upper=Inf, acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -254,9 +254,6 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
   can.wz.star  <- getwzStar(z = z, w = can.w, alpha = alpha)
   can.kernel   <- getKernel(wz.star = can.wz.star, a = a)
   can.lly      <- logLikeY(y = y, kernel = can.kernel)
-
-  logrho.m <- -1
-  logrho.s <- 2
 
   R <- sum(can.lly - cur.lly) +
        dnorm(can.rho.star, logrho.m, logrho.s, log=TRUE) -

@@ -5,7 +5,7 @@ library(evd)
 library(spBayes)
 library(fields)
 library(SpatialTools)
-# library(microbenchmark)
+library(microbenchmark)
 library(mvtnorm)
 library(Rcpp)
 library(numDeriv)
@@ -79,7 +79,7 @@ priors <- list("beta.norm"=list(1, 100),
 cov.model <- "exponential"
 
 for (i in 1:10) {
-  filename <- paste("pairwise-sim-", i, ".RData", sep = "")
+  filename <- paste("pairwise-sim-", i, "-a.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
@@ -110,14 +110,15 @@ for (i in 1:10) {
                     beta.init = fit.9$beta, beta.m = 0, beta.s = 100,
                     xi.init = 0, xi.m = 0, xi.s = 0.5,
                     knots = knots, beta.tune = 1, xi.tune = 0.1,
-                    alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                    alpha.tune = 0.05, alpha.m = fit.9$par[1], alpha.s = 0.05,
+                    rho.tune = 0.1, logrho.m = log(fit.9$par[2]), logrho.s = 2,
+                    A.tune = 1,
                     beta.attempts = 50, xi.attempts = 50,
                     alpha.attempts = 300, rho.attempts = 100,
                     spatial = TRUE, rho.init = fit.9$par[2], rho.upper = 9,
                     alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = FALSE,
+                    alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                     xi.fix = TRUE,
-                    xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                     iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")
@@ -149,14 +150,15 @@ for (i in 1:10) {
                      beta.init = fit.10$beta, beta.m = 0, beta.s = 100,
                      xi.init = 0, xi.m = 0, xi.s = 0.5,
                      knots = knots, beta.tune = 1, xi.tune = 0.1,
-                     alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1,
+                     alpha.tune = 0.05, alpha.m = fit.10$par[1], alpha.s = 0.05,
+                     rho.tune = 0.1, logrho.m = log(knots.h), logrho.s = 2,
+                     A.tune = 1,
                      beta.attempts = 50, xi.attempts = 50,
                      alpha.attempts = 300, rho.attempts = 100,
                      spatial = TRUE, rho.init = knots.h, rho.upper = 9,
                      alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                     alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = FALSE,
+                     alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                      xi.fix = TRUE,
-                     xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                      iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")
@@ -181,7 +183,6 @@ for (i in 1:10) {
                   alpha.init = 0.5, a.init = 1000, iterplot = TRUE,
                   alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                   xi.fix = TRUE,
-                  xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                   iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")

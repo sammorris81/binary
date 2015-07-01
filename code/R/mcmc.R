@@ -4,14 +4,15 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  npts = 100, knots = NULL, thresh = 0,
                  beta.tune = 0.01, xi.tune = 0.1,
                  alpha.tune = 0.1, alpha.m = 0.5, alpha.s = 0.05,
-                 rho.tune = 0.1, A.tune = 1,
+                 rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
+                 A.tune = 1,
                  beta.attempts = 50, xi.attempts = 50,
                  alpha.attempts = 200, rho.attempts = 200,
                  spatial = TRUE,
                  rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
                  beta.fix = FALSE, xi.fix = FALSE,   # debug
                  rho.fix = FALSE, alpha.fix = FALSE, # debug
-                 xibeta.joint = FALSE, xibeta.hat, xibeta.var,
+                 xibeta.joint = FALSE,
                  iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
@@ -269,6 +270,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         rho.update <- updateRho(y = y, kernel = kernel, a = a, alpha = alpha,
                                 cur.lly = cur.lly, w = w, z = z,
                                 wz.star = wz.star, dw2 = dw2, rho = rho,
+                                logrho.m = logrho.m, logrho.s = logrho.s, 
                                 rho.upper = rho.upper, acc = acc.rho,
                                 att = att.rho, mh = mh.rho)
         rho     <- rho.update$rho
@@ -345,7 +347,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
           for (i in 1:4) {
             plot(keepers.a[begin:iter, i, 1], type="l",
-                 main=paste("knot ", j, ", day ", i, sep=""),
+                 main=paste("knot ", i, ", day 1", sep=""),
                  xlab="", ylab="")
           }
         }
