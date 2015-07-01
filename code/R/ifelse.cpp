@@ -32,3 +32,23 @@ arma::vec ifelsevecCPP(arma::vec x, double tol) {
   return x;
 }
 
+// [[Rcpp::export]]
+arma::mat getLevelCPP(arma::mat a, arma::vec cuts) {
+  int ncols = a.n_cols;
+  int nrows = a.n_rows;
+  int ncuts = cuts.n_elem;
+  
+  arma::mat lev(nrows, ncols);
+  for (uword i = 0; i < nrows; i++) {
+    for (uword j = 0; j < ncols; j++) {
+      int lev_ij = 1;
+      double a_ij = a(i, j);
+      for (uword k = 0; k < ncuts; k++) {
+        lev_ij = a_ij > cuts(k) ? lev_ij + 1 : lev_ij;
+      }
+      lev(i, j) = lev_ij;
+    }
+  }
+  
+  return lev;
+}

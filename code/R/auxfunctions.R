@@ -107,18 +107,6 @@ getZ <- function(xi, x.beta, thresh=0) {
   return(z)
 }
 
-# theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
-getThetaStar <- function(w.star, a) {
-  # theta.star is ns x nt
-  # w.star = w^(1 / alpha) is ns x nknots
-  # a is nknots x nt
-  # alpha in (0,1)
-  w.star <- ifelse(w.star < 1e-7, 0, w.star)
-  if (length(a) == 1) {theta.star <- w.star * a}
-  if (length(a) > 1) {theta.star <- w.star %*% a}
-  return(theta.star)
-}
-
 # storing each day as an element of a list
 getwzStar <- function(z, w, alpha) {
   nknots  <- ncol(w)
@@ -168,35 +156,7 @@ stdW <- function(x, single=FALSE) {
 }
 
 
-# get find the ll for y - returns ns x nt matrix for each site/day
-logLikeY <- function(y, theta.star, z.star, print = F) {
-  theta.z.star <- -theta.star / z.star
-
-  if (!is.null(dim(y))) {
-    ll.y <- matrix(-Inf, dim(y))
-  } else {
-    ll.y <- rep(-Inf, length(y))
-  }
-
-  # numerical stability issue. originally was using
-  # (1 - y) * P(Y = 0) + y * P(Y = 1)
-  # would return NaN because 0 * -Inf is not a number
-  these <- which(y == 1)
-  if (print) {
-    print(as.vector(theta.star))
-    print(unique(z.star))
-  }
-  ll.y[-these] <- theta.z.star[-these]
-  ll.y[these]  <- log(1 - exp(theta.z.star[these]))
-  # if (sum(is.nan(ll.y)) > 0) {
-  #   these <- which(is.nan(ll.y))
-  #   print(theta.z.star[these])
-  #   # print(1 - exp(theta.z.star[these]))
-  # }
-  return(ll.y)
-}
-
-logLikeY2 <- function(y, kernel, print = F) {
+logLikeY <- function(y, kernel, print = F) {
   nt   <- ncol(y)
   ll.y <- matrix(-Inf, nrow(y), ncol(y))
 
@@ -265,6 +225,18 @@ rRareBinaryInd <- function(x, beta, xi, prob.success = 0.05) {
 
   results <- list(y = y)
   return(results)
+}
+
+# theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
+getThetaStar <- function(w.star, a) {
+  # theta.star is ns x nt
+  # w.star = w^(1 / alpha) is ns x nknots
+  # a is nknots x nt
+  # alpha in (0,1)
+  w.star <- ifelse(w.star < 1e-7, 0, w.star)
+  if (length(a) == 1) {theta.star <- w.star * a}
+  if (length(a) > 1) {theta.star <- w.star %*% a}
+  return(theta.star)
 }
 
 # generate dependent rare binary data
@@ -446,9 +418,16 @@ get.level.1 <- function(a, cuts) {
 
 get.level <- function(a, cuts) {
   if (length(a) > 1) {
-    warning("get.level should only be used when length(a) = 1")
+    if (!is.matrix(a)) {
+      a <- matrix(a, length(a), 1)
+      lev <- as.vector(getLevelCPP(a = a, cuts = cuts))
+    } else {
+      lev <- getLevelCPP(a = a, cuts = cuts)
+    }
+  } else {
+    lev <- sum(a > cuts) + 1
   }
-  lev <- sum(a > cuts) + 1
+  
   return(lev)
 }
 
@@ -525,8 +504,6 @@ BrierScore <- function(post.prob, validate) {
 
   return(score)
 }
-
-
 
 fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                               xi.fix = FALSE, alpha.fix = FALSE,
@@ -785,3 +762,35 @@ jacobian.rarebinaryCPP <- function(par, y, rho, d, dw2, cov, threads=1) {
     }
   }
 }
+
+
+##########
+#### Old
+##########
+# get find the ll for y - returns ns x nt matrix for each site/day
+# logLikeY2 <- function(y, theta.star, z.star, print = F) {
+#   theta.z.star <- -theta.star / z.star
+#   
+#   if (!is.null(dim(y))) {
+#     ll.y <- matrix(-Inf, dim(y))
+#   } else {
+#     ll.y <- rep(-Inf, length(y))
+#   }
+#   
+#   # numerical stability issue. originally was using
+#   # (1 - y) * P(Y = 0) + y * P(Y = 1)
+#   # would return NaN because 0 * -Inf is not a number
+#   these <- which(y == 1)
+#   if (print) {
+#     print(as.vector(theta.star))
+#     print(unique(z.star))
+#   }
+#   ll.y[-these] <- theta.z.star[-these]
+#   ll.y[these]  <- log(1 - exp(theta.z.star[these]))
+#   # if (sum(is.nan(ll.y)) > 0) {
+#   #   these <- which(is.nan(ll.y))
+#   #   print(theta.z.star[these])
+#   #   # print(1 - exp(theta.z.star[these]))
+#   # }
+#   return(ll.y)
+# }
