@@ -3,7 +3,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  xi.init = NULL, xi.m = 0, xi.s = 0.5,
                  npts = 100, knots = NULL, thresh = 0,
                  beta.tune = 0.01, xi.tune = 0.1,
-                 alpha.tune = 0.1, rho.tune = 0.1, A.tune = 1,
+                 alpha.tune = 0.1, alpha.m = 0.5, alpha.s = 0.05,
+                 rho.tune = 0.1, A.tune = 1,
                  beta.attempts = 50, xi.attempts = 50,
                  alpha.attempts = 200, rho.attempts = 200,
                  spatial = TRUE,
@@ -39,33 +40,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     keepers.y.pred <- NULL
   }
 
-  # get the initial set of weights for the sites and knots
-  if (spatial) {
-    alpha  <- alpha.init
-    rho    <- rho.init
-    dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-    w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
-    w.star <- w^(1 / alpha)
-
-    # get the initial set of random effects
-    if (length(a.init) > 1) {
-      a <- a.init
-    } else {
-      a <- matrix(a.init, nknots, nt)
-    }
-    theta.star <- getThetaStar(w.star, a)  # sum_l a_l * w_l^(1/alpha)
-  } else {  # independent GEV from Wang & Dey
-    theta.star <- 1
-    alpha <- 1
-  }
-
   # get initial z
-  if (is.null(xi.init)) {
-    xi <- 0
-  } else {
-    xi <- xi.init
-  }
-
   if (is.null(beta.init)) {
     if (xi == 0) {
       beta.init <- thresh + log(-log(1 - mean(y)))
@@ -81,26 +56,47 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       beta   <- beta.init
     }
   }
-
+  
+  if (is.null(xi.init)) {
+    xi <- 0
+  } else {
+    xi <- xi.init
+  }
+  
   x.beta <- getXBeta(x, ns, nt, beta)
   xt <- t(x)
   xtx.inv <- solve(xt %*% x)
-
+  
   z <- getZ(xi=xi, x.beta=x.beta)
-  z.star <- z^(1 / alpha)
-
-  wz.star <- getwzStar(z = z, w = w, alpha = alpha)
-  kernel  <- getKernel(wz.star = wz.star, a = a)
-
-  # keep current likelihood values in mcmc for time savings
-  cur.lly  <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
+  
+  # get the initial set of weights for the sites and knots
+  rho    <- rho.init
+  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
+  if (length(a.init) > 1) {
+    a <- a.init
+  } else {
+    a <- matrix(a.init, nknots, nt)
+  }
+  
   if (spatial) {
+    alpha <- alpha.init
     u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
     mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
     bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
     cur.llps <- dPS.Rcpp(a=a, alpha=alpha, mid.points=mid.points,
                          bin.width=bin.width)
+  } else {
+    alpha <- 1
   }
+  
+  alpha.a <- (1 - alpha.m) * alpha.m^2 / alpha.s^2 - alpha.m
+  alpha.b <- alpha.a * (1 / alpha.m - 1)
+  wz.star <- getwzStar(z = z, w = w, alpha = alpha)
+  kernel  <- getKernel(wz.star = wz.star, a = a)
+
+  # keep current likelihood values in mcmc for time savings
+  cur.lly  <- logLikeY(y = y, kernel = kernel)
 
   # MH tuning parameters
   if (length(beta.tune) == 1) {
@@ -126,6 +122,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   for (iter in 1:iters) { for (ttt in 1:thin) {
 
     if (xibeta.joint) {  # update beta and xi
+      # we are actual sampling for p = P(Y = 0)
       xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
                                     wz.star = wz.star, beta = beta,
                                     kernel = kernel, a = a, x.beta = x.beta,
@@ -136,33 +133,13 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     mh.p = mh.beta,
                                     acc.xi = acc.xi, att.xi = att.xi,
                                     mh.xi = mh.xi, thresh = 0)
-#       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
-#                                     z=z, z.star=z.star, beta=beta,
-#                                     beta.m=beta.m, beta.s=beta.s,
-#                                     x.beta=x.beta, xi=xi, x=x,
-#                                     xt=xt, xtx.inv=xtx.inv,
-#                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-#                                     can.mean=xibeta.hat, can.var=xibeta.var,
-#                                     acc.beta=acc.beta, att.beta=att.beta,
-#                                     mh.beta=mh.beta,
-#                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
-#                                     thresh=0)
-#       xibeta.update <- updateXiBeta2(y=y, theta.star=theta.star, alpha=alpha,
-#                                     z=z, z.star=z.star, beta=beta,
-#                                     beta.m=beta.m, beta.s=beta.s,
-#                                     x.beta=x.beta, xi=xi, x=x,
-#                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
-#                                     can.mean=xibeta.hat, can.var=xibeta.var,
-#                                     acc.beta=acc.beta, att.beta=att.beta,
-#                                     mh.beta=mh.beta,
-#                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
-#                                     thresh=0)
+
       beta     <- xibeta.update$beta
       x.beta   <- xibeta.update$x.beta
       xi       <- xibeta.update$xi
       z        <- xibeta.update$z
-      kernel   <- xibeta.update$kernel
       wz.star  <- xibeta.update$wz.star
+      kernel   <- xibeta.update$kernel
       cur.lly  <- xibeta.update$cur.lly
       att.beta <- xibeta.update$att.p
       acc.beta <- xibeta.update$acc.p
@@ -248,7 +225,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # adjust the candidate standard deviations
       if (iter < burn / 2) {
-        level <- get.level.1(old.a, cuts)
+        level <- get.level(old.a, cuts)
         for (j in 1:length(mh.a)) {
           acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
           att.a[j] <- att.a[j] + sum(level == j)
@@ -264,11 +241,11 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       if (!alpha.fix) {
         alpha.update <- updateAlpha(y = y, kernel = kernel, a = a,
                                     alpha = alpha, z = z, w = w,
-                                    wz.star = wz.star, alpha.a = 1, alpha.b = 1,
+                                    wz.star = wz.star, 
+                                    alpha.a = alpha.a, alpha.b = alpha.b,
                                     cur.lly = cur.lly, cur.llps = cur.llps,
                                     mid.points=mid.points, bin.width=bin.width,
-                                    acc=acc.alpha, att=att.alpha, mh=mh.alpha,
-                                    iter=iter)
+                                    acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
         alpha     <- alpha.update$alpha
         wz.star   <- alpha.update$wz.star
@@ -293,7 +270,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                 cur.lly = cur.lly, w = w, z = z,
                                 wz.star = wz.star, dw2 = dw2, rho = rho,
                                 rho.upper = rho.upper, acc = acc.rho,
-                                att = att.rho, mh = mh.rho, iter = iter)
+                                att = att.rho, mh = mh.rho)
         rho     <- rho.update$rho
         w       <- rho.update$w
         wz.star <- rho.update$wz.star
@@ -329,7 +306,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       keepers.alpha[iter]  <- alpha
       keepers.rho[iter]    <- rho
     }
-    keepers.lly[iter] <- sum(logLikeY2(y = y, kernel = kernel))
+    keepers.lly[iter] <- sum(logLikeY(y = y, kernel = kernel))
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)
