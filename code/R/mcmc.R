@@ -81,7 +81,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       beta   <- beta.init
     }
   }
-  
+
   x.beta <- getXBeta(x, ns, nt, beta)
   xt <- t(x)
   xtx.inv <- solve(xt %*% x)
@@ -91,7 +91,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
   wz.star <- getwzStar(z = z, w = w, alpha = alpha)
   kernel  <- getKernel(wz.star = wz.star, a = a)
-  
+
   # keep current likelihood values in mcmc for time savings
   cur.lly  <- logLikeY(y=y, theta.star=theta.star, z.star=z.star)
   if (spatial) {
@@ -124,22 +124,22 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   keepers.lly   <- rep(NA, iters)
 
   for (iter in 1:iters) { for (ttt in 1:thin) {
-    
+
     if (xibeta.joint) {  # update beta and xi
-      xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w, 
+      xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
                                     wz.star = wz.star, beta = beta,
-                                    kernel = kernel, a = a, x.beta = x.beta, 
+                                    kernel = kernel, a = a, x.beta = x.beta,
                                     xi = xi, x = x, xt = xt, xtx.inv = xtx.inv,
                                     xi.m = xi.m, xi.s = xi.s, cur.lly = cur.lly,
-                                    xi.fix = xi.fix, beta.fix = beta.fix, 
-                                    acc.p = acc.beta, att.p = att.beta, 
+                                    xi.fix = xi.fix, beta.fix = beta.fix,
+                                    acc.p = acc.beta, att.p = att.beta,
                                     mh.p = mh.beta,
-                                    acc.xi = acc.xi, att.xi = att.xi, 
+                                    acc.xi = acc.xi, att.xi = att.xi,
                                     mh.xi = mh.xi, thresh = 0)
 #       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
 #                                     z=z, z.star=z.star, beta=beta,
 #                                     beta.m=beta.m, beta.s=beta.s,
-#                                     x.beta=x.beta, xi=xi, x=x, 
+#                                     x.beta=x.beta, xi=xi, x=x,
 #                                     xt=xt, xtx.inv=xtx.inv,
 #                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
 #                                     can.mean=xibeta.hat, can.var=xibeta.var,
@@ -186,9 +186,9 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     } else {  # update beta
       if (!beta.fix) {
         beta.update <- updateBeta(y = y, kernel = kernel, alpha = alpha,
-                                  a = a, z = z, w = w, wz.star = wz.star, 
-                                  beta = beta, beta.m = beta.m, beta.s = beta.s, 
-                                  x.beta = x.beta, xi = xi, x = x, 
+                                  a = a, z = z, w = w, wz.star = wz.star,
+                                  beta = beta, beta.m = beta.m, beta.s = beta.s,
+                                  x.beta = x.beta, xi = xi, x = x,
                                   cur.lly = cur.lly, acc = acc.beta,
                                   att = att.beta, mh = mh.beta, thresh = thresh)
         beta     <- beta.update$beta
@@ -211,10 +211,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update xi
       if (!xi.fix) {
-        xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha, 
-                              a = a, z = z, w = w, wz.star = wz.star, 
-                              x.beta = x.beta, xi = xi, xi.m = xi.m, 
-                              xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi, 
+        xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha,
+                              a = a, z = z, w = w, wz.star = wz.star,
+                              x.beta = x.beta, xi = xi, xi.m = xi.m,
+                              xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi,
                               att = att.xi, mh = mh.xi, thresh = thresh)
         xi      <- xi.update$xi
         z       <- xi.update$z
@@ -238,8 +238,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       # update a - NOTE: does not use acc, att, and mh like usual
       old.a    <- a
       a.update <- updateA(y = y, kernel = kernel, a = a, alpha = alpha,
-                          wz.star = wz.star, cur.lly = cur.lly, 
-                          cur.llps = cur.llps, mid.points = mid.points, 
+                          wz.star = wz.star, cur.lly = cur.lly,
+                          cur.llps = cur.llps, mid.points = mid.points,
                           bin.width = bin.width, mh = mh.a, cuts = cuts)
       a        <- a.update$a
       kernel   <- a.update$kernel
@@ -262,10 +262,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update alpha
       if (!alpha.fix) {
-        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a, 
-                                    alpha = alpha, z = z, w = w, 
+        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a,
+                                    alpha = alpha, z = z, w = w,
                                     wz.star = wz.star, alpha.a = 1, alpha.b = 1,
-                                    cur.lly = cur.lly, cur.llps = cur.llps, 
+                                    cur.lly = cur.lly, cur.llps = cur.llps,
                                     mid.points=mid.points, bin.width=bin.width,
                                     acc=acc.alpha, att=att.alpha, mh=mh.alpha,
                                     iter=iter)
@@ -286,13 +286,13 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           mh.alpha  <- mh.update$mh
         }
       }  # fi !alpha.fix
-      
+
       # update rho
       if (!rho.fix) {
         rho.update <- updateRho(y = y, kernel = kernel, a = a, alpha = alpha,
-                                cur.lly = cur.lly, w = w, z = z, 
+                                cur.lly = cur.lly, w = w, z = z,
                                 wz.star = wz.star, dw2 = dw2, rho = rho,
-                                rho.upper = rho.upper, acc = acc.rho, 
+                                rho.upper = rho.upper, acc = acc.rho,
                                 att = att.rho, mh = mh.rho, iter = iter)
         rho     <- rho.update$rho
         w       <- rho.update$w
@@ -315,8 +315,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     }  # end thin
 
     if ((iter > burn) & predictions) {
-      yp <- rRareBinarySpat(x = x.pred, s = s.pred, knots = knots, 
-                            beta = beta, xi = xi, alpha = alpha, rho = rho, 
+      yp <- rRareBinarySpat(x = x.pred, s = s.pred, knots = knots,
+                            beta = beta, xi = xi, alpha = alpha, rho = rho,
                             thresh = thresh, dw2 = dw2p, a = a)
       keepers.y.pred[(iter - burn), , ] <- yp$y
     }
@@ -346,7 +346,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           begin <- burn
         }
 
-        par(mfrow=c(3, 6))
+        par(mfrow=c(2, 4))
         plot(keepers.beta[begin:iter, 1], type="l", main=bquote(beta[0]),
              xlab=round(mh.beta[1], 4), ylab=acc.rate.beta[1])
         if (np > 1) {
@@ -366,12 +366,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           plot(keepers.rho[begin:iter], type="l", main=bquote(rho),
                xlab=round(mh.rho, 4), ylab=acc.rate.rho)
 
-          for (i in 1:min(nt, 2)) {
-            for (j in 1:6) {
-              plot(keepers.a[begin:iter, j, i], type="l",
-                   main=paste("knot ", j, ", day ", i, sep=""),
-                   xlab="", ylab="")
-            }
+          for (i in 1:4) {
+            plot(keepers.a[begin:iter, i, 1], type="l",
+                 main=paste("knot ", j, ", day ", i, sep=""),
+                 xlab="", ylab="")
           }
         }
       }

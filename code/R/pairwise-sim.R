@@ -233,85 +233,23 @@ for (i in 1:10) {
        file = filename)
 }
 
-# set 1
-load("pairwise-sim-1.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0274
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0236
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0233
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0244
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0235
+bs <- matrix(NA, 5, 10)
+rownames(bs) <- c("bs.gev.9", "bs.gev.10", "bs.gev", "bs.log", "bs.pro")
 
-# set 2
-load("pairwise-sim-2.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0205
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0188
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0723
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0164
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0175
-
-# set 3
-load("pairwise-sim-3.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0393
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0380
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0381
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0370
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0376
-
-# set 4
-load("pairwise-sim-4.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0219
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0193
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0582
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0183
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0197
-
-# set 5
-load("pairwise-sim-5.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0190
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0095
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0087
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0103
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0097
-
-# set 6
-load("pairwise-sim-6.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0061
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0022
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     #
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0026
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0035
-
-# set 7
-load("pairwise-sim-7.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0201
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0175
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0174
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0183
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0183
-
-# set 8
-load("pairwise-sim-8.RData")
-# no bs.gev.9 or bs.gev.10 because MCMC died
-# bs.gev is different than other bs.gev because using a single beta update
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     # 0.0080
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0058
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0063
-
-# set 9
-load("pairwise-sim-9.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0266
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0254
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     #
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0267
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0264
-
-# set 10
-load("pairwise-sim-10.RData")
-bs.gev.9  <- BrierScore(post.prob.gev.9, y.i.p)   # 0.0510
-bs.gev.10 <- BrierScore(post.prob.gev.10, y.i.p)  # 0.0562
-bs.gev    <- BrierScore(post.prob.gev, y.i.p)     #
-bs.log    <- BrierScore(post.prob.log, y.i.p)     # 0.0554
-bs.pro    <- BrierScore(post.prob.pro, y.i.p)     # 0.0519
+for (i in 1:10) {
+  if (i != 6) {
+    file <- paste("pairwise-sim-", i, ".RData", sep = "")
+    print(paste("start: set", i))
+    load(file)
+    bs[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
+    bs[2, i] <- BrierScore(post.prob.gev.10, y.i.p)
+    if (i != 6) {
+      bs[3, i] <- BrierScore(post.prob.gev, y.i.p)
+    }
+    bs[4, i] <- BrierScore(post.prob.log, y.i.p)
+    bs[5, i] <- BrierScore(post.prob.pro, y.i.p)
+  }
+}
 
 # rm(list=ls())
 # load(file = "pairwisetest-sim.RData")
