@@ -78,7 +78,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 1:10) {
+for (i in 9:10) {
   filename <- paste("sim-results/pairwise-sim-", i, "-2.RData", sep = "")
   load(filename)
   y.i.o <- y.o[, i, drop = FALSE]
@@ -96,12 +96,12 @@ for (i in 1:10) {
 #                              cov = X.o, max.dist = 2.5 * knots.h,
 #                              alpha.min = 0.1, alpha.max = 0.9,
 #                              threads = 3)
-# 
+#
 #   # spatial GEV
 #   print("    start mcmc fit")
-#   mcmc.seed <- i * 10
+  mcmc.seed <- i * 10
 #   set.seed(mcmc.seed)
-# 
+#
 #   if (fit.9$par[1] < 0.3) {
 #     alpha.init <- 0.25
 #   } else {
@@ -121,12 +121,12 @@ for (i in 1:10) {
 #                     alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
 #                     xi.fix = TRUE,
 #                     iters = iters, burn = burn, update = update, thin = 1)
-# 
+#
 #   print("    start mcmc predict")
 #   post.prob.gev.9 <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
 #                                 s.pred = s.p, knots = knots,
 #                                 start = 1, end = iters - burn, update = update)
-# 
+#
 #   # fit alpha only with rho set at knot spacing
 #   print("  start fit.10")
 #   print("    start pcl fit")
@@ -138,9 +138,9 @@ for (i in 1:10) {
 #                                    cov = X.o, max.dist = 2.5 * knots.h,
 #                                    alpha.min = 0.1, alpha.max = 0.9,
 #                                    threads = 3)
-# 
+#
 #   print("    start mcmc fit 1")
-#   mcmc.seed <- mcmc.seed + 1
+  mcmc.seed <- mcmc.seed + 1
 #   set.seed(mcmc.seed)
 #   if (fit.10$par[1] < 0.3) {
 #     alpha.init <- 0.25
@@ -161,7 +161,7 @@ for (i in 1:10) {
 #                      alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
 #                      xi.fix = TRUE,
 #                      iters = iters, burn = burn, update = update, thin = 1)
-# 
+#
 #   print("    start mcmc predict")
 #   post.prob.gev.10 <- pred.spgev(mcmcoutput = fit.gev.10, x.pred = X.p,
 #                                  s.pred = s.p, knots = knots,
@@ -186,14 +186,14 @@ for (i in 1:10) {
                      alpha.attempts = 300, rho.attempts = 100,
                      spatial = TRUE, rho.init = knots.h, rho.upper = 9,
                      alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                     alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
+                     alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = FALSE,
                      xi.fix = TRUE,
                      iters = iters, burn = burn, update = update, thin = 1)
-  
+
   print("    start mcmc predict")
   post.prob.gev.10a <- pred.spgev(mcmcoutput = fit.gev.10a, x.pred = X.p,
                                   s.pred = s.p, knots = knots,
-                                  start = 1, end = iters - burn, 
+                                  start = 1, end = iters - burn,
                                   update = update)
 
   print(paste("Finished: Set ", i, sep = ""))
