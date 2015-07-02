@@ -63,18 +63,18 @@ Both 1a and 1b take $\beta$ to be the estimate for $\beta$ marginally for the si
 Here are the results for 10 datasets:
 
 ```{r compile-results, cache=TRUE, echo=FALSE, include = FALSE}
-bs <- matrix(NA, 5, 10)
+bs1 <- matrix(NA, 5, 10)
 for (i in 1:10) {
   file <- paste("../code/R/pairwise-sim-", i, ".RData", sep = "")
   print(paste("start: set", i))
   load(file)
-  bs[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
-  bs[2, i] <- BrierScore(post.prob.gev.10, y.i.p)
+  bs1[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
+  bs1[2, i] <- BrierScore(post.prob.gev.10, y.i.p)
   if (i != 6) {
-    bs[3, i] <- BrierScore(post.prob.gev, y.i.p)
+    bs1[3, i] <- BrierScore(post.prob.gev, y.i.p)
   }
-  bs[4, i] <- BrierScore(post.prob.log, y.i.p)
-  bs[5, i] <- BrierScore(post.prob.pro, y.i.p)
+  bs1[4, i] <- BrierScore(post.prob.log, y.i.p)
+  bs1[5, i] <- BrierScore(post.prob.pro, y.i.p)
 }
 ```
 
@@ -82,11 +82,11 @@ for (i in 1:10) {
 ```{r simresults, echo=FALSE}
 library(pander)
 panderOptions("digits", 4)
-rownames(bs) <- c("1a", "1b", "1c", "2", "3")
-bs <- cbind(bs, rowMeans(bs, na.rm = TRUE))
-colnames(bs) <- c(1:10, "Mean")
+rownames(bs1) <- c("1a", "1b", "1c", "2", "3")
+bs1 <- cbind(bs1, rowMeans(bs1, na.rm = TRUE))
+colnames(bs1) <- c(1:10, "Mean")
 set.caption("Simulation results (x 100) for 10 datasets")
-pander(t(bs) * 100)
+pander(t(bs1) * 100)
 ```
 
 \normalsize
@@ -94,3 +94,32 @@ So, some combination of 1b and 1c tend to help the performance of our rare binar
 I also encountered a little bit of problem with dataset 6 when trying to fit all the parameters in the MCMC.
 When I didn't fix $\alpha$ and $\rho$, as the MCMC was getting started, eventually the random effects would stop moving in the MCMC.
 I don't know why they stopped.
+
+## Somewhat informative priors
+
+When we use the estimate information from the pairwise likelihood to assign the prior distributions for $\alpha$ and $\rho$, here are the results.
+
+```{r compile-results2, cache=TRUE, echo=FALSE, include = FALSE}
+bs2 <- matrix(NA, 5, 10)
+for (i in 1:10) {
+  file <- paste("../code/R/pairwise-sim-", i, "-a.RData", sep = "")
+  print(paste("start: set", i))
+  load(file)
+  bs2[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
+  bs2[2, i] <- BrierScore(post.prob.gev.10, y.i.p)
+  bs2[3, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs2[4, i] <- BrierScore(post.prob.log, y.i.p)
+  bs2[5, i] <- BrierScore(post.prob.pro, y.i.p)
+}
+```
+
+\scriptsize
+```{r simresults2, echo=FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs2) <- c("1a", "1b", "1c", "2", "3")
+bs2 <- cbind(bs2, rowMeans(bs2, na.rm = TRUE))
+colnames(bs2) <- c(1:10, "Mean")
+set.caption("Simulation results (x 100) for 10 datasets")
+pander(t(bs2) * 100)
+```
