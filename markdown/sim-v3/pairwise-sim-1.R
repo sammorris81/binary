@@ -11,12 +11,12 @@ library(Rcpp)
 library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "./pairwise.cpp")
+sourceCpp(file = "../../code/R/pairwise.cpp")
 
-source("auxfunctions.R", chdir = TRUE)
-source("updateModel.R")
-source("mcmc.R")
-source("probit.R", chdir=T)
+source("../../code/R/auxfunctions.R", chdir = TRUE)
+source("../../code/R/updateModel.R")
+source("../../code/R/mcmc.R")
+source("../../code/R/probit.R", chdir=T)
 
 set.seed(7483)  # site
 ns    <- 2000
@@ -78,8 +78,8 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 9:10) {
-  filename <- paste("pairwise-sim-", i, "-a.RData", sep = "")
+for (i in 1:10) {
+  filename <- paste("sim-results/pairwise-sim-", i, "-1.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
@@ -117,7 +117,7 @@ for (i in 9:10) {
                     alpha.attempts = 300, rho.attempts = 100,
                     spatial = TRUE, rho.init = fit.9$par[2], rho.upper = 9,
                     alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                    alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
+                    alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = FALSE,
                     xi.fix = TRUE,
                     iters = iters, burn = burn, update = update, thin = 1)
 
@@ -157,7 +157,7 @@ for (i in 9:10) {
                      alpha.attempts = 300, rho.attempts = 100,
                      spatial = TRUE, rho.init = knots.h, rho.upper = 9,
                      alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                     alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
+                     alpha.fix = TRUE, rho.fix = TRUE, xibeta.joint = FALSE,
                      xi.fix = TRUE,
                      iters = iters, burn = burn, update = update, thin = 1)
 

@@ -16,12 +16,12 @@ library(Rcpp)
 library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "../code/R/pairwise.cpp")
+sourceCpp(file = "../../code/R/pairwise.cpp")
 
-source("../code/R/auxfunctions.R", chdir = TRUE)
-source("../code/R/updateModel.R")
-source("../code/R/mcmc.R")
-source("../code/R/probit.R", chdir=T)
+source("../../code/R/auxfunctions.R", chdir = TRUE)
+source("../../code/R/updateModel.R")
+source("../../code/R/mcmc.R")
+source("../../code/R/probit.R", chdir=T)
 ```
 
 # Small-scale simulation results
@@ -65,7 +65,7 @@ Here are the results for 10 datasets:
 ```{r compile-results, cache=TRUE, echo=FALSE, include = FALSE}
 bs1 <- matrix(NA, 5, 10)
 for (i in 1:10) {
-  file <- paste("../code/R/pairwise-sim-", i, ".RData", sep = "")
+  file <- paste("sim-results/pairwise-sim-", i, "-1.RData", sep = "")
   print(paste("start: set", i))
   load(file)
   bs1[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
@@ -97,20 +97,28 @@ I don't know why they stopped.
 
 ## Somewhat informative priors
 
-When we use the estimate information from the pairwise likelihood to assign the prior distributions for $\alpha$ and $\rho$, here are the results.
+We also wanted to explore what happens when we give an informative prior on $\alpha$ and $\rho$ in the MCMC.
+For $\alpha$, in each of the three methods listed below, we used a beta distribution with the mean taken to be the estimate from the pairwise composite likelihood and a standard deviation of 0.05.
+Each of the methods below differs in how we treat $\rho$.
+
+>  1a: The mean of $\rho$ in the MCMC is set to be the estimates from the pairwise composite likelihood.
+
+> 1b: The mean of $\rho$ in the MCMC is set to be the knot spacing.
+
+> 1c: We fix $\rho$ in the MCMC to be the knot spacing.
 
 ```{r compile-results2, cache=TRUE, echo=FALSE, include = FALSE}
 bs2 <- matrix(NA, 5, 10)
 for (i in 1:10) {
-  file <- paste("../code/R/pairwise-sim-", i, "-a.RData", sep = "")
+  file <- paste("sim-results/pairwise-sim-", i, "-2.RData", sep = "")
   print(paste("start: set", i))
   load(file)
   bs2[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
   bs2[2, i] <- BrierScore(post.prob.gev.10, y.i.p)
-  bs2[3, i] <- BrierScore(post.prob.gev, y.i.p)
-  bs2[4, i] <- BrierScore(post.prob.log, y.i.p)
-  bs2[5, i] <- BrierScore(post.prob.pro, y.i.p)
+  bs2[3, i] <- BrierScore(post.prob.gev.10a, y.i.p)
 }
+
+bs2[4:5, ] <- bs1[4:5, ]
 ```
 
 \scriptsize
