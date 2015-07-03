@@ -4,7 +4,7 @@ author: "Morris, S."
 date: "July 1, 2015"
 output: pdf_document
 ---
-```{r initial-setup, cache=TRUE, echo=FALSE, include = FALSE}
+```{r initial-setup, cache = TRUE, echo = FALSE, include = FALSE}
 library(fields)
 library(evd)
 library(spBayes)
@@ -22,6 +22,29 @@ source("../../code/R/auxfunctions.R", chdir = TRUE)
 source("../../code/R/updateModel.R")
 source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir=T)
+```
+
+```{r gendata, cache = TRUE, echo = FALSE, include = FALSE}
+set.seed(7483)  # site
+ns    <- 2000
+s     <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
+knots <- as.matrix(knots)
+knots.h <- abs(knots[1, 1] - knots[2, 1])
+x     <- matrix(1, ns, 1)
+
+alpha.t <- 0.3
+rho.t   <- 0.1
+xi.t    <- 0
+
+set.seed(3282)  # data
+y <- matrix(data = NA, nrow = ns, ncol = 10)
+for (i in 1:10) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = 0.05)
+
+  y[, i] <- data$y
+}
 ```
 
 # Small-scale simulation results
@@ -62,7 +85,7 @@ Both 1a and 1b take $\beta$ to be the estimate for $\beta$ marginally for the si
 
 Here are the results for 10 datasets:
 
-```{r compile-results, cache=TRUE, echo=FALSE, include = FALSE}
+```{r compile-results, cache = TRUE, echo = FALSE, include = FALSE}
 bs1 <- matrix(NA, 5, 10)
 for (i in 1:10) {
   file <- paste("sim-results/pairwise-sim-", i, "-1.RData", sep = "")
@@ -79,7 +102,7 @@ for (i in 1:10) {
 ```
 
 \scriptsize
-```{r simresults, echo=FALSE}
+```{r simresults, echo = FALSE}
 library(pander)
 panderOptions("digits", 4)
 rownames(bs1) <- c("1a", "1b", "1c", "2", "3")
@@ -101,13 +124,13 @@ We also wanted to explore what happens when we give an informative prior on $\al
 For $\alpha$, in each of the three methods listed below, we used a beta distribution with the mean taken to be the estimate from the pairwise composite likelihood and a standard deviation of 0.05.
 Each of the methods below differs in how we treat $\rho$.
 
->  1a: The mean of $\rho$ in the MCMC is set to be the estimates from the pairwise composite likelihood.
+> 1a: The mean of $\rho$ in the MCMC is set to be the estimates from the pairwise composite likelihood.
 
 > 1b: The mean of $\rho$ in the MCMC is set to be the knot spacing.
 
 > 1c: We fix $\rho$ in the MCMC to be the knot spacing.
 
-```{r compile-results2, cache=TRUE, echo=FALSE, include = FALSE}
+```{r compile-results2, cache = TRUE, echo = FALSE, include = FALSE}
 bs2 <- matrix(NA, 5, 10)
 for (i in 1:10) {
   file <- paste("sim-results/pairwise-sim-", i, "-2.RData", sep = "")
@@ -118,11 +141,11 @@ for (i in 1:10) {
   bs2[3, i] <- BrierScore(post.prob.gev.10a, y.i.p)
 }
 
-bs2[4:5, ] <- bs1[4:5, ]
+bs2[4:5, ] <- bs1[4:5, 1:10]
 ```
 
 \scriptsize
-```{r simresults2, echo=FALSE}
+```{r simresults2, echo = FALSE}
 library(pander)
 panderOptions("digits", 4)
 rownames(bs2) <- c("1a", "1b", "1c", "2", "3")
@@ -131,3 +154,49 @@ colnames(bs2) <- c(1:10, "Mean")
 set.caption("Simulation results (x 100) for 10 datasets")
 pander(t(bs2) * 100)
 ```
+
+\newpage
+
+```{r plotdata, echo = FALSE, cache = FALSE, fig.height = 10, fig.width = 7}
+par(mfrow=c(4, 3))
+for (i in 1:10) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = paste("simulated dataset: ", i), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
+
+\newpage
+\normalsize
+
+## Assessing variability of $\alpha$ due to site inclusion.
+
+I also tried fitting a variety of different max distances for the pairwise likelihood to see how the estimate of $\alpha$ changes as we include sites that are further away.
+Let $h$ be the knot distance in the $x$ or $y$ direction.
+I considered including pairs of sites if they were $h, 2h, \ldots, 5h$ away.
+These are the different estimates of $\alpha$ when $\rho$ is fixed.
+
+\scriptsize
+```{r compare-alpha, echo = FALSE, cache = FALSE}
+load("sim-results/cl-compare-distance.RData")
+alphas <- matrix(NA, 5, 10)
+for (i in 1:10) {
+  alphas[1, i] <- fit.1[[i]]$par
+  alphas[2, i] <- fit.2[[i]]$par
+  alphas[3, i] <- fit.3[[i]]$par
+  alphas[4, i] <- fit.4[[i]]$par
+  alphas[5, i] <- fit.5[[i]]$par
+}
+alphas <- cbind(alphas, rowMeans(alphas))
+
+panderOptions("digits", 4)
+colnames(alphas) <- c(1:10, "Mean")
+rownames(alphas) <- paste(1:5, "x h")
+set.caption("Pairwise estimates for $\\alpha$")
+pander(t(alphas))
+```
+
+\normalsize
+
+It would appear that the estimates seem to stabilize as long as we include sites in the pairwise composite likelihood that are within $2h$ to $3h$ of the reference site.
