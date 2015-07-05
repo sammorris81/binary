@@ -116,10 +116,11 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
   
   if (xi < 1e-6 & xi > -1e-6) {
     can.x.beta <- log(-log(can.p))
+
   } else {
     can.x.beta <- (1 - (-1 / log(can.p))^can.xi) / can.xi
   }
-  
+
   if (any(can.xi * (can.x.beta - thresh) > 1)) {
     can.lly <- -Inf
   } else {
@@ -128,7 +129,7 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
     can.kernel  <- getKernel(wz.star = can.wz.star, a = a)
     can.lly <- logLikeY(y = y, kernel = can.kernel)
   }
-  
+
   R <- sum(can.lly - cur.lly) +
        dbeta(can.p[1], 1, 1, log = TRUE) - dbeta(cur.p[1], 1, 1, log = TRUE)
   
@@ -278,11 +279,11 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
   }
-  
+
   np     <- nrow(s.pred)
   niters <- length(start:end)
   nknots <- dim(mcmcoutput$a)[2]
-  
+
   if (is.null(dim(mcmcoutput$beta))) {
     p <- 1
   } else {
@@ -298,14 +299,14 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
       nt <- dim(x.pred)[2]
     }
   }
-  
+
   niters <- length(start:end)
   beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
   xi    <- mcmcoutput$xi[start:end]
   a     <- mcmcoutput$a[start:end, , , drop = F]
   alpha <- mcmcoutput$alpha[start:end]
   rho   <- mcmcoutput$rho[start:end]
-  
+
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
   prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)

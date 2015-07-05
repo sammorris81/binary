@@ -78,7 +78,7 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 45000; burn <- 35000; update <- 500; thin <- 1
+iters <- 40000; burn <- 30000; update <- 500; thin <- 1
 
 # setup for spGLM
 n.report <- 500
@@ -123,11 +123,17 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 #### Fit MCMC
 ####################################################################
 # spatial GEV
+rho.hat <- rho.t
+alpha.hat <- alpha.t
+xibeta.hat <- c(xi.t, -data$thresh)
+xibeta.var <- matrix(c(0.4, -0.2, -0.2, 1.4))
+fit <- list(par=c(alpha.hat, rho.hat, xibeta.hat))
+
 mcmc.seed <- 1
 set.seed(mcmc.seed)
 
-Rprof(filename = "Rprof.out", line.profiling = TRUE)
 
+# Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = -4.0, beta.m = 0, beta.s = 100,
                 xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -195,8 +201,8 @@ post.prob.pro.1 <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 ####################################################################
 #### Get Brier scores
 ####################################################################
-bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0374
-bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0379
+bs.gev.1  <- BrierScore(post.prob.gev.1, y.validate)   # 0.0506 (0.0377)
+bs.gev.1t <- BrierScore(post.prob.gev.1t, y.validate)  # 0.0504
 bs.log.1  <- BrierScore(post.prob.log.1, y.validate)   # 0.0481
 bs.pro.1  <- BrierScore(post.prob.pro.1, y.validate)   # 0.0356
 dic.gev.1 <- dic.spgev(mcmcoutput = fit.gev, y = y.o, x = X.o, dw2 = dw2.o)  # -738

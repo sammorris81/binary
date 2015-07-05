@@ -57,6 +57,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       beta   <- beta.init
     }
   }
+<<<<<<< HEAD
   
   if (is.null(xi.init)) {
     xi <- 0
@@ -64,6 +65,12 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     xi <- xi.init
   }
   
+=======
+
+  if (is.null(xibeta.cor)) {
+    xibeta.cor <- -0.5
+  }
+>>>>>>> master
   x.beta <- getXBeta(x, ns, nt, beta)
   xt <- t(x)
   xtx.inv <- solve(xt %*% x)
@@ -123,6 +130,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   for (iter in 1:iters) { for (ttt in 1:thin) {
 
     if (xibeta.joint) {  # update beta and xi
+<<<<<<< HEAD
       # we are actual sampling for p = P(Y = 0)
       xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
                                     wz.star = wz.star, beta = beta,
@@ -135,6 +143,28 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     acc.xi = acc.xi, att.xi = att.xi,
                                     mh.xi = mh.xi, thresh = 0)
 
+=======
+#       xibeta.update <- updateXiBeta(y=y, theta.star=theta.star, alpha=alpha,
+#                                     z=z, z.star=z.star, beta=beta,
+#                                     beta.m=beta.m, beta.s=beta.s,
+#                                     x.beta=x.beta, xi=xi, x=x,
+#                                     xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+#                                     can.mean=xibeta.hat, can.var=xibeta.var,
+#                                     acc.beta=acc.beta, att.beta=att.beta,
+#                                     mh.beta=mh.beta,
+#                                     acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+#                                     thresh=0)
+      xibeta.update <- updateXiBeta2(y=y, theta.star=theta.star, alpha=alpha,
+                                    z=z, z.star=z.star, beta=beta,
+                                    beta.m=beta.m, beta.s=beta.s,
+                                    x.beta=x.beta, xi=xi, x=x,
+                                    xi.m=xi.m, xi.s=xi.s, cur.lly=cur.lly,
+                                    xibeta.cor=xibeta.cor,
+                                    acc.beta=acc.beta, att.beta=att.beta,
+                                    mh.beta=mh.beta,
+                                    acc.xi=acc.xi, att.xi=att.xi, mh.xi=mh.xi,
+                                    thresh=0)
+>>>>>>> master
       beta     <- xibeta.update$beta
       x.beta   <- xibeta.update$x.beta
       xi       <- xibeta.update$xi
@@ -248,6 +278,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     mid.points=mid.points, bin.width=bin.width,
                                     acc=acc.alpha, att=att.alpha, mh=mh.alpha)
 
+<<<<<<< HEAD
         alpha     <- alpha.update$alpha
         wz.star   <- alpha.update$wz.star
         kernel    <- alpha.update$kernel
@@ -255,6 +286,16 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         cur.llps  <- alpha.update$cur.llps
         att.alpha <- alpha.update$att
         acc.alpha <- alpha.update$acc
+=======
+        alpha      <- alpha.update$alpha
+        w.star     <- alpha.update$w.star
+        z.star     <- alpha.update$z.star
+        theta.star <- alpha.update$theta.star
+        cur.lly    <- alpha.update$cur.lly
+        cur.llps   <- alpha.update$cur.llps
+        att.alpha  <- alpha.update$att
+        acc.alpha  <- alpha.update$acc
+>>>>>>> master
 
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc = acc.alpha, att = att.alpha, mh = mh.alpha,
