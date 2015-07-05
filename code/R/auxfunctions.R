@@ -3,6 +3,12 @@ if (!exists("dPS.Rcpp")) {
   source('llps_cpp.R')
 }
 
+if (!exists("ifelsematCPP")) {
+  sourceCpp(file = "ifelse.cpp")
+}
+
+source('pairwise.R')
+
 ################################################################################
 # Common data transformations
 ################################################################################
@@ -28,12 +34,12 @@ transform <- list(
   log = function(x) log(x),
   exp = function(x) exp(x),
   copula = function(dens) {
-    this.dens <- paste("p", dens, sep="")
-    function(x, ...) qnorm(do.call(this.dens, args=list(x, ...)))
+    this.dens <- paste("p", dens, sep = "")
+    function(x, ...) qnorm(do.call(this.dens, args = list(x, ...)))
   },
   inv.copula = function(dens) {
-    this.dens <- paste("q", dens, sep="")
-    function(x, ...) do.call(this.dens, args=list(pnorm(x), ...))
+    this.dens <- paste("q", dens, sep = "")
+    function(x, ...) do.call(this.dens, args = list(pnorm(x), ...))
   }
 )
 
@@ -50,7 +56,7 @@ adjustX <- function(x, y) {
   np <- length(x) / length(y)
   if (is.null(dim(x))) {
     if (length(x) != length(y)) {
-      stop ("x cannot be coerced to proper dimensions")
+      stop("x cannot be coerced to proper dimensions")
     } else {
       x <- matrix(x, nrow = ns * nt, ncol = np)
       return(x)
@@ -60,7 +66,7 @@ adjustX <- function(x, y) {
       if ((nrow(x) == (ns * nt)) & (ncol(x) == np)) {
         return(x)
       } else {
-        stop ("if x is a matrix, it should have ns * nt rows and np cols")
+        stop("if x is a matrix, it should have ns * nt rows and np cols")
       }
     } else {
       if ((dim(x)[3] == np) & (dim(x)[2] == nt)) {
@@ -101,16 +107,39 @@ getZ <- function(xi, x.beta, thresh=0) {
   return(z)
 }
 
-# theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
-getThetaStar <- function(w.star, a) {
-  # theta.star is ns x nt
-  # w.star = w^(1 / alpha) is ns x nknots
-  # a is nknots x nt
-  # alpha in (0,1)
-  w.star <- ifelse(w.star < 1e-7, 0, w.star)
-  if (length(a) == 1) {theta.star <- w.star * a}
-  if (length(a) > 1) {theta.star <- w.star %*% a}
-  return(theta.star)
+# storing each day as an element of a list
+getwzStar <- function(z, w, alpha) {
+  nknots  <- ncol(w)
+  ns      <- nrow(w)
+  nt      <- ncol(z)
+
+  wz.star <- array(NA, dim=c(ns, nknots, nt))
+  for (t in 1:nt) {
+    z.t            <- matrix(rep(z[, t], nknots), ns, nknots)
+    wz.star[, , t] <- exp((log(w) - log(z.t)) / alpha)
+    wz.star[, , t] <- ifelsematCPP(wz.star[, , t], 1e-7)
+  }
+
+  return(wz.star)
+}
+
+# trying a slightly different calculation
+getKernel <- function(wz.star, a) {
+  nt <- dim(wz.star)[3]
+  nknots <- dim(wz.star)[2]
+  ns <- dim(wz.star)[1]
+
+  kernel <- matrix(NA, nrow = ns, ncol = nt)
+  for (t in 1:nt) {
+    a.t <- a[, t]
+    if (nknots == 1) {
+      kernel[, t] <- wz.star[, , t] * a.t  # wz.star will be length ns
+    } else if (nknots > 1) {
+      kernel[, t] <- wz.star[, , t] %*% a.t  # wz.star will be ns x nknots
+    }
+  }
+
+  return(kernel)
 }
 
 # get the kernel weighting
@@ -127,26 +156,17 @@ stdW <- function(x, single=FALSE) {
 }
 
 
-# get find the ll for y - returns ns x nt matrix for each site/day
-logLikeY <- function(y, theta.star, z.star) {
-  theta.z.star <- -theta.star / z.star
-  if (!is.null(dim(y))) {
-    ll.y <- matrix(-Inf, dim(y))
-  } else {
-    ll.y <- rep(-Inf, length(y))
-  }
+logLikeY <- function(y, kernel, print = F) {
+  nt   <- ncol(y)
+  ll.y <- matrix(-Inf, nrow(y), ncol(y))
 
   # numerical stability issue. originally was using
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
   these <- which(y == 1)
-  ll.y[-these] <- theta.z.star[-these]
-  ll.y[these]  <- log(1 - exp(theta.z.star[these]))
-  # if (sum(is.nan(ll.y)) > 0) {
-  #   these <- which(is.nan(ll.y))
-  #   print(theta.z.star[these])
-  #   # print(1 - exp(theta.z.star[these]))
-  # }
+  ll.y[-these] <- -kernel[-these]
+  ll.y[these]  <- log(1 - exp(-kernel[these]))
+
   return(ll.y)
 }
 
@@ -207,6 +227,18 @@ rRareBinaryInd <- function(x, beta, xi, prob.success = 0.05) {
   return(results)
 }
 
+# theta.star = theta^(1 / alpha) = sum_l=1^L a_l * w_l^(1 / alpha)
+getThetaStar <- function(w.star, a) {
+  # theta.star is ns x nt
+  # w.star = w^(1 / alpha) is ns x nknots
+  # a is nknots x nt
+  # alpha in (0,1)
+  w.star <- ifelse(w.star < 1e-7, 0, w.star)
+  if (length(a) == 1) {theta.star <- w.star * a}
+  if (length(a) > 1) {theta.star <- w.star %*% a}
+  return(theta.star)
+}
+
 # generate dependent rare binary data
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
                             prob.success = 0.05, dw2 = NULL, a = NULL) {
@@ -242,7 +274,11 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   u <- matrix(rgev(n = ns * nt, 1, alpha, alpha), ns, nt)
   z <- u * theta.star^alpha
 
-  h <- x.beta + (z^xi - 1) / xi
+  if (xi == 0) {
+    h <- x.beta + log(z)
+  } else {
+    h <- x.beta + (z^xi - 1) / xi
+  }
 
   # set the threshold for success at whatever value will give us
   # our desired percentage of 1s.
@@ -382,9 +418,16 @@ get.level.1 <- function(a, cuts) {
 
 get.level <- function(a, cuts) {
   if (length(a) > 1) {
-    warning("get.level should only be used when length(a) = 1")
+    if (!is.matrix(a)) {
+      a <- matrix(a, length(a), 1)
+      lev <- as.vector(getLevelCPP(a = a, cuts = cuts))
+    } else {
+      lev <- getLevelCPP(a = a, cuts = cuts)
+    }
+  } else {
+    lev <- sum(a > cuts) + 1
   }
-  lev <- sum(a > cuts) + 1
+  
   return(lev)
 }
 
@@ -462,297 +505,205 @@ BrierScore <- function(post.prob, validate) {
   return(score)
 }
 
-
-pairwise.rarebinaryR <- function(par, y, dw2, cov) {
-  # par: parameter vector (alpha, rho, xi, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # x: covariates (ns x np)
-
-  npars <- length(par)
-  alpha <- par[1]
-  rho   <- par[2]
-  xi    <- par[3]
-  beta  <- par[4:npars]
-
-  ns     <- length(y)
-  np     <- ncol(cov)
-  nknots <- ncol(dw2)
-
-  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  if (length(beta) == 1) {
-    x.beta <- cov * beta
-  } else {
-    x.beta <- cov %*% beta           # should be ns x np
-  }
-  z      <- getZ(xi, x.beta)       # should be ns long
-
-  # keep estimates in their actual space
-  if (alpha < 0 | alpha > 1) {
-    return(1e99)
-  }
-  if (rho < 0) {
-    return(1e99)
-  }
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-  print(kernel[1:5, 1:5])
-
-  ll <- 0
-  for (i in 1:(ns - 1)) {
-    for (j in (i + 1):ns) {
-      # in all cases, we need the joint
-      # first take the kernel bits and add i and j for each knot
-      # joint <- -sum(apply(kernel[c(i, j), ], 2, sum)^alpha)
-      joint <- -getJoint2(kernel = kernel[c(i, j), ], alpha = alpha)
-      if (y[i] == 0 & y[j] == 0) {
-        ll <- ll + joint
-      } else if (y[i] == 1 & y[j] == 0) {  # add in marginal for i
-        ll <- ll + log(exp(-1 / z[j]) - exp(joint))
-      } else if (y[i] == 0 & y[j] == 1) {
-        ll <- ll + log(exp(-1 / z[i]) - exp(joint))
-      } else if (y[i] == 1 & y[j] == 1) {  # do 1,1 likelihood
-        ll <- ll + log(1 - exp(-1 / z[i]) - exp(-1 / z[j]) + exp(joint))
-      }
-    }
-  }
-
-  return(-ll)
-}
-
-pairwise.rarebinaryCPP <- function(par, y, dw2, d, cov, max.dist, threads = 1,
-                                   alpha.min = 0.2, alpha.max = 0.9) {
-  # par: parameter vector (alpha, rho, xi, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # x: covariates (ns x np)
-
-  npars <- length(par)
-  alpha.star <- par[1]
-  rho.star   <- par[2]
-  xi         <- par[3]
-  beta       <- par[4:npars]
-
-  if (xi < 1e-10 & xi > -1e-10) {
-    xi <- 0
-  }
-
-  # transform to actual space
-  # alpha in (alpha.min, alpha.max)
-  alpha <- (exp(alpha.star) / (1 + exp(alpha.star))) *
-    (alpha.max - alpha.min) + alpha.min
-  rho <- exp(rho.star)
-
-  ns     <- nrow(y)
-  nt     <- ncol(y)
-  np     <- ncol(cov)
-  nknots <- ncol(dw2)
-
-  W      <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  if (length(beta) == 1) {
-    x.beta <- matrix(cov * beta, ns, nt)
-  } else {
-    x.beta <- cov %*% beta           # should be ns long
-  }
-  z <- getZ(xi, x.beta)       # should be ns long
-
-  # keep estimates in their actual space
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-  if (rho > 0.2 * max(d)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
-  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max(d), threads = threads)
-
-  return(-ll)
-}
-
-pairwise.rarebinary2CPP <- function(par, alpha, rho, d, y, W, cov, max.dist,
-                                    threads = 1) {
-  # par: parameter vector (xi, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # cov: covariates (ns x np)
-
-  npars <- length(par)
-  xi    <- par[1]
-  beta  <- par[2:npars]
-
-  x.beta <- cov %*% beta           # should be ns long
-  z      <- getZ(xi, x.beta)       # should be ns long
-
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
-  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max.dist, threads = threads)
-
-  return(-ll)  # optim minimizes, so return neg loglike
-}
-
-pairwise.rarebinary3CPP <- function(par, rho, d, y, W, cov, max.dist,
-                                    threads = 1) {
-  # par: parameter vector (xi, alpha, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # cov: covariates (ns x np)
-
-  npars <- length(par)
-  alpha <- par[1]
-  xi    <- par[2]
-  beta  <- par[3:npars]
-
-  ns <- nrow(y)
-  nt <- ncol(y)
-
-  if (length(beta) == 1) {
-    x.beta <- matrix(cov * beta, ns, nt)
-  } else {
-    x.beta <- cov %*% beta
-  }
-
-  z      <- getZ(xi, x.beta)       # should be ns long
-
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
-  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max.dist, threads = threads)
-
-  return(-ll)  # optim minimizes, so return neg loglike
-}
-
-pairwise.rarebinary4CPP <- function(par, alpha, d, dw2, y, cov, max.dist,
-                                    threads = 1) {
-  # par: parameter vector (xi, alpha, beta)
-  # y: observed data (ns)
-  # dw2: squared distance between sites and knots (ns x nknots)
-  # cov: covariates (ns x np)
-
-  npars  <- length(par)
-  logrho <- par[1]
-  xi     <- par[2]
-  beta   <- par[3:npars]
-
-  rho <- exp(logrho)
-
-  ns <- nrow(y)
-  nt <- ncol(y)
-
-  W  <- stdW(makeW(dw2, rho))  # should be ns x nknots
-  if (length(beta) == 1) {
-    x.beta <- matrix(cov * beta, ns, nt)
-  } else {
-    x.beta <- cov %*% beta
-  }
-
-  z      <- getZ(xi, x.beta)       # should be ns long
-
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  kernel <- exp((log(W) - log(as.vector(z))) / alpha)
-
-  ll <- pairwiseCPP(kernel = kernel, alpha = alpha, z = z, y = y,
-                    rho = rho, d = d, max_dist = max.dist, threads = threads)
-
-  return(-ll)  # optim minimizes, so return neg loglike
-}
-
-ind.rarebinary <- function(par, y, cov) {
-  npars <- length(par)
-  xi    <- par[1]
-  beta  <- par[2:npars]
-
-  ns <- nrow(y)
-  nt <- ncol(y)
-
-  if (length(beta) == 1) {
-    x.beta <- matrix(cov * beta, ns, nt)
-  } else {
-    x.beta <- cov %*% beta
-  }
-
-  if (any((xi * x.beta) > 1)) {
-    return(1e99)
-  }
-
-  z <- getZ(xi, x.beta)
-
-  these <- which(y == 1)
-  ll.y <- matrix(NA, ns, nt)
-  ll.y[-these] <- -1 / z[-these]
-  ll.y[these]  <- log(1 - exp(-1 / z[these]))
-
-  return(-sum(ll.y))
-}
-
-
-# traditionally, they only use sites that are close together.
-# adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinaryCPP <- function(init.par, y, dw2, d, max.dist = NULL, cov,
+fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
+                              xi.fix = FALSE, alpha.fix = FALSE,
+                              rho.fix = FALSE, beta.fix = FALSE,
+                              y, dw2, d, max.dist = NULL, cov,
                               alpha.min = 0, alpha.max = 1, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
 
-  results <- optim(init.par, pairwise.rarebinaryCPP, y = y, dw2 = dw2,
-                   d = d, max.dist = max.dist, cov = cov, threads = threads,
-                   alpha.min = alpha.min, alpha.max = alpha.max,
-                   method = "BFGS", hessian = TRUE)
+#   alpha.star.init <- log(alpha.init / (1 - alpha.init))
+#   rho.star.init <- log(rho.init)
 
-  return(results)
-}
+  # different combinations of parameters for fixing
+  if (!xi.fix & !alpha.fix & !rho.fix & !beta.fix) {  # xi, alpha, rho, beta
 
-# traditionally, they only use sites that are close together.
-# adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinary2CPP <- function(init.par, alpha, rho, y, dw2, d,
-                               max.dist = NULL, cov, threads = 1) {
-  if (is.null(max.dist)) {
-    max.dist <- max(d)
+    init.par <- c(xi.init, alpha.init, rho.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.1, y = y,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "none"
+    results$param.names <- c("xi", "alpha", "rho", "beta")
+
+  } else if (xi.fix & !alpha.fix & !rho.fix & !beta.fix) {  # alpha, rho, and beta
+
+    init.par <- c(alpha.init, rho.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.2, y = y,
+                      xi = xi.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi"
+    results$param.names <- c("alpha", "rho", "beta")
+
+  } else if (!xi.fix & alpha.fix & !rho.fix & !beta.fix) {  # xi, rho, and beta
+
+    init.par <- c(xi.init, rho.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.3, y = y,
+                      alpha = alpha.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "alpha"
+    results$param.names <- c("xi", "rho", "beta")
+
+  } else if (!xi.fix & !alpha.fix & rho.fix & !beta.fix) {  # xi, alpha, and beta
+
+    init.par <- c(xi.init, alpha.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.4, y = y,
+                      rho = rho.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "rho"
+    results$param.names <- c("xi", "alpha", "beta")
+
+  } else if (xi.fix & alpha.fix & !rho.fix & !beta.fix) {  # rho and beta
+
+    init.par <- c(rho.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.5, y = y,
+                      xi = xi.init, alpha = alpha.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi and alpha"
+    results$param.names <- c("rho", "beta")
+
+  } else if (xi.fix & !alpha.fix & rho.fix & !beta.fix) {  # alpha and beta
+
+    init.par <- c(alpha.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.6, y = y,
+                      xi = xi.init, rho = rho.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi and rho"
+    results$param.names <- c("alpha", "beta")
+
+  } else if (!xi.fix & alpha.fix & rho.fix & !beta.fix) {  # xi and beta
+
+    init.par <- c(xi.init, beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.7, y = y,
+                      alpha = alpha.init, rho = rho.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "alpha and rho"
+    results$param.names <- c("xi", "beta")
+
+  } else if (xi.fix & alpha.fix & rho.fix & !beta.fix) {  # beta only
+
+    init.par <- c(beta.init)
+    results  <- optim(init.par, pairwise.rarebinaryCPP.8, y = y,
+                      xi = xi.init, alpha = alpha.init,
+                      rho = rho.init,
+                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                      alpha.min = alpha.min, alpha.max = alpha.max,
+                      threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi, alpha, and rho"
+    results$param.names <- "beta"
+
+  } else if (xi.fix & !alpha.fix & !rho.fix & beta.fix) {
+
+    results.beta <- optim(par = beta.init, beta.hat, y = y,
+                          cov = cov, xi = xi.init, method = "BFGS",
+                          hessian = TRUE)
+    beta.hat <- results.beta$par
+    init.par <- c(alpha.init, rho.init)
+    results <- optim(init.par, pairwise.rarebinaryCPP.9, y = y,
+                     xi = xi.init, beta = beta.hat,
+                     dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                     alpha.min = alpha.min, alpha.max = alpha.max,
+                     threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi"
+    results$param.names <- c("alpha", "rho")
+    results$beta <- beta.hat
+    results$beta.cov <- solve(results.beta$hessian)
+
+  } else if (xi.fix & !alpha.fix & rho.fix & beta.fix) {
+
+    results.beta <- optim(par = beta.init, beta.hat, y = y,
+                          cov = cov, xi = xi.init, method = "BFGS",
+                          hessian = TRUE)
+    beta.hat <- results.beta$par
+    init.par <- alpha.init
+    results <- optim(init.par, pairwise.rarebinaryCPP.10, y = y,
+                     xi = xi.init, rho = rho.init, beta = beta.hat,
+                     dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
+                     alpha.min = alpha.min, alpha.max = alpha.max,
+                     threads = threads, method = "BFGS", hessian = TRUE)
+    results$fixed <- "xi, rho"
+    results$param.names <- c("alpha")
+    results$beta <- beta.hat
+    results$beta.cov <- solve(results.beta$hessian)
+
+  } else if (xi.fix & alpha.fix & !rho.fix & beta.fix) {
+
   }
 
-  W <- stdW(makeW(rho, dw2))
-
-  results <- optim(init.par, pairwise.rarebinary2CPP,
-                   alpha = alpha, rho = rho,
-                   d = d, y = y, W = W, cov = cov,
-                   max.dist = max.dist, threads = threads,
-                   method = "BFGS", hessian = TRUE)
-
   return(results)
 }
 
-# traditionally, they only use sites that are close together.
-# adding in d to the optim call so we can only include sites within 2 * bw
-fit.rarebinary4CPP <- function(init.par, alpha, y, dw2, d,
-                               max.dist = NULL, cov, threads = 1) {
-  if (is.null(max.dist)) {
-    max.dist <- max(d)
+getJoint2 <- function(kernel, alpha) {
+  knot.contribute <- colSums(kernel)^alpha
+  # print(knot.contribute)
+  joint <- sum(knot.contribute)
+  return(joint)
+}
+
+dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1,
+                      thresh=0, update=NULL) {
+
+  ns <- nrow(y)
+  nt <- ncol(y)
+
+  if (is.null(end)) {
+    end <- length(mcmcoutput$xi)
   }
 
-  results <- optim(init.par, pairwise.rarebinary4CPP,
-                   alpha = alpha, d=d, y = y, dw2 = dw2, cov = cov,
-                   max.dist = max.dist, threads = threads,
-                   method = "BFGS", hessian = TRUE)
+  niters <- length(start:end)
+  nknots <- dim(mcmcoutput$a)[2]
 
+  dbar <- -2 * mean(mcmcoutput$lly[start:end])
+
+  if (is.null(dim(mcmcoutput$beta))) {
+    p    <- 1
+  } else {
+    p    <- ncol(mcmcoutput$beta)
+  }
+
+  beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
+  xi    <- mcmcoutput$xi[start:end]
+  a     <- mcmcoutput$a[start:end, , , drop = F]
+  alpha <- mcmcoutput$alpha[start:end]
+  rho   <- mcmcoutput$rho[start:end]
+
+  betabar  <- apply(beta, 2, mean)
+  xibar    <- mean(xi)
+  abar     <- apply(a, c(2, 3), mean)
+  alphabar <- mean(alpha)
+  rhobar   <- mean(rho)
+
+  x.beta     <- x %*% betabar
+  z          <- getZ(xi = xibar, x.beta=x.beta, thresh=thresh)
+  z.star     <- z^(1 / alphabar)
+  w          <- stdW(makeW(dw2 = dw2, rho = rhobar))
+  w.star     <- w^(1 / alphabar)
+  theta.star <- getThetaStar(w.star = w.star, a = abar)
+  prob       <- 1 - exp(-theta.star / z.star)
+  dthetabar  <- -2 * sum(logLikeY(y, theta.star = theta.star,
+                                    z.star = z.star))
+
+  pd  <- dbar - dthetabar
+  dic <- dbar + pd
+
+  results <- list(dic = dic, pd = pd, dbar = dbar, dthetabar = dthetabar)
   return(results)
 }
+
 
 fit.rarebinaryInd <- function(init.par, y, cov) {
   results <- optim(init.par, ind.rarebinary, y = y, cov = cov,
@@ -813,59 +764,33 @@ jacobian.rarebinaryCPP <- function(par, y, rho, d, dw2, cov, threads=1) {
 }
 
 
-getJoint2 <- function(kernel, alpha) {
-  knot.contribute <- colSums(kernel)^alpha
-  # print(knot.contribute)
-  joint <- sum(knot.contribute)
-  return(joint)
-}
-
-dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1,
-                      thresh=0, update=NULL) {
-
-  ns <- nrow(y)
-  nt <- ncol(y)
-
-  if (is.null(end)) {
-    end <- length(mcmcoutput$xi)
-  }
-
-  niters <- length(start:end)
-  nknots <- dim(mcmcoutput$a)[2]
-
-  dbar <- -2 * mean(mcmcoutput$lly[start:end])
-
-  if (is.null(dim(mcmcoutput$beta))) {
-    p    <- 1
-  } else {
-    p    <- ncol(mcmcoutput$beta)
-  }
-  
-  beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
-  xi    <- mcmcoutput$xi[start:end]
-  a     <- mcmcoutput$a[start:end, , , drop = F]
-  alpha <- mcmcoutput$alpha[start:end]
-  rho   <- mcmcoutput$rho[start:end]
-
-  betabar  <- apply(beta, 2, mean)
-  xibar    <- mean(xi)
-  abar     <- apply(a, c(2, 3), mean)
-  alphabar <- mean(alpha)
-  rhobar   <- mean(rho)
-
-  x.beta     <- x %*% betabar
-  z          <- getZ(xi = xibar, x.beta=x.beta, thresh=thresh)
-  z.star     <- z^(1 / alphabar)
-  w          <- stdW(makeW(dw2 = dw2, rho = rhobar))
-  w.star     <- w^(1 / alphabar)
-  theta.star <- getThetaStar(w.star = w.star, a = abar)
-  prob       <- 1 - exp(-theta.star / z.star)
-  dthetabar  <- -2 * sum(logLikeY(y, theta.star = theta.star,
-                                    z.star = z.star))
-
-  pd  <- dbar - dthetabar
-  dic <- dbar + pd
-
-  results <- list(dic = dic, pd = pd, dbar = dbar, dthetabar = dthetabar)
-  return(results)
-}
+##########
+#### Old
+##########
+# get find the ll for y - returns ns x nt matrix for each site/day
+# logLikeY2 <- function(y, theta.star, z.star, print = F) {
+#   theta.z.star <- -theta.star / z.star
+#   
+#   if (!is.null(dim(y))) {
+#     ll.y <- matrix(-Inf, dim(y))
+#   } else {
+#     ll.y <- rep(-Inf, length(y))
+#   }
+#   
+#   # numerical stability issue. originally was using
+#   # (1 - y) * P(Y = 0) + y * P(Y = 1)
+#   # would return NaN because 0 * -Inf is not a number
+#   these <- which(y == 1)
+#   if (print) {
+#     print(as.vector(theta.star))
+#     print(unique(z.star))
+#   }
+#   ll.y[-these] <- theta.z.star[-these]
+#   ll.y[these]  <- log(1 - exp(theta.z.star[these]))
+#   # if (sum(is.nan(ll.y)) > 0) {
+#   #   these <- which(is.nan(ll.y))
+#   #   print(theta.z.star[these])
+#   #   # print(1 - exp(theta.z.star[these]))
+#   # }
+#   return(ll.y)
+# }
