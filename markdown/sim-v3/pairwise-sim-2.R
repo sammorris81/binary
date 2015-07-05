@@ -1,3 +1,7 @@
+#### Making a few adjustments to the MCMC. In particular, tyring to let alpha
+#### and rho not be fixed in the MCMC. For more details, see the section
+#### in Sim_take_3.pdf on somewhat informative priors.
+
 rm(list=ls())
 options(warn=2)
 library(fields)
