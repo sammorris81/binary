@@ -126,6 +126,8 @@ xibeta.var <- solve(fit$hessian[3:4, 3:4])
 mcmc.seed <- 1
 set.seed(mcmc.seed)
 
+Rprof(filename = "Rprof.out", line.profiling = TRUE)
+
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = -4.0, beta.m = 0, beta.s = 100,
                 xi.init = 0, xi.m = 0, xi.s = 0.5,
