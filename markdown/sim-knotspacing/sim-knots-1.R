@@ -35,7 +35,7 @@ knots.t3 <- cbind(runif(400), runif(400))
 x     <- matrix(1, ns, 1)
 
 alpha.t <- 0.3
-rho.t   <- 0.05
+rho.t   <- 0.01
 xi.t    <- 0
 
 set.seed(3282)  # data
@@ -73,13 +73,13 @@ for (i in 1:nreps) {
 #        main = "knots 20 x 20, rho = 0.05")
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-# 
+#
 #   idx <- idx + 1
 #   plot(knots.t2, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = "knots 10 x 10, rho = 0.05")
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-# 
+#
 #   idx <- idx + 1
 #   plot(knots.t3, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = "500 random knots")
