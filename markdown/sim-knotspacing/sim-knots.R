@@ -112,8 +112,8 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-# iters <- 45000; burn <- 35000; update <- 1000; thin <- 1
-iters <- 100; burn <- 50; update <- 10; thin <- 1
+iters <- 45000; burn <- 35000; update <- 1000; thin <- 1
+# iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
 n.report <- update
 verbose <- TRUE
