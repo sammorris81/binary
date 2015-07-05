@@ -27,7 +27,7 @@ source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir=T)
 
 set.seed(7483)  # site
-ns    <- 2000
+ns    <- 500
 s     <- cbind(runif(ns), runif(ns))
 knots.t1 <- expand.grid(seq(0, 1, length=20), seq(0, 1, length=20))
 knots.t2 <- expand.grid(seq(0, 1, length=10), seq(0, 1, length=10))
@@ -35,7 +35,7 @@ knots.t3 <- cbind(runif(400), runif(400))
 x     <- matrix(1, ns, 1)
 
 alpha.t <- 0.3
-rho.t   <- 0.05
+rho.t   <- 0.01
 xi.t    <- 0
 
 set.seed(3282)  # data
@@ -46,21 +46,21 @@ thresh <- rep(NA, nreps * nsettings)
 for (i in 1:nreps) {
   idx <- (i - 1) * nsettings + 1
   data <- rRareBinarySpat(x, s = s, knots = knots.t1, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.05)
+                          alpha = alpha.t, rho = rho.t, prob.success = 0.01)
 
   y[, idx] <- data$y
   thresh[idx] <- data$thresh
 
   idx <- idx + 1
   data <- rRareBinarySpat(x, s = s, knots = knots.t2, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.05)
+                          alpha = alpha.t, rho = rho.t, prob.success = 0.01)
 
   y[, idx] <- data$y
   thresh[idx] <- data$thresh
 
   idx <- idx + 1
   data <- rRareBinarySpat(x, s = s, knots = knots.t3, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.05)
+                          alpha = alpha.t, rho = rho.t, prob.success = 0.01)
 
   y[, idx] <- data$y
   thresh[idx] <- data$thresh
@@ -127,7 +127,7 @@ priors <- list("beta.norm"=list(1, 100),
 cov.model <- "exponential"
 
 for (i in 13:15) {
-  filename <- paste("sim-results/sim-knots-", i, ".RData", sep = "")
+  filename <- paste("sim-results/sim-knots-", i, "-5.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
   print(paste("Starting: Set ", i, sep = ""))
