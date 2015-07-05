@@ -121,7 +121,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 13:15) {
+for (i in 17:20) {
   filename <- paste("sim-results/sim-knots-", i, "-5.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
