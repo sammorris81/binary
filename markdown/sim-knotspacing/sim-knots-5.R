@@ -2,10 +2,10 @@
 #### Few of options:
 #### 1. Keep true knots on a grid, make it smaller, and decrease rho.
 #### 2. Keep true knots on a grid, keep it the same size, but decrease rho
-#### 3. Randomly generate knots enough knots so the average distance between
-####    knots is the desired rho
+#### 3. Adjust sample size 
+####    n = 1000 for prop = 0.05 and 
+####    n = 2000 for prop = 0.01
 
-#### 3 is probably the more realistic situation anyways.
 rm(list=ls())
 options(warn=2)
 library(fields)
@@ -27,59 +27,54 @@ source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir=T)
 
 set.seed(7483)  # site
-ns    <- 500
+ns    <- 1000
 s     <- cbind(runif(ns), runif(ns))
 knots.t1 <- expand.grid(seq(0, 1, length=20), seq(0, 1, length=20))
 knots.t2 <- expand.grid(seq(0, 1, length=10), seq(0, 1, length=10))
-knots.t3 <- cbind(runif(400), runif(400))
 x     <- matrix(1, ns, 1)
 
 alpha.t <- 0.3
 rho.t   <- 0.01
 xi.t    <- 0
+prop.t  <- 0.05
 
 set.seed(3282)  # data
-nreps <- 5
-nsettings <- 3
+nreps <- 10
+nsettings <- 2
 y <- matrix(data = NA, nrow = ns, ncol = nreps * nsettings)
 thresh <- rep(NA, nreps * nsettings)
 for (i in 1:nreps) {
   idx <- (i - 1) * nsettings + 1
   data <- rRareBinarySpat(x, s = s, knots = knots.t1, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.01)
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
 
   y[, idx] <- data$y
   thresh[idx] <- data$thresh
 
   idx <- idx + 1
   data <- rRareBinarySpat(x, s = s, knots = knots.t2, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.01)
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
 
   y[, idx] <- data$y
   thresh[idx] <- data$thresh
 
   idx <- idx + 1
-  data <- rRareBinarySpat(x, s = s, knots = knots.t3, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.01)
-
-  y[, idx] <- data$y
-  thresh[idx] <- data$thresh
 }
 
 # par(mfrow=c(3, 3))
 # for (i in 1:3) {
 #   idx <- (i - 1) * 3 + 1
 #   plot(knots.t1, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
-#        main = "knots 20 x 20, rho = 0.05")
+#        main = paste("knots 20 x 20, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-#
+# 
 #   idx <- idx + 1
 #   plot(knots.t2, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
-#        main = "knots 10 x 10, rho = 0.05")
+#        main = paste("knots 10 x 10, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-#
+# 
 #   idx <- idx + 1
 #   plot(knots.t3, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = "500 random knots")
