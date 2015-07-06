@@ -1,0 +1,292 @@
+---
+title: "Knot Spacing and Bandwidth Sim"
+author: "Morris, S."
+date: "July 6, 2015"
+output: pdf_document
+---
+
+```{r initial-setup, cache = TRUE, echo = FALSE, include = FALSE}
+library(fields)
+library(evd)
+library(spBayes)
+library(fields)
+library(SpatialTools)
+# library(microbenchmark)
+library(mvtnorm)
+library(Rcpp)
+library(numDeriv)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "../../code/R/pairwise.cpp")
+
+source("../../code/R/auxfunctions.R", chdir = TRUE)
+source("../../code/R/updateModel.R")
+source("../../code/R/mcmc.R")
+source("../../code/R/probit.R", chdir=T)
+```
+
+# Small-scale simulation study on knots and bandwidth
+
+We tried two different true knot spacings in this simulation study.
+The first spacing sets knots on a $20 \times 20$ grid in $[0, 1] \times [0, 1]$.
+The second spacing sets knots on a $10 \times 10$ grid in $[0, 1] \times [0, 1]$.
+We used three different data generation settings.
+
+1. $\rho = 0.01$ and $\pi = 0.01$ with $n_s = 2000$ sites.
+2. $\rho = 0.01$ and $\pi = 0.05$ with $n_s = 1000$ sites.
+3. $\rho = 0.02$ and $\pi = 0.05$ with $n_s = 1000$ sites.
+
+These all set $\rho$ to be the knot spacing used in fitting the GEV which is a $12 \times 12$ grid.
+
+## Setting 1: $\rho = 0.01$ and $\pi = 0.01$ with $n_s = 2000$ sites.
+
+```{r gendata-1-1, cache = TRUE, echo = FALSE, include = FALSE}
+#### when rho = 0.01 and prop = 0.01
+set.seed(7483)  # site
+ns    <- 2000
+s     <- cbind(runif(ns), runif(ns))
+knots.t1 <- expand.grid(seq(0, 1, length=20), seq(0, 1, length=20))
+knots.t2 <- expand.grid(seq(0, 1, length=10), seq(0, 1, length=10))
+x     <- matrix(1, ns, 1)
+
+alpha.t <- 0.3
+rho.t   <- 0.01
+xi.t    <- 0
+prop.t  <- 0.01
+
+set.seed(3282)  # data
+nreps <- 10
+nsettings <- 2
+y <- matrix(data = NA, nrow = ns, ncol = nreps * nsettings)
+thresh <- rep(NA, nreps * nsettings)
+for (i in 1:nreps) {
+  idx <- (i - 1) * nsettings + 1
+  data <- rRareBinarySpat(x, s = s, knots = knots.t1, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
+
+  y[, idx] <- data$y
+  thresh[idx] <- data$thresh
+
+  idx <- idx + 1
+  data <- rRareBinarySpat(x, s = s, knots = knots.t2, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
+
+  y[, idx] <- data$y
+  thresh[idx] <- data$thresh
+}
+
+# note, the way the data are generated, it means every other data set has the same knot spacing
+```
+
+```{r results-1-1-20, cache = TRUE, echo = FALSE, include = FALSE}
+bs1.1.20 <- matrix(NA, 3, 10)
+for (i in 1:10) {
+  set <- (i - 1) * 2 + 1
+  file <- paste("sim-results/sim-knots-", set, "-1-1.RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs1.1.20[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs1.1.20[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs1.1.20[3, i] <- BrierScore(post.prob.pro, y.i.p)
+}
+```
+
+```{r results-1-1-10, cache = TRUE, echo = FALSE, include = FALSE}
+bs1.1.10 <- matrix(NA, 3, 10)
+idx <- 1
+for (i in 1:10) {
+  set <- i * 2
+  file <- paste("sim-results/sim-knots-", set, "-1-1.RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs1.1.10[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs1.1.10[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs1.1.10[3, i] <- BrierScore(post.prob.pro, y.i.p)
+  idx <- idx + 1
+}
+```
+
+\scriptsize
+```{r simresults-1-1, echo = FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs1.1.20) <- rownames(bs1.1.10) <- c("gev", "log", "pro")
+bs1.1.20 <- cbind(bs1.1.20, rowMeans(bs1.1.20, na.rm = TRUE))
+bs1.1.10 <- cbind(bs1.1.10, rowMeans(bs1.1.10, na.rm = TRUE))
+colnames(bs1.1.20) <- colnames(bs1.1.10) <- c(1:10, "Mean")
+set.caption("Results (x 100) for Knots: 20 x 20, $\\rho = 0.01$, $\\pi = 0.01$")
+pander(t(bs1.1.20) * 100)
+
+set.caption("Results (x 100) for Knots: 10 x 10, $\\rho = 0.01$, $\\pi = 0.01$")
+pander(t(bs1.1.10) * 100)
+```
+
+## Setting 2: $\rho = 0.01$ and $\pi = 0.05$ with $n_s = 1000$ sites.
+
+```{r gendata-5-1, cache = TRUE, echo = FALSE, include = FALSE}
+#### when rho = 0.01 and prop = 0.05
+set.seed(7483)  # site
+ns    <- 1000
+s     <- cbind(runif(ns), runif(ns))
+knots.t1 <- expand.grid(seq(0, 1, length=20), seq(0, 1, length=20))
+knots.t2 <- expand.grid(seq(0, 1, length=10), seq(0, 1, length=10))
+x     <- matrix(1, ns, 1)
+
+alpha.t <- 0.3
+rho.t   <- 0.01
+xi.t    <- 0
+prop.t  <- 0.05
+
+set.seed(3282)  # data
+nreps <- 10
+nsettings <- 2
+y <- matrix(data = NA, nrow = ns, ncol = nreps * nsettings)
+thresh <- rep(NA, nreps * nsettings)
+for (i in 1:nreps) {
+  idx <- (i - 1) * nsettings + 1
+  data <- rRareBinarySpat(x, s = s, knots = knots.t1, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
+
+  y[, idx] <- data$y
+  thresh[idx] <- data$thresh
+
+  idx <- idx + 1
+  data <- rRareBinarySpat(x, s = s, knots = knots.t2, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
+
+  y[, idx] <- data$y
+  thresh[idx] <- data$thresh
+
+  idx <- idx + 1
+}
+```
+
+```{r results-5-1-20, cache = TRUE, echo = FALSE, include = FALSE}
+bs5.1.20 <- matrix(NA, 3, 10)
+for (i in 1:10) {
+  set <- (i - 1) * 2 + 1
+  file <- paste("sim-results/sim-knots-", set, "-5-1.RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs5.1.20[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs5.1.20[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs5.1.20[3, i] <- BrierScore(post.prob.pro, y.i.p)
+}
+```
+
+```{r results-5-1-10, cache = TRUE, echo = FALSE, include = FALSE}
+bs5.1.10 <- matrix(NA, 3, 10)
+idx <- 1
+for (i in 1:10) {
+  set <- i * 2
+  file <- paste("sim-results/sim-knots-", set, "-5-1.RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs5.1.10[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs5.1.10[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs5.1.10[3, i] <- BrierScore(post.prob.pro, y.i.p)
+  idx <- idx + 1
+}
+```
+
+\scriptsize
+```{r simresults-5-1, echo = FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs5.1.20) <- rownames(bs5.1.10) <- c("gev", "log", "pro")
+bs5.1.20 <- cbind(bs5.1.20, rowMeans(bs5.1.20, na.rm = TRUE))
+bs5.1.10 <- cbind(bs5.1.10, rowMeans(bs5.1.10, na.rm = TRUE))
+colnames(bs5.1.20) <- colnames(bs5.1.10) <- c(1:10, "Mean")
+set.caption("Results (x 100) for Knots: 20 x 20, $\\rho = 0.01$, $\\pi = 0.05$")
+pander(t(bs5.1.20) * 100)
+
+set.caption("Results (x 100) for Knots: 10 x 10, $\\rho = 0.01$, $\\pi = 0.05$")
+pander(t(bs5.1.10) * 100)
+```
+
+## Setting 3: $\rho = 0.02$ and $\pi = 0.05$ with $n_s = 1000$ sites.
+
+```{r gendata-5-2, cache = TRUE, echo = FALSE, include = FALSE}
+#### when rho = 0.02 and prop = 0.05
+set.seed(7483)  # site
+ns    <- 1000
+s     <- cbind(runif(ns), runif(ns))
+knots.t1 <- expand.grid(seq(0, 1, length=20), seq(0, 1, length=20))
+knots.t2 <- expand.grid(seq(0, 1, length=10), seq(0, 1, length=10))
+x     <- matrix(1, ns, 1)
+
+alpha.t <- 0.3
+rho.t   <- 0.02
+xi.t    <- 0
+prop.t  <- 0.05
+
+set.seed(3282)  # data
+nreps <- 10
+nsettings <- 2
+y <- matrix(data = NA, nrow = ns, ncol = nreps * nsettings)
+thresh <- rep(NA, nreps * nsettings)
+for (i in 1:nreps) {
+  idx <- (i - 1) * nsettings + 1
+  data <- rRareBinarySpat(x, s = s, knots = knots.t1, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
+
+  y[, idx] <- data$y
+  thresh[idx] <- data$thresh
+
+  idx <- idx + 1
+  data <- rRareBinarySpat(x, s = s, knots = knots.t2, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = prop.t)
+
+  y[, idx] <- data$y
+  thresh[idx] <- data$thresh
+
+  idx <- idx + 1
+}
+```
+
+```{r results-5-2-20, cache = TRUE, echo = FALSE, include = FALSE}
+bs5.2.20 <- matrix(NA, 3, 10)
+for (i in 1:10) {
+  set <- (i - 1) * 2 + 1
+  file <- paste("sim-results/sim-knots-", set, "-5-2.RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs5.2.20[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs5.2.20[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs5.2.20[3, i] <- BrierScore(post.prob.pro, y.i.p)
+}
+```
+
+```{r results-5-2-10, cache = TRUE, echo = FALSE, include = FALSE}
+bs5.2.10 <- matrix(NA, 3, 10)
+idx <- 1
+for (i in 1:10) {
+  set <- i * 2
+  file <- paste("sim-results/sim-knots-", set, "-5-2.RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs5.2.10[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs5.2.10[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs5.2.10[3, i] <- BrierScore(post.prob.pro, y.i.p)
+  idx <- idx + 1
+}
+```
+
+\scriptsize
+```{r simresults-5-2, echo = FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs5.2.20) <- rownames(bs5.2.10) <- c("gev", "log", "pro")
+bs5.2.20 <- cbind(bs5.2.20, rowMeans(bs5.2.20, na.rm = TRUE))
+bs5.2.10 <- cbind(bs5.2.10, rowMeans(bs5.2.10, na.rm = TRUE))
+colnames(bs5.2.20) <- colnames(bs5.2.10) <- c(1:10, "Mean")
+set.caption("Results (x 100) for Knots: 20 x 20, $\\rho = 0.02$, $\\pi = 0.05$")
+pander(t(bs5.2.20) * 100)
+
+set.caption("Results (x 100) for Knots: 10 x 10, $\\rho = 0.02$, $\\pi = 0.05$")
+pander(t(bs5.2.10) * 100)
+```
+
+## Next steps
+
+Fit a few datasets with $rho$ as a parameter in the MCMC.
