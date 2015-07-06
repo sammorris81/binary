@@ -167,43 +167,43 @@ for (i in 17:20) {
                               knots = knots, start = 1, end = iters - burn,
                               update = update)
 
-  # spatial logit
-  print("  start logit")
-
-  print("    start mcmc fit")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
-                     knots = knots, starting = starting, tuning = tuning,
-                     priors = priors, cov.model = cov.model,
-                     n.samples = iters, verbose = verbose,
-                     n.report = n.report)
-
-  print("    start mcmc predict")
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                         pred.covars = X.p, start = burn + 1, end = iters,
-                         thin = 1, verbose = TRUE, n.report = 500)
-
-  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-
-  # spatial probit
-  print("  start probit")
-
-  print("    start mcmc fit")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
-                       iters = iters, burn = burn, update = update)
-
-  print("    start mcmc predict")
-  post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.p, knots = knots,
-                               start = 1, end = iters - burn, update = update)
+#   # spatial logit
+#   print("  start logit")
+# 
+#   print("    start mcmc fit")
+#   mcmc.seed <- mcmc.seed + 1
+#   set.seed(mcmc.seed)
+#   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
+#                      knots = knots, starting = starting, tuning = tuning,
+#                      priors = priors, cov.model = cov.model,
+#                      n.samples = iters, verbose = verbose,
+#                      n.report = n.report)
+# 
+#   print("    start mcmc predict")
+#   yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+#                          pred.covars = X.p, start = burn + 1, end = iters,
+#                          thin = 1, verbose = TRUE, n.report = 500)
+# 
+#   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+# 
+#   # spatial probit
+#   print("  start probit")
+# 
+#   print("    start mcmc fit")
+#   mcmc.seed <- mcmc.seed + 1
+#   set.seed(mcmc.seed)
+#   fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
+#                        iters = iters, burn = burn, update = update)
+# 
+#   print("    start mcmc predict")
+#   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+#                                s.pred = s.p, knots = knots,
+#                                start = 1, end = iters - burn, update = update)
 
   print(paste("Finished: Set ", i, sep = ""))
   save(fit.gev.pcl, fit.gev, post.prob.gev,
-       fit.logit, post.prob.log,
-       fit.probit, post.prob.pro,
+#        fit.logit, post.prob.log,
+#        fit.probit, post.prob.pro,
        y.i.p, y.i.o, s,
        file = filename)
 }
