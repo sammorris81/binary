@@ -59,9 +59,9 @@ for (i in 1:nreps) {
   thresh[idx] <- data$thresh
 }
 
-# par(mfrow=c(3, 3))
+# par(mfrow=c(3, 2))
 # for (i in 1:3) {
-#   idx <- (i - 1) * 3 + 1
+#   idx <- (i - 1) * 2 + 1
 #   plot(knots.t1, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = paste("knots 20 x 20, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
@@ -70,12 +70,6 @@ for (i in 1:nreps) {
 #   idx <- idx + 1
 #   plot(knots.t2, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = paste("knots 10 x 10, rho =", rho.t))
-#   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-#   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-#
-#   idx <- idx + 1
-#   plot(knots.t3, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
-#        main = "500 random knots")
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
 # }
@@ -119,7 +113,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 17:20) {
+for (i in 15:16) {
   filename <- paste("sim-results/sim-knots-", i, "-1-1-r.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -129,14 +123,14 @@ for (i in 17:20) {
   print("  start GEV fit")
   print("    start pcl fit")
   fit.gev.pcl <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                                   alpha.init = 0.5, rho.init = knots.h,
+                                   alpha.init = 0.5, rho.init = 0.02,
                                    xi.fix = TRUE, alpha.fix = FALSE,
                                    rho.fix = FALSE, beta.fix = TRUE,
                                    y = y.i.o, dw2 = dw2.o, d = d.o,
                                    cov = X.o, max.dist = 2.5 * knots.h,
                                    alpha.min = 0.1, alpha.max = 0.9,
                                    threads = 3)
-  
+
   print("    start mcmc gev")
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
@@ -150,7 +144,7 @@ for (i in 17:20) {
                   xi.init = 0, xi.m = 0, xi.s = 0.5,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
                   alpha.tune = 0.05, alpha.m = fit.gev.pcl$par[1],
-                  alpha.s = 0.05, rho.tune = 0.1, 
+                  alpha.s = 0.05, rho.tune = 0.1,
                   logrho.m = log(fit.gev.pcl$par[2]), logrho.s = 2, A.tune = 1,
                   beta.attempts = 50, xi.attempts = 50,
                   alpha.attempts = 300, rho.attempts = 100,
@@ -165,43 +159,43 @@ for (i in 17:20) {
                               knots = knots, start = 1, end = iters - burn,
                               update = update)
 
-  # spatial logit
-  print("  start logit")
-
-  print("    start mcmc fit")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
-                     knots = knots, starting = starting, tuning = tuning,
-                     priors = priors, cov.model = cov.model,
-                     n.samples = iters, verbose = verbose,
-                     n.report = n.report)
-
-  print("    start mcmc predict")
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                         pred.covars = X.p, start = burn + 1, end = iters,
-                         thin = 1, verbose = TRUE, n.report = 500)
-
-  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-
-  # spatial probit
-  print("  start probit")
-
-  print("    start mcmc fit")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
-                       iters = iters, burn = burn, update = update)
-
-  print("    start mcmc predict")
-  post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.p, knots = knots,
-                               start = 1, end = iters - burn, update = update)
+#   # spatial logit
+#   print("  start logit")
+#
+#   print("    start mcmc fit")
+#   mcmc.seed <- mcmc.seed + 1
+#   set.seed(mcmc.seed)
+#   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
+#                      knots = knots, starting = starting, tuning = tuning,
+#                      priors = priors, cov.model = cov.model,
+#                      n.samples = iters, verbose = verbose,
+#                      n.report = n.report)
+#
+#   print("    start mcmc predict")
+#   yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+#                          pred.covars = X.p, start = burn + 1, end = iters,
+#                          thin = 1, verbose = TRUE, n.report = 500)
+#
+#   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+#
+#   # spatial probit
+#   print("  start probit")
+#
+#   print("    start mcmc fit")
+#   mcmc.seed <- mcmc.seed + 1
+#   set.seed(mcmc.seed)
+#   fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
+#                        iters = iters, burn = burn, update = update)
+#
+#   print("    start mcmc predict")
+#   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+#                                s.pred = s.p, knots = knots,
+#                                start = 1, end = iters - burn, update = update)
 
   print(paste("Finished: Set ", i, sep = ""))
   save(fit.gev.pcl, fit.gev, post.prob.gev,
-       fit.logit, post.prob.log,
-       fit.probit, post.prob.pro,
+#        fit.logit, post.prob.log,
+#        fit.probit, post.prob.pro,
        y.i.p, y.i.o, s,
        file = filename)
 }
