@@ -121,7 +121,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 17:20) {
+for (i in 15:16) {
   filename <- paste("sim-results/sim-knots-", i, "-5-1-r.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -131,7 +131,7 @@ for (i in 17:20) {
   print("  start GEV fit")
   print("    start pcl fit")
   fit.gev.pcl <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                                   alpha.init = 0.5, rho.init = knots.h,
+                                   alpha.init = 0.5, rho.init = 0.02,
                                    xi.fix = TRUE, alpha.fix = FALSE,
                                    rho.fix = FALSE, beta.fix = TRUE,
                                    y = y.i.o, dw2 = dw2.o, d = d.o,
