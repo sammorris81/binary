@@ -19,7 +19,6 @@ library(Rcpp)
 library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "../../code/R/pairwise.cpp")
 
 source("../../code/R/auxfunctions.R", chdir = TRUE)
 source("../../code/R/updateModel.R")

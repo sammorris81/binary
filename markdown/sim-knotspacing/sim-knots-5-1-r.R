@@ -2,8 +2,8 @@
 #### Few of options:
 #### 1. Keep true knots on a grid, make it smaller, and decrease rho.
 #### 2. Keep true knots on a grid, keep it the same size, but decrease rho
-#### 3. Adjust sample size 
-####    n = 1000 for prop = 0.05 and 
+#### 3. Adjust sample size
+####    n = 1000 for prop = 0.05 and
 ####    n = 2000 for prop = 0.01
 
 rm(list=ls())
@@ -19,7 +19,6 @@ library(Rcpp)
 library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "../../code/R/pairwise.cpp")
 
 source("../../code/R/auxfunctions.R", chdir = TRUE)
 source("../../code/R/updateModel.R")
@@ -68,13 +67,13 @@ for (i in 1:nreps) {
 #        main = paste("knots 20 x 20, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-# 
+#
 #   idx <- idx + 1
 #   plot(knots.t2, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = paste("knots 10 x 10, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-# 
+#
 #   idx <- idx + 1
 #   plot(knots.t3, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = "500 random knots")
@@ -152,7 +151,7 @@ for (i in 15:16) {
                   xi.init = 0, xi.m = 0, xi.s = 0.5,
                   knots = knots, beta.tune = 1, xi.tune = 0.1,
                   alpha.tune = 0.05, alpha.m = fit.gev.pcl$par[1],
-                  alpha.s = 0.05, rho.tune = 0.1, 
+                  alpha.s = 0.05, rho.tune = 0.1,
                   logrho.m = log(fit.gev.pcl$par[2]), logrho.s = 2, A.tune = 1,
                   beta.attempts = 50, xi.attempts = 50,
                   alpha.attempts = 300, rho.attempts = 100,
@@ -169,7 +168,7 @@ for (i in 15:16) {
 
 #   # spatial logit
 #   print("  start logit")
-# 
+#
 #   print("    start mcmc fit")
 #   mcmc.seed <- mcmc.seed + 1
 #   set.seed(mcmc.seed)
@@ -178,23 +177,23 @@ for (i in 15:16) {
 #                      priors = priors, cov.model = cov.model,
 #                      n.samples = iters, verbose = verbose,
 #                      n.report = n.report)
-# 
+#
 #   print("    start mcmc predict")
 #   yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
 #                          pred.covars = X.p, start = burn + 1, end = iters,
 #                          thin = 1, verbose = TRUE, n.report = 500)
-# 
+#
 #   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-# 
+#
 #   # spatial probit
 #   print("  start probit")
-# 
+#
 #   print("    start mcmc fit")
 #   mcmc.seed <- mcmc.seed + 1
 #   set.seed(mcmc.seed)
 #   fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
 #                        iters = iters, burn = burn, update = update)
-# 
+#
 #   print("    start mcmc predict")
 #   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
 #                                s.pred = s.p, knots = knots,

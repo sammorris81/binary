@@ -2,8 +2,8 @@
 #### Few of options:
 #### 1. Keep true knots on a grid, make it smaller, and decrease rho.
 #### 2. Keep true knots on a grid, keep it the same size, but decrease rho
-#### 3. Adjust sample size 
-####    n = 1000 for prop = 0.05 and 
+#### 3. Adjust sample size
+####    n = 1000 for prop = 0.05 and
 ####    n = 2000 for prop = 0.01
 
 rm(list=ls())
@@ -19,7 +19,6 @@ library(Rcpp)
 library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "../../code/R/pairwise.cpp")
 
 source("../../code/R/auxfunctions.R", chdir = TRUE)
 source("../../code/R/updateModel.R")
@@ -68,13 +67,13 @@ for (i in 1:nreps) {
 #        main = paste("knots 20 x 20, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-# 
+#
 #   idx <- idx + 1
 #   plot(knots.t2, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = paste("knots 10 x 10, rho =", rho.t))
 #   points(s[which(y[, idx] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 #   points(s[which(y[, idx] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
-# 
+#
 #   idx <- idx + 1
 #   plot(knots.t3, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "",
 #        main = "500 random knots")
