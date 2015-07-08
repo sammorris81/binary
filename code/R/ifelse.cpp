@@ -9,8 +9,8 @@ using namespace arma;
 
 // [[Rcpp::export]]
 arma::mat ifelsematCPP(arma::mat x, double tol) {
-  int ncols = x.n_cols;
-  int nrows = x.n_rows;
+  uword ncols = x.n_cols;
+  uword nrows = x.n_rows;
   
   for (uword i = 0; i < nrows; i++) {
     for (uword j = 0; j < ncols; j++) {
@@ -23,7 +23,7 @@ arma::mat ifelsematCPP(arma::mat x, double tol) {
 
 // [[Rcpp::export]]
 arma::vec ifelsevecCPP(arma::vec x, double tol) {
-  int n = x.n_elem;
+  uword n = x.n_elem;
   
   for (uword i = 0; i < n; i++) {
     x[i] = fabs(x[i]) < tol ? 0 : x[i];
@@ -34,9 +34,9 @@ arma::vec ifelsevecCPP(arma::vec x, double tol) {
 
 // [[Rcpp::export]]
 arma::mat getLevelCPP(arma::mat a, arma::vec cuts) {
-  int ncols = a.n_cols;
-  int nrows = a.n_rows;
-  int ncuts = cuts.n_elem;
+  uword ncols = a.n_cols;
+  uword nrows = a.n_rows;
+  uword ncuts = cuts.n_elem;
   
   arma::mat lev(nrows, ncols);
   for (uword i = 0; i < nrows; i++) {

@@ -30,7 +30,7 @@ for (i in 1:10) {
     bs5.1.20[3, i] <- BrierScore(post.prob.pro, y.i.p)
     file <- paste("sim-results/sim-knots-", set, "-5-1-r.RData", sep = "")
     load(file)
-    bs5.1.20[4, i] <- BrierScore(post.prob.gev, y.i.p)
+    bs5.1.20[4, i] <- BrierScore(post.prob.gev, y.i.p)  # some NAs
   }
 }
 
@@ -77,6 +77,25 @@ bs5.2.10 <- cbind(bs5.2.10, rowMeans(bs5.2.10, na.rm = TRUE))
 round(bs5.1.20 * 100, 2)
 round(bs5.2.20 * 100, 2)
 round(bs5.2.10 * 100, 2)
+
+rm(list=ls())
+for (i in 1:20) {
+  print(paste("start", i))
+  dataset <- paste("sim-results/sim-knots-", i, "-5-2-r.RData", sep = "")
+  load(dataset)
+  post.prob.gev.r <- post.prob.gev
+  fit.gev.r <- fit.gev
+  fit.gev.pcl.r <- fit.gev.pcl
+  dataset <- paste("sim-results/sim-knots-", i, "-5-2.RData", sep = "")
+  load(dataset)
+  save(
+    fit.gev.pcl, fit.gev, post.prob.gev,
+    fit.gev.pcl.r, fit.gev.r, post.prob.gev.r,
+    fit.logit, post.prob.log,
+    fit.probit, post.prob.pro,
+    file = dataset
+  )
+}
 
 
 # > round(bs5.1.20 * 100, 2)

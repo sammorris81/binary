@@ -9,7 +9,7 @@ using namespace arma;
 
 double getJointPtr(arma::mat *kernel, int i, int j, double alpha) {
   double joint = 0;
-  int nknots = (*kernel).n_cols;
+  uword nknots = (*kernel).n_cols;
 
   for (uword k = 0; k < nknots; k++) {
     joint += pow((*kernel)(i, k) + (*kernel)(j, k), alpha);
@@ -28,7 +28,7 @@ double pairwiseCPP(arma::mat kernel, double alpha, arma::vec z, arma::vec y,
   }
 #endif
 
-  double ll = 0; double joint; uword j; int ns = y.n_elem;
+  double ll = 0; double joint; uword j; uword ns = y.n_elem;
 
 #pragma omp parallel for reduction(+ : ll)  \
   private(j, joint) shared(kernel, z, y, alpha, d) schedule(dynamic, 10)

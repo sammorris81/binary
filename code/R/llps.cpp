@@ -1,4 +1,3 @@
-code <- '
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 using namespace Rcpp;
@@ -9,12 +8,12 @@ using namespace arma;
 #endif
 
 // [[Rcpp::export]]
-arma::mat dPS_wrapper(arma::mat a, double alpha, arma::vec mid_points,
+arma::mat dPSCPP(arma::mat a, double alpha, arma::vec mid_points,
                       arma::vec bin_width, int threads = 1) {
 
-  int ns = a.n_rows; int nt = a.n_cols;
-  int nbins = mid_points.n_elem;
-  int s; int t; int i;
+  uword ns = a.n_rows; uword nt = a.n_cols;
+  uword nbins = mid_points.n_elem;
+  uword s; uword t; uword i;
   double integral; double llst; double psi; double logc; double logint;
   double ast;
   arma::mat ll(ns, nt);
@@ -38,9 +37,3 @@ arma::mat dPS_wrapper(arma::mat a, double alpha, arma::vec mid_points,
 
   return ll;
 }
-'
-
-library(Rcpp)
-Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
-Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(code = code)

@@ -13,7 +13,6 @@ library(mvtnorm)
 library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "../code/R/pairwise.cpp")
 
 source("../code/R/auxfunctions.R", chdir = TRUE)
 source("../code/R/updateModel.R")
@@ -145,7 +144,7 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.init = 0.40, a.init = 1000, iterplot = TRUE,
                 alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                 xi.fix = TRUE,
-                xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
+                # xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
                 iters = iters, burn = burn, update = update, thin = 1)
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
