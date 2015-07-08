@@ -46,14 +46,17 @@ arma::mat getKernelCPPwithID(SEXP wz_star, arma::mat a, Rcpp::List IDs,
 }
 
 // [[Rcpp::export]]
-arma::mat getKernelCPP(SEXP wz_star, arma::mat a, 
-                       uword nt, uword nknots, uword ns) {
+arma::mat getKernelCPP(SEXP wz_star, arma::mat a) {
   
   // Hack for Rcpp to get arma::cube
   Rcpp::NumericVector wz_star_v(wz_star);
   Rcpp::IntegerVector arrayDims = wz_star_v.attr("dim");
   arma::cube wz_star_c(wz_star_v.begin(), arrayDims[0], arrayDims[1], 
                        arrayDims[2], false);
+  
+  uword ns = arrayDims[0];
+  // uword nknots = arrayDims[1];
+  uword nt = arrayDims[2];
   
   // return storage
   arma::mat kernel(ns, nt);  
@@ -66,7 +69,7 @@ arma::mat getKernelCPP(SEXP wz_star, arma::mat a,
 }
 
 // [[Rcpp::export]]
-arma::cube getwzstarCPP(arma::mat z, arma::mat w, double alpha) {
+arma::cube getwzStarCPP(arma::mat z, arma::mat w, double alpha) {
   uword nknots = w.n_cols;
   uword ns = w.n_rows;
   uword nt = z.n_cols;

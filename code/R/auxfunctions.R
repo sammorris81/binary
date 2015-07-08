@@ -117,18 +117,18 @@ getZ <- function(xi, x.beta, thresh=0) {
 
 # storing each day as an element of a list
 getwzStar <- function(z, w, alpha) {
-#   nknots  <- ncol(w)
-#   ns      <- nrow(w)
-#   nt      <- ncol(z)
-# 
-#   wz.star <- array(NA, dim=c(ns, nknots, nt))
-#   for (t in 1:nt) {
-#     z.t            <- matrix(rep(z[, t], nknots), ns, nknots)
-#     wz.star[, , t] <- exp((log(w) - log(z.t)) / alpha)
-#     wz.star[, , t] <- ifelsematCPP(wz.star[, , t], 1e-7)
-#   }
+  nknots  <- ncol(w)
+  ns      <- nrow(w)
+  nt      <- ncol(z)
+
+  wz.star <- array(NA, dim=c(ns, nknots, nt))
+  for (t in 1:nt) {
+    z.t            <- matrix(rep(z[, t], nknots), ns, nknots)
+    wz.star[, , t] <- exp((log(w) - log(z.t)) / alpha)
+    wz.star[, , t] <- ifelsematCPP(wz.star[, , t], 1e-7)
+  }
   
-  wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
+  # wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
 
   return(wz.star)
 }
@@ -142,14 +142,12 @@ getKernel <- function(wz.star, a, IDs = NULL) {
   kernel <- matrix(NA, nrow = ns, ncol = nt)
   
   if (is.null(IDs)) {
-    if (nknots == 1) {
-      for (t in 1:nt) {
-        a.t <- a[, t]
-        kernel[, t] <- wz.star[, , t] * a.t  
+    for (t in 1:nt) {
+      if (nknots == 1) {
+        kernel[, t] <- wz.star[, , t] * a[ , t]
+      } else if (nknots > 1) {
+        kernel[, t] <- wz.star[, , t] %*% a[, t]
       }
-    } else if (nknots > 1) {
-      kernel <- getKernelCPP(wz_star = wz.star, a = a, 
-                             nt = nt, nknots = nknots, ns = ns) 
     }
   } else {  # when using IDs, there needs to be more than one knot
     for (t in 1:nt) {

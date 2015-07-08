@@ -132,7 +132,7 @@ mcmc.seed <- 1
 set.seed(mcmc.seed)
 
 
-# Rprof(filename = "Rprof.out", line.profiling = TRUE)
+Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = -4.0, beta.m = 0, beta.s = 100,
                 xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -145,7 +145,9 @@ fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
                 xi.fix = TRUE,
                 # xibeta.hat = xibeta.hat, xibeta.var = xibeta.var,
-                iters = iters, burn = burn, update = update, thin = 1)
+                iters = 1000, burn = 500, update = 100, thin = 1)
+Rprof(filename = NULL)
+summaryRprof(filename = "Rprof.out", lines = "show")
 
 post.prob.gev.1 <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,

@@ -5,7 +5,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  beta.tune = 0.01, xi.tune = 0.1,
                  alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
                  rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
-                 A.tune = 1,
+                 A.tune = 1, IDs = NULL,
                  beta.attempts = 50, xi.attempts = 50,
                  alpha.attempts = 200, rho.attempts = 200,
                  spatial = TRUE,
@@ -79,6 +79,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   } else {
     a <- matrix(a.init, nknots, nt)
   }
+  if (is.null(IDs)) {
+    # if not specified, make the list of sites that are impacted by each knot
+    IDs <- vector(mode = "list", length = nknots)
+  }
 
   if (spatial) {
     alpha <- alpha.init
@@ -93,8 +97,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
   alpha.a <- (1 - alpha.m) * alpha.m^2 / alpha.s^2 - alpha.m
   alpha.b <- alpha.a * (1 / alpha.m - 1)
-  wz.star <- getwzStar(z = z, w = w, alpha = alpha)
-  kernel  <- getKernel(wz.star = wz.star, a = a)
+  wz.star <- getwzStarCPP(z = z, w = w, alpha = alpha)
+  kernel  <- getKernelCPP(wz_star = wz.star, a = a)
+#   wz.star <- getwzStar(z = z, w = w, alpha = alpha)
+#   kernel  <- getKernel(wz.star = wz.star, a = a)
 
   # keep current likelihood values in mcmc for time savings
   cur.lly  <- logLikeY(y = y, kernel = kernel)
@@ -242,7 +248,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       if (!alpha.fix) {
         alpha.update <- updateAlpha(y = y, kernel = kernel, a = a,
                                     alpha = alpha, z = z, w = w,
-                                    wz.star = wz.star,
+                                    wz.star = wz.star, IDs = IDs, 
                                     alpha.a = alpha.a, alpha.b = alpha.b,
                                     cur.lly = cur.lly, cur.llps = cur.llps,
                                     mid.points=mid.points, bin.width=bin.width,

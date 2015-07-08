@@ -14,7 +14,7 @@ Sys.setenv("PKG_LIBS"="-fopenmp")
 
 source("../../code/R/auxfunctions.R", chdir = TRUE)
 
-sourceCpp(file = "./getKernel.cpp")
+# sourceCpp(file = "./getKernel.cpp")
 set.seed(2020)
 ns <- 1500; nknots <- 144; nt <- 1
 wz.star <- array(rnorm(ns * nknots * nt), dim=c(ns, nknots, nt))
@@ -25,14 +25,14 @@ for (i in 1:ns) {
 }
 temp1 <- getKernelCPPwithID(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots, IDs = IDs)
 temp2 <- getKernel(wz.star = wz.star, a = a, IDs = IDs)
-temp3 <- getKernelCPP(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots)
+temp3 <- getKernelCPP(wz_star = wz.star, a = a)
 temp4 <- getKernel(wz.star = wz.star, a = a)
 mean(temp1 / temp2)
 sd(temp1 / temp2)
 mean(temp3 / temp4)
 sd(temp3 / temp4)
 
-microbenchmark(getKernelCPP(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots),
+microbenchmark(getKernelCPP(wz_star = wz.star, a = a),
                getKernel(wz.star = wz.star, a = a, IDs = IDs), 
                getKernelCPPwithID(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots, IDs = IDs), 
                getKernel(wz.star = wz.star, a = a))
@@ -54,14 +54,14 @@ for (i in 1:ns) {
   IDs2[[i]] <- 1:nknots
 }
 
-microbenchmark(getKernelCPP(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots),
+microbenchmark(getKernelCPP(wz_star = wz.star, a = a),
                getKernelCPPwithID(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots, IDs = IDs2),
                getKernel(wz.star = wz.star, a = a),
                getKernel(wz.star = wz.star, a = a, IDs = IDs))
 
 temp1 <- getKernelCPPwithID(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots, IDs = IDs)
 temp2 <- getKernel(wz.star = wz.star, a = a, IDs = IDs)
-temp3 <- getKernelCPP(wz_star = wz.star, a = a, nt = nt, ns = ns, nknots = nknots)
+temp3 <- getKernelCPP(wz_star = wz.star, a = a)
 temp4 <- getKernel(wz.star = wz.star, a = a)
 
 mean(temp1 / temp2)
@@ -72,8 +72,9 @@ sourceCpp(file = "./getKernel.cpp")
 z <- abs(matrix(rnorm(ns * nt), ns, nt))
 w <- matrix(runif(nknots * ns), ns, nknots)
 alpha <- 0.5
-tempwzstar1 <- getwzstarCPP(z = z, w = w, alpha = alpha)
+tempwzstar1 <- getwzStarCPP(z = z, w = w, alpha = alpha)
 tempwzstar2 <- getwzStar(z = z, w = w, alpha = alpha)
+mean(tempwzstar1 - tempwzstar2)
 
-microbenchmark(getwzstarCPP(z = z, w = w, alpha = alpha), 
+microbenchmark(getwzStarCPP(z = z, w = w, alpha = alpha), 
                getwzStar(z = z, w = w, alpha = alpha))
