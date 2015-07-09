@@ -287,8 +287,8 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
 }
 
 # rewrite to use kernel function not theta.star
-pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots,
-                       start=1, end=NULL, thin=1, thresh=0, update=NULL) {
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
+                       thin=1, thresh=0, update=NULL) {
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
   }

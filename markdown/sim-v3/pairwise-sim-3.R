@@ -129,7 +129,7 @@ for (i in 7:8) {
 
   print("    start mcmc predict")
   post.prob.gev.9 <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
-                                s.pred = s.p, knots = knots, A.cutoff = 5 * fit.9$par[2],
+                                s.pred = s.p, knots = knots,
                                 start = 1, end = iters - burn, update = update)
 
   # fit alpha only with rho set at knot spacing
@@ -169,7 +169,7 @@ for (i in 7:8) {
 
   print("    start mcmc predict")
   post.prob.gev.10 <- pred.spgev(mcmcoutput = fit.gev.10, x.pred = X.p,
-                                 s.pred = s.p, knots = knots, A.cutoff = 5 * knots.h,
+                                 s.pred = s.p, knots = knots,
                                  start = 1, end = iters - burn, update = update)
 
   print("    start mcmc fit 2")
@@ -197,7 +197,7 @@ for (i in 7:8) {
 
   print("    start mcmc predict")
   post.prob.gev.10a <- pred.spgev(mcmcoutput = fit.gev.10a, x.pred = X.p,
-                                  s.pred = s.p, knots = knots, A.cutoff = 5 * knots.h,
+                                  s.pred = s.p, knots = knots,
                                   start = 1, end = iters - burn,
                                   update = update)
 
