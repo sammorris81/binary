@@ -287,7 +287,7 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
 }
 
 # rewrite to use kernel function not theta.star
-pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, A.cutoff,
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots,
                        start=1, end=NULL, thin=1, thresh=0, update=NULL) {
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
@@ -321,6 +321,8 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, A.cutoff,
   rho   <- mcmcoutput$rho[start:end]
 
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
+  A.cutoff <- mcmcoutput$A.cutoff
+
   prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
 
