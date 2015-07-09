@@ -87,8 +87,6 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       print("Including all sites for every knot")
     }
     IDs <- getIDs(dw2, A.cutoff)
-    print(dim(dw2))
-    print(IDs[[1]])
   }
 
   # get the initial set of weights for the sites and knots

@@ -181,8 +181,6 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
       # can.kernel only changes at a site when it's near the knot
       # just a vector for the day's kernel values
       these <- IDs[[k]]  # get sites that are impacted by knot location
-      print(these)
-      print(t)
       can.kernel <- kernel[these, t] + wz.star[these, k, t] * (can.a - cur.a)
       if (any(can.kernel <= 0)) {  # numerical stability
         can.llps  <- -Inf
