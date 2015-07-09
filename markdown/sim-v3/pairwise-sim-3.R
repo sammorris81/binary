@@ -2,7 +2,7 @@
 #### and rho not be fixed in the MCMC. For more details, see the section
 #### in Sim_take_3.pdf on somewhat informative priors.
 
-#### this is the same as pairwise-sim-2.R, but I made some minor changes to 
+#### this is the same as pairwise-sim-2.R, but I made some minor changes to
 #### the MCMC to use C and do some site excusion based on distance to the knots.
 
 rm(list=ls())
@@ -84,7 +84,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 7:8) {
+for (i in 3:4) {
   filename <- paste("sim-results/pairwise-sim-", i, "-3.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
