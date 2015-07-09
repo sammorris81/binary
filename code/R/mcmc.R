@@ -70,6 +70,10 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
   z <- getZ(xi=xi, x.beta=x.beta)
 
+  # distance squared
+  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  dw2[dw2 < 1e-6] <- 0
+
   if (length(a.init) > 1) {
     a <- a.init
   } else {
@@ -83,12 +87,12 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       print("Including all sites for every knot")
     }
     IDs <- getIDs(dw2, A.cutoff)
+    print(dim(dw2))
+    print(IDs[[1]])
   }
 
   # get the initial set of weights for the sites and knots
   rho    <- rho.init
-  dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
-  dw2[dw2 < 1e-6] <- 0
   w      <- stdW(makeW(dw2, rho, A.cutoff))  # w is ns x nknots
 
   if (spatial) {
