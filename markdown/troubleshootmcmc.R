@@ -134,16 +134,20 @@ set.seed(mcmc.seed)
 IDs <- vector(mode = "list", length = nrow(knots))
 dw2 <- rdist(s.o, knots)^2
 dw2[dw2 < 0.0001] <- 0
+tic <- proc.time()[3]
 for (k in 1:nrow(knots)) {
   IDs[[k]] <- which(dw2[, k] < 0.125)
 }
+toc <- proc.time()[3]
+toc - tic
 
+source("../code/R/auxfunctions.R", chdir = TRUE)
 Rprof(filename = "Rprof.out", line.profiling = TRUE)
 fit.gev <- mcmc(y = y.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                 beta.init = -4.0, beta.m = 0, beta.s = 100,
                 xi.init = 0, xi.m = 0, xi.s = 0.5,
                 knots = knots, beta.tune = 1, xi.tune = 0.1,
-                alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1, A.cutoff = 0.125,
+                alpha.tune = 0.05, rho.tune = 0.1, A.tune = 1, A.cutoff = 0.5,
                 beta.attempts = 50, xi.attempts = 50,
                 alpha.attempts = 300, rho.attempts = 100,
                 spatial = TRUE, rho.init = 0.2, rho.upper = 9,

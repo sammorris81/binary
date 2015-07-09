@@ -163,8 +163,12 @@ getKernel <- function(wz.star, a, IDs = NULL) {
 }
 
 # get the kernel weighting
-makeW <- function(dw2, rho) {
+makeW <- function(dw2, rho, A.cutoff = NULL) {
+  if (is.null(A.cutoff)) {
+    A.cutoff <- max(sqrt(dw2))
+  }
   w <- exp(-0.5 * dw2 / (rho^2))
+  w[sqrt(dw2) > A.cutoff] <- 0  # only include sites that are close to the knot
   return(w)
 }
 
@@ -386,6 +390,15 @@ mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
 
   results <- list(acc=acc, att=att, mh=mh)
   return(results)
+}
+
+getIDs <- function(dw2, A.cutoff, IDs) {
+  nknots <- ncol(dw2)
+  IDs <- vector(mode = "list", length = nknots)
+  for (k in 1:nknots) {
+    IDs[[k]] <- which(sqrt(dw2[, k]) <= A.cutoff)
+  }
+  return(IDs)
 }
 
 dPS.Rcpp <- function(a, alpha, mid.points, bin.width) {

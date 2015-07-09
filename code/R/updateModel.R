@@ -251,7 +251,8 @@ updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
 }
 
 updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
-                      rho, logrho.m, logrho.s, rho.upper=Inf, acc, att, mh) {
+                      rho, logrho.m, logrho.s, rho.upper=Inf, A.cutoff, 
+                      acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -260,7 +261,7 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
   rho.star     <- log(rho)
   can.rho.star <- rnorm(1, rho.star, mh)
   can.rho      <- exp(can.rho.star)
-  can.w        <- stdW(makeW(dw2=dw2, rho=can.rho))
+  can.w        <- stdW(makeW(dw2 = dw2, rho = can.rho, A.cutoff = A.cutoff))
   can.wz.star  <- getwzStarCPP(z = z, w = can.w, alpha = alpha)
   can.kernel   <- getKernelCPP(wz_star = can.wz.star, a = a)
 #   can.wz.star  <- getwzStar(z = z, w = can.w, alpha = alpha)
@@ -327,7 +328,7 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
     x.beta       <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
     z            <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
     z.star       <- z^(1 / alpha[i])
-    w            <- stdW(makeW(dw2 = dw2p, rho = rho[i]))
+    w            <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
     w.star       <- w^(1 / alpha[i])
     theta.star   <- getThetaStar(w.star = w.star, a = a[i, , ])
     theta.z.star <- -theta.star / z.star

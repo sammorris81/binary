@@ -74,7 +74,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   rho    <- rho.init
   dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   dw2[dw2 < 1e-6] <- 0
-  w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
+  w      <- stdW(makeW(dw2, rho, A.cutoff))  # w is ns x nknots
   if (length(a.init) > 1) {
     a <- a.init
   } else {
@@ -82,17 +82,11 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   }
   if (is.null(IDs)) {
     # if not specified, make the list of sites that are impacted by each knot
-    IDs <- vector(mode = "list", length = nknots)
     if (is.null(A.cutoff)) {
-      for (k in 1:nknots) {
-        IDs[[k]] <- 1:ns
-      }
+      A.cutoff <- 2 * max(dw2)
       print("Including all sites for every knot")
-    } else {
-      for (k in 1:nknots) {
-        IDs[[k]] <- which(dw2[, k] < A.cutoff)
-      }
-    }
+    } 
+    IDs <- getIDs(dw2, A.cutoff, IDs)
   }
 
   if (spatial) {
@@ -289,8 +283,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                 cur.lly = cur.lly, w = w, z = z,
                                 wz.star = wz.star, dw2 = dw2, rho = rho,
                                 logrho.m = logrho.m, logrho.s = logrho.s,
-                                rho.upper = rho.upper, acc = acc.rho,
-                                att = att.rho, mh = mh.rho)
+                                rho.upper = rho.upper, A.cutoff = A.cutoff,
+                                acc = acc.rho, att = att.rho, mh = mh.rho)
         rho     <- rho.update$rho
         w       <- rho.update$w
         wz.star <- rho.update$wz.star
