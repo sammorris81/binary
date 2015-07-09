@@ -122,7 +122,7 @@ for (i in 7:8) {
                     beta.attempts = 50, xi.attempts = 50,
                     alpha.attempts = 300, rho.attempts = 100,
                     A.attempts = 100, spatial = TRUE, rho.init = fit.9$par[2],
-                    rho.upper = 9, alpha.init = alpha.init, a.init = 2,
+                    rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
                     iterplot = TRUE, alpha.fix = FALSE, rho.fix = FALSE,
                     xibeta.joint = FALSE, xi.fix = TRUE,
                     iters = iters, burn = burn, update = update, thin = 1)
