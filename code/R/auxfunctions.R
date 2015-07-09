@@ -127,7 +127,7 @@ getwzStar <- function(z, w, alpha) {
     wz.star[, , t] <- exp((log(w) - log(z.t)) / alpha)
     wz.star[, , t] <- ifelsematCPP(wz.star[, , t], 1e-7)
   }
-  
+
   # wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
 
   return(wz.star)
@@ -140,7 +140,7 @@ getKernel <- function(wz.star, a, IDs = NULL) {
   ns <- dim(wz.star)[1]
 
   kernel <- matrix(NA, nrow = ns, ncol = nt)
-  
+
   if (is.null(IDs)) {
     for (t in 1:nt) {
       if (nknots == 1) {
@@ -392,7 +392,7 @@ mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
   return(results)
 }
 
-getIDs <- function(dw2, A.cutoff, IDs) {
+getIDs <- function(dw2, A.cutoff) {
   nknots <- ncol(dw2)
   IDs <- vector(mode = "list", length = nknots)
   for (k in 1:nknots) {
@@ -410,7 +410,7 @@ dPS.Rcpp <- function(a, alpha, mid.points, bin.width) {
     ns <- nrow(a)
     nt <- ncol(a)
   }
-  
+
   results <- dPSCPP(a=a, alpha=alpha, mid_points=mid.points,
                     bin_width=bin.width)
   return(results)
@@ -474,7 +474,7 @@ get.level <- function(a, cuts) {
   } else {
     lev <- sum(a > cuts) + 1
   }
-  
+
   return(lev)
 }
 
@@ -817,13 +817,13 @@ jacobian.rarebinaryCPP <- function(par, y, rho, d, dw2, cov, threads=1) {
 # get find the ll for y - returns ns x nt matrix for each site/day
 # logLikeY2 <- function(y, theta.star, z.star, print = F) {
 #   theta.z.star <- -theta.star / z.star
-#   
+#
 #   if (!is.null(dim(y))) {
 #     ll.y <- matrix(-Inf, dim(y))
 #   } else {
 #     ll.y <- rep(-Inf, length(y))
 #   }
-#   
+#
 #   # numerical stability issue. originally was using
 #   # (1 - y) * P(Y = 0) + y * P(Y = 1)
 #   # would return NaN because 0 * -Inf is not a number

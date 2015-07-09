@@ -8,7 +8,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  A.tune = 1, IDs = NULL, A.cutoff = NULL,
                  beta.attempts = 50, xi.attempts = 50,
                  alpha.attempts = 200, rho.attempts = 200,
-                 spatial = TRUE,
+                 A.attempts = 100, spatial = TRUE,
                  rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
                  beta.fix = FALSE, xi.fix = FALSE,   # debug
                  rho.fix = FALSE, alpha.fix = FALSE, # debug
@@ -75,18 +75,20 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   dw2[dw2 < 1e-6] <- 0
   w      <- stdW(makeW(dw2, rho, A.cutoff))  # w is ns x nknots
+
   if (length(a.init) > 1) {
     a <- a.init
   } else {
     a <- matrix(a.init, nknots, nt)
   }
+  a.init <- a  # used to make sure all random effects are moving after updateA
   if (is.null(IDs)) {
     # if not specified, make the list of sites that are impacted by each knot
     if (is.null(A.cutoff)) {
       A.cutoff <- 2 * max(dw2)
       print("Including all sites for every knot")
-    } 
-    IDs <- getIDs(dw2, A.cutoff, IDs)
+    }
+    IDs <- getIDs(dw2, A.cutoff)
   }
 
   if (spatial) {
@@ -229,15 +231,16 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       a.update <- updateA(y = y, kernel = kernel, a = a, alpha = alpha,
                           wz.star = wz.star, cur.lly = cur.lly,
                           cur.llps = cur.llps, mid.points = mid.points,
-                          bin.width = bin.width, mh = mh.a, cuts = cuts, 
+                          bin.width = bin.width, mh = mh.a, cuts = cuts,
                           IDs = IDs)
       a        <- a.update$a
       kernel   <- a.update$kernel
       cur.lly  <- a.update$cur.lly
       cur.llps <- a.update$cur.llps
 
-      # adjust the candidate standard deviations
+
       if (iter < burn / 2) {
+        # adjust the candidate standard deviations
         level <- get.level(old.a, cuts)
         for (j in 1:length(mh.a)) {
           acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
@@ -246,6 +249,15 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
             if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
             if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
             acc.a[j] <- att.a[j] <- 0
+          }
+        }
+
+        # adjust A.cutoff if any a's have not moved since the start
+        # this is typically the case when A.cutoff is too small
+        if (any((a - a.init) == 0)) {
+          if ((iter %% A.attempts == 0) & (A.cutoff < sqrt(max(dw2)))) {
+            A.cutoff <- A.cutoff * 1.2
+            IDs <- getIDs(dw2 = dw2, A.cutoff = A.cutoff)
           }
         }
       }
@@ -360,7 +372,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           for (i in 1:4) {
             plot(keepers.a[begin:iter, i, 1], type="l",
                  main=paste("knot ", i, ", day 1", sep=""),
-                 xlab="", ylab="")
+                 xlab=paste("A.cutoff = ", round(A.cutoff, 2), sep = ""),
+                 ylab="")
           }
         }
       }
