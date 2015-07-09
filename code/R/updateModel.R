@@ -166,7 +166,7 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
 
 # update the random effects for kernel
 updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps, 
-                    mid.points, bin.width, mh, cuts, IDs = NULL) {
+                    mid.points, bin.width, mh, cuts, IDs) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -198,7 +198,7 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
 
       if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
         a[k, t]          <- can.a
-        kernel[, t]      <- can.kernel
+        kernel[these, t] <- can.kernel
         cur.lly.t[these] <- can.lly.t
         cur.llps[k, t]   <- can.llps
       }}

@@ -5,7 +5,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                  beta.tune = 0.01, xi.tune = 0.1,
                  alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
                  rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
-                 A.tune = 1, IDs = NULL,
+                 A.tune = 1, IDs = NULL, A.cutoff = NULL,
                  beta.attempts = 50, xi.attempts = 50,
                  alpha.attempts = 200, rho.attempts = 200,
                  spatial = TRUE,
@@ -73,6 +73,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   # get the initial set of weights for the sites and knots
   rho    <- rho.init
   dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  dw2[dw2 < 1e-6] <- 0
   w      <- stdW(makeW(dw2, rho))         # w is ns x nknots
   if (length(a.init) > 1) {
     a <- a.init
@@ -82,6 +83,16 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   if (is.null(IDs)) {
     # if not specified, make the list of sites that are impacted by each knot
     IDs <- vector(mode = "list", length = nknots)
+    if (is.null(A.cutoff)) {
+      for (k in 1:nknots) {
+        IDs[[k]] <- 1:ns
+      }
+      print("Including all sites for every knot")
+    } else {
+      for (k in 1:nknots) {
+        IDs[[k]] <- which(dw2[, k] < A.cutoff)
+      }
+    }
   }
 
   if (spatial) {
@@ -224,7 +235,8 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       a.update <- updateA(y = y, kernel = kernel, a = a, alpha = alpha,
                           wz.star = wz.star, cur.lly = cur.lly,
                           cur.llps = cur.llps, mid.points = mid.points,
-                          bin.width = bin.width, mh = mh.a, cuts = cuts)
+                          bin.width = bin.width, mh = mh.a, cuts = cuts, 
+                          IDs = IDs)
       a        <- a.update$a
       kernel   <- a.update$kernel
       cur.lly  <- a.update$cur.lly
@@ -248,7 +260,7 @@ mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       if (!alpha.fix) {
         alpha.update <- updateAlpha(y = y, kernel = kernel, a = a,
                                     alpha = alpha, z = z, w = w,
-                                    wz.star = wz.star, IDs = IDs, 
+                                    wz.star = wz.star,
                                     alpha.a = alpha.a, alpha.b = alpha.b,
                                     cur.lly = cur.lly, cur.llps = cur.llps,
                                     mid.points=mid.points, bin.width=bin.width,
