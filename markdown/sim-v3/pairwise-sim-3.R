@@ -84,7 +84,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 3:4) {
+for (i in 7:8) {
   filename <- paste("sim-results/pairwise-sim-", i, "-3.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
