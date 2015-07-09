@@ -287,7 +287,7 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
 }
 
 # rewrite to use kernel function not theta.star
-pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, A.cutoff, start=1, end=NULL,
                         thin=1, thresh=0, update=NULL) {
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
@@ -327,12 +327,10 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
   for (i in 1:length(start:end)) {
     x.beta       <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
     z            <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
-    z.star       <- z^(1 / alpha[i])
     w            <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
-    w.star       <- w^(1 / alpha[i])
-    theta.star   <- getThetaStar(w.star = w.star, a = a[i, , ])
-    theta.z.star <- -theta.star / z.star
-    prob.success[i, ] <- 1 - exp(theta.z.star)
+    wz.star      <- getwzStarCPP(z = z, w = w, alpha = alpha[i])
+    kernel       <- getKernelCPP(wz_star = wz.star, a = a[i, , ])
+    prob.success[i, ] <- 1 - exp(-kernel)
 
     # if z is nan, it means that x.beta is such a large number there is
     # basically 0 probability that z < 0

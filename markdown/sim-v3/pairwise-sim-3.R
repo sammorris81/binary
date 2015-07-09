@@ -84,7 +84,7 @@ priors <- list("beta.norm"=list(1, 100),
                "tau.sq.ig"=c(1, 1))
 cov.model <- "exponential"
 
-for (i in 9:10) {
+for (i in 7:8) {
   filename <- paste("sim-results/pairwise-sim-", i, "-3.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -129,7 +129,7 @@ for (i in 9:10) {
 
   print("    start mcmc predict")
   post.prob.gev.9 <- pred.spgev(mcmcoutput = fit.gev.9, x.pred = X.p,
-                                s.pred = s.p, knots = knots,
+                                s.pred = s.p, knots = knots, A.cutoff = 5 * fit.9$par[2],
                                 start = 1, end = iters - burn, update = update)
 
   # fit alpha only with rho set at knot spacing
@@ -169,7 +169,7 @@ for (i in 9:10) {
 
   print("    start mcmc predict")
   post.prob.gev.10 <- pred.spgev(mcmcoutput = fit.gev.10, x.pred = X.p,
-                                 s.pred = s.p, knots = knots,
+                                 s.pred = s.p, knots = knots, A.cutoff = 5 * knots.h,
                                  start = 1, end = iters - burn, update = update)
 
   print("    start mcmc fit 2")
@@ -197,7 +197,7 @@ for (i in 9:10) {
 
   print("    start mcmc predict")
   post.prob.gev.10a <- pred.spgev(mcmcoutput = fit.gev.10a, x.pred = X.p,
-                                  s.pred = s.p, knots = knots,
+                                  s.pred = s.p, knots = knots, A.cutoff = 5 * knots.h,
                                   start = 1, end = iters - burn,
                                   update = update)
 
@@ -208,122 +208,3 @@ for (i in 9:10) {
        y.i.p, y.i.o, s,
        file = filename)
 }
-
-
-# looking to see if max.dist has an impact on alpha estimate
-rm(list=ls())
-options(warn=2)
-library(fields)
-library(evd)
-library(spBayes)
-library(fields)
-library(SpatialTools)
-library(microbenchmark)
-library(mvtnorm)
-library(Rcpp)
-library(numDeriv)
-Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
-Sys.setenv("PKG_LIBS"="-fopenmp")
-sourceCpp(file = "../../code/R/pairwise.cpp")
-
-source("../../code/R/auxfunctions.R", chdir = TRUE)
-source("../../code/R/updateModel.R")
-source("../../code/R/mcmc.R")
-source("../../code/R/probit.R", chdir=T)
-
-set.seed(7483)  # site
-ns    <- 2000
-s     <- cbind(runif(ns), runif(ns))
-knots <- expand.grid(seq(0.01, 0.99, length=12), seq(0.01, 0.99, length=12))
-knots <- as.matrix(knots)
-knots.h <- abs(knots[1, 1] - knots[2, 1])
-x     <- matrix(1, ns, 1)
-
-alpha.t <- 0.3
-rho.t   <- 0.1
-xi.t    <- 0
-
-set.seed(3282)  # data
-y <- matrix(data = NA, nrow = ns, ncol = 10)
-for (i in 1:10) {
-  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
-                          alpha = alpha.t, rho = rho.t, prob.success = 0.05)
-  
-  y[, i] <- data$y
-}
-
-thresh <- data$thresh
-dw2    <- rdist(s, knots)
-d      <- rdist(s)
-diag(d) <- 0
-
-# testing vs training
-ntrain <- floor(0.75 * ns)
-ntest  <- ns - ntrain
-obs   <- c(rep(T, ntrain), rep(F, ntest))
-y.o   <- y[obs, , drop = FALSE]
-X.o   <- matrix(x[obs], ntrain, 1)
-s.o   <- s[obs, ]
-dw2.o <- rdist(s.o, knots)
-d.o   <- as.matrix(rdist(s.o))
-diag(d.o) <- 0
-y.validate <- y[!obs, , drop = FALSE]
-X.p <- matrix(x[!obs, ], ntest, 1)
-s.p <- s[!obs, ]
-
-fit.1 <- fit.2 <- fit.3 <- fit.4 <- fit.5 <- vector(mode = "list", length = 10)
-for (i in 1:10) {
-  y.i.o <- y.o[, i, drop = FALSE]
-  print(paste("start fit.1, set ", i, sep = ""))
-  fit.1[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                              alpha.init = 0.5, rho.init = knots.h,
-                              xi.fix = TRUE, alpha.fix = FALSE,
-                              rho.fix = TRUE, beta.fix = TRUE,
-                              y = y.i.o, dw2 = dw2.o, d = d.o,
-                              cov = X.o, max.dist = knots.h,
-                              alpha.min = 0.1, alpha.max = 0.9,
-                              threads = 3)
-  
-  print(paste("start fit.2, set ", i, sep = ""))
-  fit.2[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                                  alpha.init = 0.5, rho.init = knots.h,
-                                  xi.fix = TRUE, alpha.fix = FALSE,
-                                  rho.fix = TRUE, beta.fix = TRUE,
-                                  y = y.i.o, dw2 = dw2.o, d = d.o,
-                                  cov = X.o, max.dist = 2 * knots.h,
-                                  alpha.min = 0.1, alpha.max = 0.9,
-                                  threads = 3)
-  
-  print(paste("start fit.3, set ", i, sep = ""))
-  fit.3[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                                  alpha.init = 0.5, rho.init = knots.h,
-                                  xi.fix = TRUE, alpha.fix = FALSE,
-                                  rho.fix = TRUE, beta.fix = TRUE,
-                                  y = y.i.o, dw2 = dw2.o, d = d.o,
-                                  cov = X.o, max.dist = 3 * knots.h,
-                                  alpha.min = 0.1, alpha.max = 0.9,
-                                  threads = 3)
-  
-  print(paste("start fit.4, set ", i, sep = ""))
-  fit.4[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                                  alpha.init = 0.5, rho.init = knots.h,
-                                  xi.fix = TRUE, alpha.fix = FALSE,
-                                  rho.fix = TRUE, beta.fix = TRUE,
-                                  y = y.i.o, dw2 = dw2.o, d = d.o,
-                                  cov = X.o, max.dist = 4 * knots.h,
-                                  alpha.min = 0.1, alpha.max = 0.9,
-                                  threads = 3)
-  
-  print(paste("start fit.5, set ", i, sep = ""))
-  fit.5[[i]] <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                                  alpha.init = 0.5, rho.init = knots.h,
-                                  xi.fix = TRUE, alpha.fix = FALSE,
-                                  rho.fix = TRUE, beta.fix = TRUE,
-                                  y = y.i.o, dw2 = dw2.o, d = d.o,
-                                  cov = X.o, max.dist = 5 * knots.h,
-                                  alpha.min = 0.1, alpha.max = 0.9,
-                                  threads = 3)
-}
-
-save(fit.1, fit.2, fit.3, fit.4, fit.5, 
-     file = "sim-results/cl-compare-distance.RData")
