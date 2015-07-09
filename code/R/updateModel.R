@@ -45,7 +45,7 @@ updateBeta <- function(y, kernel, alpha, a, z, w, wz.star, beta, beta.m, beta.s,
     }}
   }
 
-  results <- list(beta = beta, x.beta = x.beta, z = z, wz.star = wz.star, 
+  results <- list(beta = beta, x.beta = x.beta, z = z, wz.star = wz.star,
                   kernel = kernel, cur.lly = cur.lly, att = att, acc = acc)
   return(results)
 }
@@ -53,7 +53,7 @@ updateBeta <- function(y, kernel, alpha, a, z, w, wz.star, beta, beta.m, beta.s,
 updateXi <- function(y, kernel, alpha, a, z, w, wz.star, x.beta, xi, xi.m, xi.s,
                      cur.lly, acc, att, mh, thresh=0) {
   nt  <- ncol(y)
-  
+
   att <- att + 1
   can.xi     <- rnorm(1, xi, mh)
 
@@ -80,14 +80,14 @@ updateXi <- function(y, kernel, alpha, a, z, w, wz.star, x.beta, xi, xi.m, xi.s,
     acc     <- acc + 1
   }}
 
-  results <- list(xi = xi, z = z, wz.star = wz.star, kernel = kernel, 
+  results <- list(xi = xi, z = z, wz.star = wz.star, kernel = kernel,
                   cur.lly = cur.lly, att = att, acc = acc)
   return(results)
 }
 
-updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel, 
+updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
                          a, x.beta, xi, x, xt, xtx.inv, xi.m, xi.s, cur.lly,
-                         xi.fix, beta.fix, acc.p, att.p, mh.p, acc.xi, att.xi, 
+                         xi.fix, beta.fix, acc.p, att.p, mh.p, acc.xi, att.xi,
                          mh.xi, thresh = 0) {
   ns <- nrow(y)
   nt <- ncol(y)
@@ -98,10 +98,10 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
   if (!xi.fix) {
     att.xi <- att.xi + 1
   }
-  
+
   # trying to get xi and beta using the marginal P(Y = 0)
   cur.p     <- exp(-1 / z)  # will be ns x nt matrix
-  if (np == 1) {  
+  if (np == 1) {
     # intercept only model all elements in cur.p should be the same
     can.pstar <- rnorm(1, log(cur.p[1]/(1 - cur.p[1])), mh.p)
     can.p     <- 1 / (1 + exp(-can.pstar))
@@ -110,14 +110,14 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
     can.pstar <- matrix(rnorm(ns * nt, log(cur.p / (1 - cur.p)), mh.p), ns, nt)
     can.p     <- 1 / (1 + exp(-can.pstar))
   }
-  
+
   # extract beta for the new xi term
   if (xi.fix) {
     can.xi <- xi
   } else {
     can.xi <- rnorm(1, xi, mh.xi)
   }
-  
+
   if (xi < 1e-6 & xi > -1e-6) {
     can.x.beta <- log(-log(can.p))
 
@@ -138,12 +138,12 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
 
   R <- sum(can.lly - cur.lly) +
        dbeta(can.p[1], 1, 1, log = TRUE) - dbeta(cur.p[1], 1, 1, log = TRUE)
-  
+
   if (!xi.fix) {
-    R <- R + dnorm(can.xi, xi.m, xi.s, log = TRUE) - 
+    R <- R + dnorm(can.xi, xi.m, xi.s, log = TRUE) -
              dnorm(xi, xi.m, xi.s, log = TRUE)
   }
-  
+
   if (!is.na(R)) { if (log(runif(1)) < R) {
     beta    <- xtx.inv %*% (xt %*% can.x.beta)
     x.beta  <- can.x.beta
@@ -151,21 +151,21 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
     wz.star <- can.wz.star
     kernel  <- can.kernel
     cur.lly <- can.lly
-    if (!xi.fix) { 
+    if (!xi.fix) {
       xi      <- can.xi
       acc.xi  <- acc.xi + 1
     }
     acc.p   <- acc.p + 1
   }}
-  
-  results <- list(beta = beta, x.beta = x.beta, xi = xi, z = z, 
-                  wz.star = wz.star, kernel = kernel, cur.lly = cur.lly, 
+
+  results <- list(beta = beta, x.beta = x.beta, xi = xi, z = z,
+                  wz.star = wz.star, kernel = kernel, cur.lly = cur.lly,
                   att.p = att.p, acc.p = acc.p,
                   att.xi = att.xi, acc.xi = acc.xi)
 }
 
 # update the random effects for kernel
-updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps, 
+updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
                     mid.points, bin.width, mh, cuts, IDs) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -177,7 +177,7 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
       l1    <- get.level(cur.a, cuts)  # keeps sd reasonable
       can.a <- exp(rnorm(1, log(cur.a), mh[l1]))
       l2    <- get.level(can.a, cuts)
-      
+
       # can.kernel only changes at a site when it's near the knot
       # just a vector for the day's kernel values
       these <- IDs[[k]]  # get sites that are impacted by knot location
@@ -207,13 +207,13 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
 
   cur.lly <- logLikeY(y = y, kernel = kernel)
 
-  results <- list(a = a, kernel = kernel, 
+  results <- list(a = a, kernel = kernel,
                   cur.lly = cur.lly, cur.llps = cur.llps)
   return(results)
 }
 
 # update the alpha term for theta.star
-updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b, 
+updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
                         cur.lly, cur.llps, mid.points, bin.width,
                         acc, att, mh) {
   nt     <- ncol(y)
@@ -244,20 +244,20 @@ updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
     acc      <- acc + 1
   }}
 
-  results <- list(alpha = alpha, wz.star = wz.star, kernel = kernel, 
+  results <- list(alpha = alpha, wz.star = wz.star, kernel = kernel,
                   cur.lly = cur.lly, cur.llps = cur.llps,
                   att = att, acc = acc)
   return(results)
 }
 
 updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
-                      rho, logrho.m, logrho.s, rho.upper=Inf, A.cutoff, 
+                      rho, logrho.m, logrho.s, rho.upper=Inf, A.cutoff,
                       acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
   att <- att + 1
-  
+
   rho.star     <- log(rho)
   can.rho.star <- rnorm(1, rho.star, mh)
   can.rho      <- exp(can.rho.star)
@@ -287,8 +287,8 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
 }
 
 # rewrite to use kernel function not theta.star
-pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, A.cutoff, start=1, end=NULL,
-                        thin=1, thresh=0, update=NULL) {
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, A.cutoff,
+                       start=1, end=NULL, thin=1, thresh=0, update=NULL) {
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
   }
@@ -329,7 +329,8 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, A.cutoff, start=1, end
     z            <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
     w            <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
     wz.star      <- getwzStarCPP(z = z, w = w, alpha = alpha[i])
-    kernel       <- getKernelCPP(wz_star = wz.star, a = a[i, , ])
+    kernel       <- getKernelCPP(wz_star = wz.star,
+                                 a = matrix(a[i, , ], nknots, nt))
     prob.success[i, ] <- 1 - exp(-kernel)
 
     # if z is nan, it means that x.beta is such a large number there is
