@@ -121,10 +121,10 @@ for (i in 3:4) {
                     A.tune = 1, A.cutoff = 5 * fit.9$par[2],
                     beta.attempts = 50, xi.attempts = 50,
                     alpha.attempts = 300, rho.attempts = 100,
-                    spatial = TRUE, rho.init = fit.9$par[2], rho.upper = 9,
-                    alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                    alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
-                    xi.fix = TRUE,
+                    A.attempts = 100, spatial = TRUE, rho.init = fit.9$par[2],
+                    rho.upper = 9, alpha.init = alpha.init, a.init = 2,
+                    iterplot = TRUE, alpha.fix = FALSE, rho.fix = FALSE,
+                    xibeta.joint = FALSE, xi.fix = TRUE,
                     iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")
@@ -161,10 +161,10 @@ for (i in 3:4) {
                      A.tune = 1, A.cutoff = 5 * knots.h,
                      beta.attempts = 50, xi.attempts = 50,
                      alpha.attempts = 300, rho.attempts = 100,
-                     spatial = TRUE, rho.init = knots.h, rho.upper = 9,
-                     alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                     alpha.fix = FALSE, rho.fix = FALSE, xibeta.joint = FALSE,
-                     xi.fix = TRUE,
+                     A.attempts = 100, spatial = TRUE, rho.init = knots.h,
+                     rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
+                     iterplot = TRUE, alpha.fix = FALSE, rho.fix = FALSE,
+                     xibeta.joint = FALSE, xi.fix = TRUE,
                      iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")
@@ -189,10 +189,10 @@ for (i in 3:4) {
                      A.tune = 1, A.cutoff = 5 * knots.h,
                      beta.attempts = 50, xi.attempts = 50,
                      alpha.attempts = 300, rho.attempts = 100,
-                     spatial = TRUE, rho.init = knots.h, rho.upper = 9,
-                     alpha.init = alpha.init, a.init = 1000, iterplot = TRUE,
-                     alpha.fix = FALSE, rho.fix = TRUE, xibeta.joint = FALSE,
-                     xi.fix = TRUE,
+                     A.attempts = 100, spatial = TRUE, rho.init = knots.h,
+                     rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
+                     iterplot = TRUE, alpha.fix = FALSE, rho.fix = TRUE,
+                     xibeta.joint = FALSE, xi.fix = TRUE,
                      iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")
