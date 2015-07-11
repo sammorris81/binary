@@ -85,7 +85,7 @@ Both 1a and 1b take $\beta$ to be the estimate for $\beta$ marginally for the si
 
 Here are the results for 10 datasets:
 
-```{r compile-results, cache = TRUE, echo = FALSE, include = FALSE}
+```{r compile-results-1, cache = TRUE, echo = FALSE, include = FALSE}
 bs1 <- matrix(NA, 5, 10)
 for (i in 1:10) {
   file <- paste("sim-results/pairwise-sim-", i, "-1.RData", sep = "")
@@ -102,10 +102,10 @@ for (i in 1:10) {
 ```
 
 \scriptsize
-```{r simresults, echo = FALSE}
+```{r simresults-1, echo = FALSE}
 library(pander)
 panderOptions("digits", 4)
-rownames(bs1) <- c("1a", "1b", "1c", "2", "3")
+rownames(bs1) <- c("1a", "1b", "1c", "4", "5")
 bs1 <- cbind(bs1, rowMeans(bs1, na.rm = TRUE))
 colnames(bs1) <- c(1:10, "Mean")
 set.caption("Simulation results (x 100) for 10 datasets")
@@ -130,7 +130,7 @@ Each of the methods below differs in how we treat $\rho$.
 
 > 1c: We fix $\rho$ in the MCMC to be the knot spacing.
 
-```{r compile-results2, cache = TRUE, echo = FALSE, include = FALSE}
+```{r compile-results-2, cache = TRUE, echo = FALSE, include = FALSE}
 bs2 <- matrix(NA, 5, 10)
 for (i in 1:10) {
   file <- paste("sim-results/pairwise-sim-", i, "-2.RData", sep = "")
@@ -145,10 +145,10 @@ bs2[4:5, ] <- bs1[4:5, 1:10]
 ```
 
 \scriptsize
-```{r simresults2, echo = FALSE}
+```{r simresults-2, echo = FALSE}
 library(pander)
 panderOptions("digits", 4)
-rownames(bs2) <- c("1a", "1b", "1c", "2", "3")
+rownames(bs2) <- c("2a", "2b", "2c", "4", "5")
 bs2 <- cbind(bs2, rowMeans(bs2, na.rm = TRUE))
 colnames(bs2) <- c(1:10, "Mean")
 set.caption("Simulation results (x 100) for 10 datasets")
@@ -200,3 +200,42 @@ pander(t(alphas))
 \normalsize
 
 It would appear that the estimates seem to stabilize as long as we include sites in the pairwise composite likelihood that are within $2h$ to $3h$ of the reference site.
+
+## Tweaks to likelihood and MCMC
+
+I recoded a few of the functions in C to help with time savings, and I also made two additional changes.
+
+1. Instead of using $\theta^*\frac{1}{z^{1 / \alpha}}$ where $\theta^* = \sum_{l = 1}^{L} A_l w_l^{1 / \alpha}$ when doing predictions at unobserved locations, I'm now using $\sum_{l = 1}^L A_l \psi_l^*$ where $\psi_l^* = \frac{w_l^{1 / \alpha}}{z^{1 / \alpha}}$. In the $\theta^*$ parameterization, due to the magnitude of the $A_l$ terms, there is more potential for numerical problems when dividing by $z^{1 / \alpha}$. The $\psi_l^*$ parameterization is preferred because $z$ and $w$ are closer in magnitude.
+2. In preparation for the simulated dataset with more knots, we made two minor tweaks to the likelihood calculcations. We now have a cutoff value for the distance at which $A_l$ no longer impacts $z$. This impacts the function ```updateA``` as well as the value for $w_l$. We automatically set $w_l = 0$ when the location where $y$ is observed is too far away from the knot location.
+
+The methods used are otherwise identical to the methods used in 2a, 2b, and 2c.
+
+```{r compile-results-3, cache = TRUE, echo = FALSE, include = FALSE}
+bs3 <- matrix(NA, 5, 10)
+for (i in 1:10) {
+  file <- paste("sim-results/pairwise-sim-", i, "-3.RData", sep = "")
+  print(paste("start: set", i))
+  load(file)
+  bs3[1, i] <- BrierScore(post.prob.gev.9, y.i.p)
+  bs3[2, i] <- BrierScore(post.prob.gev.10, y.i.p)
+  bs3[3, i] <- BrierScore(post.prob.gev.10a, y.i.p)
+}
+
+bs3[4:5, ] <- bs1[4:5, 1:10]
+```
+
+\scriptsize
+```{r simresults-3, echo = FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs3) <- c("2a$^*$", "2b$^*$", "2c$^*$", "4", "5")
+bs3 <- cbind(bs3, rowMeans(bs3, na.rm = TRUE))
+colnames(bs3) <- c(1:10, "Mean")
+set.caption("Simulation results (x 100) for 10 datasets")
+pander(t(bs3) * 100)
+```
+
+\normalsize
+
+The difference between our method and probit is very small. 
+Although the method that performs the best here, 2c$^*$, fixes $\rho$ at the knot spacing, both methods 2a$^*$ and 2b$^*$ which do not fix $\rho$ also show some minor improvement over the probit.
