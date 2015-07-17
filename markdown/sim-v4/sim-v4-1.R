@@ -22,8 +22,8 @@ source("../../code/R/probit.R", chdir=T)
 set.seed(7483)  # site
 ns    <- 1000
 s     <- cbind(runif(ns), runif(ns))
-# knots <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
-knots <- expand.grid(seq(0, 1, length=15), seq(0, 1, length=15))
+knots <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
+# knots <- expand.grid(seq(0, 1, length=15), seq(0, 1, length=15))
 knots <- as.matrix(knots)
 knots.h <- abs(knots[1, 1] - knots[2, 1])
 x     <- matrix(1, ns, 1)
@@ -81,7 +81,7 @@ cov.model <- "exponential"
 amcmc <- list("n.batch" = n.batch, "batch.length" = batch.length,
               "accept.rate" = 0.35)
 
-for (i in 1:10) {
+for (i in 7:10) {
   filename <- paste("sim-results/sim-v4-", i, "-1.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -97,7 +97,7 @@ for (i in 1:10) {
                                y = y.i.o, dw2 = dw2.o, d = d.o,
                                cov = X.o, max.dist = 3 * knots.h,
                                alpha.min = 0.1, alpha.max = 0.9,
-                               threads = 3)
+                               threads = 2)
 
   # spatial GEV
   print("    start mcmc fit")
