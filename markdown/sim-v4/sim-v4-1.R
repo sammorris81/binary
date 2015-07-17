@@ -22,7 +22,8 @@ source("../../code/R/probit.R", chdir=T)
 set.seed(7483)  # site
 ns    <- 1000
 s     <- cbind(runif(ns), runif(ns))
-knots <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
+# knots <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
+knots <- expand.grid(seq(0, 1, length=15), seq(0, 1, length=15))
 knots <- as.matrix(knots)
 knots.h <- abs(knots[1, 1] - knots[2, 1])
 x     <- matrix(1, ns, 1)
@@ -65,21 +66,22 @@ s.p <- s[!obs, ]
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 45000; burn <- 35000; update <- 1000; thin <- 1
+iters <- 50000; burn <- 40000; update <- 1000; thin <- 1
 # iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
-n.report <- update
+n.report     <- update
+batch.length <- 100
+n.batch      <- floor(iters / batch.length)
 verbose <- TRUE
-tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1,
-               "beta"=0.1, "w"=0.1)
-starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1,
-                 "beta"=0, "w"=0)
-priors <- list("beta.norm"=list(1, 100),
-               "phi.unif"=c(0.1, 1e4), "sigma.sq.ig"=c(1, 1),
-               "tau.sq.ig"=c(1, 1))
+tuning <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
+starting <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
+priors <- list("beta.norm" = list(0, 100),
+               "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
 cov.model <- "exponential"
+amcmc <- list("n.batch" = n.batch, "batch.length" = batch.length,
+              "accept.rate" = 0.35)
 
-for (i in 4:6) {
+for (i in 1:10) {
   filename <- paste("sim-results/sim-v4-", i, "-1.RData", sep = "")
   y.i.o <- y.o[, i, drop = FALSE]
   y.i.p <- y.validate[, i, drop = FALSE]
@@ -133,16 +135,20 @@ for (i in 4:6) {
   print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial", coords = s.o,
-                     knots = knots, starting = starting, tuning = tuning,
-                     priors = priors, cov.model = cov.model,
-                     n.samples = iters, verbose = verbose,
-                     n.report = n.report)
+  # similar to our procedure, only the adaptation of the candidate
+  # standard deviation continues to adapt the whole time
+  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
+                     coords = s.o, knots = knots, starting = starting,
+                     tuning = tuning, priors = priors,
+                     cov.model = cov.model, n.samples = iters,
+                     verbose = verbose, n.report = 25,
+                     amcmc = amcmc)
 
   print("    start mcmc predict")
   yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                         pred.covars = X.p, start = burn + 1, end = iters,
-                         thin = 1, verbose = TRUE, n.report = 500)
+                         pred.covars = X.p, start = burn + 1,
+                         end = iters, thin = 1, verbose = TRUE,
+                         n.report = 500)
 
   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
 
