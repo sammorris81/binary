@@ -1,0 +1,120 @@
+---
+title: "Small Scale Sim"
+author: "Morris, S."
+date: "July 1, 2015"
+output: pdf_document
+---
+```{r initial-setup, cache = TRUE, echo = FALSE, include = FALSE}
+library(fields)
+library(evd)
+library(spBayes)
+library(fields)
+library(SpatialTools)
+# library(microbenchmark)
+library(mvtnorm)
+library(Rcpp)
+library(numDeriv)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+sourceCpp(file = "../../code/R/pairwise.cpp")
+
+source("../../code/R/auxfunctions.R", chdir = TRUE)
+source("../../code/R/updateModel.R")
+source("../../code/R/mcmc.R")
+source("../../code/R/probit.R", chdir=T)
+```
+
+```{r gendata, cache = TRUE, echo = FALSE, include = FALSE}
+set.seed(7483)  # site
+ns    <- 1000
+s     <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
+knots <- as.matrix(knots)
+knots.h <- abs(knots[1, 1] - knots[2, 1])
+x     <- matrix(1, ns, 1)
+
+alpha.t <- 0.3
+rho.t   <- 0.025
+xi.t    <- 0
+
+set.seed(3282)  # data
+y <- matrix(data = NA, nrow = ns, ncol = 10)
+for (i in 1:10) {
+  data <- rRareBinarySpat(x, s = s, knots = knots, beta = 0, xi = xi.t,
+                          alpha = alpha.t, rho = rho.t, prob.success = 0.05)
+
+  y[, i] <- data$y
+}
+```
+
+# Small-scale simulation results
+
+## Data settings
+
+I generated data at 1000 sites using the following settings:
+
+* $\alpha = 0.3$
+* $\rho = 0.025$
+* $\xi = 0$
+
+This is 750 sites for training, and 250 sites for cross validation.
+The MCMC ran for 45000 iterations with 35000 burnin, and convergence is pretty good for $\rho$ and $\beta_0$, $\alpha$ is not as good, but still not horrible.
+
+## Methods
+
+There were 3 methods used to fit the datasets.
+
+> 1: Fit $\alpha$, $\rho$, $beta$, and random effect in the MCMC. The mean of $\rho$ in the MCMC is set to be the estimates from the pairwise composite likelihood. The $\alpha$ term is given a beta prior with mean equal to the estimate from the pairwise composite likelihood, and standard deviation of 0.05.
+
+> 2: Logit
+
+> 3: Probit
+
+In model 1, to help speed up the computational aspect of the MCMC, we only include sites for a knot that are within a certain distance of the knot location.
+This is set at an initial value based upon the knot spacing, and is adjusted during the MCMC to ensure that all of the random effects are moving from their initial values.
+
+\newpage
+
+## Results 
+
+Here are the results for 10 datasets:
+
+```{r compile-results-1, cache = TRUE, echo = FALSE, include = FALSE}
+bs1 <- matrix(NA, 3, 10)
+for (i in 1:10) {
+  file <- paste("sim-results/sim-v4-", i, "-1.RData", sep = "")
+  print(paste("start: set", i))
+  load(file)
+  bs1[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs1[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs1[3, i] <- BrierScore(post.prob.pro, y.i.p)
+}
+```
+
+\scriptsize
+```{r simresults-1, echo = FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs1) <- c("1", "2", "3")
+bs1 <- cbind(bs1, rowMeans(bs1, na.rm = TRUE))
+colnames(bs1) <- c(1:10, "Mean")
+set.caption("Simulation results (x 100) for 10 datasets")
+pander(t(bs1) * 100)
+```
+
+\normalsize
+
+I think part of the problem with the logit is that it doesn't converge well at all.
+It may take a little time to tweak the MCMC settings for the logit to do well.
+
+\newpage
+
+```{r plotdata, echo = FALSE, cache = FALSE, fig.height = 10, fig.width = 7}
+par(mfrow=c(4, 3))
+for (i in 1:10) {
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = paste("simulated dataset: ", i), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
