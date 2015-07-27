@@ -1,19 +1,19 @@
-mcmc <- function(y, s, x, s.pred = NULL, x.pred = NULL,
-                 beta.init = NULL, beta.m = 0, beta.s = 20,
-                 xi.init = NULL, xi.m = 0, xi.s = 0.5,
-                 npts = 100, knots = NULL, thresh = 0,
-                 beta.tune = 0.01, xi.tune = 0.1,
-                 alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
-                 rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
-                 A.tune = 1, IDs = NULL, A.cutoff = NULL,
-                 beta.attempts = 50, xi.attempts = 50,
-                 alpha.attempts = 200, rho.attempts = 200,
-                 A.attempts = 100, spatial = TRUE,
-                 rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
-                 beta.fix = FALSE, xi.fix = FALSE,   # debug
-                 rho.fix = FALSE, alpha.fix = FALSE, # debug
-                 xibeta.joint = FALSE,
-                 iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
+mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
+                     beta.init = NULL, beta.m = 0, beta.s = 20,
+                     xi.init = NULL, xi.m = 0, xi.s = 0.5,
+         	         npts = 100, knots = NULL, thresh = 0,
+                     beta.tune = 0.01, xi.tune = 0.1,
+                     alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
+                     rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
+                     A.tune = 1, IDs = NULL, A.cutoff = NULL,
+                     beta.attempts = 50, xi.attempts = 50,
+                     alpha.attempts = 200, rho.attempts = 200,
+                     A.attempts = 100, spatial = TRUE,
+                     rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
+                     beta.fix = FALSE, xi.fix = FALSE,   # debug
+                     rho.fix = FALSE, alpha.fix = FALSE, # debug
+                     xibeta.joint = FALSE,
+                     iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
 
