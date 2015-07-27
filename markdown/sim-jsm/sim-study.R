@@ -102,7 +102,7 @@ for (i in 7:10) {
 
   # # spatial GEV
   # print("    start mcmc fit")
-  # mcmc.seed <- i * 10
+  mcmc.seed <- i * 10
   # set.seed(mcmc.seed)
 
   # if (fit.pcl$par[1] < 0.3) {
