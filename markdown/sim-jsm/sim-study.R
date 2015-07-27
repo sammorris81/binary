@@ -90,45 +90,45 @@ for (i in 7:10) {
 
   print("  start fit.pcl")
   # fit alpha and rho
-  print("    start pcl fit")
-  fit.pcl <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                               alpha.init = 0.5, rho.init = knots.h,
-                               xi.fix = TRUE, alpha.fix = FALSE,
-                               rho.fix = FALSE, beta.fix = TRUE,
-                               y = y.i.o, dw2 = dw2.o, d = d.o,
-                               cov = X.o, max.dist = 3 * knots.h,
-                               alpha.min = 0.1, alpha.max = 0.9,
-                               threads = 2)
+  # print("    start pcl fit")
+  # fit.pcl <- fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
+                               # alpha.init = 0.5, rho.init = knots.h,
+                               # xi.fix = TRUE, alpha.fix = FALSE,
+                               # rho.fix = FALSE, beta.fix = TRUE,
+                               # y = y.i.o, dw2 = dw2.o, d = d.o,
+                               # cov = X.o, max.dist = 3 * knots.h,
+                               # alpha.min = 0.1, alpha.max = 0.9,
+                               # threads = 2)
 
-  # spatial GEV
-  print("    start mcmc fit")
-  mcmc.seed <- i * 10
-  set.seed(mcmc.seed)
+  # # spatial GEV
+  # print("    start mcmc fit")
+  # mcmc.seed <- i * 10
+  # set.seed(mcmc.seed)
 
-  if (fit.pcl$par[1] < 0.3) {
-    alpha.init <- 0.25
-  } else {
-    alpha.init <- fit.pcl$par[1]
-  }
-  fit.gev <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
-                  beta.init = fit.pcl$beta, beta.m = 0, beta.s = 100,
-                  xi.init = 0, xi.m = 0, xi.s = 0.5,
-                  knots = knots, beta.tune = 1, xi.tune = 0.1,
-                  alpha.tune = 0.05, alpha.m = fit.pcl$par[1], alpha.s = 0.05,
-                  rho.tune = 0.1, logrho.m = log(fit.pcl$par[2]), logrho.s = 2,
-                  A.tune = 1, A.cutoff = 5 * fit.pcl$par[2],
-                  beta.attempts = 50, xi.attempts = 50,
-                  alpha.attempts = 300, rho.attempts = 100,
-                  A.attempts = 100, spatial = TRUE, rho.init = fit.pcl$par[2],
-                  rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
-                  iterplot = FALSE, alpha.fix = FALSE, rho.fix = FALSE,
-                  xibeta.joint = FALSE, xi.fix = TRUE,
-                  iters = iters, burn = burn, update = update, thin = 1)
+  # if (fit.pcl$par[1] < 0.3) {
+    # alpha.init <- 0.25
+  # } else {
+    # alpha.init <- fit.pcl$par[1]
+  # }
+  # fit.gev <- mcmc(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
+                  # beta.init = fit.pcl$beta, beta.m = 0, beta.s = 100,
+                  # xi.init = 0, xi.m = 0, xi.s = 0.5,
+                  # knots = knots, beta.tune = 1, xi.tune = 0.1,
+                  # alpha.tune = 0.05, alpha.m = fit.pcl$par[1], alpha.s = 0.05,
+                  # rho.tune = 0.1, logrho.m = log(fit.pcl$par[2]), logrho.s = 2,
+                  # A.tune = 1, A.cutoff = 5 * fit.pcl$par[2],
+                  # beta.attempts = 50, xi.attempts = 50,
+                  # alpha.attempts = 300, rho.attempts = 100,
+                  # A.attempts = 100, spatial = TRUE, rho.init = fit.pcl$par[2],
+                  # rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
+                  # iterplot = FALSE, alpha.fix = FALSE, rho.fix = FALSE,
+                  # xibeta.joint = FALSE, xi.fix = TRUE,
+                  # iters = iters, burn = burn, update = update, thin = 1)
 
-  print("    start mcmc predict")
-  post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                                s.pred = s.p, knots = knots,
-                                start = 1, end = iters - burn, update = update)
+  # print("    start mcmc predict")
+  # post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
+                                # s.pred = s.p, knots = knots,
+                                # start = 1, end = iters - burn, update = update)
 
   # spatial logit
   print("  start logit")
