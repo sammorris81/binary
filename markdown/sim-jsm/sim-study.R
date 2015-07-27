@@ -7,7 +7,7 @@ library(evd)
 library(spBayes)
 library(fields)
 library(SpatialTools)
-library(microbenchmark)
+# library(microbenchmark)  # comment out for beowulf
 library(mvtnorm)
 library(Rcpp)
 library(numDeriv)
