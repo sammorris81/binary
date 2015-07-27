@@ -121,7 +121,7 @@ for (i in 7:10) {
                   alpha.attempts = 300, rho.attempts = 100,
                   A.attempts = 100, spatial = TRUE, rho.init = fit.pcl$par[2],
                   rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
-                  iterplot = TRUE, alpha.fix = FALSE, rho.fix = FALSE,
+                  iterplot = FALSE, alpha.fix = FALSE, rho.fix = FALSE,
                   xibeta.joint = FALSE, xi.fix = TRUE,
                   iters = iters, burn = burn, update = update, thin = 1)
 
@@ -142,8 +142,7 @@ for (i in 7:10) {
                      coords = s.o, knots = knots, starting = starting,
                      tuning = tuning, priors = priors,
                      cov.model = cov.model, n.samples = iters,
-                     verbose = verbose, n.report = 25,
-                     amcmc = amcmc)
+                     verbose = verbose, n.report = update)
 
   print("    start mcmc predict")
   yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
