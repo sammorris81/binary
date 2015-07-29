@@ -440,23 +440,27 @@ rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
 rHotSpotSpat <- function(x, s, knots, rho, prob.success) {
   nknots <- dim(knots)[1]
   ns     <- dim(s)[1]
-  y      <- matrix(NA, ns, 1)
+  y      <- matrix(0, ns, 1)
   
   # figure out how many knots to select
-  nselect <- ceiling(prob.success / (pi * (4 * rho)^2))
+  nselect <- 2
   these.knots <- sample(x = nknots, size = nselect, replace = F)
   
   d     <- rdist(s, knots)
-  for (i in 1:ns) {
-    if (any(d[i, these.knots] < (4 * rho))) {
-      prob.success <- 0.98
-    } else {
-      prob.success <- 0.02
+  nrhos <- 1
+  while (mean(y) < prob.success) {
+    for (i in 1:ns) {
+      if (any(d[i, these.knots] < (nrhos * rho))) {
+        p <- 0.99
+      } else {
+        p <- 0.01
+      }
+      y[i, 1] <- rbinom(1, size = 1, prob = p)
     }
-    y[i, 1] <- rbinom(1, size = 1, prob = prob.success)
+    nrhos <- nrhos * 1.1
   }
   
-  results <- list(y = y)
+  results <- list(y = y, these.knots = these.knots, nrhos = nrhos)
   return(results)
 }
 
