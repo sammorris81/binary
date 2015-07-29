@@ -22,7 +22,7 @@ source("../../code/R/probit.R", chdir=T)
 load("./simdata.RData")
 
 # which setting should run
-setting <- 4  
+setting <- 4
 group   <- 4  # sets the start and end sets (grouped by 10)
 
 # extract info about simulation settings
@@ -41,10 +41,10 @@ diag(d) <- 0
 ntrain <- floor(0.75 * ns)
 ntest  <- ns - ntrain
 obs    <- c(rep(T, ntrain), rep(F, ntest))
-y.o    <- matrix(y[obs, , setting], ns, nsets)
+y.o    <- matrix(y[obs, , setting], ntrain, nsets)
 X.o    <- matrix(x[obs], ntrain, 1)
 s.o    <- s[obs, ]
-y.p    <- matrix(y[!obs, , setting], ns, nsets)
+y.p    <- matrix(y[!obs, , setting], ntest, nsets)
 X.p    <- matrix(x[!obs, ], ntest, 1)
 s.p    <- s[!obs, ]
 dw2.o  <- rdist(s.o, knots)
@@ -76,7 +76,7 @@ end   <- group * 10
 for (i in start:end) {
   filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
   y.i.o <- matrix(y.o[, i], ntrain, 1)
-  y.i.p <- matrix(y.validate[, i], ntest, 1)
+  y.i.p <- matrix(y.p[, i], ntest, 1)
   print(paste("Starting: Set ", i, sep = ""))
   
   print("  start fit.pcl")
