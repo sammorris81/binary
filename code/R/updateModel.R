@@ -1,5 +1,5 @@
 updateBeta <- function(y, kernel, alpha, a, z, w, wz.star, beta, beta.m, beta.s,
-                       x.beta, xi, x, cur.lly, acc, att, mh, thresh=0) {
+                       x.beta, xi, x, cur.lly, acc, att, mh, thresh = 0) {
   np  <- length(beta)
   ns  <- nrow(y)
   nt  <- ncol(y)
@@ -22,7 +22,7 @@ updateBeta <- function(y, kernel, alpha, a, z, w, wz.star, beta, beta.m, beta.s,
     if (any(xi * (can.x.beta - thresh) > 1)) {  # numerical stability
       can.lly <- -Inf
     } else {
-      can.z       <- getZ(xi=xi, x.beta=can.x.beta, thresh=thresh)
+      can.z       <- getZ(xi = xi, x.beta = can.x.beta, thresh = thresh)
       can.wz.star <- getwzStarCPP(z = can.z, w = w, alpha = alpha)
       can.kernel  <- getKernelCPP(wz_star = can.wz.star, a = a)
 #       can.wz.star <- getwzStar(z = can.z, w = w, alpha = alpha)
@@ -31,8 +31,8 @@ updateBeta <- function(y, kernel, alpha, a, z, w, wz.star, beta, beta.m, beta.s,
     }
 
     R <- sum(can.lly - cur.lly) +
-         dnorm(can.beta, beta.m, beta.s, log=TRUE) -
-         dnorm(beta[p], beta.m, beta.s, log=TRUE)
+         dnorm(can.beta, beta.m, beta.s, log = TRUE) -
+         dnorm(beta[p], beta.m, beta.s, log = TRUE)
 
     if (!is.na(R)) { if (log(runif(1)) < R) {
       beta[p] <- can.beta
@@ -51,7 +51,7 @@ updateBeta <- function(y, kernel, alpha, a, z, w, wz.star, beta, beta.m, beta.s,
 }
 
 updateXi <- function(y, kernel, alpha, a, z, w, wz.star, x.beta, xi, xi.m, xi.s,
-                     cur.lly, acc, att, mh, thresh=0) {
+                     cur.lly, acc, att, mh, thresh = 0) {
   nt  <- ncol(y)
 
   att <- att + 1
@@ -60,7 +60,7 @@ updateXi <- function(y, kernel, alpha, a, z, w, wz.star, x.beta, xi, xi.m, xi.s,
   if (sum(can.xi * (x.beta - thresh) > 1) > 0) {
     can.lly <- -Inf
   } else {
-    can.z       <- getZ(xi=can.xi, x.beta=x.beta, thresh=thresh)
+    can.z       <- getZ(xi = can.xi, x.beta = x.beta, thresh = thresh)
     can.wz.star <- getwzStarCPP(z = can.z, w = w, alpha = alpha)
     can.kernel  <- getKernelCPP(wz_star = can.wz.star, a = a)
 #     can.wz.star <- getwzStar(z = can.z, w = w, alpha = alpha)
@@ -69,7 +69,7 @@ updateXi <- function(y, kernel, alpha, a, z, w, wz.star, x.beta, xi, xi.m, xi.s,
   }
 
   R <- sum(can.lly - cur.lly) +
-       dnorm(can.xi, xi.m, xi.s, log=TRUE) - dnorm(xi, xi.m, xi.s, log=TRUE)
+       dnorm(can.xi, xi.m, xi.s, log = TRUE) - dnorm(xi, xi.m, xi.s, log = TRUE)
 
   if (!is.na(R)) { if (log(runif(1)) < R) {
     xi      <- can.xi
@@ -166,7 +166,7 @@ updateXiBeta <- function(y, alpha, z, w, wz.star, beta, kernel,
 
 # update the random effects for kernel
 updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
-                    mid.points, bin.width, mh, cuts, IDs) {
+                    mid.points, bin.width, mh, cuts, IDs, threads = 1) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -186,9 +186,10 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
         can.llps  <- -Inf
         can.lly.t <- -Inf
       } else {
-        can.llps  <- dPS.Rcpp(a=can.a, alpha=alpha,
-                              mid.points=mid.points, bin.width=bin.width)
-        can.lly.t <- logLikeY(y=y[these, t, drop = F], kernel = can.kernel)
+        can.llps  <- dPS.Rcpp(a = can.a, alpha = alpha,
+                              mid.points = mid.points, bin.width = bin.width,
+                              threads = threads)
+        can.lly.t <- logLikeY(y = y[these, t, drop = F], kernel = can.kernel)
       }
 
       R <- sum(can.lly.t - cur.lly.t[these]) +
@@ -215,7 +216,7 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
 # update the alpha term for theta.star
 updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
                         cur.lly, cur.llps, mid.points, bin.width,
-                        acc, att, mh) {
+                        acc, att, mh, threads = 1) {
   nt     <- ncol(y)
   nknots <- nrow(a)
 
@@ -229,11 +230,13 @@ updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
 #   can.wz.star    <- getwzStar(z = z, w = w, alpha = can.alpha)
 #   can.kernel     <- getKernel(wz.star = can.wz.star, a = a)
   can.lly        <- logLikeY(y = y, kernel = can.kernel)
-  can.llps       <- dPS.Rcpp(a, can.alpha, mid.points, bin.width)
+  can.llps       <- dPS.Rcpp(a = a, alpha = can.alpha,
+                             mid.points = mid.points, bin.width = bin.width,
+                             threads = threads)
 
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
-       dbeta(can.alpha, alpha.a, alpha.b, log=TRUE) -
-       dbeta(alpha, alpha.a, alpha.b, log=TRUE)
+       dbeta(can.alpha, alpha.a, alpha.b, log = TRUE) -
+       dbeta(alpha, alpha.a, alpha.b, log = TRUE)
 
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     alpha    <- can.alpha
@@ -251,7 +254,7 @@ updateAlpha <- function(y, kernel, a, alpha, z, w, wz.star, alpha.a, alpha.b,
 }
 
 updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
-                      rho, logrho.m, logrho.s, rho.upper=Inf, A.cutoff,
+                      rho, logrho.m, logrho.s, rho.upper = Inf, A.cutoff,
                       acc, att, mh) {
   nt     <- ncol(y)
   nknots <- nrow(a)
@@ -287,8 +290,8 @@ updateRho <- function(y, kernel, a, alpha, cur.lly, w, z, wz.star, dw2,
 }
 
 # rewrite to use kernel function not theta.star
-pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
-                       thin=1, thresh=0, update=NULL) {
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
+                       thin = 1, thresh = 0, update = NULL) {
   if (is.null(end)) {
     end <- length(mcmcoutput$xi)
   }
@@ -353,8 +356,8 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
 
 }
 
-predictY <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
-                     thin=1, thresh=0, update=NULL) {
+predictY <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
+                     thin = 1, thresh = 0, update = NULL) {
 
   if (is.null(end)) {
     end <- nrow(mcmcoutput$beta)
@@ -363,12 +366,15 @@ predictY <- function(mcmcoutput, s.pred, x.pred, knots, start=1, end=NULL,
   np   <- nrow(s.pred)
   iters <- end - start + 1
   dw2p <- as.matrix(rdist(s.pred, knots))^2
-  yp <- matrix(NA, nrow=iters, ncol=np)
+  yp <- matrix(NA, nrow = iters, ncol = np)
   for (i in start:end) {
-    yp[i, ] <- rRareBinarySpat(x=x.pred, s=s.pred, knots=knots,
-                             beta=mcmcoutput$beta[i, ], xi=mcmcoutput$xi[i],
-                             alpha=mcmcoutput$alpha[i], rho=mcmcoutput$rho[i],
-                             thresh=thresh, dw2=dw2p, a=mcmcoutput$a[i, ])$y
+    yp[i, ] <- rRareBinarySpat(x = x.pred, s = s.pred, knots = knots,
+                               beta = mcmcoutput$beta[i, ],
+                               xi = mcmcoutput$xi[i],
+                               alpha = mcmcoutput$alpha[i],
+                               rho = mcmcoutput$rho[i],
+                               thresh = thresh, dw2 = dw2p,
+                               a = mcmcoutput$a[i, ])$y
     if (sum(is.nan(yp[i, ])) > 0) {
       cat("beta", mcmcoutput$beta[i, ], "\n")
       cat("xi", mcmcoutput$xi[i], "\n")

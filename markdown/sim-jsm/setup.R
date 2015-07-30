@@ -24,8 +24,9 @@ ns      <- 1000
 nsettings <- 8
 s       <- cbind(runif(ns), runif(ns))
 knots   <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
-# knots <- expand.grid(seq(0, 1, length=15), seq(0, 1, length=15))
-knots   <- as.matrix(knots)
+knots   <- as.matrix(knots) 
+knots.log <- expand.grid(seq(0, 1, length=30), seq(0, 1, length=31))
+knots.log <- as.matrix(knots.log)
 knots.h <- abs(knots[1, 1] - knots[2, 1])
 x       <- matrix(1, ns, 1)
 
@@ -93,7 +94,7 @@ plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "")
 points(s[which(y[, 1, 8] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[which(y[, 1, 8] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
-save(y, x, s, knots, knots.h, alpha.t, rho.t, xi.t, prob.t, int, 
+save(y, x, s, knots, knots.log, knots.h, alpha.t, rho.t, xi.t, prob.t, int, 
      file = "simdata.RData")
 
 

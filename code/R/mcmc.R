@@ -1,7 +1,7 @@
 mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                      beta.init = NULL, beta.m = 0, beta.s = 20,
                      xi.init = NULL, xi.m = 0, xi.s = 0.5,
-         	         npts = 100, knots = NULL, thresh = 0,
+         	           npts = 100, knots = NULL, thresh = 0,
                      beta.tune = 0.01, xi.tune = 0.1,
                      alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
                      rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
@@ -12,7 +12,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                      rho.init = 1, rho.upper = Inf, alpha.init = 0.5, a.init = 1,
                      beta.fix = FALSE, xi.fix = FALSE,   # debug
                      rho.fix = FALSE, alpha.fix = FALSE, # debug
-                     xibeta.joint = FALSE,
+                     xibeta.joint = FALSE, threads = 1,
                      iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
     ) {
   library(fields)
@@ -98,8 +98,8 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
     mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
     bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
-    cur.llps <- dPS.Rcpp(a=a, alpha=alpha, mid.points=mid.points,
-                         bin.width=bin.width)
+    cur.llps <- dPS.Rcpp(a = a, alpha = alpha, mid.points = mid.points,
+                         bin.width = bin.width, threads = threads)
   } else {
     alpha <- 1
   }
@@ -234,7 +234,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                           wz.star = wz.star, cur.lly = cur.lly,
                           cur.llps = cur.llps, mid.points = mid.points,
                           bin.width = bin.width, mh = mh.a, cuts = cuts,
-                          IDs = IDs)
+                          IDs = IDs, threads = threads)
       a        <- a.update$a
       kernel   <- a.update$kernel
       cur.lly  <- a.update$cur.lly
@@ -271,8 +271,10 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     wz.star = wz.star,
                                     alpha.a = alpha.a, alpha.b = alpha.b,
                                     cur.lly = cur.lly, cur.llps = cur.llps,
-                                    mid.points=mid.points, bin.width=bin.width,
-                                    acc=acc.alpha, att=att.alpha, mh=mh.alpha)
+                                    mid.points = mid.points,
+                                    bin.width = bin.width,
+                                    acc = acc.alpha, att = att.alpha,
+                                    mh = mh.alpha, threads = threads)
 
         alpha     <- alpha.update$alpha
         wz.star   <- alpha.update$wz.star

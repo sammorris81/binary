@@ -21,20 +21,20 @@ source('pairwise.R')
 # Common data transformations
 ################################################################################
 transform <- list(
-  logit = function(x, lower=0, upper=1) {
+  logit = function(x, lower = 0, upper = 1) {
     x <- (x - lower) / (upper - lower)
     return(log(x / (1 - x)))
   },
-  inv.logit = function(x, lower=0, upper=1) {
+  inv.logit = function(x, lower = 0, upper = 1) {
     p <- exp(x) / (1 + exp(x))
     p <- p * (upper - lower) + lower
     return(p)
   },
-  probit = function(x, lower=0, upper=1) {
+  probit = function(x, lower = 0, upper = 1) {
     x <- (x - lower) / (upper - lower)
     return(qnorm(x))
   },
-  inv.probit = function(x, lower=0, upper=1) {
+  inv.probit = function(x, lower = 0, upper = 1) {
     p <- pnorm(x)
     p <- p * (upper - lower) + lower
     return(p)
@@ -105,7 +105,7 @@ getXBeta <- function(x, ns, nt, beta) {
 
 # TODO: There needs to be more checks here.
 # (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
-getZ <- function(xi, x.beta, thresh=0) {
+getZ <- function(xi, x.beta, thresh = 0) {
   if (xi != 0) {
     z <- (1 + xi * (thresh - x.beta))^(1 / xi)
   } else {
@@ -173,7 +173,7 @@ makeW <- function(dw2, rho, A.cutoff = NULL) {
 }
 
 # standardize the kernel weights
-stdW <- function(x, single=FALSE) {
+stdW <- function(x, single = FALSE) {
   if (single) {x <- x / sum(x)}
   if (!single) {x <- sweep(x, 1, rowSums(x), "/")}
   return(x)
@@ -376,14 +376,14 @@ rLogitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5) {
 }
 
 # sigma.sq is partial sill
-rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5, 
+rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
                         prob.success) {
   ns     <- nrow(s)
   nt     <- dim(x)[2]
   p      <- length(beta)
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
-  
+
   x.beta <- matrix(NA, ns, nt)
   for (t in 1:nt) {
     if (p > 1) {
@@ -392,13 +392,13 @@ rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
       x.beta[, t] <- x[, t] * beta
     }
   }
-  
+
   # we use 22 for covariance between knots
   # we use 12 for covariance between all sites and knots
   d.22 <- as.matrix(rdist(knots))  # d.knots is nknots x nknots
   d.12 <- as.matrix(rdist(s, knots))  #d.sknots is ns x nknots
   diag(d.22) <- 0
-  
+
   if (nu == 0.5) {
     Sigma.12 <- simple.cov.sp(D = d.12, sp.type = "exponential",
                               sp.par = c(sigma.sq, rho), error.var = 0,
@@ -414,11 +414,11 @@ rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
                               sp.par = c(sigma.sq, rho), error.var = 0,
                               smoothness = nu, finescale.var = 0)
   }
-  
+
   Sigma.22.inv <- chol2inv(chol(Sigma.22))
   Sigma.12.22.inv <- Sigma.12 %*% Sigma.22.inv
   sd.mtx <- t(chol(Sigma.22))
-  
+
   # generate the random effects
   w <- matrix(NA, nknots, nt)
   w.tilde <- matrix(NA, ns, nt)
@@ -426,14 +426,14 @@ rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
     w[, t] <- sd.mtx %*% rnorm(nknots, 0, 1)
     w.tilde[, t] <- Sigma.12.22.inv %*% w[, t]
   }
-  
+
   h <- x.beta + w.tilde
-  
+
   thresh <- quantile(h, probs = (1 - prob.success))
   y <- ifelse(h > thresh, 1, 0)
 
   results <- list(y = y, w.tilde = w.tilde, thresh = thresh)
-  
+
   return(results)
 }
 
@@ -441,11 +441,11 @@ rHotSpotSpat <- function(x, s, knots, rho, prob.success) {
   nknots <- dim(knots)[1]
   ns     <- dim(s)[1]
   y      <- matrix(0, ns, 1)
-  
+
   # figure out how many knots to select
   nselect <- 2
   these.knots <- sample(x = nknots, size = nselect, replace = F)
-  
+
   d     <- rdist(s, knots)
   nrhos <- 1
   while (mean(y) < prob.success) {
@@ -459,7 +459,7 @@ rHotSpotSpat <- function(x, s, knots, rho, prob.success) {
     }
     nrhos <- nrhos * 1.1
   }
-  
+
   results <- list(y = y, these.knots = these.knots, nrhos = nrhos)
   return(results)
 }
@@ -490,7 +490,7 @@ getIDs <- function(dw2, A.cutoff) {
   return(IDs)
 }
 
-dPS.Rcpp <- function(a, alpha, mid.points, bin.width) {
+dPS.Rcpp <- function(a, alpha, mid.points, bin.width, threads = 1) {
   if (is.null(dim(a))) {
     ns <- length(a)
     nt <- 1
@@ -500,8 +500,8 @@ dPS.Rcpp <- function(a, alpha, mid.points, bin.width) {
     nt <- ncol(a)
   }
 
-  results <- dPSCPP(a=a, alpha=alpha, mid_points=mid.points,
-                    bin_width=bin.width)
+  results <- dPSCPP(a = a, alpha = alpha, mid_points = mid.points,
+                    bin_width = bin.width, threads = 1)
   return(results)
 }
 
@@ -518,7 +518,7 @@ dPS.Rcpp <- function(a, alpha, mid.points, bin.width) {
 
 
 # ld2 is used in generating positive stable random variables
-ld2 <- function(u, logs, alpha, shift=0, log=TRUE) {
+ld2 <- function(u, logs, alpha, shift = 0, log = TRUE) {
 
   logs <- logs - shift / alpha
   s <- exp(logs)
@@ -534,7 +534,7 @@ ld2 <- function(u, logs, alpha, shift=0, log=TRUE) {
 }
 
 dlognormal <- function(x, mu, sig) {
-  dnorm(log(x), log(mu), sig, log=T) - log(x)
+  dnorm(log(x), log(mu), sig, log = TRUE) - log(x)
 }
 
 # logd <- function(theta, v) {
@@ -571,7 +571,7 @@ logdet <- function(X) {
   determinant(X)$modulus
 }
 
-trunc <- function(x, eps=0.1) {
+trunc <- function(x, eps = 0.1) {
   x <- ifelse(x < eps, eps, x)
   x <- ifelse(x > 1-eps, 1-eps, x)
   return(x)
@@ -588,7 +588,7 @@ trunc <- function(x, eps=0.1) {
 # Returns:
 #   y(nt): truncated normal data
 #########################################################################
-rTNorm <- function(mn, sd, lower=-Inf, upper=Inf, fudge=0) {
+rTNorm <- function(mn, sd, lower = -Inf, upper = Inf, fudge = 0) {
   lower.u <- pnorm(lower, mn, sd)
   upper.u <- pnorm(upper, mn, sd)
 
@@ -607,11 +607,12 @@ rTNorm <- function(mn, sd, lower=-Inf, upper=Inf, fudge=0) {
   return(y)
 }
 
-dTNorm <- function(y, mn, sd, lower=-Inf, upper=Inf, fudge=0, log=TRUE) {
+dTNorm <- function(y, mn, sd, lower = -Inf, upper = Inf, fudge = 0,
+                   log = TRUE) {
   lower.u <- pnorm(lower, mn, sd)
   upper.u <- pnorm(upper, mn, sd)
 
-  ld <- dnorm(y, mn, sd, log=TRUE) - log(upper.u - lower.u)
+  ld <- dnorm(y, mn, sd, log = TRUE) - log(upper.u - lower.u)
   if (!log) {
     ld <- exp(ld)
   }
@@ -645,6 +646,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                               xi.fix = FALSE, alpha.fix = FALSE,
                               rho.fix = FALSE, beta.fix = FALSE,
                               y, dw2, d, max.dist = NULL, cov,
+                              method = "BFGS",
                               alpha.min = 0, alpha.max = 1, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
@@ -660,7 +662,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
     results  <- optim(init.par, pairwise.rarebinaryCPP.1, y = y,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "none"
     results$param.names <- c("xi", "alpha", "rho", "beta")
 
@@ -671,7 +673,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       xi = xi.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "xi"
     results$param.names <- c("alpha", "rho", "beta")
 
@@ -682,7 +684,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       alpha = alpha.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "alpha"
     results$param.names <- c("xi", "rho", "beta")
 
@@ -693,7 +695,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "rho"
     results$param.names <- c("xi", "alpha", "beta")
 
@@ -704,7 +706,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       xi = xi.init, alpha = alpha.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "xi and alpha"
     results$param.names <- c("rho", "beta")
 
@@ -715,7 +717,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       xi = xi.init, rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "xi and rho"
     results$param.names <- c("alpha", "beta")
 
@@ -726,7 +728,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       alpha = alpha.init, rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "alpha and rho"
     results$param.names <- c("xi", "beta")
 
@@ -738,7 +740,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = "BFGS", hessian = TRUE)
+                      threads = threads, method = method, hessian = TRUE)
     results$fixed <- "xi, alpha, and rho"
     results$param.names <- "beta"
 
@@ -753,7 +755,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                      xi = xi.init, beta = beta.hat,
                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                      alpha.min = alpha.min, alpha.max = alpha.max,
-                     threads = threads, method = "BFGS", hessian = TRUE)
+                     threads = threads, method = method, hessian = TRUE)
     results$fixed <- "xi"
     results$param.names <- c("alpha", "rho")
     results$beta <- beta.hat
@@ -770,7 +772,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                      xi = xi.init, rho = rho.init, beta = beta.hat,
                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                      alpha.min = alpha.min, alpha.max = alpha.max,
-                     threads = threads, method = "BFGS", hessian = TRUE)
+                     threads = threads, method = method, hessian = TRUE)
     results$fixed <- "xi, rho"
     results$param.names <- c("alpha")
     results$beta <- beta.hat
@@ -779,6 +781,8 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
   } else if (xi.fix & alpha.fix & !rho.fix & beta.fix) {
 
   }
+
+  results$method <- method
 
   return(results)
 }
@@ -790,8 +794,8 @@ getJoint2 <- function(kernel, alpha) {
   return(joint)
 }
 
-dic.spgev <- function(mcmcoutput, y, x, dw2, start=1, end=NULL, thin=1,
-                      thresh=0, update=NULL) {
+dic.spgev <- function(mcmcoutput, y, x, dw2, start = 1, end = NULL, thin = 1,
+                      thresh = 0, update = NULL) {
 
   ns <- nrow(y)
   nt <- ncol(y)
@@ -847,7 +851,7 @@ fit.rarebinaryInd <- function(init.par, y, cov) {
 }
 
 # needs to loop over all pairs of sites and calculate the hessian
-rarebinary.ij <- function(par, y, rho, dw2, cov, threads=1) {
+rarebinary.ij <- function(par, y, rho, dw2, cov, threads = 1) {
   npars <- length(par)
   alpha <- par[1]
   xi    <- par[2]
@@ -874,7 +878,7 @@ rarebinary.ij <- function(par, y, rho, dw2, cov, threads=1) {
 }
 
 # needs to loop over all pairs of sites and calculate the jacobian
-jacobian.rarebinaryCPP <- function(par, y, rho, d, dw2, cov, threads=1) {
+jacobian.rarebinaryCPP <- function(par, y, rho, d, dw2, cov, threads = 1) {
   alpha <- par[1]
   xi    <- par[2]
   beta  <- par[3:npars]
