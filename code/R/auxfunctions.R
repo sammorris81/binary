@@ -646,10 +646,14 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                               xi.fix = FALSE, alpha.fix = FALSE,
                               rho.fix = FALSE, beta.fix = FALSE,
                               y, dw2, d, max.dist = NULL, cov,
-                              method = "BFGS",
+                              method = "BFGS", hessian = TRUE,
                               alpha.min = 0, alpha.max = 1, threads = 1) {
   if (is.null(max.dist)) {
     max.dist <- max(d)
+  }
+  
+  if (method == "Nelder-Mead") {
+    hessian <- FALSE
   }
 
 #   alpha.star.init <- log(alpha.init / (1 - alpha.init))
@@ -662,7 +666,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
     results  <- optim(init.par, pairwise.rarebinaryCPP.1, y = y,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "none"
     results$param.names <- c("xi", "alpha", "rho", "beta")
 
@@ -673,7 +677,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       xi = xi.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "xi"
     results$param.names <- c("alpha", "rho", "beta")
 
@@ -684,7 +688,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       alpha = alpha.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "alpha"
     results$param.names <- c("xi", "rho", "beta")
 
@@ -695,7 +699,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "rho"
     results$param.names <- c("xi", "alpha", "beta")
 
@@ -706,7 +710,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       xi = xi.init, alpha = alpha.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "xi and alpha"
     results$param.names <- c("rho", "beta")
 
@@ -717,7 +721,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       xi = xi.init, rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "xi and rho"
     results$param.names <- c("alpha", "beta")
 
@@ -728,7 +732,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       alpha = alpha.init, rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "alpha and rho"
     results$param.names <- c("xi", "beta")
 
@@ -740,7 +744,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                       rho = rho.init,
                       dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                       alpha.min = alpha.min, alpha.max = alpha.max,
-                      threads = threads, method = method, hessian = TRUE)
+                      threads = threads, method = method, hessian = hessian)
     results$fixed <- "xi, alpha, and rho"
     results$param.names <- "beta"
 
@@ -755,7 +759,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                      xi = xi.init, beta = beta.hat,
                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                      alpha.min = alpha.min, alpha.max = alpha.max,
-                     threads = threads, method = method, hessian = TRUE)
+                     threads = threads, method = method, hessian = hessian)
     results$fixed <- "xi"
     results$param.names <- c("alpha", "rho")
     results$beta <- beta.hat
@@ -772,7 +776,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
                      xi = xi.init, rho = rho.init, beta = beta.hat,
                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
                      alpha.min = alpha.min, alpha.max = alpha.max,
-                     threads = threads, method = method, hessian = TRUE)
+                     threads = threads, method = method, hessian = hessian)
     results$fixed <- "xi, rho"
     results$param.names <- c("alpha")
     results$beta <- beta.hat
