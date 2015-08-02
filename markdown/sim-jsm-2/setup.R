@@ -23,15 +23,15 @@ set.seed(7483)  # site
 ns      <- 1000
 nsettings <- 8
 s       <- cbind(runif(ns), runif(ns))
-knots   <- expand.grid(seq(0, 1, length=41), seq(0, 1, length=41))
+knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
 knots   <- as.matrix(knots) 
-knots.log <- expand.grid(seq(0, 1, length=30), seq(0, 1, length=31))
+knots.log <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
 knots.log <- as.matrix(knots.log)
 knots.h <- abs(knots[1, 1] - knots[2, 1])
 x       <- matrix(1, ns, 1)
 
 alpha.t <- 0.3
-rho.t   <- 0.025
+rho.t   <- 0.05
 xi.t    <- 0
 prob.t  <- c(0.025, 0.050)
 int.log <- log(prob.t / (1 - prob.t))
