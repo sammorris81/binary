@@ -69,6 +69,21 @@
 
 \begin{frame}{Generalized extreme value}
 % cloglog is a special case of gev, Wang and Dey
+\begin{itemize} \setlength{\itemsep}{1em}
+  \item Link function is defined as
+  \begin{align*}
+    G(z_i) = 1 - \exp(-z_i)
+  \end{align*}
+  where
+  \begin{align*}
+    z_i = \left\{ \begin{array}{ll}
+      (1 - \xi \bX_i \bbeta)^{1 / \xi} & \xi \neq 0 \\[0.5em]
+      \exp(-\bX_i \bbeta) & \xi = 0
+      \end{array} \right.
+  \end{align*}
+  is standardized to give unit Fr\'{e}chet distribution.
+  \item Note: The cloglog link is a special case when $\xi = 0$
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Spatial setting: Logit and probit}
@@ -84,9 +99,71 @@
 % challenging to work with, but there is a nice hierarchical representation
 \end{frame}
 
+
 \begin{frame}{Random effects representation}
 % to help with large datasets, we use a random effects representation
 % get dimension reduction with a grid of knots
+\begin{itemize}
+  \item Problem: $n$ is very large, and computationally challenging to work with
+  \item Consider a set of $L << n$ knots $\bv_1, \ldots, \bv_L$
+  \item At each knot, there is a random effect
+  \begin{itemize}
+    \item Logit and probit methods use Gaussian random effects
+    \item GEV method uses Positive stable random effects
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Random effects representation}
+  \begin{itemize}
+    \item Logit and probit use kriging
+    \begin{align*}
+      z_i = \bX_i \bbeta + \theta_i
+    \end{align*}
+    \item The random effect impacts the marginal distribution for the GEV
+    \begin{align*}
+      \theta_i = \left[\sum_{l = 1}^L A_l w_l(\bs_i)^{1 / \alpha}\right]^{\alpha}
+    \end{align*}
+
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Method}
+  \begin{itemize}
+    \item Two-main steps for model fitting
+    \item First, fit a pairwise composite likelihood
+    \begin{itemize}
+      \item Pairwise composite likelihood estimates used for initial values in MCMC
+    \end{itemize}
+    \item Then, fit a hierarchical random effects model using MCMC
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Pairwise composite likelihood}
+  \begin{itemize}
+    \item We use a censored pairwise composite likelihood
+    \begin{itemize}
+      \item Marginalizes out random effects
+    \end{itemize}
+    \item Common in extremes
+    \begin{itemize}
+      \item Bivariate distributions are computationally tractible
+      \item Only latent values where $Y = 1$ inform likelihood
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{MCMC}
+  \begin{itemize}
+    \item $Y | \ldots \ind \text{Bernoulli}(\pi_i)$
+    \item $\pi_i = 1 - \exp\left\{ \sum_{l = 1}^L A_l \left[\frac{ w_l (\bs_i) }{z_i} \right] \right\}$
+    \item $z_i = \left\{ \begin{array}{ll}
+      (1 - \xi \bX_i \bbeta)^{1 / \xi} & \xi \neq 0 \\
+      \exp(-\bX_i \bbeta) & \xi = 0
+      \end{array} \right.$
+    \item $A_l \iid \text{PS}(\alpha)$
+    \item $w_l(\bs_i)$ is a scaled Gaussian kernel
+  \end{itemize}
 \end{frame}
 
 \begin{frame}{Questions}
