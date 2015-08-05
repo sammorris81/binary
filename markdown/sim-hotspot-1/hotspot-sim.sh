@@ -52,8 +52,8 @@ do
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
   cp "$1" "$MCMC"
-  sed "1 a\ filename <- \"$OUTPUT\"" "$ORIG" > "$MCMC.tmp"
-  sed "2 a\ sets <- $INCLUDE" "$MCMC.tmp" > "$MCMC"
+  sed "25 a\ sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
+  sed "26 a\ setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
   rm "$MCMC.tmp"
   bwsubmit_multi 2 r "$MCMC"
   ((GROUP++))
