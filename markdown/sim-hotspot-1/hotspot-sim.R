@@ -16,7 +16,7 @@ Sys.setenv("PKG_LIBS"="-fopenmp")
 source("../../code/R/auxfunctions.R", chdir = TRUE)
 source("../../code/R/updateModel.R")
 source("../../code/R/mcmc.R")
-source("../../code/R/probit.R", chdir=T)
+source("../../code/R/probit.R", chdir = TRUE)
 
 # get the datasets
 load("./simdata.RData")
@@ -59,8 +59,8 @@ diag(d.o) <- 0
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-# iters <- 50000; burn <- 40000; update <- 1000; thin <- 1
-iters <- 100; burn <- 50; update <- 10; thin <- 1
+iters <- 50000; burn <- 40000; update <- 1000; thin <- 1
+# iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
 n.report     <- 10
 batch.length <- 100
