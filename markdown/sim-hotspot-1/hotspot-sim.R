@@ -143,7 +143,7 @@ for (i in sets) {
   set.seed(mcmc.seed)
   # does not converge very well, but adaptive takes 3 days per dataset
   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                     coords = s.o, knots = knots.log, starting = starting,
+                     coords = s.o, knots = knots, starting = starting,
                      tuning = tuning, priors = priors,
                      cov.model = cov.model, n.samples = iters,
                      verbose = verbose, n.report = n.report, amcmc = amcmc)
