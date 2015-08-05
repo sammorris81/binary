@@ -1,3 +1,4 @@
+rm(list = ls())
 print(paste("filename:",filename, sep=""))
 temp <- vector(length = length(sets), mode = "list")
 for (i in 1:length(sets)) {
