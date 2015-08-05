@@ -8,6 +8,7 @@ START=$2
 SET=$2
 END=$3
 BY=$4
+SETTING=$5
 GROUP=1
 while [ "$SET" -le "$END" ]
 do

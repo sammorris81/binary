@@ -437,30 +437,49 @@ rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
   return(results)
 }
 
-rHotSpotSpat <- function(x, s, knots, rho, prob.success) {
-  nknots <- dim(knots)[1]
-  ns     <- dim(s)[1]
-  y      <- matrix(0, ns, 1)
+rHotSpotSpat <- function(x, s, xlim = NULL, ylim = NULL, bw, 
+                         nhotspots = 1, 
+                         prob.in = 0.99, prob.out = 0.0001) {
+  ## Generate data at hotspots
+  ## x: covariates
+  ## s: sites
+  ## xlim: limits in the x direction for the hotspot
+  ## ylim: limits in the y direction for the hotspot 
+  ## bw: size of the hotspots
+  ## nhotspots: how many hotspots
+  ## prob.in: probability of success near hotspot
+  ## prob.out: probability of success away from hotspot
+  if (is.null(xlim)) {
+    xlim = range(s[, 1])
+  }
+  if (is.null(ylim)) {
+    ylim = range(s[, 2])
+  }
+  
+  if ((length(xlim) != 2) | (length(ylim) != 2)) {
+    stop("xlim and ylim must be length 2")
+  }
+  
+  ns <- dim(s)[1]
+  y  <- matrix(0, ns, 1)
+  
+  # generate the hotspots
+  hotspots <- cbind(runif(nhotspots, xlim[1], xlim[2]), 
+                    runif(nhotspots, ylim[1], ylim[2]))
 
   # figure out how many knots to select
-  nselect <- 2
-  these.knots <- sample(x = nknots, size = nselect, replace = F)
-
-  d     <- rdist(s, knots)
-  nrhos <- 1
-  while (mean(y) < prob.success) {
-    for (i in 1:ns) {
-      if (any(d[i, these.knots] < (nrhos * rho))) {
-        p <- 0.99
-      } else {
-        p <- 0.01
-      }
-      y[i, 1] <- rbinom(1, size = 1, prob = p)
+  d  <- rdist(s, hotspots)
+  
+  for (i in 1:ns) {
+    if (any(d[i, ] < bw)) {
+      p <- prob.in
+    } else {
+      p <- prob.out
     }
-    nrhos <- nrhos * 1.1
+    y[i, 1] <- rbinom(1, size = 1, prob = p)
   }
-
-  results <- list(y = y, these.knots = these.knots, nrhos = nrhos)
+  
+  results <- list(y = y, hotspots = hotspots)
   return(results)
 }
 
