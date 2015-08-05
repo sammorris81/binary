@@ -58,7 +58,7 @@ diag(d.o) <- 0
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
 # iters <- 50000; burn <- 40000; update <- 1000; thin <- 1
-iters <- 10; burn <- 5; update <- 1; thin <- 1
+iters <- 100; burn <- 50; update <- 10; thin <- 1
 # setup for spGLM
 n.report     <- 10
 batch.length <- 100
