@@ -23,6 +23,11 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 
+# extract the relevant setting from simdata
+y <- simdata[[setting]]$y
+s <- simdata[[setting]]$s
+x <- simdata[[setting]]$x
+
 # extract info about simulation settings
 ns        <- dim(y)[1]
 nt        <- 1
@@ -34,11 +39,6 @@ nknots    <- nrow(knots)
 dw2     <- rdist(s, knots)
 d       <- rdist(s)
 diag(d) <- 0
-
-# extract the relevant setting from simdata
-y <- simdata[[setting]]$y
-s <- simdata[[setting]]$s
-x <- simdata[[setting]]$x
 
 # testing vs training
 ntrain <- floor(0.75 * ns)
