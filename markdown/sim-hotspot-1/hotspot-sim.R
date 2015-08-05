@@ -22,6 +22,8 @@ source("../../code/R/probit.R", chdir=T)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
+setting <- 1
+sets <- c(1, 2)
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
@@ -63,15 +65,16 @@ iters <- 100; burn <- 50; update <- 10; thin <- 1
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
-verbose <- TRUE
-tuning <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
-starting <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
-priors <- list("beta.norm" = list(0, 100),
-               "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
+verbose      <- TRUE
+tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
+starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
+priors       <- list("beta.norm" = list(0, 100),
+                     "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
 cov.model <- "exponential"
+timings   <- rep(NA, 3)
 # with so many knots, adaptive is time prohibitive
-amcmc <- list("n.batch" = n.batch, "batch.length" = batch.length,
-              "accept.rate" = 0.35)
+amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
+                  "accept.rate" = 0.35)
 
 for (i in sets) {
   filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
@@ -115,6 +118,7 @@ for (i in sets) {
   } else {
     alpha.init <- fit.pcl$par[1]
   }
+  tic <- proc.time()[3]
   fit.gev <- mcmc.gev(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                       beta.init = fit.pcl$beta, beta.m = 0, beta.s = 100,
                       xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -134,14 +138,15 @@ for (i in sets) {
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.p, knots = knots,
                               start = 1, end = iters - burn, update = update)
+  toc <- proc.time()[3]
+  timings[1] <- toc - tic
 
   # spatial logit
   print("  start logit")
-
   print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  # does not converge very well, but adaptive takes 3 days per dataset
+  tic       <- proc.time()[3]
   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
                      coords = s.o, knots = knots, starting = starting,
                      tuning = tuning, priors = priors,
@@ -155,6 +160,8 @@ for (i in sets) {
                          n.report = 500)
 
   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+  toc        <- proc.time()[3]
+  timings[2] <- toc - tic
 
   # spatial probit
   print("  start probit")
@@ -162,6 +169,7 @@ for (i in sets) {
   print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
+  tic        <- proc.time()[3]
   fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
                        iters = iters, burn = burn, update = update)
 
@@ -169,11 +177,13 @@ for (i in sets) {
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = update)
+  toc        <- proc.time()[3]
+  timings[3] <- toc - tic
 
   print(paste("Finished: Set ", i, sep = ""))
   save(fit.pcl, fit.gev, post.prob.gev,
        fit.logit, post.prob.log,
        fit.probit, post.prob.pro,
-       y.i.p, y.i.o, s,
+       y.i.p, y.i.o, s, timings,
        file = filename)
 }
