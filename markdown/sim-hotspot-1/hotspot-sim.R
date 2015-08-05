@@ -47,7 +47,7 @@ obs    <- c(rep(T, ntrain), rep(F, ntest))
 y.o    <- matrix(y[obs, ], ntrain, nsets)
 X.o    <- matrix(x[obs], ntrain, 1)
 s.o    <- s[obs, ]
-y.p    <- matrix(y[!obs, , setting], ntest, nsets)
+y.p    <- matrix(y[!obs, ], ntest, nsets)
 X.p    <- matrix(x[!obs, ], ntest, 1)
 s.p    <- s[!obs, ]
 dw2.o  <- rdist(s.o, knots)
