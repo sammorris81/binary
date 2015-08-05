@@ -20,9 +20,9 @@ do
   then
     echo "option 2"
     if [ $((SET + 1)) -gt "$END" ]
-    then 
+    then
       INCLUDE="c($SET)"
-    else 
+    else
       INCLUDE="c($SET, $((SET + 1)))"
     fi
     SET=$((SET + BY))
@@ -34,12 +34,12 @@ do
       GROUPEND="$END"
     fi
     INCLUDE="c($SET"
-    for ((i=$GROUPSTART; i<=$GROUPEND; i++))   
+    for ((i=$GROUPSTART; i<=$GROUPEND; i++))
     do
       INCLUDE="$INCLUDE,$i"
     done
     INCLUDE="$INCLUDE)"
-    
+
     if [ $((GROUPSTART - 1)) -eq "$END" ]
     then
       INCLUDE="$END"
@@ -51,8 +51,8 @@ do
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
   cp "$1" "$MCMC"
-  sed "2 a\ filename <- \"$OUTPUT\"" "$ORIG" > "$MCMC.tmp"
-  sed "3 a\ sets <- $INCLUDE" "$MCMC.tmp" > "$MCMC"
+  sed "1 a\ filename <- \"$OUTPUT\"" "$ORIG" > "$MCMC.tmp"
+  sed "2 a\ sets <- $INCLUDE" "$MCMC.tmp" > "$MCMC"
   rm "$MCMC.tmp"
   bwsubmit_multi 2 r "$MCMC"
   ((GROUP++))
