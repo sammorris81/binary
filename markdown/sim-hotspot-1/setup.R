@@ -29,8 +29,8 @@ knots.h <- abs(knots[1, 1] - knots[2, 1])
 
 simdata <- vector(mode = "list", length = nsettings)
 
-rho.t   <- c(0.15, 0.15, 0.08, 0.08)
-prob.t  <- 0.5
+rho.t   <- c(0.15, 0.15, 0.1, 0.1)
+prob.t  <- 0.4
 
 nsets <- 100
 set.seed(3282)  # data
