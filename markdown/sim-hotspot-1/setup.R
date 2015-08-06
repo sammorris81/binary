@@ -1,5 +1,4 @@
 #### Exploring a couple of hotspots
-
 rm(list=ls())
 options(warn=2)
 library(fields)
@@ -30,8 +29,8 @@ knots.h <- abs(knots[1, 1] - knots[2, 1])
 
 simdata <- vector(mode = "list", length = nsettings)
 
-rho.t   <- c(0.12, 0.12, 0.075, 0.075)
-prob.t  <- 0.75
+rho.t   <- c(0.15, 0.15, 0.08, 0.08)
+prob.t  <- 0.5
 
 nsets <- 100
 set.seed(3282)  # data

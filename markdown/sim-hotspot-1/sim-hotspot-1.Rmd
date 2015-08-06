@@ -1,0 +1,104 @@
+---
+title: "Small Scale Sim"
+author: "Morris, S."
+date: "6 August 2015"
+output: pdf_document
+---
+```{r initial-setup, cache = TRUE, echo = FALSE, include = FALSE}
+rm(list=ls())
+options(warn=2)
+library(fields)
+library(evd)
+library(spBayes)
+library(fields)
+library(SpatialTools)
+# library(microbenchmark)  # comment out for beowulf
+library(mvtnorm)
+library(Rcpp)
+library(numDeriv)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+
+source("../../code/R/auxfunctions.R", chdir = TRUE)
+source("../../code/R/updateModel.R")
+source("../../code/R/mcmc.R")
+source("../../code/R/probit.R", chdir=T)
+
+load("./simdata.RData")
+ns        <- c(1000, 2000, 2000, 1000)
+nsettings <- 4
+nhotspots <- 2
+```
+
+# Small-scale simulation results
+
+## Data setting: 1
+
+This data setting uses `r nhotspots` hotspots.
+When observations are within radius `r rho.t[1]` of the hotspot, $P(Y = 1) = `r prob.t`$
+Outside of the radius, $P(Y = 1) = 0.0001$.
+These settings were chosen so that $Y = 1$ approximately 5% of the time.
+
+We generate $n = `r ns[1]`$ observations.
+We fit the model using a training set of `r 0.75 * ns[1]` observations, and then validate the predictions at `r 0.25 * ns[1]` testing sites.
+The MCMC ran for 50000 iterations with 40000 burnin.
+
+## Methods
+
+There were 3 methods used to fit the datasets.
+
+> 1: Fit $\alpha$, $\rho$, $beta$, and random effect in the MCMC. The mean of $\rho$ in the MCMC is set to be the estimates from the pairwise composite likelihood. The $\alpha$ term is given a beta prior with mean equal to the estimate from the pairwise composite likelihood, and standard deviation of 0.05.
+
+> 2: Logit
+
+> 3: Probit
+
+In model 1, to help speed up the computational aspect of the MCMC, we only include sites for a knot that are within a certain distance of the knot location.
+This is set at an initial value based upon the knot spacing, and is adjusted during the MCMC to ensure that all of the random effects are moving from their initial values.
+
+\newpage
+
+## Results 
+
+```{r compile-results-1, cache = TRUE, echo = FALSE, include = FALSE}
+sets <- c(1, 6, 11, 16, 21, 26, 31, 36, 41, 46)
+bs1 <- matrix(NA, 3, length(sets))
+for (i in 1:length(sets)) {
+  set  <- sets[i]
+  file <- paste("sim-results/1-", set, ".RData", sep = "")
+  print(paste("start: set", set))
+  load(file)
+  bs1[1, i] <- BrierScore(post.prob.gev, y.i.p)
+  bs1[2, i] <- BrierScore(post.prob.log, y.i.p)
+  bs1[3, i] <- BrierScore(post.prob.pro, y.i.p)
+}
+```
+
+Here are the results for `r length(sets)` datasets:
+
+\scriptsize
+```{r simresults-1, echo = FALSE}
+library(pander)
+panderOptions("digits", 4)
+rownames(bs1) <- c("1", "2", "3")
+bs1 <- cbind(bs1, rowMeans(bs1, na.rm = TRUE))
+colnames(bs1) <- c(sets, "Mean")
+set.caption(paste("Simulation results (x 100) for", length(sets), "datasets"))
+pander(t(bs1) * 100)
+```
+
+\normalsize
+
+\newpage
+
+```{r plotdata, echo = FALSE, cache = FALSE, fig.height = 10, fig.width = 7}
+par(mfrow=c(4, 3))
+for (i in sets) {
+  s <- simdata[[1]]$s
+  y <- simdata[[1]]$y
+  plot(knots, ylim = c(0, 1), xlim = c(0, 1), 
+       main = paste("simulated dataset: ", i), xlab = "", ylab = "")
+  points(s[which(y[, i] != 1), ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+  points(s[which(y[, i] == 1), ], pch = 21, col = "firebrick4", bg = "firebrick1")
+}
+```
