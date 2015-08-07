@@ -157,7 +157,7 @@ for (i in sets) {
                                s.pred = s.p, knots = knots,
                                start = 1, end = iters - burn, update = update)
   toc        <- proc.time()[3]
-  timings[3] <- toc - tic
+  timings[2] <- toc - tic
   
   bs.pro <- BrierScore(post.prob.pro, y.i.p)
   print(bs.pro * 100)
@@ -182,7 +182,7 @@ for (i in sets) {
   
   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
   toc        <- proc.time()[3]
-  timings[2] <- toc - tic
+  timings[3] <- toc - tic
   
   bs.log <- BrierScore(post.prob.log, y.i.p)
   print(bs.log * 100)
