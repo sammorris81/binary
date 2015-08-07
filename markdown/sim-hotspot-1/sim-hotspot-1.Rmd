@@ -34,8 +34,8 @@ nhotspots <- 2
 
 ## Data setting: 1
 
-This data setting uses `r nhotspots` hotspots.
-When observations are within radius `r rho.t[1]` of the hotspot, $P(Y = 1) = `r prob.t`$
+This data setting uses `r nhotspots[1]` hotspots.
+When observations are within radius `r rho.t` of the hotspot, $P(Y = 1) = `r prob.t`$
 Outside of the radius, $P(Y = 1) = 0.0001$.
 These settings were chosen so that $Y = 1$ approximately 5% of the time.
 
@@ -68,9 +68,9 @@ for (i in 1:length(sets)) {
   file <- paste("sim-results/1-", set, ".RData", sep = "")
   print(paste("start: set", set))
   load(file)
-  bs1[1, i] <- BrierScore(post.prob.gev, y.i.p)
-  bs1[2, i] <- BrierScore(post.prob.log, y.i.p)
-  bs1[3, i] <- BrierScore(post.prob.pro, y.i.p)
+  bs1[1, i] <- bs.gev
+  bs1[2, i] <- bs.pro
+  bs1[3, i] <- bs.log
 }
 ```
 
@@ -80,7 +80,7 @@ Here are the results for `r length(sets)` datasets:
 ```{r simresults-1, echo = FALSE}
 library(pander)
 panderOptions("digits", 4)
-rownames(bs1) <- c("1", "2", "3")
+rownames(bs1) <- c("GEV", "Probit", "Logit")
 bs1 <- cbind(bs1, rowMeans(bs1, na.rm = TRUE))
 colnames(bs1) <- c(sets, "Mean")
 set.caption(paste("Simulation results (x 100) for", length(sets), "datasets"))

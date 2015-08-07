@@ -138,28 +138,9 @@ for (i in sets) {
                               start = 1, end = iters - burn, update = update)
   toc <- proc.time()[3]
   timings[1] <- toc - tic
-
-  # spatial logit
-  print("  start logit")
-  print("    start mcmc fit")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  tic       <- proc.time()[3]
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                     coords = s.o, knots = knots, starting = starting,
-                     tuning = tuning, priors = priors,
-                     cov.model = cov.model, n.samples = iters,
-                     verbose = verbose, n.report = n.report, amcmc = amcmc)
-
-  print("    start mcmc predict")
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                         pred.covars = X.p, start = burn + 1,
-                         end = iters, thin = 1, verbose = TRUE,
-                         n.report = 500)
-
-  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-  toc        <- proc.time()[3]
-  timings[2] <- toc - tic
+  
+  bs.gev <- BrierScore(post.prob.gev, y.i.p)
+  print(bs.gev * 100)
 
   # spatial probit
   print("  start probit")
@@ -177,11 +158,39 @@ for (i in sets) {
                                start = 1, end = iters - burn, update = update)
   toc        <- proc.time()[3]
   timings[3] <- toc - tic
+  
+  bs.pro <- BrierScore(post.prob.pro, y.i.p)
+  print(bs.pro * 100)
+  
+  # spatial logit
+  print("  start logit")
+  print("    start mcmc fit")
+  mcmc.seed <- mcmc.seed + 1
+  set.seed(mcmc.seed)
+  tic       <- proc.time()[3]
+  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
+                     coords = s.o, knots = knots, starting = starting,
+                     tuning = tuning, priors = priors,
+                     cov.model = cov.model, n.samples = iters,
+                     verbose = verbose, n.report = n.report, amcmc = amcmc)
+  
+  print("    start mcmc predict")
+  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+                         pred.covars = X.p, start = burn + 1,
+                         end = iters, thin = 1, verbose = TRUE,
+                         n.report = 500)
+  
+  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+  toc        <- proc.time()[3]
+  timings[2] <- toc - tic
+  
+  bs.log <- BrierScore(post.prob.log, y.i.p)
+  print(bs.log * 100)
 
   print(paste("Finished: Set ", i, sep = ""))
-  save(fit.pcl, fit.gev, post.prob.gev,
-       fit.logit, post.prob.log,
-       fit.probit, post.prob.pro,
+  save(fit.pcl, fit.gev, post.prob.gev, bs.gev,
+       fit.probit, post.prob.pro, bs.pro, 
+       fit.logit, post.prob.log, bs.log,
        y.i.p, y.i.o, s, timings,
        file = filename)
 }

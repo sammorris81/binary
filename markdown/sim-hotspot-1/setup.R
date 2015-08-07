@@ -21,7 +21,7 @@ source("../../code/R/probit.R", chdir=T)
 set.seed(7483)  # site
 ns      <- c(1000, 2000, 2000, 1000)
 nsettings <- 4
-nhotspots <- 2
+nhotspots <- c(22, 22, 10, 10)
 
 knots   <- expand.grid(seq(0, 1, length=26), seq(0, 1, length=26))
 knots   <- as.matrix(knots) 
@@ -29,8 +29,8 @@ knots.h <- abs(knots[1, 1] - knots[2, 1])
 
 simdata <- vector(mode = "list", length = nsettings)
 
-rho.t   <- c(0.16, 0.16, 0.11, 0.11)
-prob.t  <- 0.4
+rho.t   <- 0.04
+prob.t  <- 0.5
 
 nsets <- 100
 set.seed(3282)  # data
@@ -39,12 +39,12 @@ for (setting in 1:nsettings) {
   simdata[[setting]]$y <- matrix(data = NA, nrow = ns[setting], ncol = nsets)
   simdata[[setting]]$s <- cbind(runif(ns[setting]), runif(ns[setting]))
   simdata[[setting]]$x <- matrix(1, ns[setting], 1)
-  simdata[[setting]]$hotspots <- array(NA, dim = c(nhotspots, 2, nsets))
+  simdata[[setting]]$hotspots <- array(NA, dim = c(nhotspots[setting], 2, nsets))
   for (i in 1:nsets) {
     
     data <- rHotSpotSpat(x = simdata[[setting]]$x, s = simdata[[setting]]$s, 
-                         xlim = c(0, 1), ylim = c(0, 1), bw = rho.t[[setting]], 
-                         nhotspots = nhotspots, 
+                         xlim = c(0, 1), ylim = c(0, 1), bw = rho.t, 
+                         nhotspots = nhotspots[setting], 
                          prob.in = prob.t)
     simdata[[setting]]$y[, i] <- data$y
     simdata[[setting]]$hotspots[, , i] <- data$hotspots
