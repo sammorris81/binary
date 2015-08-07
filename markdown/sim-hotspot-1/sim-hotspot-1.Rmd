@@ -61,7 +61,7 @@ This is set at an initial value based upon the knot spacing, and is adjusted dur
 ## Results 
 
 ```{r compile-results-1, cache = TRUE, echo = FALSE, include = FALSE}
-sets <- c(1, 6, 11, 16, 21, 26, 31, 36, 41, 46)
+sets <- c(1, 6, 11, 16, 21, 26)
 bs1 <- matrix(NA, 3, length(sets))
 for (i in 1:length(sets)) {
   set  <- sets[i]
