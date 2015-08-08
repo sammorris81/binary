@@ -23,14 +23,16 @@ ns      <- c(1000, 2000, 2000, 1000)
 nsettings <- 4
 nhotspots <- c(22, 22, 10, 10)
 
-knots   <- expand.grid(seq(0, 1, length=26), seq(0, 1, length=26))
+knots   <- expand.grid(seq(0, 1, length=31), seq(0, 1, length=31))
 knots   <- as.matrix(knots) 
 knots.h <- abs(knots[1, 1] - knots[2, 1])
 
 simdata <- vector(mode = "list", length = nsettings)
 
-rho.t   <- 0.04
-prob.t  <- 0.5
+alpha.t <- 0.3
+rho.t   <- 0.035
+xi.t    <- 0
+prob.t  <- c(0.05, 0.05, 0.025, 0.025)
 
 nsets <- 100
 set.seed(3282)  # data
@@ -39,13 +41,20 @@ for (setting in 1:nsettings) {
   simdata[[setting]]$y <- matrix(data = NA, nrow = ns[setting], ncol = nsets)
   simdata[[setting]]$s <- cbind(runif(ns[setting]), runif(ns[setting]))
   simdata[[setting]]$x <- matrix(1, ns[setting], 1)
-  simdata[[setting]]$hotspots <- array(NA, dim = c(nhotspots[setting], 2, nsets))
+  # simdata[[setting]]$hotspots <- array(NA, dim = c(nhotspots[setting], 2, nsets))
   for (i in 1:nsets) {
+    data <- rRareBinarySpat(x = simdata[[setting]]$x, s = simdata[[setting]]$s, 
+                            knots = knots, beta = 0, xi = xi.t,
+                            alpha = alpha.t, rho = rho.t, 
+                            prob.success = prob.t[setting])
     
-    data <- rHotSpotSpat(x = simdata[[setting]]$x, s = simdata[[setting]]$s, 
-                         xlim = c(0, 1), ylim = c(0, 1), bw = rho.t, 
-                         nhotspots = nhotspots[setting], 
-                         prob.in = prob.t)
+#     y[, i] <- data$y
+#     
+#     
+#     data <- rHotSpotSpat(x = simdata[[setting]]$x, s = simdata[[setting]]$s, 
+#                          xlim = c(0, 1), ylim = c(0, 1), bw = rho.t, 
+#                          nhotspots = nhotspots[setting], 
+#                          prob.in = prob.t)
     simdata[[setting]]$y[, i] <- data$y
     simdata[[setting]]$hotspots[, , i] <- data$hotspots
     
