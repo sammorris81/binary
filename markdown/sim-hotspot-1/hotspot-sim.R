@@ -93,7 +93,7 @@ for (i in sets) {
                       cov = X.o, method = "BFGS",
                       max.dist = 3 * knots.h,
                       alpha.min = 0.1, alpha.max = 0.9,
-                      threads = 2),
+                      threads = 1),
     error = function(e) {
       fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                         alpha.init = 0.5, rho.init = knots.h,
@@ -103,7 +103,7 @@ for (i in sets) {
                         cov = X.o, method = "Nelder-Mead",
                         max.dist = 3 * knots.h,
                         alpha.min = 0.1, alpha.max = 0.9,
-                        threads = 2)
+                        threads = 1)
     }
   )
 
@@ -130,7 +130,7 @@ for (i in sets) {
                       A.attempts = 100, spatial = TRUE, rho.init = fit.pcl$par[2],
                       rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
                       iterplot = FALSE, alpha.fix = FALSE, rho.fix = FALSE,
-                      xibeta.joint = FALSE, xi.fix = TRUE, threads = 2,
+                      xibeta.joint = FALSE, xi.fix = TRUE, threads = 1,
                       iters = iters, burn = burn, update = update, thin = 1)
 
   print("    start mcmc predict")
