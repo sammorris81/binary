@@ -47,7 +47,7 @@ do
     fi
     SET=$((SET + BY))
   fi
-  MCMC="$OUT$GROUP$EXT"
+  MCMC="$OUT$GROUP-$SETTING$EXT"
   OUTPUT="$OUT$GROUP$RDATA"
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
