@@ -23,7 +23,7 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(1, 2, 3, 4)
-sets <- c(4, 5, 6)
+sets <- c(13, 14, 15)
 
 for (setting in 1:length(settings)) {
   # extract the relevant setting from simdata

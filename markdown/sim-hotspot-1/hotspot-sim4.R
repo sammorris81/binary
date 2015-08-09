@@ -23,7 +23,7 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(1, 2, 3, 4)
-sets <- c(100)
+sets <- c(10, 11, 12)
 
 for (setting in 1:length(settings)) {
   # extract the relevant setting from simdata
@@ -149,8 +149,8 @@ for (setting in 1:length(settings)) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev)
     write.table(bs, file = tblname)
-    #     upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
-    #     system(upload.cmd)
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    system(upload.cmd)
     
     # spatial probit
     print("  start probit")
@@ -175,8 +175,8 @@ for (setting in 1:length(settings)) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev, bs.pro)
     write.table(bs, file = tblname)
-    #     upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
-    #     system(upload.cmd)
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    system(upload.cmd)
     
     #     # spatial logit
     #     print("  start logit")
