@@ -26,59 +26,60 @@ settings <- c(1:4)
 sets <- c(11:20)
 nthreads <- 2
 
-for (setting in settings) {
-  # extract the relevant setting from simdata
-  y <- simdata[[setting]]$y
-  s <- simdata[[setting]]$s
-  x <- simdata[[setting]]$x
-  
-  # extract info about simulation settings
-  ns        <- dim(y)[1]
-  nt        <- 1
-  nsets     <- dim(y)[2]
-  nsettings <- dim(y)[3]
-  nknots    <- nrow(knots)
-  
-  # some precalculated values for quicker pairwise evaluation
-  dw2     <- rdist(s, knots)
-  d       <- rdist(s)
-  diag(d) <- 0
-  
-  # testing vs training
-  ntrain <- floor(0.75 * ns)
-  ntest  <- ns - ntrain
-  obs    <- c(rep(T, ntrain), rep(F, ntest))
-  y.o    <- matrix(y[obs, ], ntrain, nsets)
-  X.o    <- matrix(x[obs], ntrain, 1)
-  s.o    <- s[obs, ]
-  y.p    <- matrix(y[!obs, ], ntest, nsets)
-  X.p    <- matrix(x[!obs, ], ntest, 1)
-  s.p    <- s[!obs, ]
-  dw2.o  <- rdist(s.o, knots)
-  d.o    <- as.matrix(rdist(s.o))
-  diag(d.o) <- 0
-  
-  ####################################################################
-  #### Start MCMC setup: Most of this is used for the spBayes package
-  ####################################################################
-  iters <- 50000; burn <- 40000; update <- 1000; thin <- 1
-  # iters <- 100; burn <- 50; update <- 10; thin <- 1
-  # setup for spGLM
-  n.report     <- 10
-  batch.length <- 100
-  n.batch      <- floor(iters / batch.length)
-  verbose      <- TRUE
-  tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
-  starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
-  priors       <- list("beta.norm" = list(0, 100),
-                       "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
-  cov.model <- "exponential"
-  timings   <- rep(NA, 3)
-  # with so many knots, adaptive is time prohibitive
-  amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
-                    "accept.rate" = 0.35)
-  
-  for (i in sets) {
+for (i in sets) {
+  for (setting in settings) {
+    # extract the relevant setting from simdata
+    y <- simdata[[setting]]$y
+    s <- simdata[[setting]]$s
+    x <- simdata[[setting]]$x
+    
+    # extract info about simulation settings
+    ns        <- dim(y)[1]
+    nt        <- 1
+    nsets     <- dim(y)[2]
+    nsettings <- dim(y)[3]
+    nknots    <- nrow(knots)
+    
+    # some precalculated values for quicker pairwise evaluation
+    dw2     <- rdist(s, knots)
+    d       <- rdist(s)
+    diag(d) <- 0
+    
+    # testing vs training
+    ntrain <- floor(0.75 * ns)
+    ntest  <- ns - ntrain
+    obs    <- c(rep(T, ntrain), rep(F, ntest))
+    y.o    <- matrix(y[obs, ], ntrain, nsets)
+    X.o    <- matrix(x[obs], ntrain, 1)
+    s.o    <- s[obs, ]
+    y.p    <- matrix(y[!obs, ], ntest, nsets)
+    X.p    <- matrix(x[!obs, ], ntest, 1)
+    s.p    <- s[!obs, ]
+    dw2.o  <- rdist(s.o, knots)
+    d.o    <- as.matrix(rdist(s.o))
+    diag(d.o) <- 0
+    
+    ####################################################################
+    #### Start MCMC setup: Most of this is used for the spBayes package
+    ####################################################################
+    iters <- 50000; burn <- 40000; update <- 1000; thin <- 1
+    # iters <- 100; burn <- 50; update <- 10; thin <- 1
+    # setup for spGLM
+    n.report     <- 10
+    batch.length <- 100
+    n.batch      <- floor(iters / batch.length)
+    verbose      <- TRUE
+    tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
+    starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
+    priors       <- list("beta.norm" = list(0, 100),
+                         "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
+    cov.model <- "exponential"
+    timings   <- rep(NA, 3)
+    # with so many knots, adaptive is time prohibitive
+    amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
+                      "accept.rate" = 0.35)
+    
+    
     filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
     tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
     y.i.o <- matrix(y.o[, i], ntrain, 1)
