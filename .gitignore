@@ -40,3 +40,5 @@ extended-covariates.csv
 *.rdx
 
 *.rdb
+
+code/analysis/birds/birds/2002/checklists.csv

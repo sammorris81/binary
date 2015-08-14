@@ -65,38 +65,39 @@ for (setting in 1:nsettings) {
   print(paste("Setting ", setting, " finished", sep = ""))
 }
 
+quartz(width = 10, height = 7)
 par(mfrow = c(2, 2))
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-     main = "Setting 1: 5%, ns = 1000")
+     main = "Setting 1: 5%, ns = 1000", cex.main = 2)
 points(simdata[[1]]$s[which(simdata[[1]]$y[, 8] != 1), ], pch = 21, 
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[1]]$s[which(simdata[[1]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[1]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+# points(simdata[[1]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
 
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-     main = "Setting 2: 5%, ns = 2000")
+     main = "Setting 2: 5%, ns = 2000", cex.main = 2)
 points(simdata[[2]]$s[which(simdata[[2]]$y[, 8] != 1), ], pch = 21, 
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[2]]$s[which(simdata[[2]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[2]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+# points(simdata[[2]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
 
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-     main = "Setting 3: 2.5%, ns = 2000")
+     main = "Setting 3: 2.5%, ns = 2000", cex.main = 2)
 points(simdata[[3]]$s[which(simdata[[3]]$y[, 8] != 1), ], pch = 21, 
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[3]]$s[which(simdata[[3]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[3]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+# points(simdata[[3]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
 
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-     main = "Setting 4: 2.5%, ns = 1000")
+     main = "Setting 4: 2.5%, ns = 1000", cex.main = 2)
 points(simdata[[4]]$s[which(simdata[[4]]$y[, 8] != 1), ], pch = 21, 
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[4]]$s[which(simdata[[4]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[4]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+# points(simdata[[4]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
 
 
 mean(simdata[[1]]$y)

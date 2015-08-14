@@ -65,6 +65,7 @@ for (setting in 1:nsettings) {
   print(paste("Setting ", setting, " finished", sep = ""))
 }
 
+quartz(width = 10, height = 7)
 par(mfrow = c(2, 2))
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
      main = "Setting 1: 5%, ns = 1000")
