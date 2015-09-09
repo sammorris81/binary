@@ -111,16 +111,17 @@ In the random effects model, the expression for the joint density conditional on
 \end{align}
 
 \section{Simulation study}\label{s:sim}
-For our simulation study, we generate $n_m = 50$ datasets under 8 different settings to explore the impact of spatial dependence, rareness of observations, and misspecification of link function.
-We consider cases of high and low dependence; two degrees of rareness $\pi = 0.01, 0.05$; and two underlying link functions, logit and GEV.
+For our simulation study, we generate $n_m = 100$ datasets under 4 different settings to explore the impact of rareness of observations, sample size, and knot spacing.
+We consider two degrees of rareness $\pi = 0.01, 0.05$ and two sample sizes $n_s = 1000, 2000$.
+For the different knot spacings, we use knots in $[0, 1] \times [0, 1]$ on a $21 \times 21$ grid and $31 \times 31$ grid.
 For each dataset, we fit the model using three different methods, spatial logistic regression, spatial probit regression, and the proposed spatial GEV method.
 In each case, we fit the model using Bayesian methods with proper, but fairly uninformative priors.
-In particular, when selecting a model, we consider how well the method does at estimating the  $\kappa$ function
+For each method, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
 
 \section{Data analysis}\label{s:analysis}
 For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
 The data are publicly available from {\tt http://ebird.org}.
-We use data from 2002, and focus specifically on cattle egrets and sanderlings.
+We use data from 2002, and focus specifically on cattle egrets and vesper sparrows.
 
 \section{Conclusions}\label{s:con}
 
