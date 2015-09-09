@@ -30,7 +30,7 @@ knots.h <- abs(knots[1, 1] - knots[2, 1])
 simdata <- vector(mode = "list", length = nsettings)
 
 alpha.t <- 0.3
-rho.t   <- 0.035
+rho.t   <- 0.05
 xi.t    <- 0
 prob.t  <- c(0.05, 0.05, 0.025, 0.025)
 
