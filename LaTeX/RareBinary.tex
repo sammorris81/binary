@@ -52,7 +52,7 @@ The spatial dependence is determined by the joint distribution of $\bZ = (Z_1,\l
 where $\bz = (z_1,\ldots,z_n)$, $w_{l}(\bs_i)$ are a set of weights that determine the spatial dependence structure and are discussed further in Section \ref{s:weights}, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
 This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
 One nice feature to this hierarchical model is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
-More importantly, at a single site $i$, the marginal distribution gives $P(Y_i = 1) = 1 - \exp\left\{ -\frac{ 1 }{ z_i} \right\}$ which is the same as the marginal distributions given by \citet{Wang2010}.
+More importantly, at a single site $i$, the marginal distribution gives \mbox{$P(Y_i = 1) = 1 - \exp\left\{ -\frac{ 1 }{ z_i} \right\}$} which is the same as the marginal distributions given by \citet{Wang2010}.
 
 \subsection{Weight functions}\label{s:weights}
 Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
@@ -100,7 +100,7 @@ We believe this measure of dependence to be reasonable because,
 \begin{align}
   \lim_{\beta_0 \rightarrow \infty} \kappa(h) = \chi(h) = 2 - \vartheta(\bs_i, \bs_j)
 \end{align}
-where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see Appendix \ref{a:chi}.
+where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see Appendix \ref{a:chi}).
 In the case of complete dependence, $\kappa = 1$, and in the case of complete independence, $\kappa = 0$.
 
 \section{Computation}\label{s:comp}
