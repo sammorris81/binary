@@ -93,7 +93,7 @@ for (i in sets) {
                       cov = X.o, method = "BFGS",
                       max.dist = 3 * knots.h,
                       alpha.min = 0.1, alpha.max = 0.9,
-                      threads = 1),
+                      threads = 2),
     error = function(e) {
       fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                         alpha.init = 0.5, rho.init = knots.h,
@@ -103,7 +103,7 @@ for (i in sets) {
                         cov = X.o, method = "Nelder-Mead",
                         max.dist = 3 * knots.h,
                         alpha.min = 0.1, alpha.max = 0.9,
-                        threads = 1)
+                        threads = 2)
     }
   )
 
