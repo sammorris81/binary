@@ -27,7 +27,7 @@
 \newcommand{\bY}{ \mbox{\bf Y}}
 \newcommand{\bz}{ \mbox{\bf z}}
 \newcommand{\bh}{ \mbox{\bf h}}
-\newcommand{\bm}{ \mbox{\bf m}}
+\renewcommand{\bm}{ \mbox{\bf m}}
 \newcommand{\br}{ \mbox{\bf r}}
 \newcommand{\bt}{ \mbox{\bf t}}
 \newcommand{\bs}{ \mbox{\bf s}}
@@ -72,7 +72,7 @@
   \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
   \renewenvironment{#1}%
      {\linenomath\csname old#1\endcsname}%
-     {\csname oldend#1\endcsname\endlinenomath}}% 
+     {\csname oldend#1\endcsname\endlinenomath}}%
 \newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
   \patchAmsMathEnvironmentForLineno{#1}%
   \patchAmsMathEnvironmentForLineno{#1*}}%
