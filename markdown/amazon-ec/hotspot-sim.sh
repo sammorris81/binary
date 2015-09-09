@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # CWD=`pwd`
+# proper syntax is filename start end by setting
 OUT=`echo $1 | cut -f1 -d.`
 EXT=".R"
 RDATA=".RData"
@@ -47,7 +48,7 @@ do
     fi
     SET=$((SET + BY))
   fi
-  MCMC="$OUT$GROUP-$SETTING$EXT-bw"
+  MCMC="$OUT$GROUP-$SETTING-bw$EXT"
   OUTPUT="$OUT$GROUP$RDATA"
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
@@ -55,6 +56,6 @@ do
   sed "24 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
   sed "25 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
   rm "$MCMC.tmp"
-  bwsubmit r "$MCMC"
+  # bwsubmit r "$MCMC"
   ((GROUP++))
 done
