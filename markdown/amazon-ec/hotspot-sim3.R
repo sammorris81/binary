@@ -18,7 +18,7 @@ source("../../code/R/updateModel.R")
 source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir = TRUE)
 
-openblas.set.num.threads(3)
+# openblas.set.num.threads(3)
 
 # get the datasets
 load("./simdata.RData")
