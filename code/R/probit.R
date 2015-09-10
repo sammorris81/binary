@@ -147,16 +147,20 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         Y    <- qnorm(U, MMM, 1)
 
        # BETA
-
-        VVV  <- chol2inv(chol(tXX + eps * diag(p)))
-        MMM  <- t(X) %*% (Y - BA)
+        VVV  <- tXX + diag(eps, p)
+        VVV  <- chol2inv(chol(tXX + diag(eps, p)))
+        # MMM  <- t(X) %*% (Y - BA)
+        MMM  <- crossprod(X, Y - BA)
         beta <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(p)
         XB   <- X %*% beta
 
        # ALPHA
-
-        VVV   <- chol2inv(chol(t(B) %*% B + taua * diag(m)))
-        MMM   <- t(B) %*% (Y - XB)
+        # trying to speed this up. original code commented out.
+        # VVV <- (t(B) %*% B + taua * diag(m))
+        VVV   <- crossprod(B) + diag(taua, m)
+        VVV   <- chol2inv(chol(VVV))
+        # MMM   <- t(B) %*% (Y - XB)
+        MMM   <- crossprod(B, Y - XB)
         alpha <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(m)
         BA    <- B %*% alpha
 
@@ -274,3 +278,42 @@ return(output)}
 #
 # plot(fit$bw,type="l")
 # abline(bw,0,col=2)
+
+# slow <- function(X, taua, m) {
+#   return (t(X) %*% X + taua * diag(m))
+# }
+# 
+# med <- function(X, taua, m) {
+#   return (crossprod(X) + taua * diag(m))
+# }
+# 
+# fast <- function(X, taua, m) {
+#   return (crossprod(X) + diag(taua, m))
+# }
+# 
+# fast1 <- function(X, taua, m) {
+#   return (chol2inv(chol(crossprod(X) + diag(taua, m))))
+# }
+# 
+# fast2 <- function(X, taua, m) {
+#   VVV <- crossprod(X) + diag(taua, m)
+#   return (chol2inv(chol(VVV)))
+# }
+# 
+# slowa <- function(X, res) {
+#   return (t(X) %*% res)
+# }
+# 
+# fasta <- function(X, res) {
+#   return (crossprod(X, res))
+# }
+# 
+# microbenchmark(slow(X = B, taua = 0.25, m = ncol(B)),
+#                med(X = B, taua = 0.25, m = ncol(B)),
+#                fast(X = B, taua = 0.25, m = ncol(B)))
+# 
+# microbenchmark(slowa(X = B, res = res),
+#                fasta(X = B, res = res))
+# 
+# microbenchmark(fast1(X = X, taua = 0.25, m = ncol(X)),
+#                fast2(X = X, taua = 0.25, m = ncol(X)))
