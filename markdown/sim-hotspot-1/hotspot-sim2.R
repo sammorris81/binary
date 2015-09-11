@@ -23,7 +23,6 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(1, 2, 3, 4)
-sets <- c(6:10)
 
 for (setting in 1:length(settings)) {
   # extract the relevant setting from simdata
@@ -76,7 +75,11 @@ for (setting in 1:length(settings)) {
   # with so many knots, adaptive is time prohibitive
   amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
                     "accept.rate" = 0.35)
-  
+  if (setting == 1) {
+    sets <- c(97:100)
+  } else {
+    sets <- c(96:100)
+  }
   for (i in sets) {
     filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
     tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")

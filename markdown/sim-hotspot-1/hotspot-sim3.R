@@ -22,8 +22,8 @@ source("../../code/R/probit.R", chdir = TRUE)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
-settings <- c(1, 2, 3, 4)
-sets <- c(11:15)
+settings <- c(4)
+sets <- c(2, 7:8, 14, 32, 49, 55, 58:60, 64:65, 69:70, 72:75)
 
 for (setting in 1:length(settings)) {
   # extract the relevant setting from simdata
