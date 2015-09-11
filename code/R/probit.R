@@ -147,19 +147,18 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         Y    <- qnorm(U, MMM, 1)
 
        # BETA
-        VVV  <- tXX + diag(eps, p)
         VVV  <- chol2inv(chol(tXX + diag(eps, p)))
-        # MMM  <- t(X) %*% (Y - BA)
+        MMM  <- t(X) %*% (Y - BA)
         MMM  <- crossprod(X, Y - BA)
         beta <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(p)
         XB   <- X %*% beta
 
        # ALPHA
         # trying to speed this up. original code commented out.
-        # VVV <- (t(B) %*% B + taua * diag(m))
+        VVV1  <- (t(B) %*% B + taua * diag(m))
         VVV   <- crossprod(B) + diag(taua, m)
         VVV   <- chol2inv(chol(VVV))
-        # MMM   <- t(B) %*% (Y - XB)
+        MMM1  <- t(B) %*% (Y - XB)
         MMM   <- crossprod(B, Y - XB)
         alpha <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(m)
         BA    <- B %*% alpha
