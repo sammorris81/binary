@@ -52,7 +52,7 @@ The spatial dependence is determined by the joint distribution of $\bZ = (Z_1,\l
 where $\bz = (z_1,\ldots,z_n)$, $w_{l}(\bs_i)$ are a set of weights that determine the spatial dependence structure and are discussed further in Section \ref{s:weights}, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
 This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
 One nice feature to this hierarchical model is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
-More importantly, at a single site $i$, the marginal distribution gives $P(Y_i = 1) = 1 - \exp\left\{ -\frac{ 1 }{ z_i} \right\}$ which is the same as the marginal distributions given by \citet{Wang2010}.
+More importantly, at a single site $i$, the marginal distribution gives \mbox{$P(Y_i = 1) = 1 - \exp\left\{ -\frac{ 1 }{ z_i} \right\}$} which is the same as the marginal distributions given by \citet{Wang2010}.
 
 \subsection{Weight functions}\label{s:weights}
 Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
@@ -100,7 +100,7 @@ We believe this measure of dependence to be reasonable because,
 \begin{align}
   \lim_{\beta_0 \rightarrow \infty} \kappa(h) = \chi(h) = 2 - \vartheta(\bs_i, \bs_j)
 \end{align}
-where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see Appendix \ref{a:chi}.
+where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see Appendix \ref{a:chi}).
 In the case of complete dependence, $\kappa = 1$, and in the case of complete independence, $\kappa = 0$.
 
 \section{Computation}\label{s:comp}
@@ -111,16 +111,17 @@ In the random effects model, the expression for the joint density conditional on
 \end{align}
 
 \section{Simulation study}\label{s:sim}
-For our simulation study, we generate $n_m = 50$ datasets under 8 different settings to explore the impact of spatial dependence, rareness of observations, and misspecification of link function.
-We consider cases of high and low dependence; two degrees of rareness $\pi = 0.01, 0.05$; and two underlying link functions, logit and GEV.
+For our simulation study, we generate $n_m = 100$ datasets under 4 different settings to explore the impact of rareness of observations, sample size, and knot spacing.
+We consider two degrees of rareness $\pi = 0.01, 0.05$ and two sample sizes $n_s = 1000, 2000$.
+For the different knot spacings, we use knots in $[0, 1] \times [0, 1]$ on a $21 \times 21$ grid and $31 \times 31$ grid.
 For each dataset, we fit the model using three different methods, spatial logistic regression, spatial probit regression, and the proposed spatial GEV method.
 In each case, we fit the model using Bayesian methods with proper, but fairly uninformative priors.
-In particular, when selecting a model, we consider how well the method does at estimating the  $\kappa$ function
+For each method, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
 
 \section{Data analysis}\label{s:analysis}
 For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
 The data are publicly available from {\tt http://ebird.org}.
-We use data from 2002, and focus specifically on cattle egrets and sanderlings.
+We use data from 2002, and focus specifically on cattle egrets and vesper sparrows.
 
 \section{Conclusions}\label{s:con}
 
