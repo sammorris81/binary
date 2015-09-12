@@ -24,7 +24,8 @@ openblas.set.num.threads(1)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
-settings <- c(1, 2, 3, 4)
+settings <- c(4)
+sets <- c(55, 58, 59, 60, 64, 65)
 directory <- "sim-hotspot-1/"
 
 for (setting in 1:length(settings)) {
@@ -79,9 +80,9 @@ for (setting in 1:length(settings)) {
   amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
                     "accept.rate" = 0.35)
   if (setting == 1) {
-    sets <- c(97:100)
+    sets <- c(92:95)
   } else {
-    sets <- c(96:100)
+    sets <- c(91:95)
   }
   for (i in sets) {
     filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
@@ -155,7 +156,8 @@ for (setting in 1:length(settings)) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev)
     write.table(bs, file = tblname)
-    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/",
+                        directory, "sim-tables", sep = "")
     system(upload.cmd)
     
     # spatial probit
@@ -169,6 +171,7 @@ for (setting in 1:length(settings)) {
                          iters = iters, burn = burn, update = update)
     
     print("    start mcmc predict")
+    
     post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                  s.pred = s.p, knots = knots,
                                  start = 1, end = iters - burn, update = update)
@@ -181,7 +184,8 @@ for (setting in 1:length(settings)) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev, bs.pro)
     write.table(bs, file = tblname)
-    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/",
+                        directory, "sim-tables", sep = "")
     system(upload.cmd)
     
     #     # spatial logit
@@ -209,17 +213,18 @@ for (setting in 1:length(settings)) {
     #     bs.log <- BrierScore(post.prob.log, y.i.p)
     #     print(bs.log * 100)
     #     
+    #     # copy table to tables folder on beowulf
+    #     bs <- rbind(bs.gev, bs.pro, bs.log)
+    #     write.table(bs, file = tblname)
+    #     upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/",
+    #                         directory, "sim-tables", sep = "")
+    #     system(upload.cmd)
+    #     
     print(paste("Finished: Set ", i, sep = ""))
     save(fit.pcl, fit.gev, post.prob.gev, bs.gev,
          fit.probit, post.prob.pro, bs.pro, 
          # fit.logit, post.prob.log, bs.log,
          y.i.p, y.i.o, s, timings,
          file = filename)
-    #     
-    #     # copy table to tables folder on beowulf
-    #     bs <- rbind(bs.gev, bs.pro, bs.log)
-    #     write.table(bs, file = tblname)
-    #     upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
-    #     system(upload.cmd)
   }
 }
