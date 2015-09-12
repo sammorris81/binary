@@ -79,11 +79,7 @@ for (setting in 1:length(settings)) {
   # with so many knots, adaptive is time prohibitive
   amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
                     "accept.rate" = 0.35)
-  if (setting == 1) {
-    sets <- c(92:95)
-  } else {
-    sets <- c(91:95)
-  }
+
   for (i in sets) {
     filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
     tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
