@@ -25,7 +25,7 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(1:4)
-sets <- c(51:55)
+sets <- c(51:60)
 nthreads <- 1
 
 for (i in sets) {

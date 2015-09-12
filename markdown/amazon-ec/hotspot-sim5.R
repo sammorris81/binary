@@ -18,14 +18,14 @@ source("../../code/R/updateModel.R")
 source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir = TRUE)
 
-# openblas.set.num.threads(1)
+openblas.set.num.threads(1)
 
 # get the datasets
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(1:4)
-sets <- c(71:75)
+sets <- c(91:100)
 nthreads <- 1
 
 for (i in sets) {
