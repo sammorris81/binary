@@ -164,25 +164,16 @@ for (setting in 1:length(settings)) {
     print("    start mcmc fit")
     mcmc.seed <- mcmc.seed + 1
     set.seed(mcmc.seed)
-    Rprof(filename = "probit-fit-rprof.out", line.profiling = TRUE)
-    iters  <- 1000
-    burn   <- 500
-    update <- 100
     tic        <- proc.time()[3]
     fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
                          iters = iters, burn = burn, update = update)
     
     print("    start mcmc predict")
-    Rprof(filename = NULL)
-    
-    Rprof(filename = "probit-pred-rprof.out", line.profiling = TRUE)
+
     post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                                  s.pred = s.p, knots = knots,
                                  start = 1, end = iters - burn, update = update)
     toc        <- proc.time()[3]
-    Rprof(filename = NULL)
-    
-    summaryRprof(filename = "probit-fit-rprof.out", lines = "show")
     timings[2] <- toc - tic
     
     bs.pro <- BrierScore(post.prob.pro, y.i.p)
