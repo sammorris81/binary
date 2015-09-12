@@ -27,6 +27,7 @@ load("./simdata.RData")
 settings <- c(1:4)
 sets <- c(81:90)
 nthreads <- 1
+directory <- "amazon-ec/"
 
 for (i in sets) {
   for (setting in settings) {
@@ -153,7 +154,8 @@ for (i in sets) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev)
     write.table(bs, file = tblname)
-    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/",
+                        directory, "sim-tables", sep = "")
     system(upload.cmd)
     
     # spatial probit
@@ -179,7 +181,8 @@ for (i in sets) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev, bs.pro)
     write.table(bs, file = tblname)
-    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/",
+                        directory, "sim-tables", sep = "")
     system(upload.cmd)
     
     # spatial logit
@@ -210,7 +213,8 @@ for (i in sets) {
     # copy table to tables folder on beowulf
     bs <- rbind(bs.gev, bs.pro, bs.log)
     write.table(bs, file = tblname)
-    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+    upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/",
+                        directory, "sim-tables", sep = "")
     system(upload.cmd)
     
     print(paste("Finished: Set ", i, sep = ""))

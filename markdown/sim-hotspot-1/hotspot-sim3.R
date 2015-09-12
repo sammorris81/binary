@@ -25,6 +25,7 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(4)
+directory <- "sim-hotspot-1/"
 sets <- c(2, 7:8, 14, 32, 49, 55, 58:60, 64:65, 69:70, 72:75)
 
 for (setting in 1:length(settings)) {
