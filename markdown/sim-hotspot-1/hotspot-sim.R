@@ -199,6 +199,12 @@ for (i in sets) {
 #   
 #   bs.log <- BrierScore(post.prob.log, y.i.p)
 #   print(bs.log * 100)
+#   
+#   # copy table to tables folder on beowulf
+#   bs <- rbind(bs.gev, bs.pro, bs.log)
+#   write.table(bs, file = tblname)
+#   # upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
+#   # system(upload.cmd)
 
   print(paste("Finished: Set ", i, sep = ""))
   save(fit.pcl, fit.gev, post.prob.gev, bs.gev,
@@ -206,10 +212,4 @@ for (i in sets) {
        # fit.logit, post.prob.log, bs.log,
        y.i.p, y.i.o, s, timings,
        file = filename)
-  
-  # copy table to tables folder on beowulf
-  # bs <- rbind(bs.gev, bs.pro, bs.log)
-  # write.table(bs, file = tblname)
-  # upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hotspot-1/sim-tables", sep = "")
-  # system(upload.cmd)
 }
