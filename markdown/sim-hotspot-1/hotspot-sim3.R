@@ -18,6 +18,8 @@ source("../../code/R/updateModel.R")
 source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir = TRUE)
 
+setMKLthreads(2)
+
 # get the datasets
 load("./simdata.RData")
 

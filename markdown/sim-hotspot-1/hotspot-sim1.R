@@ -18,6 +18,8 @@ source("../../code/R/updateModel.R")
 source("../../code/R/mcmc.R")
 source("../../code/R/probit.R", chdir = TRUE)
 
+setMKLthreads(2)
+
 # get the datasets
 load("./simdata.RData")
 
@@ -163,9 +165,9 @@ for (setting in 1:length(settings)) {
     mcmc.seed <- mcmc.seed + 1
     set.seed(mcmc.seed)
     Rprof(filename = "probit-fit-rprof.out", line.profiling = TRUE)
-    iters <- 500
-    burn  <- 250
-    update <- 50
+    iters  <- 1000
+    burn   <- 500
+    update <- 100
     tic        <- proc.time()[3]
     fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
                          iters = iters, burn = burn, update = update)
