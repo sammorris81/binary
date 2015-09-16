@@ -40,5 +40,6 @@ extended-covariates.csv
 *.rdx
 
 *.rdb
-
+markdown/sim-hotspot-1/sim-tables/*.txt
+markdown/amazon-ec/sim-tables/*.txt
 code/analysis/birds/birds/2002/checklists.csv
