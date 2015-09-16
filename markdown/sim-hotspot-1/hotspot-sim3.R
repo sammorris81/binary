@@ -85,7 +85,7 @@ for (setting in settings) {
     tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
     y.i.o <- matrix(y.o[, i], ntrain, 1)
     y.i.p <- matrix(y.p[, i], ntest, 1)
-    print(paste("Starting: Set ", i, sep = ""))
+    print(paste("Starting: Set ", setting, "-", i, sep = ""))
     
     print("  start fit.pcl")
     # fit alpha and rho
@@ -216,7 +216,7 @@ for (setting in settings) {
     #                         directory, "sim-tables", sep = "")
     #     system(upload.cmd)
     #     
-    print(paste("Finished: Set ", i, sep = ""))
+    print(paste("Finished: Set ", setting, "-", i, sep = ""))
     save(fit.pcl, fit.gev, post.prob.gev, bs.gev,
          fit.probit, post.prob.pro, bs.pro, 
          # fit.logit, post.prob.log, bs.log,
