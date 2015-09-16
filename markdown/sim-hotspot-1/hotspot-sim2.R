@@ -28,7 +28,7 @@ settings <- c(4)
 sets <- c(55, 58, 59, 60, 64, 65)
 directory <- "sim-hotspot-1/"
 
-for (setting in 1:length(settings)) {
+for (setting in settings) {
   # extract the relevant setting from simdata
   y <- simdata[[setting]]$y
   s <- simdata[[setting]]$s
