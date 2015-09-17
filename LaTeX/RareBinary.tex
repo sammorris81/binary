@@ -28,23 +28,52 @@
 \end{center}
 
 \section{Introduction}\label{s:intro}
-
-\section{Binary regression}\label{s:model}
-Let $Y_i\in\{0,1\}$ be the binary response at spatial location $\bs_i \in \calD$, and $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept.
-The goal in binary regression is to relate a set of covariates with the response using the link function $g$ so that P$(Y_i=1) = \pi_i= g(\bX_i \bbeta)$, where $\bX_i$ is the vector of covariates for observation $i$, and $\bbeta$ is the $p$-vector of regression coefficients.
-Two very commonly used types of binary regression include logistic regression with $\pi_i = \frac{ \exp{\bX_i \bbeta} }{1 + \exp{\bX_i \bbeta}}$ and probit regression with $\pi_i = \Phi(\bX_i \bbeta)$ where $\Phi(\cdot)$ represents the standard normal distribution function.
+The goal in binary regression is to relate a set of covariates with the response using a link function.
+% $g$ so that P$(Y_i=1) = \pi_i= g(\bX_i \bbeta)$, where $\bX_i$ is the vector of covariates for observation $i$, and $\bbeta$ is the $p$-vector of regression coefficients.
+Two very commonly used types of binary regression include logistic regression
+% with $\pi_i = \frac{ \exp{\bX_i \bbeta} }{1 + \exp{\bX_i \bbeta}}$
+and probit regression.
+% with $\pi_i = \Phi(\bX_i \bbeta)$ where $\Phi(\cdot)$ represents the standard normal distribution function.
 One limitation to these link functions is that they assume the data are symmetric which may not always be the case.
-More recently, \citet{Wang2010} introduced the generalized extreme value (GEV) link function for rare binary data where
-\begin{align} \label{eq:marginalz}
-  \pi_i= 1 - \exp \left[-\left(1 - \xi \bX_i \bbeta \right)^{-1 / \xi} \right].
-\end{align}
-In the case that $\xi = 0$, this is the complementary log-log (cloglog) link function.
-The GEV link function is attractive because it allows for assymetry thereby providing a more flexible model for the data.
+% In the case that $\xi = 0$, this is the complementary log-log (cloglog) link function.
+The complementary log-log (cloglog) link function is an asymmetric alternative to logistic and probit regression.
+More recently, \citet{Wang2010} introduced the generalized extreme value (GEV) link function for rare binary data.
+The GEV link function introduces a new shape parameter to the link function that controls the degree of asymmetry.
+The cloglog link is a special case of the GEV link function when the shape parameter is 0.
+% where
 
-\section{Spatial dependence}\label{s:spatialdependence}
-In this section we extend the GEV link function to allow for spatial correlation.
-First, to simplify the notation, we let $z_i = \left(1 - \xi \bX_i \bbeta \right)^{1 / \xi}$ from (\ref{eq:marginalz}).
-To incorpoate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
+
+\hl{Want to make the case in this paragraph that spatial logistic and probit models are not appropriate because asymptotic dependence is 0.}
+Spatial logistic and probit models are commonly presented using a hierarchical model \hl{citation}.
+In the hierarchical framework, spatial dependence is accounted for by assuming that there exists an underlying latent Gaussian process, and conditioned on this process, observations are independent.
+However, for extremal distributions, Gaussian processes do not appropriately capture spatial dependence because there is no asymptotic dependence regardless of the strength of the correlation in the bulk of the data.
+Instead, when modeling spatial extremes, a max-stable process is preferred because it allows for asymptotic dependence \hl{citation}.
+Therefore, we choose to incorporate a latent max-stable process to model the spatial dependence.
+
+\hl{Paragraph outlining the structure of the paper}
+
+\section{Spatial dependence for binary regression}
+\subsection{Non-rare data}\label{s:nonrarebinary}
+In this section we present the spatial logistic and probit models.
+
+In the case that $n$ is large, low-rank predictive process models can be used to ease the computation.
+
+\section{Rare binary data}\label{s:rarebinary}
+In this section we extend the GEV link function to allow for spatial dependence.
+Let $Y_i\in\{0,1\}$ be the binary response at spatial location $\bs_i \in \calD$,
+We assume that $Y_i = I(Z_i > 0)$ where $I(\cdot)$ is an indicator function, and the marginal distribution of $Z_i$ is
+\begin{align}
+  Z_i \sim \text{GEV}(\bX_i \bbeta, 1, \xi)
+\end{align}
+where $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept.
+We fix the shape to be 1 for identifiability.
+Therefore, the marginal probability of an event is
+\begin{align} \label{eq:marginalz}
+  \pi_i= 1 - \exp \left[-\left(1 - \xi \bX_i \bbeta \right)^{-1 / \xi} \right]
+\end{align}
+as in \citet{Wang2010}.
+
+To incorporate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
 The spatial dependence is determined by the joint distribution of $\bZ = (Z_1,\ldots,Z_n)$,
 \begin{align}\label{jointCDF}
  G(\bz) =  \mbox{P}[Z_1<z_1,\ldots,Z_n<z_n] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z_i}\right)^{1/\alpha}\right]^{\alpha}\right\},
@@ -64,27 +93,34 @@ For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels wit
 \end{align}
 The kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
 
-\section{Multivariate distribution}\label{s:multivariate}
-As shown in Appendix \ref{a:likelihoodderivation}, the joint probability mass function of $\bY=(Y_1,\ldots,Y_n)$ has a convenient form when the number of events is small.
-Let $K=\sum_{i=1}^nY_i$ be the number of events, and assume without loss of generality the data are ordered so that the $Y_1=\ldots=Y_K=1$.
-Then
-\begin{align}\label{pmf}
-  P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
-    \begin{array}{ll}
-      G(\bz) & K=0 \\
-      G(\bz_{(1)})-G(\bz) & K=1 \\
-      G(\bz_{(12)})-G(\bz_{(1)})-G(\bz_{(2)})+G(\bz) & K=2
-    \end{array}
-  \right.
-\end{align}
-where $G(\bz_{(1)}) = P(Z_2<z_2,\ldots,Z_n<z_n)$, $G(\bz_{(2)}) = P(Z_1<z_1,Z_3<z_3,\ldots,Z_n<z_n)$, and $G(\bz_{(12)}) = P(Z_3<z_3,\ldots,Z_n<z_n)$.
-Similar expressions can be derived for all $K$, but become cumbersome for large $K$.
+\section{Joint distribution}\label{s:multivariate}
+The joint likelihood of $Y$ is generally computationally challenging to compute.
+In this paper, we combine the random effect representation with MCMC; however, when exact expressions of the likelihood are available, better methods could be used.
+In section \ref{s:bivariate}, we give an exact expression in the case where there are only two spatial locations which is useful for constructing a pairwise composite likelihood and studying spatial dependence.
+For more than two locations, we are also able to compute the exact likelihood when the number of locations is large but the number of events is small, as might be expected for very rare events.
+% As shown in Appendix \ref{a:likelihoodderivation}, the joint probability mass function of $\bY=(Y_1,\ldots,Y_n)$ has a convenient form when the number of events is small.
+% Let $K=\sum_{i=1}^nY_i$ be the number of events, and assume without loss of generality the data are ordered so that the $Y_1=\ldots=Y_K=1$.
+% Then
+% \begin{align}\label{pmf}
+%   P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
+%     \begin{array}{ll}
+%       G(\bz) & K=0 \\
+%       G(\bz_{(1)})-G(\bz) & K=1 \\
+%       G(\bz_{(12)})-G(\bz_{(1)})-G(\bz_{(2)})+G(\bz) & K=2
+%     \end{array}
+%   \right.
+% \end{align}
+% where $G(\bz_{(1)}) = P(Z_2<z_2,\ldots,Z_n<z_n)$, $G(\bz_{(2)}) = P(Z_1<z_1,Z_3<z_3,\ldots,Z_n<z_n)$, and $G(\bz_{(12)}) = P(Z_3<z_3,\ldots,Z_n<z_n)$.
+% Similar expressions can be derived for all $K$, but become cumbersome for large $K$.
 
 \subsection{Bivariate distribution}\label{s:bivariate}
 Then in a bivariate setting, the probability of observing a joint exceedances as a function of $\alpha$ is
 \begin{align} \label{biv}
   \text{P}(Y_i = 1, & Y_j = 1) = 1 - \exp\left\{ - \frac{ 1 }{ z_i } \right\} - \exp \left\{ - \frac{ 1 }{z_j} \right\} + \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z_i } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_i)}{z_j} \right)^{1/\alpha} \right]^{\alpha} \right\}
 \end{align}
+
+\section{Quantifying spatial dependence}
+\hl{I still need to incorporate Brian's suggestions here}
 In the literature on extremes, one common metric to describe the bivariate dependence is the $\chi$ statistic of \citet{Coles1999}.
 The $\chi$ statistic between two observations $z_1$ and $z_2$ is given by
 \begin{align}
