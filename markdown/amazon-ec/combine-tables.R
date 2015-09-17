@@ -33,3 +33,8 @@ colSums(!is.na(results[[1]]))
 colSums(!is.na(results[[2]]))
 colSums(!is.na(results[[3]]))
 colSums(!is.na(results[[4]]))
+
+setting.1 <- which(rowSums(is.na(results[[1]])) == 3)
+setting.2 <- which(rowSums(is.na(results[[2]])) == 3)
+setting.3 <- which(rowSums(is.na(results[[3]])) == 3)
+setting.4 <- which(rowSums(is.na(results[[4]])) == 3)
