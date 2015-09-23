@@ -182,6 +182,25 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
       # just a vector for the day's kernel values
       these <- IDs[[k]]  # get sites that are impacted by knot location
       can.kernel <- kernel[these, t] + wz.star[these, k, t] * (can.a - cur.a)
+      
+      if (is.na(any(can.kernel <= 0))) {
+        these.gl <<- these
+        can.kernel.gl <<- can.kernel
+        wz.star.gl <<- wz.star[these, k, t]
+        can.a.gl <<- can.a
+        cur.a.gl <<- cur.a
+        print("kernel")
+        print(kernel[these, t])
+        print("wz.star")
+        print(wz.star[these, k, t])
+        print("can.a")
+        print(can.a)
+        print("cur.a")
+        print(cur.a)
+        save(these, can.kernel, wz.star[these, k, t], kernel[these, t], 
+             can.a, cur.a, file="troubleshoot.RData")
+      }
+      
       if (any(can.kernel <= 0)) {  # numerical stability
         can.llps  <- -Inf
         can.lly.t <- -Inf

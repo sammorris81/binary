@@ -24,8 +24,8 @@ openblas.set.num.threads(1)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
-settings <- c(1:4)
-sets <- c(55:60)
+settings <- c(4)
+sets <- c(5)
 nthreads <- 1
 directory <- "amazon-ec/"
 
@@ -137,7 +137,7 @@ for (i in sets) {
                         alpha.attempts = 300, rho.attempts = 100,
                         A.attempts = 100, spatial = TRUE, rho.init = fit.pcl$par[2],
                         rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
-                        iterplot = FALSE, alpha.fix = FALSE, rho.fix = FALSE,
+                        iterplot = TRUE, alpha.fix = FALSE, rho.fix = FALSE,
                         xibeta.joint = FALSE, xi.fix = TRUE, threads = nthreads,
                         iters = iters, burn = burn, update = update, thin = 1)
     
