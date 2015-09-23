@@ -184,11 +184,12 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
       can.kernel <- kernel[these, t] + wz.star[these, k, t] * (can.a - cur.a)
       
       if (is.na(any(can.kernel <= 0))) {
-        these.gl <<- these
+        these.gl      <<- these
         can.kernel.gl <<- can.kernel
-        wz.star.gl <<- wz.star[these, k, t]
-        can.a.gl <<- can.a
-        cur.a.gl <<- cur.a
+        kernel.gl     <<- kernel[these, t]
+        wz.star.gl    <<- wz.star[these, k, t]
+        can.a.gl      <<- can.a
+        cur.a.gl      <<- cur.a
         print("kernel")
         print(kernel[these, t])
         print("wz.star")
@@ -201,7 +202,10 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
              can.a, cur.a, file="troubleshoot.RData")
       }
       
-      if (any(can.kernel <= 0)) {  # numerical stability
+      if (can.a == Inf) { # numerical stability checks
+        can.llps  <- -Inf
+        can.lly.t <- -Inf
+      } else if (any(can.kernel <= 0)) {  
         can.llps  <- -Inf
         can.lly.t <- -Inf
       } else {
