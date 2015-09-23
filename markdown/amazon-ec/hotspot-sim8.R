@@ -25,7 +25,7 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 settings <- c(4)
-sets <- c(93:94)
+sets <- c(34:35, 37, 50)
 nthreads <- 1
 directory <- "amazon-ec/"
 
