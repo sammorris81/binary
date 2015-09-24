@@ -470,14 +470,17 @@ mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
   return(results)
 }
 
-getIDs <- function(dw2, A.cutoff) {
-  nknots <- ncol(dw2)
-  IDs <- vector(mode = "list", length = nknots)
-  for (k in 1:nknots) {
-    IDs[[k]] <- which(sqrt(dw2[, k]) <= A.cutoff)
-  }
-  return(IDs)
-}
+# getIDs <- function(dw2, A.cutoff) {
+#   nknots <- ncol(dw2)
+#   IDs <- vector(mode = "list", length = nknots)
+#   for (k in 1:nknots) {
+#     IDs[[k]] <- which(sqrt(dw2[, k]) <= A.cutoff)
+#   }
+#   return(IDs)
+# }
+
+
+
 
 dPS.Rcpp <- function(a, alpha, mid.points, bin.width, threads = 1) {
   if (is.null(dim(a))) {

@@ -198,8 +198,8 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
         print(can.a)
         print("cur.a")
         print(cur.a)
-        save(these, can.kernel, wz.star[these, k, t], kernel[these, t], 
-             can.a, cur.a, file="troubleshoot.RData")
+        save(these.gl, can.kernel.gl, wz.star.gl, kernel.gl, 
+             can.a.gl, cur.a.gl, file="troubleshoot.RData")
       }
       
       if (can.a == Inf) { # numerical stability checks
