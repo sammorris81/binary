@@ -83,8 +83,8 @@ for (i in sets) {
                       "accept.rate" = 0.35)
     
     
-    filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
-    tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
+    filename <- paste("sim-results/", setting, "-", i, "-wz.RData", sep = "")
+    tblname  <- paste("sim-tables/", setting, "-", i, "-wz.txt", sep ="")
     y.i.o <- matrix(y.o[, i], ntrain, 1)
     y.i.p <- matrix(y.p[, i], ntest, 1)
     print(paste("Starting: Set ", i, sep = ""))
