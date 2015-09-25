@@ -83,6 +83,7 @@ arma::cube getwzStarCPP(arma::mat z, arma::mat w, double alpha) {
   for (uword t = 0; t < nt; t++) {
     for (uword l = 0; l < nknots; l++) {
       for (uword i = 0; i < ns; i++) {
+        // Rcout << w(i, l) << std::endl;
         if (w(i, l) > 0) {  // only include sites that are close to the knot
           wz_star_ilt = exp((log(w(i, l)) - log(z(i, t))) / alpha);
           wz_star(i, l, t) = wz_star_ilt;

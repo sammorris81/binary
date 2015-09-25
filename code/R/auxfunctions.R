@@ -132,13 +132,28 @@ getKernel <- function(wz.star, a, IDs = NULL) {
   return(kernel)
 }
 
+getIDs <- function(dw2, A.cutoff) {
+  nknots <- ncol(dw2)
+  IDs <- vector(mode = "list", length = nknots)
+  for (k in 1:nknots) {
+    IDs[[k]] <- which(sqrt(dw2[, k]) <= A.cutoff)
+  }
+  return(IDs)
+}
+
 # get the kernel weighting
 makeW <- function(dw2, rho, A.cutoff = NULL) {
   if (is.null(A.cutoff)) {
     A.cutoff <- max(sqrt(dw2))
   }
   w <- exp(-0.5 * dw2 / (rho^2))
-  w[sqrt(dw2) > A.cutoff] <- 0  # only include sites that are close to the knot
+  
+  # only include sites that are close to the knot
+  # we need to do this in addition to the IDs because the weights over the 
+  # active knots needs to sum to 1. If we don't set the knots beyond the 
+  # cutoff to 0, then when we don't include them later on, the weights will 
+  # sum to something slightly smaller than 1
+  w[sqrt(dw2) > A.cutoff] <- 0  
   return(w)
 }
 
@@ -469,17 +484,6 @@ mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
   results <- list(acc=acc, att=att, mh=mh)
   return(results)
 }
-
-# getIDs <- function(dw2, A.cutoff) {
-#   nknots <- ncol(dw2)
-#   IDs <- vector(mode = "list", length = nknots)
-#   for (k in 1:nknots) {
-#     IDs[[k]] <- which(sqrt(dw2[, k]) <= A.cutoff)
-#   }
-#   return(IDs)
-# }
-
-
 
 
 dPS.Rcpp <- function(a, alpha, mid.points, bin.width, threads = 1) {

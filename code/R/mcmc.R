@@ -258,12 +258,15 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         # this is typically the case when A.cutoff is too small
         if (any((a - a.init) == 0)) {
           if ((iter %% A.attempts == 0) & (A.cutoff < sqrt(max(dw2)))) {
-            A.cutoff <- A.cutoff * 1.2
-            IDs <- getIDs(dw2 = dw2, A.cutoff = A.cutoff)
+            if (iter < burn / 2) {
+              A.cutoff <- A.cutoff * 1.2
+              IDs <- getIDs(dw2 = dw2, A.cutoff = A.cutoff)
+              w <- stdW(makeW(dw2 = dw2, rho = rho, A.cutoff = A.cutoff))
+            }
           }
         }
       }
-
+      
       # update alpha
       if (!alpha.fix) {
         alpha.update <- updateAlpha(y = y, kernel = kernel, a = a,

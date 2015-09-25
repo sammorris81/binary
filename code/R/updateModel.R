@@ -183,24 +183,12 @@ updateA <- function(y, kernel, a, alpha, wz.star, cur.lly, cur.llps,
       these <- IDs[[k]]  # get sites that are impacted by knot location
       can.kernel <- kernel[these, t] + wz.star[these, k, t] * (can.a - cur.a)
       
-      if (is.na(any(can.kernel <= 0))) {
-        these.gl      <<- these
-        can.kernel.gl <<- can.kernel
-        kernel.gl     <<- kernel[these, t]
-        wz.star.gl    <<- wz.star[these, k, t]
-        can.a.gl      <<- can.a
-        cur.a.gl      <<- cur.a
-        print("kernel")
-        print(kernel[these, t])
-        print("wz.star")
-        print(wz.star[these, k, t])
-        print("can.a")
-        print(can.a)
-        print("cur.a")
-        print(cur.a)
-        save(these.gl, can.kernel.gl, wz.star.gl, kernel.gl, 
-             can.a.gl, cur.a.gl, file="troubleshoot.RData")
-      }
+      # Note: There are potential numerical stability issues here. If alpha
+      # is really small, then we could end up with wz.star = 0 depending on 
+      # how small w was to begin with. This really only becomes an issue when
+      # Inf is drawn for the candidate value as 0 * Inf = NaN.
+      # For future work, it may be interesting to check the stability of
+      # doing the multiplication as (A_l^alpha * w_li / z_li)^(1 / alpha)
       
       if (can.a == Inf) { # numerical stability checks
         can.llps  <- -Inf

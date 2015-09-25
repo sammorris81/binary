@@ -1,0 +1,13 @@
+---
+title: "Untitled"
+output: pdf_document
+---
+
+# Troubleshooting
+
+Right now, the problem appears to be with consistency between the IDs and the weights.
+If a site is beyond the cutoff, the weight should be set to 0, and the site should not be included in IDs.
+However, if the site is within the cutoff, the weight should be > 0, and the site should be included in IDs.
+At some point in the MCMC, there is inconsistency between IDs and weights.
+
+At iteration 201 something weird happens.
