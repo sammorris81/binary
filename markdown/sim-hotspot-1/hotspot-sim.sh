@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # CWD=`pwd`
+# proper syntax is filename start end by setting
 OUT=`echo $1 | cut -f1 -d.`
 EXT=".R"
 RDATA=".RData"
@@ -47,7 +48,7 @@ do
     fi
     SET=$((SET + BY))
   fi
-  MCMC="$OUT$GROUP-$SETTING$EXT"
+  MCMC="$OUT-$SETTING-$INCLUDE-bw$EXT"
   OUTPUT="$OUT$GROUP$RDATA"
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
