@@ -28,6 +28,7 @@
 \end{center}
 
 \section{Introduction}\label{s:intro}
+
 The goal in binary regression is to relate a latent variable to a response using a link function.
 % $g$ so that P$(Y_i=1) = \pi_i= g(\bX_i \bbeta)$, where $\bX_i$ is the vector of covariates for observation $i$, and $\bbeta$ is the $p$-vector of regression coefficients.
 Two common examples of binary regression include logistic regression
@@ -42,18 +43,35 @@ The GEV link function introduces a new shape parameter to the link function that
 The cloglog link is a special case of the GEV link function when the shape parameter is 0.
 % where
 
-
 \hl{Want to make the case in this paragraph that spatial logistic and probit models are not appropriate because asymptotic dependence is 0.}
 Spatial logistic and probit models are commonly presented using a hierarchical model \hl{citation}.
 In the hierarchical framework, spatial dependence is typically modeled with an underlying latent Gaussian process, and conditioned on this process, observations are independent.
-However, if the marginal distribution of the latent variable is assumed to follow a GEV, then describing a Gaussian process may not be appropriate to describe the dependence due to the fact that they do not demonstrate asymptotic dependence regardless of the strength of the dependence in the bulk of the data.
+However, if the latent variable is assumed to follow a GEV marginally, then a Gaussian process may not be appropriate to describe the dependence due to the fact that they do not demonstrate asymptotic dependence regardless of the strength of the dependence in the bulk of the data.
 As an alternative to the Gaussian process, we propose using a latent max-stable process because it allows for asymptotic dependence \hl{citation}.
-Therefore, we choose to incorporate a latent max-stable process to model the spatial dependence.
 
 \hl{Paragraph outlining the structure of the paper}
 
+\section{Binary regression using the GEV link}\label{s:rarebinary}
+
+Here, we provide a brief review of the the GEV link of \citet{Wang2010}.
+Let $Y$ be the response associated with covariates $\bX$.
+Then the probability of observing an event is given by
+\begin{align} \label{eq:gevlink}
+  \pi_i= 1 - \exp \left[-\left(1 - \xi \bX_i \bbeta \right)^{-1 / \xi} \right]
+\end{align}
+where $\bbeta$ is a $p$-vector of regression coefficients.
+This link function is based on the CDF of a GEV random variable with location $0$, scale $1$, and shape $\xi$.
+The scale and location are fixed for identifiability.
+Although the authors select the link based on its ability to handle asymmetry, this distribution is one of the primary distributions used for modeling extremes.
+
 \section{Spatial dependence for binary regression}
-\subsection{Non-rare data}\label{s:nonrarebinary}
+
+In many binary regression applications, spatial dependence is handled using a hierarchical model.
+Logistic and probit regression typically incorporate a hierarchical model that is based on a Gaussian process.
+We present this in section \ref{s:nonrarespatial}.
+
+\subsection{Non-rare data}\label{s:nonrarespatial}
+
 In this section we present the spatial logistic and probit models.
 
 In the case that $n$ is large, low-rank predictive process models can be used to ease the computation.
@@ -69,7 +87,7 @@ where $\bX_i$ be the associated $p$-vector of covariates with first element equa
 We fix the shape to be 1 for identifiability.
 Therefore, the marginal probability of an event is
 \begin{align} \label{eq:marginalz}
-  \pi_i= 1 - \exp \left[-\left(1 - \xi \bX_i \bbeta \right)^{-1 / \xi} \right]
+
 \end{align}
 as in \citet{Wang2010}.
 
