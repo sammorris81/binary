@@ -103,6 +103,21 @@ getwzStar <- function(z, w, alpha) {
   return(wz.star)
 }
 
+getwz <- function(z, w) {
+  nknots  <- ncol(w)
+  ns      <- nrow(w)
+  nt      <- ncol(z)
+  
+  wz <- array(NA, dim=c(ns, nknots, nt))
+  for (t in 1:nt) {
+    wz[, , t] <- w / rep(z[, t], nknots)
+  }
+  
+  # wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
+  
+  return(wz)
+}
+
 # trying a slightly different calculation
 getKernel <- function(wz.star, a, IDs = NULL) {
   nt <- dim(wz.star)[3]

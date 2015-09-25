@@ -103,13 +103,12 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   } else {
     alpha <- 1
   }
-
+  
   alpha.a <- (1 - alpha.m) * alpha.m^2 / alpha.s^2 - alpha.m
   alpha.b <- alpha.a * (1 / alpha.m - 1)
-  wz.star <- getwzStarCPP(z = z, w = w, alpha = alpha)
-  kernel  <- getKernelCPP(wz_star = wz.star, a = a)
-#   wz.star <- getwzStar(z = z, w = w, alpha = alpha)
-#   kernel  <- getKernel(wz.star = wz.star, a = a)
+  a.star  <- a^alpha
+  wz      <- getwzCPP(z = z, w = w)
+  kernel  <- getKernelCPP(wz = wz, a_star = a.star, alpha = alpha)
 
   # keep current likelihood values in mcmc for time savings
   cur.lly  <- logLikeY(y = y, kernel = kernel)
@@ -140,8 +139,8 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     if (xibeta.joint) {  # update beta and xi
       # we are actual sampling for p = P(Y = 0)
       xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
-                                    wz.star = wz.star, beta = beta,
-                                    kernel = kernel, a = a, x.beta = x.beta,
+                                    wz = wz, beta = beta, kernel = kernel, 
+                                    a.star = a.star, x.beta = x.beta,
                                     xi = xi, x = x, xt = xt, xtx.inv = xtx.inv,
                                     xi.m = xi.m, xi.s = xi.s, cur.lly = cur.lly,
                                     xi.fix = xi.fix, beta.fix = beta.fix,
@@ -154,7 +153,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       x.beta   <- xibeta.update$x.beta
       xi       <- xibeta.update$xi
       z        <- xibeta.update$z
-      wz.star  <- xibeta.update$wz.star
+      wz       <- xibeta.update$wz
       kernel   <- xibeta.update$kernel
       cur.lly  <- xibeta.update$cur.lly
       att.beta <- xibeta.update$att.p
@@ -179,7 +178,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     } else {  # update beta
       if (!beta.fix) {
         beta.update <- updateBeta(y = y, kernel = kernel, alpha = alpha,
-                                  a = a, z = z, w = w, wz.star = wz.star,
+                                  a.star = a.star, z = z, w = w, wz = wz,
                                   beta = beta, beta.m = beta.m, beta.s = beta.s,
                                   x.beta = x.beta, xi = xi, x = x,
                                   cur.lly = cur.lly, acc = acc.beta,
@@ -187,7 +186,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         beta     <- beta.update$beta
         x.beta   <- beta.update$x.beta
         z        <- beta.update$z
-        wz.star  <- beta.update$wz.star
+        wz       <- beta.update$wz
         kernel   <- beta.update$kernel
         cur.lly  <- beta.update$cur.lly
         att.beta <- beta.update$att
@@ -205,13 +204,13 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       # update xi
       if (!xi.fix) {
         xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha,
-                              a = a, z = z, w = w, wz.star = wz.star,
+                              a.star = a.star, z = z, w = w, wz = wz,
                               x.beta = x.beta, xi = xi, xi.m = xi.m,
                               xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi,
                               att = att.xi, mh = mh.xi, thresh = thresh)
         xi      <- xi.update$xi
         z       <- xi.update$z
-        wz.star <- xi.update$wz.star
+        wz      <- xi.update$wz
         kernel  <- xi.update$kernel
         cur.lly <- xi.update$cur.lly
         att.xi  <- xi.update$att
@@ -230,16 +229,16 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     if (spatial) {
       # update a - NOTE: does not use acc, att, and mh like usual
       old.a    <- a
-      a.update <- updateA(y = y, kernel = kernel, a = a, alpha = alpha,
-                          wz.star = wz.star, cur.lly = cur.lly,
+      a.update <- updateA(y = y, kernel = kernel, a = a, a.star = a.star,
+                          alpha = alpha, wz = wz, cur.lly = cur.lly,
                           cur.llps = cur.llps, mid.points = mid.points,
                           bin.width = bin.width, mh = mh.a, cuts = cuts,
                           IDs = IDs, threads = threads)
       a        <- a.update$a
+      a.star   <- a.update$a.star
       kernel   <- a.update$kernel
       cur.lly  <- a.update$cur.lly
       cur.llps <- a.update$cur.llps
-
 
       if (iter < burn / 2) {
         # adjust the candidate standard deviations
@@ -269,9 +268,9 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       
       # update alpha
       if (!alpha.fix) {
-        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a,
-                                    alpha = alpha, z = z, w = w,
-                                    wz.star = wz.star,
+        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a, 
+                                    a.star = a.star, alpha = alpha, z = z, 
+                                    w = w, wz = wz,
                                     alpha.a = alpha.a, alpha.b = alpha.b,
                                     cur.lly = cur.lly, cur.llps = cur.llps,
                                     mid.points = mid.points,
@@ -280,8 +279,8 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     mh = mh.alpha, threads = threads)
 
         alpha     <- alpha.update$alpha
-        wz.star   <- alpha.update$wz.star
         kernel    <- alpha.update$kernel
+        a.star    <- alpha.update$a.star
         cur.lly   <- alpha.update$cur.lly
         cur.llps  <- alpha.update$cur.llps
         att.alpha <- alpha.update$att
@@ -298,15 +297,15 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update rho
       if (!rho.fix) {
-        rho.update <- updateRho(y = y, kernel = kernel, a = a, alpha = alpha,
-                                cur.lly = cur.lly, w = w, z = z,
-                                wz.star = wz.star, dw2 = dw2, rho = rho,
+        rho.update <- updateRho(y = y, kernel = kernel, a.star = a.star, 
+                                alpha = alpha, cur.lly = cur.lly, w = w, z = z,
+                                wz = wz, dw2 = dw2, rho = rho,
                                 logrho.m = logrho.m, logrho.s = logrho.s,
                                 rho.upper = rho.upper, A.cutoff = A.cutoff,
                                 acc = acc.rho, att = att.rho, mh = mh.rho)
         rho     <- rho.update$rho
         w       <- rho.update$w
-        wz.star <- rho.update$wz.star
+        wz      <- rho.update$wz
         kernel  <- rho.update$kernel
         cur.lly <- rho.update$cur.lly
         att.rho <- rho.update$att
