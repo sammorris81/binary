@@ -12,6 +12,7 @@
 \usepackage{enumitem}
 \usepackage{setspace}
 \usepackage{times}
+\usepackage{changepage}
 
 \usepackage[left=1in,top=1in,right=1in]{geometry}
 \pdfpageheight 11in
@@ -48,21 +49,22 @@ Spatial logistic and probit models are commonly presented using a hierarchical m
 In the hierarchical framework, spatial dependence is typically modeled with an underlying latent Gaussian process, and conditioned on this process, observations are independent.
 However, if the latent variable is assumed to follow a GEV marginally, then a Gaussian process may not be appropriate to describe the dependence due to the fact that they do not demonstrate asymptotic dependence regardless of the strength of the dependence in the bulk of the data.
 As an alternative to the Gaussian process, we propose using a latent max-stable process because it allows for asymptotic dependence \hl{citation}.
+Max-stable processes are extremely flexible, but are often challenging to work with because very few finite dimensional representations exist in more than two or three dimensions.
+
 
 \hl{Paragraph outlining the structure of the paper}
 
 \section{Binary regression using the GEV link}\label{s:rarebinary}
 
 Here, we provide a brief review of the the GEV link of \citet{Wang2010}.
-Let $Y$ be the response associated with covariates $\bX$.
-Then the probability of observing an event is given by
+Let $Y_i \in \{0, 1\}, i = 1, \ldots, n$ be a collection of i.i.d. binary responses.
+We assume that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = (1 - \xi \bX_i \bbeta)^(1 / \xi)$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
+Therefore, the marginal probability of an event is given by
 \begin{align} \label{eq:gevlink}
-  \pi_i= 1 - \exp \left[-\left(1 - \xi \bX_i \bbeta \right)^{-1 / \xi} \right]
+  \pi_i= 1 - \exp \left( -\frac{ 1 }{ z_i } \right).
 \end{align}
-where $\bbeta$ is a $p$-vector of regression coefficients.
-This link function is based on the CDF of a GEV random variable with location $0$, scale $1$, and shape $\xi$.
-The scale and location are fixed for identifiability.
-Although the authors select the link based on its ability to handle asymmetry, this distribution is one of the primary distributions used for modeling extremes.
+Although this link was selected by \citeauthor{Wang2010} based on its ability to handle asymmetry, the GEV distribution is one of the primary distributions used for modeling extremes.
+Therefore, it should also be suitable to model phenomena that are rare.
 
 \section{Spatial dependence for binary regression}
 
@@ -77,33 +79,27 @@ In this section we present the spatial logistic and probit models.
 In the case that $n$ is large, low-rank predictive process models can be used to ease the computation.
 
 \subsection{Rare binary data}\label{s:rarebinary}
-In this section we extend the GEV link function to allow for spatial dependence.
-Let $Y_i\in\{0,1\}$ be the binary response at spatial location $\bs_i \in \calD$,
-We assume that $Y_i = I(Z_i > 0)$ where $I(\cdot)$ is an indicator function, and the marginal distribution of $Z_i$ is
-\begin{align}
-  Z_i \sim \text{GEV}(\bX_i \bbeta, 1, \xi)
-\end{align}
-where $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept.
-We fix the shape to be 1 for identifiability.
-Therefore, the marginal probability of an event is
-\begin{align} \label{eq:marginalz}
 
-\end{align}
-as in \citet{Wang2010}.
+In this section we extend the GEV link function to allow for spatial dependence.
+Let $Y(\bs)$ be the observation at spatial location $\bs$ in a spatial domain of interest $\calD \in \calR^2$.
+As before, we assume $Y(\bs) = I[z(\bs) > 0]$ where $z(\bs) = [1 - \xi \bX(\bs) \bbeta]^{1 / \xi}$.
+Although $\bbeta$ and $\xi$ could be permitted to vary across space, we assume that they are constant across $\calD$.
+As with logistic and probit regression, we also account for the spatial dependence using a hierarchical framework by assuming that the $Z(\bs)$ come from a realization of a max-stable process.
 
 To incorporate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
-The spatial dependence is determined by the joint distribution of $\bZ = (Z_1,\ldots,Z_n)$,
+For a finite collection of locations $\bs_1, \ldots, \bs_n,$ denote the vector of observations $\bY = [Y(\bs_1), \ldots, Y(\bs_n)]^T$.
+The spatial dependence is determined by the joint distribution of $\bz = [z(\bs_1),\ldots, z(\bs_n)]^T$,
 \begin{align}\label{jointCDF}
- G(\bz) =  \mbox{P}[Z_1<z_1,\ldots,Z_n<z_n] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z_i}\right)^{1/\alpha}\right]^{\alpha}\right\},
+  G(\bz) = \mbox{P}[Z(\bs_1) < z(\bs_1), \ldots, Z(\bs_n) < z(\bs_n)] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z(\bs_i)}\right)^{1/\alpha}\right]^{\alpha}\right\},
 \end{align}
-where $\bz = (z_1,\ldots,z_n)$, $w_{l}(\bs_i)$ are a set of weights that determine the spatial dependence structure and are discussed further in Section \ref{s:weights}, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
+where $w_{l}(\bs_i)$ are a set of weights that determine the spatial dependence structure and are discussed further in Section \ref{s:weights}, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
 This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
-One nice feature to this hierarchical model is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
-More importantly, at a single site $i$, the marginal distribution gives \mbox{$P(Y_i = 1) = 1 - \exp\left\{ -\frac{ 1 }{ z_i} \right\}$} which is the same as the marginal distributions given by \citet{Wang2010}.
+One nice feature to this representation for the max-stable process is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
+More importantly, at a single site $i$, the marginal distribution gives \mbox{$P[Y(\bs_i) = 1] = 1 - \exp\left[ -\frac{ 1 }{ z(\bs_i)} \right]$} which is the same as the marginal distributions given by \citet{Wang2010}.
 
 \subsection{Weight functions}\label{s:weights}
-Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
 The weights $w_{l}(\bs_i)$ in (\ref{jointCDF}) should vary smoothly across space to induce spatial dependence.
+Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
 For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$, that is
 \begin{align}\label{w}
    w_{l}(\bs_i) = \frac{\exp\left[-0.5\left(||\bs_i-\bv_l||/\rho\right)^2\right]}
@@ -112,30 +108,24 @@ For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels wit
 The kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
 
 \section{Joint distribution}\label{s:multivariate}
-The joint likelihood of $Y$ is generally computationally challenging to compute.
+The joint likelihood of $Y$ is computationally challenging to obtain.
 In this paper, we combine the random effect representation with MCMC; however, when exact expressions of the likelihood are available, better methods could be used.
 In section \ref{s:bivariate}, we give an exact expression in the case where there are only two spatial locations which is useful for constructing a pairwise composite likelihood and studying spatial dependence.
-For more than two locations, we are also able to compute the exact likelihood when the number of locations is large but the number of events is small, as might be expected for very rare events.
-% As shown in Appendix \ref{a:likelihoodderivation}, the joint probability mass function of $\bY=(Y_1,\ldots,Y_n)$ has a convenient form when the number of events is small.
-% Let $K=\sum_{i=1}^nY_i$ be the number of events, and assume without loss of generality the data are ordered so that the $Y_1=\ldots=Y_K=1$.
-% Then
-% \begin{align}\label{pmf}
-%   P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
-%     \begin{array}{ll}
-%       G(\bz) & K=0 \\
-%       G(\bz_{(1)})-G(\bz) & K=1 \\
-%       G(\bz_{(12)})-G(\bz_{(1)})-G(\bz_{(2)})+G(\bz) & K=2
-%     \end{array}
-%   \right.
-% \end{align}
-% where $G(\bz_{(1)}) = P(Z_2<z_2,\ldots,Z_n<z_n)$, $G(\bz_{(2)}) = P(Z_1<z_1,Z_3<z_3,\ldots,Z_n<z_n)$, and $G(\bz_{(12)}) = P(Z_3<z_3,\ldots,Z_n<z_n)$.
-% Similar expressions can be derived for all $K$, but become cumbersome for large $K$.
+For more than two locations, we are also able to compute the exact likelihood when the number of locations is large but the number of events is small, as might be expected for very rare events (see Appendix \ref{a:likelihoodderivation}).
 
 \subsection{Bivariate distribution}\label{s:bivariate}
-Then in a bivariate setting, the probability of observing a joint exceedances as a function of $\alpha$ is
+Then in a bivariate setting, the probability mass function as a function of $\alpha$ is
+\begin{adjustwidth}{-0.25in}{}
+{\footnotesize
 \begin{align} \label{biv}
-  \text{P}(Y_i = 1, & Y_j = 1) = 1 - \exp\left\{ - \frac{ 1 }{ z_i } \right\} - \exp \left\{ - \frac{ 1 }{z_j} \right\} + \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z_i } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_i)}{z_j} \right)^{1/\alpha} \right]^{\alpha} \right\}
+  \text{P}[Y(\bs_i), Y(\bs_j)] = \left\{ \begin{array}{ll}
+    \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\} &Y(\bs_i) = 0, Y(\bs_j) = 0\\
+    \frac{ 1 }{z(\bs_i)} - \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\} &Y(\bs_i) = 1, Y(\bs_j) = 0 \\
+    1 - \exp\left\{ - \frac{ 1 }{ z(\bs_i) } \right\} - \exp \left\{ - \frac{ 1 }{z(\bs_j)} \right\} + \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\} &Y(\bs_i) = 1, Y(\bs_j) = 1
+  \end{array} \right.
 \end{align}
+}
+\end{adjustwidth}
 
 \section{Quantifying spatial dependence}
 \hl{I still need to incorporate Brian's suggestions here}
@@ -185,7 +175,7 @@ We use data from 2002, and focus specifically on cattle egrets and vesper sparro
 \section{Appendices}
 
 \subsection{Derivation of the likelihood} \label{a:likelihoodderivation}
-We use the hierarchical max-stable spatial model given by \citet{Reich2012}. If at each margin, $Z_i \sim $ GEV$(1,1,1)$, then $Z_i | \theta_i \indep $ GEV$(\theta, \alpha \theta, \alpha)$. As defined in section \ref{s:comp}, we reorder the data such that $Y_1=\ldots=Y_K=1$, and $Y_{K+1} = \ldots = Y_n = 0$. Then the joint likelihood conditional on the random effect $\theta$ is
+We use the hierarchical max-stable spatial model given by \citet{Reich2012}. If at each margin, $Z_i \sim $ GEV$(1,1,1)$, then $Z_i | \theta_i \indep $ GEV$(\theta, \alpha \theta, \alpha)$. We reorder the data such that $Y_1=\ldots=Y_K=1$, and $Y_{K+1} = \ldots = Y_n = 0$. Then the joint likelihood conditional on the random effect $\theta$ is
 
 \begin{align} \label{joint_cond}
 	P(Y_1=y_1,\ldots,Y_n=y_n) =& \prod_{ i \le K } \left\{ 1 - \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \right \} \prod_{ i > K } \exp \left[ -\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \nonumber \\[0.5em]
@@ -211,7 +201,23 @@ Consider the first term in the summation,
 	 &=\exp\left\{-\sum_{ l = 1}^L \left[ \sum_{ i = K + 1 }^n \left( \frac{ w_l(\bs_i)}{ z_i} \right)^{1/\alpha} \right]^\alpha \right\}.
 \end{align}
 
-The remaining terms in equation (\ref{joint}) are straightforward to obtain, and after integrating out the random effect, the joint density is the density given in (\ref{pmf}).
+The remaining terms in equation (\ref{joint}) are straightforward to obtain, and after integrating out the random effect, the joint density for $K = 0, 1, 2$ is given by
+\begin{align}\label{pmf}
+  P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
+    \begin{array}{ll}
+      G(\bz) & K=0 \\
+      G(\bz_{(1)})-G(\bz) & K=1 \\
+      G(\bz_{(12)})-G(\bz_{(1)})-G(\bz_{(2)})+G(\bz) & K=2
+    \end{array}
+  \right.
+\end{align}
+where
+\begin{align*}
+  G[\bz_{(1)}] &= P[Z(\bs_2)<z(\bs_2),\ldots,Z(\bs_n)<z(\bs_n)] \\
+  G[\bz_{(2)}] &= P[Z(\bs_1)<z(\bs_1),Z(\bs_3)<z(\bs_3),\ldots,Z(\bs_n)<z(\bs_n)]\\
+  G[\bz_{(12)}] &= P[Z(\bs_3)<z(\bs_3),\ldots,Z(\bs_n)<z(\bs_n)].
+\end{align*}
+Similar expressions can be derived for all $K$, but become cumbersome for large $K$.
 
 \subsection{Derivation of the $\chi$ statistic}\label{a:chi}
 \begin{align} \label{chi}
