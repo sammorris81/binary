@@ -355,14 +355,15 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
     x.beta       <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
     z            <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
     w            <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
-    wz.star      <- getwzStarCPP(z = z, w = w, alpha = alpha[i])
-    kernel       <- getKernelCPP(wz_star = wz.star,
-                                 a = matrix(a[i, , ], nknots, nt))
+    wz.star      <- getwzCPP(z = z, w = w)
+    kernel       <- getKernelCPP(wz = wz, 
+                                 a_star = matrix(a[i, , ]^alpha, nknots, nt),
+                                 alpha = alpha)
     prob.success[i, ] <- 1 - exp(-kernel)
 
     # if z is nan, it means that x.beta is such a large number there is
     # basically 0 probability that z < 0
-    if (sum(is.nan(z)) > 0) {
+    if (any(is.nan(z))) {
       these <- which(is.nan(z))
       prob.success[i, these] <- 1
     }
