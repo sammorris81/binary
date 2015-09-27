@@ -350,15 +350,16 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
 
   prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
-
+  
   for (i in 1:length(start:end)) {
-    x.beta <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
-    z      <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
-    w      <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
-    wz     <- getwzCPP(z = z, w = w)
-    kernel <- getKernelCPP(wz = wz, 
-                           a_star = matrix(a[i, , ]^alpha, nknots, nt),
-                           alpha = alpha)
+    alpha.i <- alpha[i]
+    x.beta  <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
+    z       <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
+    w       <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
+    wz      <- getwzCPP(z = z, w = w)
+    kernel  <- getKernelCPP(wz = wz, 
+                            a_star = matrix(a[i, , ], nknots, nt)^alpha.i, 
+                            alpha = alpha.i)
     prob.success[i, ] <- 1 - exp(-kernel)
 
     # if z is nan, it means that x.beta is such a large number there is
