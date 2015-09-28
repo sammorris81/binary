@@ -58,7 +58,7 @@ Max-stable processes are extremely flexible, but are often challenging to work w
 
 Here, we provide a brief review of the the GEV link of \citet{Wang2010}.
 Let $Y_i \in \{0, 1\}, i = 1, \ldots, n$ be a collection of i.i.d. binary responses.
-We assume that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = (1 - \xi \bX_i \bbeta)^(1 / \xi)$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
+We assume that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = [1 - \xi \bX_i \bbeta]^{1 / \xi}$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
 Therefore, the marginal probability of an event is given by
 \begin{align} \label{eq:gevlink}
   \pi_i= 1 - \exp \left( -\frac{ 1 }{ z_i } \right).
