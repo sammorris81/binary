@@ -151,7 +151,7 @@ In the case of complete dependence, $\kappa = 1$, and in the case of complete in
 For small $K$ we can evaluate the likelihood directly.
 In the random effects model, the expression for the joint density conditional on $\theta$ is
 \begin{align}
-	P(Y_1=y_1,\ldots,Y_n=y_n) = \prod_{ i = 1 }^{ n } \left[ \exp \left\{ \sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ 1 - Y_i } \left[ 1 - \exp \left\{ \sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ Y_i }.
+	P(Y_1=y_1,\ldots,Y_n=y_n) = \prod_{ i = 1 }^{ n } \left[ \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ 1 - Y_i } \left[ 1 - \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ Y_i }.
 \end{align}
 
 \section{Simulation study}\label{s:sim}
