@@ -225,7 +225,10 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         }
       }
     }
-
+    
+    # TODO: create updateU: the updater for the aux variable
+    # TODO: add in updateXiBetaA
+    
     if (spatial) {
       # update a - NOTE: does not use acc, att, and mh like usual
       old.a    <- a

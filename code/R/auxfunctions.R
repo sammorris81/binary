@@ -201,21 +201,46 @@ dPS <- function(a, alpha, mid.points, bin.width) {
   l <- -Inf
 
   if (a > 0) {
-    l <- log(sum(bin.width * ld(mid.points, a, alpha)))
+    l <- log(sum(bin.width * ld(mid.points, a, alpha, log = FALSE)))
   }
 
   return(l)
 }
 
 # used when evaluating the postive stable density
-ld <- function(u, a, alpha) {
+ld <- function(u, a, alpha, log = TRUE) {
+  psi  <- pi * u
+  c    <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
+  c    <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
+  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
+          log(c) - c * (1 / a^(alpha / (1 - alpha)))
+  
+  if (!log) {
+    logd <- exp(logd)
+  }
+  
+  return(logd)
+}
+
+# ld2 is used in generating positive stable random variables
+# also used when updating A and we include auxiliary variable from 
+# Stephenson
+ld2 <- function(u, logs, alpha, shift = 0, log = TRUE) {
+  
+  logs <- logs - shift / alpha
+  s <- exp(logs)
   psi <- pi * u
   c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
   c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
-  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
-    log(c) - c * (1 / a^(alpha / (1 - alpha)))
-
-  return(exp(logd))
+  
+  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * logs +
+    log(c) - c * (1 / s^(alpha / (1 - alpha))) +
+    logs
+  
+  if (!log) {
+    logd <- exp(logd)
+  }
+  return(logd)
 }
 
 rPS <- function(n, alpha) {
@@ -525,24 +550,6 @@ dPS.Rcpp <- function(a, alpha, mid.points, bin.width, threads = 1) {
 
 #   return(h)
 # }
-
-
-
-# ld2 is used in generating positive stable random variables
-ld2 <- function(u, logs, alpha, shift = 0, log = TRUE) {
-
-  logs <- logs - shift / alpha
-  s <- exp(logs)
-  psi <- pi * u
-  c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
-  c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
-
-  logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * logs +
-    log(c) - c * (1 / s^(alpha / (1 - alpha))) +
-    logs
-
-  return(logd)
-}
 
 dlognormal <- function(x, mu, sig) {
   dnorm(log(x), log(mu), sig, log = TRUE) - log(x)

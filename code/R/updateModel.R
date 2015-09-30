@@ -416,3 +416,100 @@ predictY <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
   return(yp)
 
 }
+
+# Yeah, that's what I was thinking.  I realize this would be more coding, 
+# but it runs 20 times faster and converges better it would be worth it.  
+# And maybe you could update mu, xi, and A in a batch?
+updateXiBetaA <- function(y, alpha, z, w, wz, beta, kernel, a, a.star,
+                          x.beta, xi, x, xi.m, xi.s,xi.fix, beta.fix, 
+                          acc.beta, att.beta, mh.beta, 
+                          acc.xi, att.xi, mh.xi, 
+                          cur.lly, cur.llps, thresh = 0,
+                          mh.a, cuts, IDs, threads = 1) {
+  
+  np  <- length(beta)
+  ns  <- nrow(y)
+  nt  <- ncol(y)
+  
+  # get candidate for beta
+  att.beta   <- att.beta + 1
+  can.beta   <- rnorm(np, beta, mh.beta)
+  can.x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = can.beta)
+    
+  # get candidate for xi
+  if (!xi.fix) {
+    att.xi <- att.xi + 1
+    can.xi <- rnorm(1, xi, mh.xi)
+  } else {
+    can.xi <- xi
+  }
+  
+  # get candidate for A terms
+  # TODO: Make adjustment to candidate for Langevin updates
+  can.a <- matrix(NA, nknots, nt)
+  for (t in 1: nt) {
+    for (k in 1:nknots) {
+      cur.a       <- a[k, t]
+      l1          <- get.level(cur.a, cuts)  # keeps sd reasonable
+      can.a.kt    <- exp(rnorm(1, log(cur.a), mh[l1]))
+      l2          <- get.level(can.a.kt, cuts)
+      can.a[k, t] <- can.a.kt
+    }
+  }
+    
+  can.a.star <- exp(alpha * can.a)
+  can.kernel <- getKernelCPP(wz = can.wz, a_star = a.star, alpha = alpha)
+  
+  if (any(can.xi * (can.x.beta - thresh) > 1)) {  # numerical stability
+    can.lly  <- -Inf
+    can.llps <- -Inf
+  } else if (any(can.a) == Inf) {
+    can.lly  <- -Inf
+    can.llps <- -Inf
+  } else if (any(can.kernel <= 0)) {
+    can.lly  <- -Inf
+    can.llps <- -Inf
+  } else {
+    can.z      <- getZ(xi = can.xi, x.beta = can.x.beta, thresh = thresh)
+    can.wz     <- getwzCPP(z = can.z, w = w)
+    can.kernel <- getKernelCPP(wz = can.wz, a_star = can.a.star, alpha = alpha)
+    can.lly    <- logLikeY(y = y, kernel = can.kernel)
+    can.llps   <- ld(u = u, a = can.a, alpha = alpha)
+  }
+  
+  R <- can.lly - cur.lly + can.llps - cur.llps + 
+       dnorm(can.beta, beta.m, beta.s, log = TRUE) -
+       dnorm(beta, beta.m, beta.s, log = TRUE)
+       # TODO: Add in langevin update here 
+       
+  
+  if (!xi.fix) {
+    R <- R + dnorm(can.xi, xi.m, xi.s, log = TRUE) - 
+             dnorm(xi, xi.m, xi.s, log = TRUE)
+  }
+  
+  if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
+    beta     <- can.beta
+    x.beta   <- can.x.beta
+    acc.beta <- acc.beta + 1
+    if (!xi.fix) {
+      xi     <- can.xi
+      acc.xi <- acc.xi + 1
+    }
+    z        <- can.z
+    wz       <- can.wz
+    a        <- can.a
+    a.star   <- can.a.star
+    kernel   <- can.kernel
+    cur.lly  <- can.lly
+    cur.llps <- can.llps
+  }}
+       
+  results <- list(beta = beta, x.beta = x.beta, xi = xi, z = z,
+                  wz = wz, kernel = kernel,
+                  att.beta = att.beta, acc.beta = acc.beta,
+                  att.xi = att.xi, acc.xi = acc.xi,
+                  a = a, a.star = a.star,
+                  cur.lly = cur.lly, cur.llps = cur.llps)
+  return(results)
+}
