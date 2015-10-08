@@ -239,6 +239,16 @@ updateA <- function(y, kernel, a, a.star, alpha, wz, cur.lly, cur.llps,
   return(results)
 }
 
+updateABHMC <- function(a, b, others) {
+  # others is a list containing:
+  #  alpha(1): spatial dependence
+  #  wz(ns x nknots x nt): kernel weights
+  #  y(ns x nt): data
+  
+  dist = numeric(L + 1)
+  
+}
+
 # update the alpha term for theta.star
 updateAlpha <- function(y, kernel, a, a.star, alpha, z, w, wz, alpha.a, alpha.b,
                         cur.lly, cur.llps, mid.points, bin.width,
