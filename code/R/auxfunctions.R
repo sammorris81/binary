@@ -552,18 +552,7 @@ dlognormal <- function(x, mu, sig) {
 #   sum(log(theta) - theta * v)
 # }
 
-neg_log_post <- function(a, b, o) {
-  # o is a list
-  #   y: data
-  #   alpha: spatial dependence
-  #   wz: kernel weights
-  
-  
-  ll <- sum(dbinom(o$y, 1, prob = prob, log = TRUE))
-  
-  # numerical stability issue. originally was using
-  
-}
+
 
 #### Used to set the standard deviation for the candidate distribution
 #### for the A terms in the random effect. When log(A) is large means
