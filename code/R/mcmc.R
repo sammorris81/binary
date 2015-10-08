@@ -108,10 +108,10 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   alpha.b <- alpha.a * (1 / alpha.m - 1)
   a.star  <- a^alpha
   wz      <- getwzCPP(z = z, w = w)
-  kernel  <- getKernelCPP(wz = wz, a_star = a.star, alpha = alpha)
+  theta   <- getThetaCPP(wz = wz, a_star = a.star, alpha = alpha)
 
   # keep current likelihood values in mcmc for time savings
-  cur.lly  <- logLikeY(y = y, kernel = kernel)
+  cur.lly  <- logLikeY(y = y, theta = theta)
 
   # MH tuning parameters
   if (length(beta.tune) == 1) {
@@ -139,7 +139,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     if (xibeta.joint) {  # update beta and xi
       # we are actual sampling for p = P(Y = 0)
       xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
-                                    wz = wz, beta = beta, kernel = kernel, 
+                                    wz = wz, beta = beta, theta = theta, 
                                     a.star = a.star, x.beta = x.beta,
                                     xi = xi, x = x, xt = xt, xtx.inv = xtx.inv,
                                     xi.m = xi.m, xi.s = xi.s, cur.lly = cur.lly,
@@ -154,7 +154,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       xi       <- xibeta.update$xi
       z        <- xibeta.update$z
       wz       <- xibeta.update$wz
-      kernel   <- xibeta.update$kernel
+      theta    <- xibeta.update$theta
       cur.lly  <- xibeta.update$cur.lly
       att.beta <- xibeta.update$att.p
       acc.beta <- xibeta.update$acc.p
@@ -177,7 +177,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
     } else {  # update beta
       if (!beta.fix) {
-        beta.update <- updateBeta(y = y, kernel = kernel, alpha = alpha,
+        beta.update <- updateBeta(y = y, theta = theta, alpha = alpha,
                                   a.star = a.star, z = z, w = w, wz = wz,
                                   beta = beta, beta.m = beta.m, beta.s = beta.s,
                                   x.beta = x.beta, xi = xi, x = x,
@@ -187,7 +187,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         x.beta   <- beta.update$x.beta
         z        <- beta.update$z
         wz       <- beta.update$wz
-        kernel   <- beta.update$kernel
+        theta    <- beta.update$theta
         cur.lly  <- beta.update$cur.lly
         att.beta <- beta.update$att
         acc.beta <- beta.update$acc
@@ -203,7 +203,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update xi
       if (!xi.fix) {
-        xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha,
+        xi.update <- updateXi(y = y, theta = theta, alpha = alpha,
                               a.star = a.star, z = z, w = w, wz = wz,
                               x.beta = x.beta, xi = xi, xi.m = xi.m,
                               xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi,
@@ -211,7 +211,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         xi      <- xi.update$xi
         z       <- xi.update$z
         wz      <- xi.update$wz
-        kernel  <- xi.update$kernel
+        theta   <- xi.update$theta
         cur.lly <- xi.update$cur.lly
         att.xi  <- xi.update$att
         acc.xi  <- xi.update$acc
@@ -232,14 +232,14 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     if (spatial) {
       # update a - NOTE: does not use acc, att, and mh like usual
       old.a    <- a
-      a.update <- updateA(y = y, kernel = kernel, a = a, a.star = a.star,
+      a.update <- updateA(y = y, theta = theta, a = a, a.star = a.star,
                           alpha = alpha, wz = wz, cur.lly = cur.lly,
                           cur.llps = cur.llps, mid.points = mid.points,
                           bin.width = bin.width, mh = mh.a, cuts = cuts,
                           IDs = IDs, threads = threads)
       a        <- a.update$a
       a.star   <- a.update$a.star
-      kernel   <- a.update$kernel
+      theta    <- a.update$theta
       cur.lly  <- a.update$cur.lly
       cur.llps <- a.update$cur.llps
 
@@ -271,7 +271,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       
       # update alpha
       if (!alpha.fix) {
-        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a, 
+        alpha.update <- updateAlpha(y = y, theta = theta, a = a, 
                                     a.star = a.star, alpha = alpha, z = z, 
                                     w = w, wz = wz,
                                     alpha.a = alpha.a, alpha.b = alpha.b,
@@ -282,7 +282,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     mh = mh.alpha, threads = threads)
 
         alpha     <- alpha.update$alpha
-        kernel    <- alpha.update$kernel
+        theta     <- alpha.update$theta
         a.star    <- alpha.update$a.star
         cur.lly   <- alpha.update$cur.lly
         cur.llps  <- alpha.update$cur.llps
@@ -300,7 +300,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
 
       # update rho
       if (!rho.fix) {
-        rho.update <- updateRho(y = y, kernel = kernel, a.star = a.star, 
+        rho.update <- updateRho(y = y, theta = theta, a.star = a.star, 
                                 alpha = alpha, cur.lly = cur.lly, w = w, z = z,
                                 wz = wz, dw2 = dw2, rho = rho,
                                 logrho.m = logrho.m, logrho.s = logrho.s,
@@ -309,7 +309,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         rho     <- rho.update$rho
         w       <- rho.update$w
         wz      <- rho.update$wz
-        kernel  <- rho.update$kernel
+        theta  <- rho.update$theta
         cur.lly <- rho.update$cur.lly
         att.rho <- rho.update$att
         acc.rho <- rho.update$acc
@@ -341,7 +341,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       keepers.alpha[iter]  <- alpha
       keepers.rho[iter]    <- rho
     }
-    keepers.lly[iter] <- sum(logLikeY(y = y, kernel = kernel))
+    keepers.lly[iter] <- sum(logLikeY(y = y, theta = theta))
 
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)

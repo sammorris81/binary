@@ -11,8 +11,8 @@ if (!exists("ifelsematCPP")) {
   sourceCpp(file = "ifelse.cpp")
 }
 
-if (!exists("getwzstarCPP")) {
-  sourceCpp(file = "getKernel.cpp")
+if (!exists("getThetaCPP")) {
+  sourceCpp(file = "getTheta.cpp")
 }
 
 if (!exists("pairwiseCPP")) {
@@ -119,19 +119,19 @@ getwz <- function(z, w) {
 }
 
 # trying a slightly different calculation
-getKernel <- function(wz.star, a, IDs = NULL) {
+getTheta <- function(wz.star, a, IDs = NULL) {
   nt <- dim(wz.star)[3]
   nknots <- dim(wz.star)[2]
   ns <- dim(wz.star)[1]
 
-  kernel <- matrix(NA, nrow = ns, ncol = nt)
+  theta <- matrix(NA, nrow = ns, ncol = nt)
 
   if (is.null(IDs)) {
     for (t in 1:nt) {
       if (nknots == 1) {
-        kernel[, t] <- wz.star[, , t] * a[ , t]
+        theta[, t] <- wz.star[, , t] * a[ , t]
       } else if (nknots > 1) {
-        kernel[, t] <- wz.star[, , t] %*% a[, t]
+        theta[, t] <- wz.star[, , t] %*% a[, t]
       }
     }
   } else {  # when using IDs, there needs to be more than one knot
@@ -139,12 +139,12 @@ getKernel <- function(wz.star, a, IDs = NULL) {
       a.t <- a[, t]
       for (i in 1:ns) {
         these <- IDs[[i]]
-        kernel[i, t] <- wz.star[i, these, t] %*% a.t[these]
+        theta[i, t] <- wz.star[i, these, t] %*% a.t[these]
       }
     }
   }
 
-  return(kernel)
+  return(theta)
 }
 
 getIDs <- function(dw2, A.cutoff) {
@@ -180,7 +180,7 @@ stdW <- function(x, single = FALSE) {
 }
 
 
-logLikeY <- function(y, kernel, print = F) {
+logLikeY <- function(y, theta, print = F) {
   nt   <- ncol(y)
   ll.y <- matrix(-Inf, nrow(y), ncol(y))
 
@@ -188,8 +188,8 @@ logLikeY <- function(y, kernel, print = F) {
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
   these <- which(y == 1)
-  ll.y[-these] <- -kernel[-these]
-  ll.y[these]  <- log(1 - exp(-kernel[these]))
+  ll.y[-these] <- -theta[-these]
+  ll.y[these]  <- log(1 - exp(-theta[these]))
 
   return(ll.y)
 }
