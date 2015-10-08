@@ -1,3 +1,5 @@
+source("./HMC.R")
+
 neg_log_post <- function(a, b, others) {
   # o is a list
   #   y: data
