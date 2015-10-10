@@ -4,19 +4,19 @@ if (file.exists("../../../usefulR/usefulfunctions.R")) {
 
 # Rcpp functions
 if (!exists("dPSCPP")) {
-  sourceCpp(file = "llps.cpp")
+  sourceCpp(file = "./llps.cpp")
 }
 
 if (!exists("ifelsematCPP")) {
-  sourceCpp(file = "ifelse.cpp")
+  sourceCpp(file = "./ifelse.cpp")
 }
 
 if (!exists("getThetaCPP")) {
-  sourceCpp(file = "getTheta.cpp")
+  sourceCpp(file = "./getTheta.cpp")
 }
 
 if (!exists("pairwiseCPP")) {
-  sourceCpp(file = "pairwise.cpp")
+  sourceCpp(file = "./pairwise.cpp")
 }
 
 source('pairwise.R')
@@ -180,8 +180,7 @@ stdW <- function(x, single = FALSE) {
 }
 
 
-logLikeY <- function(y, theta, print = F) {
-  nt   <- ncol(y)
+logLikeY <- function(y, theta) {
   ll.y <- matrix(-Inf, nrow(y), ncol(y))
 
   # numerical stability issue. originally was using
