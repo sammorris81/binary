@@ -30,7 +30,7 @@ neg_log_post_a <- function(q, others) {
   theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
   
   # add in the log likelihood
-  ll <- ll + sum(dbinom(others$y, size = 1, prob = -expm1(-theta), log = TRUE))
+  ll <- ll + sum(logLikeY(y = others$y, theta = theta))
   
   return (-ll)
 }
@@ -112,18 +112,20 @@ neg_log_post_grad_a <- function(q, others) {
   #   y: data
   #   alpha: spatial dependence
   #   wz: kernel weights
+  #   b: logit(b)
   
   # extract things from others list if they're used more than once
   alpha <- others$alpha
   wz    <- others$wz
   y     <- others$y
+  b     <- transform$inv.logit(others$b)
   
   nt <- ncol(y)
   nknots <- length(q)
   a  <- exp(q)
   
   # get calculated values
-  lc      <- logc(b = others$b, alpha = alpha)
+  lc      <- logc(b = b, alpha = alpha)
   theta   <- getThetaCPP(wz = wz, a_star = a^alpha, alpha = alpha)
   alpha1m <- 1 - alpha
   
@@ -199,7 +201,7 @@ neg_log_post_grad <- function(q, others) {
   # get calculated values
   lc      <- logc(b = b, alpha = alpha)
   theta   <- getThetaCPP(wz = wz, a_star = a^alpha, alpha = alpha)
-  alpha1m <- 1 - alpha  # used a lot in gradiant for b
+  alpha1m <- 1 - alpha  # used a lot in grad
   
   # storage
   grad <- matrix(NA, nrow(q), ncol(q))
@@ -234,70 +236,3 @@ neg_log_post_grad <- function(q, others) {
   return(grad)
 }
 
-# Test out the functions
-library(fields)
-library(evd)
-ns <- 20
-nt <- 1
-nknotsx <- 5
-nknotsy <- 5
-nknots <- nknotsx * nknotsy
-rho.t <- 0.25
-alpha.t <- 0.3
-s <- cbind(runif(ns), runif(ns))
-knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
-dw2 <- rdist(s, knots)
-w.t <- stdW(makeW(dw2 = dw2, rho = rho.t))
-z.t <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
-a.t <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
-wz.t <- getwzCPP(z = z.t, w = w.t)
-theta.t <- getThetaCPP(wz= wz.t, a_star = a.t^alpha.t, alpha = alpha.t)
-y.t <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt) 
-
-b.t <- matrix(runif(nknots * nt), nknots, nt)
-q <- rbind(log(a.t), transform$logit(b.t))
-
-others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = b.t, a = a.t)
-neg_log_post(q, others)
-
-q.a <- log(a.t)
-neg_log_post_grad_a(q.a, others)
-
-q.b <- transform$logit(b.t)
-neg_log_post_grad_b(q.b, others)
-
-niters <- 5000
-storage.a <- array(NA, dim=c(niters, nknots, nt))
-storage.b <- array(NA, dim=c(niters, nknots, nt))
-q.a <- matrix(log(100), nknots, nt)
-q.b <- matrix(0, nknots, nt)
-others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
-for (i in 1:niters) {
-  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.001, L=10, others)
-  if (HMCout$accept) {
-    q.a      <- HMCout$q
-    others$a <- HMCout$q
-  }
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.001, L=10, others)
-  if (HMCout$accept) {
-    others.b <- HMCout$q
-    q.b <- HMCout$q
-  }
-  storage.a[i, , ] <- others$a
-  storage.b[i, , ] <- others$b
-  if (i %% 500 == 0) {
-    par(mfrow=c(3, 4))
-    plot(storage.b[1:i, 1, 1], type = "l")
-    plot(storage.b[1:i, 3, 1], type = "l")
-    plot(storage.b[1:i, 5, 1], type = "l")
-    plot(storage.b[1:i, 7, 1], type = "l")
-    plot(storage.b[1:i, 9, 1], type = "l")
-    plot(storage.b[1:i, 11, 1], type = "l")
-    plot(storage.b[1:i, 13, 1], type = "l")
-    plot(storage.b[1:i, 15, 1], type = "l")
-    plot(storage.b[1:i, 17, 1], type = "l")
-    plot(storage.b[1:i, 21, 1], type = "l")
-    plot(storage.b[1:i, 23, 1], type = "l")
-    plot(storage.b[1:i, 25, 1], type = "l")
-  }
-}

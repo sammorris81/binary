@@ -50,7 +50,7 @@ HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
 
   # Make a half step for momentum at the beginning
 
-  p = p - epsilon * grad_U(q,others) / 2
+  p = p - epsilon * grad_U(q, others) / 2
 
   # Alternate full steps for position and momentum
 
