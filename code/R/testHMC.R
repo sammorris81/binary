@@ -29,6 +29,13 @@ q.a <- matrix(log(100), nknots, nt)
 q.b <- matrix(0, nknots, nt)
 others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
 
+grad(func = neg_log_post_a, x = matrix(log(a.t)), others = others)
+neg_log_post_grad_a(matrix(log(a.t)), others = others)
+
+library(microbenchmark)
+microbenchmark(grad(func = neg_log_post_a, x = matrix(log(a.t)), others = others), 
+               neg_log_post_grad_a(matrix(log(a.t)), others = others))
+
 for (i in 1:niters) {
   HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.001, L=2, others)
   if (HMCout$accept) {
@@ -93,3 +100,45 @@ neg_log_post_grad_a(q.a, others)
 q.b <- transform$logit(b.t)
 neg_log_post_b(q.b, others)
 neg_log_post_grad_b(q.b, others)
+
+
+f1 <- function(q, others) {
+  # extract from the list
+  y <- others$y
+  alpha <- others$alpha
+  
+  nt <- ncol(y)
+  nknots <- length(q)
+  a  <- exp(q)
+  b  <- transform$inv.logit(others$b)
+  
+  alpha1m <- 1 - alpha
+  
+  # start with the log prior
+  # Remember: q = log(a)
+  lc <- logc(b = b, alpha = alpha)
+  ll <- sum(-alpha / alpha1m * q - exp(lc) * a^(-alpha / alpha1m))
+  
+  return(-ll)
+}
+
+gradf1 <- function(q, others) {
+  # extract from the list
+  y <- others$y
+  alpha <- others$alpha
+  
+  nt <- ncol(y)
+  nknots <- length(q)
+  a  <- exp(q)
+  b  <- transform$inv.logit(others$b)
+  
+  alpha1m <- 1 - alpha
+  lc <- logc(b = b, alpha = alpha)
+  grad <- -alpha / (alpha1m) * (1 + exp(lc) * a^(-alpha / alpha1m))
+  
+  return(-grad)
+}
+
+gradf1(matrix(log(a.t)), others) / grad(func = f1, x = matrix(log(a.t)), others = others)
+gradf1(matrix(log(a.t)), others)
+grad(func = f1, x = matrix(log(a.t)), others = others)
