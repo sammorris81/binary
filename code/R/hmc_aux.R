@@ -100,8 +100,8 @@ neg_log_post <- function(q, others) {
 logc <- function(b, alpha) {
   alpha1m <- 1 - alpha  # used a few times below
   results <- alpha * log(sin(alpha * pi * b)) / (alpha1m) - 
-             log(sin(pi * b)) / (alpha1m) + 
-             log(sin(alpha1m) * pi * b)
+    log(sin(pi * b)) / (alpha1m) + 
+    log(sin(alpha1m * pi * b))
   
   return (results)
 }
@@ -135,7 +135,7 @@ neg_log_post_grad_a <- function(q, others) {
     for (l in 1:nknots) {
       these <- which(y[, t] == 1)
       grad[l, t] <- a[l, t] * (sum((y[!these, t] - 1) * wz[!these, l, t]) + 
-                                   sum(y[these, t] * wz[these, l, t] / expm1(-theta[these, t])))
+                                 sum(y[these, t] * wz[these, l, t] / expm1(-theta[these, t])))
     }
   }
   grad <- grad + alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
@@ -165,12 +165,12 @@ neg_log_post_grad_b <- function(q, others) {
   pb    <- pi * b
   
   grad <- pi * (alpha^2 / (alpha1m * tan(apb)) - 1 / (alpha1m * tan(pb)) + 
-          (alpha1m) / tan(a1mpb)) - a^(-alpha / alpha1m) * 
-          (sin(apb)^(alpha / alpha1m) * sin(pb)^(-1 / alpha1m) * 
-            (alpha1m * pi * cos(a1mpb) - pi / alpha1m * sin(a1mpb) / tan(pb)) + 
-            sin(pb)^(-1 / alpha1m) * sin(a1mpb) * alpha^2 * pi / alpha1m * 
-            cos(apb) * sin(apb)^(-1 / alpha1m)
-          )
+                  (alpha1m) / tan(a1mpb)) - a^(-alpha / alpha1m) * 
+    (sin(apb)^(alpha / alpha1m) * sin(pb)^(-1 / alpha1m) * 
+       (alpha1m * pi * cos(a1mpb) - pi / alpha1m * sin(a1mpb) / tan(pb)) + 
+       sin(pb)^(-1 / alpha1m) * sin(a1mpb) * alpha^2 * pi / alpha1m * 
+       cos(apb) * sin(apb)^(-1 / alpha1m)
+    )
   
   
   return(-grad)
@@ -212,7 +212,7 @@ neg_log_post_grad <- function(q, others) {
     for (l in 1:nknots) {
       these <- which(y[, t] == 1)
       grad_a[l, t] <- a[l, t] * (sum((y[!these, t] - 1) * wz[!these, l, t]) + 
-                                 sum(y[these, t] * wz[these, l, t] / expm1(-theta[these, t])))
+                                   sum(y[these, t] * wz[these, l, t] / expm1(-theta[these, t])))
     }
   }
   grad_a <- grad_a + alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
@@ -223,12 +223,12 @@ neg_log_post_grad <- function(q, others) {
   pb    <- pi * b
   
   grad_b <- pi * (alpha^2 / (alpha1m * tan(apb)) - 1 / (alpha1m * tan(pb)) + 
-            (alpha1m) / tan(a1mpb)) - a^(-alpha / alpha1m) * 
-            (sin(apb)^(alpha / alpha1m) * sin(pb)^(-1 / alpha1m) * 
-              (alpha1m * pi * cos(a1mpb) - pi / alpha1m * sin(a1mpb) / tan(pb)) + 
-              sin(pb)^(-1 / alpha1m) * sin(a1mpb) * alpha^2 * pi / alpha1m * 
-              cos(apb) * sin(apb)^(-1 / alpha1m)
-            )
+                    (alpha1m) / tan(a1mpb)) - a^(-alpha / alpha1m) * 
+    (sin(apb)^(alpha / alpha1m) * sin(pb)^(-1 / alpha1m) * 
+       (alpha1m * pi * cos(a1mpb) - pi / alpha1m * sin(a1mpb) / tan(pb)) + 
+       sin(pb)^(-1 / alpha1m) * sin(a1mpb) * alpha^2 * pi / alpha1m * 
+       cos(apb) * sin(apb)^(-1 / alpha1m)
+    )
   
   grad[1:nknots, ] <- -grad_a
   grad[(nknots + 1):(2 * nknots), ] <- -grad_b
