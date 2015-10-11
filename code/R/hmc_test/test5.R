@@ -1,5 +1,5 @@
 rm(list=ls())
-source("../hmc_aux.R")
+source("../hmc_aux.R", chdir = TRUE)
 
 openblas.set.num.threads(2)
 
