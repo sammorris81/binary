@@ -5,13 +5,13 @@ source("./hmc_aux.R")
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 400
+ns <- 2000
 nt <- 1
 nknotsx <- 5
 nknotsy <- 5
 nknots <- nknotsx * nknotsy
 rho.t <- 0.25
-alpha.t <- 0.8
+alpha.t <- 0.6
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
 dw2 <- rdist(s, knots)
@@ -25,19 +25,24 @@ y.t <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt)
 niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
-q.a <- matrix(log(100), nknots, nt)
+q.a <- matrix(log(10), nknots, nt)
 q.b <- matrix(0, nknots, nt)
 others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
 
-grad(func = neg_log_post_a, x = matrix(log(a.t)), others = others)
-neg_log_post_grad_a(matrix(log(a.t)), others = others)
+# neg_log_post_a(q.a, others)
+# 
+# grad(func = neg_log_post_a, x = q.a, others = others)
+# neg_log_post_grad_a(q.a, others = others)
+# 
+# grad(func = neg_log_post_b, x = q.b, others = others)
+# neg_log_post_grad_b(q.b, others = others)
 
-library(microbenchmark)
-microbenchmark(grad(func = neg_log_post_a, x = matrix(log(a.t)), others = others), 
-               neg_log_post_grad_a(matrix(log(a.t)), others = others))
-
+# library(microbenchmark)
+# microbenchmark(grad(func = neg_log_post_a, x = matrix(log(a.t)), others = others), 
+#                neg_log_post_grad_a(matrix(log(a.t)), others = others))
+set.seed(200)
 for (i in 1:niters) {
-  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.001, L=2, others)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.001, L=10, others)
   if (HMCout$accept) {
     q.a      <- HMCout$q
     others$a <- HMCout$q
@@ -51,18 +56,18 @@ for (i in 1:niters) {
   storage.b[i, , ] <- others$b
   if (i %% 500 == 0) {
     par(mfrow=c(3, 4))
-    plot(storage.a[1:i, 1, 1], type = "l")
-    plot(storage.a[1:i, 3, 1], type = "l")
-    plot(storage.a[1:i, 5, 1], type = "l")
-    plot(storage.a[1:i, 7, 1], type = "l")
-    plot(storage.a[1:i, 9, 1], type = "l")
-    plot(storage.a[1:i, 11, 1], type = "l")
-    plot(storage.a[1:i, 13, 1], type = "l")
-    plot(storage.a[1:i, 15, 1], type = "l")
-    plot(storage.a[1:i, 17, 1], type = "l")
-    plot(storage.a[1:i, 21, 1], type = "l")
-    plot(storage.a[1:i, 23, 1], type = "l")
-    plot(storage.a[1:i, 25, 1], type = "l")
+    plot(storage.a[1:i, 1, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
+    plot(storage.a[1:i, 3, 1], type = "l",  main = round(log(a.t[3, 1]), 2))
+    plot(storage.a[1:i, 5, 1], type = "l",  main = round(log(a.t[5, 1]), 2))
+    plot(storage.a[1:i, 7, 1], type = "l",  main = round(log(a.t[7, 1]), 2))
+    plot(storage.a[1:i, 9, 1], type = "l",  main = round(log(a.t[9, 1]), 2))
+    plot(storage.a[1:i, 11, 1], type = "l", main = round(log(a.t[11, 1]), 2))
+    plot(storage.a[1:i, 13, 1], type = "l", main = round(log(a.t[13, 1]), 2))
+    plot(storage.a[1:i, 15, 1], type = "l", main = round(log(a.t[15, 1]), 2))
+    plot(storage.a[1:i, 17, 1], type = "l", main = round(log(a.t[17, 1]), 2))
+    plot(storage.a[1:i, 21, 1], type = "l", main = round(log(a.t[21, 1]), 2))
+    plot(storage.a[1:i, 23, 1], type = "l", main = round(log(a.t[23, 1]), 2))
+    plot(storage.a[1:i, 25, 1], type = "l", main = round(log(a.t[25, 1]), 2))
   }
 }
 
@@ -104,11 +109,8 @@ neg_log_post_grad_b(q.b, others)
 
 f1 <- function(q, others) {
   # extract from the list
-  y <- others$y
   alpha <- others$alpha
   
-  nt <- ncol(y)
-  nknots <- length(q)
   a  <- exp(q)
   b  <- transform$inv.logit(others$b)
   

@@ -24,13 +24,13 @@ neg_log_post_a <- function(q, others) {
   # start with the log prior
   # Remember: q = log(a)
   lc <- logc(b = b, alpha = alpha)
-  ll <- sum(alpha / alpha1m * q - exp(lc) * a^(-alpha / alpha1m))
+  ll <- sum(-alpha / alpha1m * q - exp(lc) * a^(-alpha / alpha1m))
   
   # log prob of success for likelihood
   theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
   
   # add in the log likelihood
-  ll <- ll + sum(logLikeY(y = others$y, theta = theta))
+  ll <- ll + sum(logLikeY(y = y, theta = theta))
   
   return (-ll)
 }
@@ -98,12 +98,11 @@ neg_log_post <- function(q, others) {
 }
 
 logc <- function(b, alpha) {
-  alpha1m <- 1 - alpha  # used a few times below
-  results <- alpha * log(sin(alpha * pi * b)) / (alpha1m) - 
-    log(sin(pi * b)) / (alpha1m) + 
-    log(sin(alpha1m * pi * b))
+  alpha1m <- 1 - alpha
+  results <- alpha * log(sin(alpha * pi * b)) / alpha1m - 
+             log(sin(pi * b)) / alpha1m + log(sin(alpha1m * pi * b))
   
-  return (results)
+  return(results)
 }
 
 neg_log_post_grad_a <- function(q, others) {
@@ -131,14 +130,21 @@ neg_log_post_grad_a <- function(q, others) {
   
   # grad wrt log(a)
   grad <- matrix(0, nrow(a), ncol(a))
+  wz.star <- wz^(1 / alpha)
+  
+  # the likelihood component should be
+  # For non-observances:
+  #   -(1 - y.i) * wz.star.lt * a.lt
+  # For observances:
+  #   -y.i * (wz.star.lt) * 1 / (expm1(theta.t)) * a.lt
   for (t in 1:nt) {
     for (l in 1:nknots) {
       these <- which(y[, t] == 1)
-      grad[l, t] <- a[l, t] * (sum((y[!these, t] - 1) * wz[!these, l, t]) + 
-                                 sum(y[these, t] * wz[these, l, t] / expm1(-theta[these, t])))
+      grad[l, t] <- -a[l, t] * (sum((1 - y[!these, t]) * wz.star[!these, l, t]) + 
+                                sum(y[these, t] * wz.star[these, l, t] / expm1(theta[these, t])))
     }
   }
-  grad <- grad + alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
+  grad <- grad - alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
   
   return(-grad)
 }

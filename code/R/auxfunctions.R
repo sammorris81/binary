@@ -186,9 +186,8 @@ logLikeY <- function(y, theta) {
   # numerical stability issue. originally was using
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
-  these <- which(y == 1)
-  ll.y[-these] <- -theta[-these]
-  ll.y[these]  <- log(1 - exp(-theta[these]))
+  ll.y[y == 0] <- -theta[y == 0]
+  ll.y[y == 1]  <- log(1 - exp(-theta[y == 1]))
 
   return(ll.y)
 }
