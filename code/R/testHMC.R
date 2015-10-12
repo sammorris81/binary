@@ -154,31 +154,16 @@ save.image(file = "alpha2.RData")
 
 par(mfrow=c(3, 4))
 plot.idx <- seq(1, 23, by = 2)
-for (i in 1:plot.idx){
-  plot(storage.a.8[1:i, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
+for (i in plot.idx){
+  plot(storage.a[, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
 }
 
-for (i in 1:plot.idx){
-  plot(storage.b.8[1:i, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
+for (i in plot.idx){
+  plot(storage.b[, i, 1], type = "l")
 }
 
-plot.idx <- seq(1, 23, by = 2)
-for (i in 1:plot.idx){
-  plot(storage.a.5[1:i, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
-}
+toc - tic
 
-for (i in 1:plot.idx){
-  plot(storage.b.5[1:i, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
-}
-
-plot.idx <- seq(1, 23, by = 2)
-for (i in 1:plot.idx){
-  plot(storage.a.2[1:i, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
-}
-
-for (i in 1:plot.idx){
-  plot(storage.b.2[1:i, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
-}
 
 
 # neg_log_post_a(q.a, others)
