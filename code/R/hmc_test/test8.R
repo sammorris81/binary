@@ -34,7 +34,7 @@ others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
 set.seed(200)
 tic <- proc.time()
 for (i in 1:niters) {
-  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.001, L=10, others)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
     q.a      <- HMCout$q
     others$a <- HMCout$q

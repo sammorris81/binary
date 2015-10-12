@@ -24,7 +24,7 @@ neg_log_post_a <- function(q, others) {
   # start with the log prior
   # Remember: q = log(a)
   lc <- logc(b = b, alpha = alpha)
-  ll <- sum(-alpha / alpha1m * q - exp(lc) * a^(-alpha / alpha1m))
+  ll <- sum(alpha / alpha1m * q - exp(lc) * a^(-alpha / alpha1m))
   
   # log prob of success for likelihood
   theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
@@ -44,10 +44,8 @@ neg_log_post_b <- function(q, others) {
   #   wz: kernel weights
   
   # extract from the list
-  y <- others$y
   alpha <- others$alpha
   
-  nknots <- length(q)
   a  <- exp(others$a)
   b  <- transform$inv.logit(q)
   
@@ -99,8 +97,11 @@ neg_log_post <- function(q, others) {
 
 logc <- function(b, alpha) {
   alpha1m <- 1 - alpha
-  results <- alpha * log(sin(alpha * pi * b)) / alpha1m - 
-             log(sin(pi * b)) / alpha1m + log(sin(alpha1m * pi * b))
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b 
+  u <- sin(apb) / sin(pb)
+  results <- log(u) / alpha1m + log(sin(a1mpb)) - log(sin(apb))
   
   return(results)
 }
@@ -134,19 +135,22 @@ neg_log_post_grad_a <- function(q, others) {
   
   # the likelihood component should be
   # For non-observances:
-  #   -(1 - y.i) * wz.star.lt * a.lt
+  #   a.lt * wz.star.lt
   # For observances:
-  #   -y.i * (wz.star.lt) * 1 / (expm1(theta.t)) * a.lt
+  #   a.lt * wz.star.lt / expm1(theta.t)
   for (t in 1:nt) {
     for (l in 1:nknots) {
       these <- which(y[, t] == 1)
-      grad[l, t] <- -a[l, t] * (sum((1 - y[!these, t]) * wz.star[!these, l, t]) + 
-                                sum(y[these, t] * wz.star[these, l, t] / expm1(theta[these, t])))
+      grad[l, t] <- a[l, t] * (sum(wz.star[y == 0, l, t]) - 
+                               sum(wz.star[y == 1, l, t] / expm1(theta[y == 1, t])))
     }
   }
   grad <- grad - alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
+#  grad <- -alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
   
-  return(-grad)
+#   print(-alpha / alpha1m)
+#   print(-alpha / alpha1m * exp(lc) * a^(-alpha / alpha1m))
+  return(grad)
 }
 
 neg_log_post_grad_b <- function(q, others) {
@@ -162,24 +166,28 @@ neg_log_post_grad_b <- function(q, others) {
   b  <- transform$inv.logit(q)
   
   # get calculated values
-  lc      <- logc(b = b, alpha = alpha)
   alpha1m <- 1 - alpha  # used a lot in gradiant for b
   
-  # grad wrt b
+  # repeated throughout
   apb   <- alpha * pi * b
   a1mpb <- alpha1m * pi * b
   pb    <- pi * b
   
-  grad <- pi * (alpha^2 / (alpha1m * tan(apb)) - 1 / (alpha1m * tan(pb)) + 
-                  (alpha1m) / tan(a1mpb)) - a^(-alpha / alpha1m) * 
-    (sin(apb)^(alpha / alpha1m) * sin(pb)^(-1 / alpha1m) * 
-       (alpha1m * pi * cos(a1mpb) - pi / alpha1m * sin(a1mpb) / tan(pb)) + 
-       sin(pb)^(-1 / alpha1m) * sin(a1mpb) * alpha^2 * pi / alpha1m * 
-       cos(apb) * sin(apb)^(-1 / alpha1m)
-    )
+  u <- (sin(apb) / sin(pb))
   
+  grad <- alpha * pi / (alpha1m * tan(apb)) - u * pi * cos(pb) / (alpha1m * sin(apb)) +
+          alpha1m * pi / tan(a1mpb) - alpha * pi / tan(apb)
   
-  return(-grad)
+  grad <- -grad + u^(1 / alpha1m) * a^(-alpha / alpha1m) * (
+     (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) / (alpha1m * sin(apb)) +
+       alpha1m * pi * cos(a1mpb) - alpha * pi * sin(a1mpb) / tan(apb)
+   ) / sin(apb)
+#   grad <- u^(1 / alpha1m) * a^(-alpha / alpha1m) * (
+#     (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) / (alpha1m * sin(apb)) +
+#       alpha1m * pi * cos(a1mpb) - alpha * pi * sin(a1mpb) / tan(apb)
+#   ) / sin(apb)
+  
+  return(grad)
 }
 
 neg_log_post_grad <- function(q, others) {

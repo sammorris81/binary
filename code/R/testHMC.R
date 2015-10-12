@@ -5,7 +5,7 @@ source("./hmc_aux.R")
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 2000
+ns <- 1500
 nt <- 1
 nknotsx <- 5
 nknotsy <- 5
@@ -32,7 +32,7 @@ others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
 set.seed(200)
 tic.1 <- proc.time()
 for (i in 1:niters) {
-  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.001, L=10, others)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
     q.a      <- HMCout$q
     others$a <- HMCout$q
@@ -44,7 +44,12 @@ for (i in 1:niters) {
   }
   storage.a.8[i, , ] <- others$a
   storage.b.8[i, , ] <- others$b
-  if (i %% 500 == 0) {
+  if (i %% 100 == 0) {
+    par(mfrow=c(3, 4))
+    plot.idx <- seq(1, 23, by = 2)
+    for (idx in plot.idx){
+      plot(storage.b.8[1:i, idx, 1], type = "l",  main = round(log(a.t[idx, 1]), 2))
+    }
     print(paste("iter:", i, "of", niters, sep=" "))
   }
 }
@@ -53,7 +58,7 @@ save.image(file = "alpha8.RData")
 
 
 set.seed(200)
-ns <- 2000
+ns <- 10
 nt <- 1
 nknotsx <- 5
 nknotsy <- 5
@@ -245,6 +250,239 @@ gradf1 <- function(q, others) {
   return(-grad)
 }
 
+library(numDeriv)
 gradf1(matrix(log(a.t)), others) / grad(func = f1, x = matrix(log(a.t)), others = others)
 gradf1(matrix(log(a.t)), others)
-grad(func = f1, x = matrix(log(a.t)), others = others)
+grad(func = f1, x = matrix(log(a.t)), method = "complex", others = others)
+log(a.t)
+
+xplot <- seq(-2, 3, length = 1000)
+yplot <- rep(0, length(xplot))
+for (i in 1:length(xplot)) {
+  q <- matrix(xplot[i], 1, 1)
+  yplot[i] <- neg_log_post_a(q, others)
+}
+plot(xplot, yplot, type = "l")
+neg_log_post_grad_a(q = log(a.t), others)
+grad(func = neg_log_post_a, x = matrix(0, 1, 1), others = others)
+neg_log_post_grad_a(q = matrix(0, 1, 1), others)
+
+part1 <- -alpha.t / (1 - alpha.t)
+part2 <- -(sin(alpha.t * pi * 0.5) / sin(pi * 0.5))^(1 / (1 - alpha.t)) * sin((1 - alpha.t) * pi * 0.5) / sin(alpha.t * pi * 0.5)
+part2 <- part2 * alpha.t / (1- alpha.t)
+part2 <- part2 * exp(2)^(-alpha.t / (1 - alpha.t))
+
+# are the gradients reasonable
+a.t[3] <- 1
+neg_log_post_grad_a(q = log(a.t), others)
+
+xplot <- seq(-4, 4, length = 1000)
+yplot <- rep(0, length(xplot))
+for (i in 1:length(yplot)) {
+  q <- matrix(xplot[i], 1, 1)
+  yplot[i] <- neg_log_post_b(q, others)
+}
+plot(xplot, yplot, type = "l")
+
+which(yplot == min(yplot))
+xplot[926]
+grad(func = neg_log_post_b, x = matrix(3.4, 1, 1), others = others)
+grad(func = neg_log_post_b, x = matrix(3.5, 1, 1), others = others)
+neg_log_post_grad_b(matrix(3.4, 1, 1), others = others)
+
+
+long <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  alpha1m <- 1 - alpha
+  
+  u <- (sin(alpha * pi * b) / sin(pi * b))
+  grad <- u^(-1 / alpha1m) / sin(alpha1m * pi * b) * ((
+    1 / (alpha1m * sin(alpha * pi * b)^2) * (
+      u^(1 / alpha1m) * (
+        alpha * pi *  cos(alpha * pi * b) / sin(pi * b) -
+          sin(alpha * pi * b) * pi * cos(pi * b) / sin(pi * b)^2
+        ) * sin(pi * b) * sin(alpha1m * pi * b)
+      ) + 
+      u^(1 / alpha1m) * alpha1m * pi * cos(alpha1m * pi * b) / sin(alpha * pi * b) - 
+      u^(1 / alpha1m) * sin(alpha1m * pi * b) * alpha * pi * cos(alpha * pi * b) / sin(alpha * pi * b)^2
+      ) * sin(alpha * pi * b))
+  return (-grad)
+}
+
+short <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  alpha1m <- 1 - alpha
+  
+  u <- sin(alpha * pi * b) / sin(pi * b)
+  
+  grad <- alpha * pi / (alpha1m * tan(alpha * pi * b)) - u * pi * cos(pi * b) / (alpha1m * sin(alpha * pi * b)) +
+    alpha1m * pi / tan(alpha1m * pi * b) - alpha * pi / tan(alpha * pi * b)
+return (-grad)
+}
+
+shorter <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  alpha1m <- 1 - alpha
+  
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- sin(apb) / sin(pb)
+  
+  grad <- alpha * pi / (alpha1m * tan(apb)) - u * pi * cos(pb) / (alpha1m * sin(apb)) +
+    alpha1m * pi / tan(a1mpb) - alpha * pi / tan(apb)
+  return (-grad)
+}
+
+long2 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  
+  grad <- u^(1 / alpha1m) * (alpha * pi * cos(apb) / sin(pb) - 
+                       sin(apb) * pi * cos(pb) / sin(pb)^2) * 
+    sin(pb) * sin(a1mpb) * a^(-alpha / alpha1m) / (alpha1m * sin(apb)^2)
+  
+  return(grad)
+}
+
+long3 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  
+  grad <- u^(1 / alpha1m) * alpha1m * pi * cos(a1mpb) * a^(-alpha / alpha1m) / sin(apb)
+  return(grad)
+}
+
+long4 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  
+  grad <- -u^(1 / alpha1m) * sin(a1mpb) * a^(-alpha / alpha1m) * alpha * pi * cos(apb) / 
+    sin(apb)^2
+  
+  return(grad)
+}
+
+short2 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  
+  grad <- u^(1 / alpha1m) * (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) * a^(-alpha / alpha1m) / (alpha1m * sin(apb)^2)
+  return(grad)
+}
+
+short3 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  
+  grad <- u^(1 / alpha1m) * alpha1m * pi * cos(a1mpb) * a^(-alpha / alpha1m) / sin(apb)
+  return(grad)
+}
+
+short4 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  grad <- -u^(1 / alpha1m) * sin(a1mpb) * a^(-alpha / alpha1m) * alpha * pi / (sin(apb) * tan(apb))
+  
+  return(grad)
+}
+
+short.2 <- function(q, others) {
+  a <- exp(others$a)
+  alpha <- others$alpha
+  b <- transform$inv.logit(q)
+  
+  # repeated quantities
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  
+  u <- (sin(apb) / sin(pb))
+  
+  grad <- u^(1 / alpha1m) * a^(-alpha / alpha1m) * (
+    (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) / (alpha1m * sin(apb)) +
+      alpha1m * pi * cos(a1mpb) - alpha * pi * sin(a1mpb) / tan(apb)
+  ) / sin(apb)
+  
+  return(grad)
+}
+
+grad(func = neg_log_post_b, x = matrix(0, 1, 1), others = others)
+neg_log_post_grad_b(q = matrix(0, 1, 1), others = others)
+ 
+grad(func = neg_log_post_b, x = matrix(3, 1, 1), others = others)
+neg_log_post_grad_b(q = matrix(3, 1, 1), others = others)
+
+grad(func = neg_log_post_b, x = matrix(3.4, 1, 1), others = others)
+neg_log_post_grad_b(q = matrix(3.4, 1, 1), others = others)
+
+grad(func = neg_log_post_b, x = matrix(3.5, 1, 1), others = others)
+neg_log_post_grad_b(q = matrix(3.5, 1, 1), others = others)
+
+grad(func = neg_log_post_b, x = matrix(3.41, 1, 1), others = others)
+neg_log_post_grad_b(q = matrix(3.41, 1, 1), others = others)
+
+grad(func = neg_log_post_b, x = matrix(3.4, 1, 1), others = others)
+neg_log_post_grad_b(q = matrix(3.4, 1, 1), others = others)
