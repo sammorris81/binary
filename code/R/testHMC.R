@@ -37,7 +37,7 @@ for (i in 1:niters) {
     q.a      <- HMCout$q
     others$a <- HMCout$q
   }
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.005, L=10, others)
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
     others$b <- HMCout$q
     q.b <- HMCout$q
