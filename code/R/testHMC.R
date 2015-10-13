@@ -1,14 +1,16 @@
 rm(list=ls())
 source("./hmc_aux.R")
 
+options(warn = 2)
+
 # Test out the functions
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 1500
+ns <- 1000
 nt <- 1
 nknotsx <- 5
-nknotsy <- 5
+nknotsy <- 6
 nknots <- nknotsx * nknotsy
 rho.t <- 0.25
 alpha.t <- 0.8
@@ -274,185 +276,8 @@ xplot[926]
 grad(func = neg_log_post_b, x = matrix(3.4, 1, 1), others = others)
 grad(func = neg_log_post_b, x = matrix(3.5, 1, 1), others = others)
 neg_log_post_grad_b(matrix(3.4, 1, 1), others = others)
+neg_log_post_grad_b(matrix(3.5, 1, 1), others = others)
 
-
-long <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  alpha1m <- 1 - alpha
-  
-  u <- (sin(alpha * pi * b) / sin(pi * b))
-  grad <- u^(-1 / alpha1m) / sin(alpha1m * pi * b) * ((
-    1 / (alpha1m * sin(alpha * pi * b)^2) * (
-      u^(1 / alpha1m) * (
-        alpha * pi *  cos(alpha * pi * b) / sin(pi * b) -
-          sin(alpha * pi * b) * pi * cos(pi * b) / sin(pi * b)^2
-        ) * sin(pi * b) * sin(alpha1m * pi * b)
-      ) + 
-      u^(1 / alpha1m) * alpha1m * pi * cos(alpha1m * pi * b) / sin(alpha * pi * b) - 
-      u^(1 / alpha1m) * sin(alpha1m * pi * b) * alpha * pi * cos(alpha * pi * b) / sin(alpha * pi * b)^2
-      ) * sin(alpha * pi * b))
-  return (-grad)
-}
-
-short <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  alpha1m <- 1 - alpha
-  
-  u <- sin(alpha * pi * b) / sin(pi * b)
-  
-  grad <- alpha * pi / (alpha1m * tan(alpha * pi * b)) - u * pi * cos(pi * b) / (alpha1m * sin(alpha * pi * b)) +
-    alpha1m * pi / tan(alpha1m * pi * b) - alpha * pi / tan(alpha * pi * b)
-return (-grad)
-}
-
-shorter <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  alpha1m <- 1 - alpha
-  
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- sin(apb) / sin(pb)
-  
-  grad <- alpha * pi / (alpha1m * tan(apb)) - u * pi * cos(pb) / (alpha1m * sin(apb)) +
-    alpha1m * pi / tan(a1mpb) - alpha * pi / tan(apb)
-  return (-grad)
-}
-
-long2 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  
-  grad <- u^(1 / alpha1m) * (alpha * pi * cos(apb) / sin(pb) - 
-                       sin(apb) * pi * cos(pb) / sin(pb)^2) * 
-    sin(pb) * sin(a1mpb) * a^(-alpha / alpha1m) / (alpha1m * sin(apb)^2)
-  
-  return(grad)
-}
-
-long3 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  
-  grad <- u^(1 / alpha1m) * alpha1m * pi * cos(a1mpb) * a^(-alpha / alpha1m) / sin(apb)
-  return(grad)
-}
-
-long4 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  
-  grad <- -u^(1 / alpha1m) * sin(a1mpb) * a^(-alpha / alpha1m) * alpha * pi * cos(apb) / 
-    sin(apb)^2
-  
-  return(grad)
-}
-
-short2 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  
-  grad <- u^(1 / alpha1m) * (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) * a^(-alpha / alpha1m) / (alpha1m * sin(apb)^2)
-  return(grad)
-}
-
-short3 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  
-  grad <- u^(1 / alpha1m) * alpha1m * pi * cos(a1mpb) * a^(-alpha / alpha1m) / sin(apb)
-  return(grad)
-}
-
-short4 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  grad <- -u^(1 / alpha1m) * sin(a1mpb) * a^(-alpha / alpha1m) * alpha * pi / (sin(apb) * tan(apb))
-  
-  return(grad)
-}
-
-short.2 <- function(q, others) {
-  a <- exp(others$a)
-  alpha <- others$alpha
-  b <- transform$inv.logit(q)
-  
-  # repeated quantities
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb  <- pi * b
-  a1mpb <- alpha1m * pi * b
-  
-  u <- (sin(apb) / sin(pb))
-  
-  grad <- u^(1 / alpha1m) * a^(-alpha / alpha1m) * (
-    (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) / (alpha1m * sin(apb)) +
-      alpha1m * pi * cos(a1mpb) - alpha * pi * sin(a1mpb) / tan(apb)
-  ) / sin(apb)
-  
-  return(grad)
-}
 
 grad(func = neg_log_post_b, x = matrix(0, 1, 1), others = others)
 neg_log_post_grad_b(q = matrix(0, 1, 1), others = others)

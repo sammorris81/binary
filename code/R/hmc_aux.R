@@ -53,7 +53,8 @@ neg_log_post_b <- function(q, others) {
   
   # start with the log prior
   lc <- logc(b = b, alpha = alpha)
-  ll <- sum(lc - exp(lc) * a^(-alpha / alpha1m))
+  ll <- sum(lc - exp(lc) * a^(-alpha / alpha1m) + 
+        2 * log(b) - q)  # jacobian
   
   return (-ll)
 }
@@ -146,10 +147,7 @@ neg_log_post_grad_a <- function(q, others) {
     }
   }
   grad <- grad - alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
-#  grad <- -alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
-  
-#   print(-alpha / alpha1m)
-#   print(-alpha / alpha1m * exp(lc) * a^(-alpha / alpha1m))
+
   return(grad)
 }
 
@@ -172,6 +170,7 @@ neg_log_post_grad_b <- function(q, others) {
   apb   <- alpha * pi * b
   a1mpb <- alpha1m * pi * b
   pb    <- pi * b
+  dbdq  <- b^2 * exp(-q)
   
   u <- (sin(apb) / sin(pb))
   
@@ -182,10 +181,9 @@ neg_log_post_grad_b <- function(q, others) {
      (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) / (alpha1m * sin(apb)) +
        alpha1m * pi * cos(a1mpb) - alpha * pi * sin(a1mpb) / tan(apb)
    ) / sin(apb)
-#   grad <- u^(1 / alpha1m) * a^(-alpha / alpha1m) * (
-#     (alpha * pi * cos(apb) - u * pi * cos(pb)) * sin(a1mpb) / (alpha1m * sin(apb)) +
-#       alpha1m * pi * cos(a1mpb) - alpha * pi * sin(a1mpb) / tan(apb)
-#   ) / sin(apb)
+  
+  # dU / dq = dU / db * db / dq + d(log(jacobian)) / dq
+  grad <- grad * dbdq - (2 * b * exp(-q) - 1)
   
   return(grad)
 }
