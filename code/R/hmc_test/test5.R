@@ -47,7 +47,7 @@ for (i in 1:niters) {
     others$b <- transform$inv.logit(HMCout$q)
     q.b      <- HMCout$q
   }
-  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q.alpha, epsilon=0.005, L=10, others)
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q.alpha, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
     others$alpha <- transform$inv.logit(HMCout$q)
     q.alpha      <- HMCout$q
