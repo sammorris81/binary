@@ -27,8 +27,10 @@ y.t <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt)
 niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
+storage.alpha <- rep(NA, niters)
 q.a <- matrix(log(100), nknots, nt)
 q.b <- matrix(0, nknots, nt)
+q.alpha <- 0
 others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
 
 set.seed(200)
@@ -44,10 +46,17 @@ for (i in 1:niters) {
     others$b <- HMCout$q
     q.b <- HMCout$q
   }
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q.alpha, epsilon=0.005, L=10, others)
+  if (HMCout$accept) {
+    others$alpha <- transform$inv.logit(HMCout$q)
+    q.alpha <- HMCout$q
+  }
   storage.a[i, , ] <- others$a
   storage.b[i, , ] <- others$b
+  storage.alpha[i] <- q.alpha
   if (i %% 500 == 0) {
     print(paste("iter:", i, "of", niters, sep=" "))
+    plot(storage.alpha[1:i], type = "l", main = alpha.t)
   }
 }
 toc <- proc.time()

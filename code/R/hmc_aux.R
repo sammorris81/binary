@@ -1,4 +1,3 @@
-rm(list=ls())
 library(Rcpp)
 source("./HMC.R")
 source("./auxfunctions.R")
@@ -14,8 +13,6 @@ neg_log_post_a <- function(q, others) {
   y <- others$y
   alpha <- others$alpha
   
-  nt <- ncol(y)
-  nknots <- length(q)
   a  <- exp(q)
   b  <- transform$inv.logit(others$b)
   
@@ -57,6 +54,43 @@ neg_log_post_b <- function(q, others) {
         2 * log(b) - q)  # jacobian
   
   return (-ll)
+}
+
+neg_log_post_alpha <- function(q, others) {
+  # extract from the list
+  y <- others$y
+  a <- exp(others$a)
+  b <- transform$inv.logit(others$b)
+  
+  alpha <- transform$inv.logit(q)
+  
+  nt <- ncol(y)
+  nknots <- length(a) / nt
+  
+  alpha1m <- 1 - alpha
+  
+  # start with the log prior
+  ll <- nknots * (log(alpha) - log(alpha1m)) + 
+        2 * log(alpha) - q  # Jacobian
+  
+  # Remember: q = logit(alpha)
+  lc <- logc(b = b, alpha = alpha)
+  ll <- ll + sum(-others$a / alpha1m - exp(lc) * a^(-alpha / alpha1m))
+  
+  # log prob of success for likelihood
+  theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
+  
+  # add in the log likelihood
+  ll <- ll + sum(logLikeY(y = y, theta = theta))
+  
+  return(-ll)
+}
+
+neg_log_post_grad_alpha <- function(q, others) {
+  grad <- (neg_log_post_alpha(q = q + 0.001, others = others) - 
+           neg_log_post_alpha(q = q, others = others)) / 0.001
+  
+  return(grad)
 }
 
 # separate a and b
