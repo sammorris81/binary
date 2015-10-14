@@ -27,25 +27,34 @@ y.t <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt)
 niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
-q.a <- matrix(log(10), nknots, nt)
-q.b <- matrix(0, nknots, nt)
-others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
+storage.alpha <- rep(NA, niters)
+q.a     <- matrix(log(100), nknots, nt)
+q.b     <- matrix(0, nknots, nt)
+q.alpha <- 0
+others <- list(y = y.t, alpha = 0.5, wz = wz.t, 
+               a = matrix(100, nknots, nt), b = matrix(0.5, nknots, nt))
 
 set.seed(200)
 tic <- proc.time()
 for (i in 1:niters) {
   HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
+    others$a <- exp(HMCout$q)
     q.a      <- HMCout$q
-    others$a <- HMCout$q
   }
   HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.005, L=10, others)
   if (HMCout$accept) {
-    others$b <- HMCout$q
-    q.b <- HMCout$q
+    others$b <- transform$inv.logit(HMCout$q)
+    q.b      <- HMCout$q
+  }
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q.alpha, epsilon=0.01, L=10, others)
+  if (HMCout$accept) {
+    others$alpha <- transform$inv.logit(HMCout$q)
+    q.alpha      <- HMCout$q
   }
   storage.a[i, , ] <- others$a
   storage.b[i, , ] <- others$b
+  storage.alpha[i] <- others$alpha
   if (i %% 500 == 0) {
     print(paste("iter:", i, "of", niters, sep=" "))
   }

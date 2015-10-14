@@ -7,13 +7,13 @@ options(warn = 2)
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 1000
+ns <- 30
 nt <- 1
-nknotsx <- 5
-nknotsy <- 6
+nknotsx <- 2
+nknotsy <- 3
 nknots <- nknotsx * nknotsy
 rho.t <- 0.25
-alpha.t <- 0.8
+alpha.t <- 0.25
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
 dw2 <- rdist(s, knots)
@@ -298,3 +298,29 @@ neg_log_post_grad_b(q = matrix(3.41, 1, 1), others = others)
 
 grad(func = neg_log_post_b, x = matrix(3.4, 1, 1), others = others)
 neg_log_post_grad_b(q = matrix(3.4, 1, 1), others = others)
+
+
+library(numDeriv)
+q.a <- matrix(log(a.t), nknots, nt)
+q.b <- matrix(0, nknots, nt)
+others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
+xplot <- seq(-2, 0, length = 1000)
+yplot <- rep(0, length(xplot))
+for (i in 1:length(yplot)) {
+  q <- xplot[i]
+  yplot[i] <- neg_log_post_alpha(q, others)
+}
+plot(xplot, yplot, type = "l")
+
+grad(func = neg_log_post_alpha, x = -1.2, others = others)
+neg_log_post_alpha(q = -1.2, others = others)
+
+qs <- seq(-2.5, 0, length = 1000)
+xplot <- rep(NA, 1000)
+yplot <- rep(NA, 1000)
+for (i in 1:length(yplot)) {
+  xplot[i] <- grad(func = neg_log_post_alpha, x = qs[i], others = others)
+  yplot[i] <- neg_log_post_grad_alpha(qs[i], others)
+}
+plot(xplot, yplot, type = "l", xaxt = "n")
+axis(1, at=xplot, labels = qs) 
