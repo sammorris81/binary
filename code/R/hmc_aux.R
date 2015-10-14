@@ -85,14 +85,50 @@ neg_log_post_alpha <- function(q, others) {
   # log density for PS random variable
   ll <- nknots * (log(alpha) - log(alpha1m)) + 
         2 * log(alpha) - q  # Jacobian
-  ll <- ll + sum(-log(a) / alpha1m  + lc - 
-                   exp(lc) * a^(-alpha / alpha1m))
+  ll <- ll + sum(alpha / alpha1m * log(a) + lc - 
+                 exp(lc) * a^(-alpha / alpha1m))
   
   # data and log likelihood
   theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
   ll    <- ll + sum(logLikeY(y = y, theta = theta))
   
   return(-ll)
+}
+
+neg_log_post_a_alpha <- function(q, others) {
+  # q: c(log(a), logit(alpha))
+  # others is a list
+  #   y:     data
+  #   alpha: spatial dependence
+  #   wz:    kernel weights
+  #   a:     positive stable random effects
+  #   b:     auxiliary random variable
+  
+  # parameter transformation
+  nknots  <- nrow(others$a)
+  nt      <- ncol(others$a)
+  q.a     <- matrix(q[1:(nknots * nt)], nknots, nt)
+  q.alpha <- tail(q, 1)
+  a       <- exp(q.a)
+  alpha   <- transform$inv.logit(q.alpha)
+  alpha1m <- 1 - alpha
+  
+  # extract from the list and get calculated quantities
+  y       <- others$y
+  b       <- others$b
+  lc      <- logc(b = b, alpha = alpha)
+  
+  # log prior
+  # Remember: q = log(a) and jacobian is included
+  
+  ll <- sum(alpha / alpha1m * q.a + lc - exp(lc) * a^(-alpha / alpha1m)) +
+        nknots * (log(alpha) - log(alpha1m)) + 2 * log(alpha) - q.alpha
+  
+  # data and log likelihood
+  theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
+  ll <- ll + sum(logLikeY(y = y, theta = theta))
+
+  return (-ll)
 }
 
 logc <- function(b, alpha) {
@@ -192,7 +228,7 @@ neg_log_post_grad_b <- function(q, others) {
   return(grad)
 }
 
-neg_log_post_grad_alpha <- function(q, others) {
+neg_log_post_grad_alpha <- function(q, others, eps = 0.0001) {
   # q: logit(alpha)
   # others is a list
   #   y:     data
@@ -203,10 +239,37 @@ neg_log_post_grad_alpha <- function(q, others) {
   
   # using a quick and easy numerical approximation
   # might be good to eventually get the actual value, but this is pretty reliable
-  grad <- (neg_log_post_alpha(q = q + 0.001, others = others) - 
-           neg_log_post_alpha(q = q, others = others)) / 0.001
+  
+  grad <- (neg_log_post_alpha(q = q + 0.0001, others = others) - 
+           neg_log_post_alpha(q = q, others = others)) / 0.0001
   
   return(grad)
 }
 
-
+neg_log_post_grad_a_alpha <- function(q, others) {
+  # q is a list: 
+  #   a:     log(a)
+  #   alpha: logit(alpha))
+  # others is a list
+  #   y:     data
+  #   alpha: spatial dependence
+  #   wz:    kernel weights
+  #   a:     positive stable random effects
+  #   b:     auxiliary random variable
+  
+  # parameter transformation
+  nknots  <- length(q) - 1
+  nt      <- ncol(others$y)
+  q.a     <- matrix(q[1:nknots], nknots, nt)  # a needs to be a matrix
+  q.alpha <- tail(q, 1)
+  
+  grad <- rep(NA, length(q))
+  
+  others$a <- exp(q.a)
+  others$alpha <- transform$inv.logit(q.alpha)
+  
+  grad[1:nknots] <- neg_log_post_grad_a(q = q.a, others = others)
+  grad[(nknots + 1)] <- neg_log_post_grad_alpha(q = q.alpha, others = others)
+  
+  return(grad)
+}
