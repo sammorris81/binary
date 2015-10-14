@@ -35,8 +35,8 @@ others <- list(y = y.t, alpha = 0.5, wz = wz.t,
 
 # find a good starting point for alpha
 q.alpha.temp <- seq(-10, 10, 0.01)
-ll.temp <- rep(Inf, length(alpha.temp))
-for (i in 1:length(alpha.temp)) {
+ll.temp <- rep(Inf, length(q.alpha.temp))
+for (i in 1:length(q.alpha.temp)) {
   ll.temp[i] <- neg_log_post_alpha(q = q.alpha.temp[i], others = others)
 }
 
