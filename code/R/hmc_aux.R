@@ -85,7 +85,8 @@ neg_log_post_alpha <- function(q, others) {
   # log density for PS random variable
   ll <- nknots * (log(alpha) - log(alpha1m)) + 
         2 * log(alpha) - q  # Jacobian
-  ll <- ll + sum(-log(a) / alpha1m - exp(lc) * a^(-alpha / alpha1m))
+  ll <- ll + sum(-log(a) / alpha1m  + lc - 
+                   exp(lc) * a^(-alpha / alpha1m))
   
   # data and log likelihood
   theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
