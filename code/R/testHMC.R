@@ -157,12 +157,14 @@ save.image(file = "alpha2.RData")
 par(mfrow=c(3, 4))
 plot.idx <- seq(1, 23, by = 2)
 for (i in plot.idx){
-  plot(storage.a[, i, 1], type = "l",  main = round(log(a.t[1, 1]), 2))
+  plot(log(storage.a[, i, 1]), type = "l",  main = round(log(a.t[i, 1]), 2))
 }
 
 for (i in plot.idx){
   plot(storage.b[, i, 1], type = "l")
 }
+
+plot(storage.alpha, type = "l")
 
 toc - tic
 
