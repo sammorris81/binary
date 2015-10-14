@@ -106,6 +106,57 @@ for (i in 1:niters) {
 toc.2 <- proc.time()
 save.image(file = "alpha5.RData")
 
+storage.alpha <- rep(NA, niters)
+q.a     <- matrix(log(100), nknots, nt)
+q.b     <- matrix(0, nknots, nt)
+q.alpha <- 0
+others <- list(y = y.t, alpha = 0.5, wz = wz.t, 
+               a = matrix(100, nknots, nt), b = matrix(0.5, nknots, nt))
+
+# find a good starting point for alpha
+alpha.temp <- seq(-10, 10, 0.01)
+ll.temp <- rep(Inf, length(alpha.temp))
+for (i in 1:length(alpha.temp)) {
+  ll.temp[i] <- neg_log_post_alpha(q = alpha.temp[i], others = others)
+}
+
+# pick the starting value that minimizes the neg log likelihood
+q.alpha <- alpha.temp[which(ll.temp == min(ll.temp))]
+
+Rprof(filename = "Rprof.out", line.profiling = TRUE)
+set.seed(200)
+tic <- proc.time()
+for (i in 1:1000) {
+#   HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.01, L=10, others)
+#   if (HMCout$accept) {
+#     others$a <- exp(HMCout$q)
+#     q.a      <- HMCout$q
+#   }
+#   HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.005, L=10, others)
+#   if (HMCout$accept) {
+#     others$b <- transform$inv.logit(HMCout$q)
+#     q.b      <- HMCout$q
+#   }
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q.alpha, epsilon=0.01, L=10, others)
+  if (HMCout$accept) {
+    others$alpha <- transform$inv.logit(HMCout$q)
+    q.alpha      <- HMCout$q
+  }
+#   storage.a[i, , ] <- others$a
+#   storage.b[i, , ] <- others$b
+  storage.alpha[i] <- others$alpha
+  if (i %% 500 == 0) {
+    print(paste("iter:", i, "of", niters, sep=" "))
+    plot(storage.alpha[1:i], type = "l")
+  }
+}
+Rprof(NULL)
+summaryRprof(filename = "Rprof.out", lines = "show")
+
+awz.lt <- matrix(0, nknots, nt)
+microbenchmark(getThetaCPP(wz = others$wz, a_star = others$a^alpha.t, alpha = alpha.t),
+               getThetaCPP2(wz = others$wz, a_star = others$a^alpha.t, alpha = alpha.t, awz_lt = awz.lt))
+
 set.seed(200)
 ns <- 2000
 nt <- 1

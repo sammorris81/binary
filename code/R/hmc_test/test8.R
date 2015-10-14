@@ -30,9 +30,19 @@ storage.b <- array(NA, dim=c(niters, nknots, nt))
 storage.alpha <- rep(NA, niters)
 q.a     <- matrix(log(100), nknots, nt)
 q.b     <- matrix(0, nknots, nt)
-q.alpha <- 0
 others <- list(y = y.t, alpha = 0.5, wz = wz.t, 
                a = matrix(100, nknots, nt), b = matrix(0.5, nknots, nt))
+
+# find a good starting point for alpha
+q.alpha.temp <- seq(-10, 10, 0.01)
+ll.temp <- rep(Inf, length(alpha.temp))
+for (i in 1:length(alpha.temp)) {
+  ll.temp[i] <- neg_log_post_alpha(q = q.alpha.temp[i], others = others)
+}
+
+# pick the starting value that minimizes the neg log likelihood
+q.alpha <- q.alpha.temp[which(ll.temp == min(ll.temp))]
+others$alpha <- transform$inv.logit(q.alpha)
 
 set.seed(200)
 tic <- proc.time()
