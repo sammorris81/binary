@@ -29,6 +29,7 @@ niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
 storage.alpha <- rep(NA, niters)
+att.b <- acc.b <- mh.b <- 0.05
 q.a     <- matrix(log(10), nknots, nt)
 q.b     <- matrix(0, nknots, nt)
 others <- list(y = y.t, alpha = 0.5, wz = wz.t, 
@@ -48,12 +49,34 @@ for (i in 1:niters) {
     others$alpha <- transform$inv.logit(tail(q.ps, 1))
   }
 
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.005, L=10, others)
-  if (HMCout$accept) {
-    others$b <- transform$inv.logit(HMCout$q)
-    q.b      <- HMCout$q
+#   HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.005, L=10, others)
+#   if (HMCout$accept) {
+#     others$b <- transform$inv.logit(HMCout$q)
+#     q.b      <- HMCout$q
+#   }
+  
+  att.b     <- att.b + 1
+  logitB    <- transform$logit(others$b)
+  canlogitB <- rnorm(nkt, logitB, mh.b)
+  if (any(canlogitB > 10)) {
+    R <- -Inf
+  } else {
+    R <- llps(q = canlogitB, others = others, addup = TRUE) -
+         llps(q = logitB, others = others, addup = TRUE)
   }
-
+  
+  if (log(runif(1)) < R) {
+    acc.b    <- acc.b + 1
+    others$b <- transform$inv.logit(canlogitB)
+  }
+  
+  if (att.b > 100) {
+    acc.rate <- acc.b / att.b
+    if (acc.rate > 0.5) { mh.b <- mh.b * 1.2 }
+    else if (acc.rate < 0.25) { mh.b <- mh.b * 0.8 }
+    acc.b <- att.b <- 0
+  }
+  
   storage.a[i, , ] <- log(others$a)
   storage.b[i, , ] <- others$b
   storage.alpha[i] <- others$alpha
@@ -66,7 +89,7 @@ for (i in 1:niters) {
       plot(storage.a[1:i, idx, ], type = "l", main = main.title)
     }
     for (idx in plot.idx) {
-      main.title <- paste("b[", idx, "]", sep = "")
+      main.title <- paste("b[", idx, "], accrate = ", round(acc.b / att.b, 2), sep = "")
       plot(storage.b[1:i, idx, ], type = "l", main = main.title)
     }
     plot(storage.alpha[1:i], type = "l", main = "alpha")

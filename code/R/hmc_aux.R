@@ -33,7 +33,7 @@ neg_log_post_a <- function(q, others) {
 }
 
 
-neg_log_post_b <- function(q, others) {
+llps <- function(q, others, addup = TRUE) {
   # q: logit(b)
   # others is a list
   #   y:     data
@@ -52,8 +52,40 @@ neg_log_post_b <- function(q, others) {
   
   # log prior
   lc <- logc(b = b, alpha = alpha)
-  ll <- sum(lc - exp(lc) * a^(-alpha / alpha1m) + 
-        2 * log(b) - q)  # jacobian
+  ll <- lc - exp(lc) * a^(-alpha / alpha1m)
+  
+  if (addup) {
+    ll <- sum(ll)
+  }
+  
+  # b does not have an impact on the likelihood
+}
+
+neg_log_post_b <- function(q, others, addup = TRUE) {
+  # q: logit(b)
+  # others is a list
+  #   y:     data
+  #   alpha: spatial dependence
+  #   wz:    kernel weights
+  #   a:     positive stable random effects
+  #   b:     auxiliary random variable
+  
+  # parameter transformation
+  b  <- transform$inv.logit(q)
+  
+  # extract from the list and get calculated quantities
+  a       <- others$a
+  alpha   <- others$alpha
+  alpha1m <- 1 - alpha
+  
+  # prior is U(0, 1)
+  lc <- logc(b = b, alpha = alpha)
+  ll <- lc - exp(lc) * a^(-alpha / alpha1m) + 
+        # 2 * log(b) - q  # jacobian
+  
+  if (addup) {
+    ll <- sum(ll)
+  }
   
   # b does not have an impact on the likelihood
   
