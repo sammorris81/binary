@@ -89,17 +89,21 @@ HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
 #   print(proposed_K)
 #   print(q)
 #   print(p)
+  
+  R <- current_U - proposed_U + current_K - proposed_K
 
   # Accept or reject the state at end of trajectory, returning either
   # the position at the end of the trajectory or the initial position
-
-  if (runif(1) < exp(current_U - proposed_U + current_K - proposed_K))
-  {
-     list(q=q, accept=TRUE)
-  }
-  else
-  {
+  if (!is.nan(R)) {
+    if (runif(1) < exp(R))
+    {
+      list(q=q, accept=TRUE)
+    }
+    else
+    {
+      list(q=current_q, accept=FALSE)
+    }
+  } else {
     list(q=current_q, accept=FALSE)
   }
-
 }
