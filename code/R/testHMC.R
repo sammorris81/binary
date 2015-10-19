@@ -319,3 +319,33 @@ for (iter in 1:niters) {
 Rprof(filename = NULL)
 summaryRprof(filename = "Rprof.out", lines = "show")
 toc.1 <- proc.time()
+
+
+# check to make sure they come back the same
+#   y:      data
+#   x:      covariates
+#   xi:     xi
+#   w:      w
+#   alpha:  spatial dependence
+#   wz:     kernel weights
+#   a:      positive stable random effects
+#   b:      auxiliary random variable
+#   pri.mn: prior mean
+#   pri.sd: prior standard deviation
+xi.t <- 0
+others1 <- list(y = y, x = x, xi = xi.t, w = w.t, alpha = alpha.t, wz = wz.t, a = a.t, b = b, pri.mn = 0, pri.sd = 10)
+neg_log_post_beta(0, others = others1)
+
+#   y(ns, nt):      data
+#   x(ns, nt * np): covariates
+#   xi(1):          xi
+#   aw(ns, nt):     sum_l (A_l * w_li^(1 / alpha))
+#   alpha(1):       spatial dependence
+#   pri.mn(1):      prior mean
+#   pri.sd(1):      prior standard deviation
+aw <- getawCPP(a_star = a.t^alpha.t, w = w.t, alpha = alpha.t)
+others2 <- list(y = y, x = x, xi = xi.t, aw = aw, alpha = alpha.t, pri.mn = 0, pri.sd = 10)
+neg_log_post_beta_2(0, others = others2)
+
+library(microbenchmark)
+microbenchmark(neg_log_post_beta(0, others = others1), neg_log_post_beta_2(0, others = others2))

@@ -117,7 +117,6 @@ arma::mat getawCPP(arma::mat a_star, arma::mat w, double alpha) {
    * this avoids unnecessary calculation and summing since only z changes.
    * using a_star to help with numerical stability in multiplication.
    */ 
-  uword nknots = w.n_cols;
   uword ns = w.n_rows;
   uword nt = a_star.n_cols;
   
