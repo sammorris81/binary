@@ -110,7 +110,7 @@ arma::cube getwzCPP(arma::mat z, arma::mat w) {
 }
 
 // [[Rcpp::export]]
-arma::mat getawCPP(arma::mat w, arma::mat a_star, double alpha) {
+arma::mat getawCPP(arma::mat a_star, arma::mat w, double alpha) {
   /* when beta is being updated, it is quicker to work with 
    * aw_it = sum(a_lt w_li^1 / alpha)
    * 

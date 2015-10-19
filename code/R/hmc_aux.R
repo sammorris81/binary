@@ -17,8 +17,11 @@ neg_log_post_beta <- function(q, others) {
   
   # extract from the list and get calculated quantities
   y     <- others$y
+  xi    <- others$xi
   alpha <- others$alpha
   w     <- others$w
+  a     <- others$a
+  wz    <- others$wz
   x     <- others$x
   ns <- nrow(y)
   nt <- ncol(y)
@@ -31,6 +34,38 @@ neg_log_post_beta <- function(q, others) {
   ll <- dnorm(x = q, mean = others$pri.mn, sd = others$pri.sd, log = TRUE)
   
   theta <- getThetaCPP(wz = wz, a_star = a^alpha, alpha = alpha)
+  ll    <- ll + sum(logLikeY(y = y, theta = theta))
+  
+  return(-ll)
+}
+
+neg_log_post_beta_2 <- function(q, others) {
+  # q: beta
+  # others is a list
+  #   y(ns, nt):      data
+  #   x(ns, nt * np): covariates
+  #   xi(1):          xi
+  #   aw(ns, nt):     sum_l (A_l * w_li^(1 / alpha))
+  #   alpha(1):       spatial dependence
+  #   pri.mn(1):      prior mean
+  #   pri.sd(1):      prior standard deviation
+  
+  # extract from the list and get calculated quantities
+  y     <- others$y
+  x     <- others$x
+  xi    <- others$xi
+  aw    <- others$aw
+  alpha <- others$alpha
+  ns <- nrow(y)
+  nt <- ncol(y)
+  
+  x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = q)
+  z      <- getZ(xi = xi, x.beta = x.beta, thresh = 0)
+  
+  # log prior
+  ll <- dnorm(x = q, mean = others$pri.mn, sd = others$pri.sd, log = TRUE)
+  
+  theta <- z^(-1 / alpha) * aw
   ll    <- ll + sum(logLikeY(y = y, theta = theta))
   
   return(-ll)
