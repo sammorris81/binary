@@ -83,14 +83,17 @@ HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
   proposed_U = U(q, others)
   proposed_K = sum(p^2) / 2
   
-#   print(current_U)
-#   print(current_K)
-#   print(proposed_U)
-#   print(proposed_K)
-#   print(q)
-#   print(p)
+  if (any(is.nan(current_U)) | any(is.nan(current_K)) | any(is.nan(proposed_U)) | any(is.nan(proposed_K))) {
+    print(current_U)
+    print(current_K)
+    print(proposed_U)
+    print(proposed_K)
+    print(q)
+    print(p)
+  }
   
   R <- current_U - proposed_U + current_K - proposed_K
+  # print(paste("R is ", R))
 
   # Accept or reject the state at end of trajectory, returning either
   # the position at the end of the trajectory or the initial position

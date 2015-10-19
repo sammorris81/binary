@@ -1,6 +1,40 @@
 library(Rcpp)
 source("./HMC.R")
-source("./auxfunctions.R")
+
+neg_log_post_beta <- function(q, others) {
+  # q: beta
+  # others is a list
+  #   y:      data
+  #   x:      covariates
+  #   xi:     xi
+  #   w:      w
+  #   alpha:  spatial dependence
+  #   wz:     kernel weights
+  #   a:      positive stable random effects
+  #   b:      auxiliary random variable
+  #   pri.mn: prior mean
+  #   pri.sd: prior standard deviation
+  
+  # extract from the list and get calculated quantities
+  y     <- others$y
+  alpha <- others$alpha
+  w     <- others$w
+  x     <- others$x
+  ns <- nrow(y)
+  nt <- ncol(y)
+  
+  x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = q)
+  z      <- getZ(xi = xi, x.beta = x.beta, thresh = 0)
+  wz     <- getwzCPP(z = z, w = w)
+  
+  # log prior
+  ll <- dnorm(x = q, mean = others$pri.mn, sd = others$pri.sd, log = TRUE)
+  
+  theta <- getThetaCPP(wz = wz, a_star = a^alpha, alpha = alpha)
+  ll    <- ll + sum(logLikeY(y = y, theta = theta))
+  
+  return(-ll)
+}
 
 neg_log_post_a <- function(q, others) {
   # q: log(a)
@@ -279,8 +313,31 @@ neg_log_post_grad_alpha <- function(q, others, eps = 0.0001) {
   # using a quick and easy numerical approximation
   # might be good to eventually get the actual value, but this is pretty reliable
   
-  grad <- (neg_log_post_alpha(q = q + 0.0001, others = others) - 
-           neg_log_post_alpha(q = q, others = others)) / 0.0001
+  grad <- (neg_log_post_alpha(q = q + eps, others = others) - 
+           neg_log_post_alpha(q = q, others = others)) / eps
+  
+  return(grad)
+}
+
+neg_log_post_grad_beta <- function(q, others, eps = 0.0001) {
+  # q: beta
+  # others is a list
+  #   y:      data
+  #   x:      covariates
+  #   xi:     xi
+  #   w:      w
+  #   alpha:  spatial dependence
+  #   wz:     kernel weights
+  #   a:      positive stable random effects
+  #   b:      auxiliary random variable
+  #   pri.mn: prior mean
+  #   pri.sd: prior standard deviation
+  
+  # using a quick and easy numerical approximation
+  # might be good to eventually get the actual value, but this is pretty reliable
+  
+  grad <- (neg_log_post_beta(q = q + eps, others = others) - 
+           neg_log_post_beta(q = q, others = others)) / eps
   
   return(grad)
 }

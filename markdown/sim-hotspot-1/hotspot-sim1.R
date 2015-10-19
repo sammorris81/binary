@@ -124,7 +124,7 @@ for (setting in settings) {
       alpha.init <- fit.pcl$par[1]
     }
     tic <- proc.time()[3]
-    Rprof(filename = "test1.out", line.profiling = TRUE)
+    Rprof(filename = "Rprof.out", line.profiling = TRUE)
     fit.gev <- mcmc.gev(y = y.i.o, s = s.o, x = X.o, s.pred = NULL, x.pred = NULL,
                         beta.init = fit.pcl$beta, beta.m = 0, beta.s = 100,
                         xi.init = 0, xi.m = 0, xi.s = 0.5,
@@ -135,12 +135,12 @@ for (setting in settings) {
                         beta.attempts = 50, xi.attempts = 50,
                         alpha.attempts = 300, rho.attempts = 100,
                         A.attempts = 100, spatial = TRUE, rho.init = fit.pcl$par[2],
-                        rho.upper = 9, alpha.init = alpha.init, a.init = 1000,
+                        rho.upper = 9, alpha.init = 0.5, a.init = 1,
                         iterplot = TRUE, alpha.fix = FALSE, rho.fix = FALSE,
                         xibeta.joint = FALSE, xi.fix = TRUE, threads = 1,
-                        iters = 1000, burn = 500, update = 100, thin = 1)
-    Rprof(NULL)
-    summaryRprof(filename = "test1.out", lines = "show")
+                        iters = 500, burn = 500, update = 100, thin = 1)
+    Rprof(filename = NULL)
+    summaryRprof(filename = "Rprof.out", lines = "show")
     print("    start mcmc predict")
     post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                                 s.pred = s.p, knots = knots,

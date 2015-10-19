@@ -19,6 +19,8 @@ if (!exists("pairwiseCPP")) {
   sourceCpp(file = "./pairwise.cpp")
 }
 
+source('hmc_aux.R')
+
 source('pairwise.R')
 
 adjustX <- function(x, y) {

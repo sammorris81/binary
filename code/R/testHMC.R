@@ -204,3 +204,118 @@ for (i in 1:niters) {
   }
 }
 toc.1 <- proc.time()
+
+
+# try with the update for a and alpha
+rm(list=ls())
+source("./auxfunctions.R")
+source("./hmc_aux.R")
+source("./updateModel.R")
+
+options(warn = 2)
+
+# Test out the functions
+library(fields)
+library(evd)
+set.seed(200)
+ns <- 1500
+nt <- 1
+nknotsx <- 5
+nknotsy <- 5
+nknots <- nknotsx * nknotsy
+nkt <- nknots * nt
+rho.t <- 0.25
+alpha.t <- 0.8
+s <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
+dw2 <- rdist(s, knots)
+w.t <- stdW(makeW(dw2 = dw2, rho = rho.t))
+z.t <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
+a.t <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
+wz.t <- getwzCPP(z = z.t, w = w.t)
+theta.t <- getThetaCPP(wz = wz.t, a_star = a.t^alpha.t, alpha = alpha.t)
+y   <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt) 
+
+niters <- 500
+burn   <- 100
+storage.a <- array(NA, dim=c(niters, nknots, nt))
+storage.b <- array(NA, dim=c(niters, nknots, nt))
+storage.alpha <- rep(NA, niters)
+a <- matrix(1, nknots, nt)
+q.a <- log(a)
+b <- matrix(0.5, nknots, nt)
+q.b <- transform$logit(b)
+q.ps <- c(as.vector(q.a), 0)
+
+x <- matrix(rep(1, ns * nt), nrow = ns, ncol = nt)
+beta <- 0
+xi <- 0
+thresh <- 0
+x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = beta)
+z <- getZ(xi = xi, x.beta = x.beta, thresh = thresh)
+wz <- getwzCPP(z = z, w = w.t)
+att.beta <- acc.beta <- mh.beta <- 0.05
+beta.m <- 0
+beta.s <- 10
+beta.attempts <- 50
+cur.lly <- logLikeY(y = y, theta = theta.t)
+storage.beta <- rep(NA, niters)
+
+
+theta  <- theta.t
+set.seed(200)
+tic.1 <- proc.time()
+others <- list(y = y, alpha = 0.5, wz = wz, b = b, a = a.t)
+q.beta <- 0.5
+others$beta <- q.beta
+neg_log_post_beta(q = q.beta, others = others)
+Rprof(filename = "Rprof.out", line.profiling = TRUE)
+for (iter in 1:niters) {
+  others$x  <- x
+  others$xi <- 0
+  others$w  <- w.t
+  others$pri.mn <- 0
+  others$pri.sd <- 100
+  HMCout  <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q.beta, 
+                 epsilon = 0.005, L = 10, others)
+  if (HMCout$accept) {
+    q.beta <- HMCout$q
+    others$beta <- q.beta
+  }
+  
+  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q.ps, 
+                 epsilon = 0.01, L = 10, others)
+  if (HMCout$accept) {
+    q.ps     <- HMCout$q
+    q.a      <- matrix(q.ps[1:nkt], nknots, nt)
+    q.alpha  <- tail(q.ps, 1)
+    others$a <- exp(q.a)
+    others$alpha <- transform$inv.logit(q.alpha)
+  }
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.01, L=10, others)
+  if (HMCout$accept) {
+    others$b <- transform$inv.logit(HMCout$q)
+    q.b <- HMCout$q
+  }
+  storage.a[iter, , ] <- others$a
+  storage.b[iter, , ] <- others$b
+  storage.alpha[iter] <- others$alpha
+  storage.beta[iter]  <- others$beta
+  if (iter %% 500 == 0) {
+    par(mfrow=c(3, 4))
+    plot.idx <- seq(1, 5)
+    for (idx in plot.idx){
+      plot(log(storage.a[1:iter, idx, 1]), type = "l", main = round(log(a.t[idx, 1]), 2))
+    }
+    plot.idx <- seq(1, 5)
+    for (idx in plot.idx){
+      plot(storage.b[1:iter, idx, 1], type = "l")
+    }
+    plot(storage.beta[1:iter], type = "l")
+    plot(storage.alpha[1:iter], type = "l")
+    print(paste("iter:", iter, "of", niters, sep=" "))
+  }
+}
+Rprof(filename = NULL)
+summaryRprof(filename = "Rprof.out", lines = "show")
+toc.1 <- proc.time()
