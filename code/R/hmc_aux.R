@@ -1,7 +1,7 @@
 library(Rcpp)
 source("./HMC.R")
 
-neg_log_post_beta <- function(q, others) {
+neg_log_post_beta <- function(q, d, p, c, o, prior) {
   # q: beta
   # others is a list
   #   y(ns, nt):      data
@@ -13,11 +13,11 @@ neg_log_post_beta <- function(q, others) {
   #   pri.sd(1):      prior standard deviation
   
   # extract from the list and get calculated quantities
-  y     <- others$y
-  x     <- others$x
-  xi    <- others$xi
-  aw    <- others$aw
-  alpha <- others$alpha
+  y     <- d$y
+  x     <- d$x
+  xi    <- p$xi
+  aw    <- c$aw
+  alpha <- p$alpha
   ns <- nrow(y)
   nt <- ncol(y)
   
@@ -25,7 +25,7 @@ neg_log_post_beta <- function(q, others) {
   z      <- getZ(xi = xi, x.beta = x.beta, thresh = 0)
   
   # log prior
-  ll <- dnorm(x = q, mean = others$pri.mn, sd = others$pri.sd, log = TRUE)
+  ll <- dnorm(x = q, mean = prior$beta.mn, sd = prior$beta.sd, log = TRUE)
   
   theta <- z^(-1 / alpha) * aw
   ll    <- ll + sum(logLikeY(y = y, theta = theta))
@@ -33,7 +33,7 @@ neg_log_post_beta <- function(q, others) {
   return(-ll)
 }
 
-neg_log_post_a <- function(q, others) {
+neg_log_post_a <- function(q, d, p, c, o, prior) {
   # q: log(a)
   # others is a list
   #   y:     data
@@ -43,12 +43,12 @@ neg_log_post_a <- function(q, others) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  a <- exp(q)
+  a <- p$a <- exp(q)
   
   # extract from the list and get calculated quantities
-  y       <- others$y
-  alpha   <- others$alpha
-  b       <- others$b
+  y       <- d$y
+  alpha   <- p$alpha
+  b       <- p$b
   alpha1m <- 1 - alpha
   
   # log prior
@@ -57,14 +57,15 @@ neg_log_post_a <- function(q, others) {
   ll <- sum(alpha / alpha1m * q - exp(lc) * a^(-alpha / alpha1m))
   
   # data and log likelihood
-  theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
-  ll <- ll + sum(logLikeY(y = y, theta = theta))
+  c$aw  <- getAW(d = d, p = p, c = c, o = o)
+  c$theta <- getTheta(d = d, p = p, c = c, o = o)
+  ll <- ll + sum(logLikeY(y = y, theta = c$theta))
   
   return (-ll)
 }
 
 
-llps <- function(q, others, addup = TRUE) {
+llps <- function(q, d, p, c, o, prior, addup = TRUE) {
   # q: logit(b)
   # others is a list
   #   y:     data
@@ -74,11 +75,11 @@ llps <- function(q, others, addup = TRUE) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  b  <- transform$inv.logit(q)
+  b  <- p$b <- transform$inv.logit(q)
   
   # extract from the list and get calculated quantities
-  a       <- others$a
-  alpha   <- others$alpha
+  a       <- p$a
+  alpha   <- p$alpha
   alpha1m <- 1 - alpha
   
   # log prior
@@ -98,7 +99,7 @@ llps <- function(q, others, addup = TRUE) {
 #   p: sin(pi * b)^(-1 / (1 - alpha))
 #   q: sin((1 - alpha) * pi * b)
 
-neg_log_post_b <- function(q, others, addup = TRUE) {
+neg_log_post_b <- function(q, d, p, c, o, prior, addup = TRUE) {
   # q: logit(b)
   # others is a list
   #   y:     data
@@ -108,11 +109,11 @@ neg_log_post_b <- function(q, others, addup = TRUE) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  b  <- transform$inv.logit(q)
+  b  <- p$b <- transform$inv.logit(q)
   
   # extract from the list and get calculated quantities
-  a       <- others$a
-  alpha   <- others$alpha
+  a       <- p$a
+  alpha   <- p$alpha
   alpha1m <- 1 - alpha
   
   # prior is U(0, 1)
@@ -129,7 +130,7 @@ neg_log_post_b <- function(q, others, addup = TRUE) {
   return (-ll)
 }
 
-neg_log_post_alpha <- function(q, others) {
+neg_log_post_alpha <- function(q, d, p, c, o, prior) {
   # q: logit(alpha)
   # others is a list
   #   y:     data
@@ -139,13 +140,13 @@ neg_log_post_alpha <- function(q, others) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  alpha   <- transform$inv.logit(q)
+  alpha   <- p$alpha <- transform$inv.logit(q)
   alpha1m <- 1 - alpha
   
   # extract from the list and get calculated quantities
-  y  <- others$y
-  a  <- others$a
-  b  <- others$b
+  y  <- d$y
+  a  <- p$a
+  b  <- p$b
   lc <- logc(b = b, alpha = alpha)
   
   nt     <- ncol(a)
@@ -157,13 +158,13 @@ neg_log_post_alpha <- function(q, others) {
                  exp(lc) * a^(-alpha / alpha1m))
   
   # data and log likelihood
-  theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
+  theta <- getTheta(d = d, p = p, c = c, o = o)
   ll    <- ll + sum(logLikeY(y = y, theta = theta))
   
   return(-ll)
 }
 
-neg_log_post_a_alpha <- function(q, others) {
+neg_log_post_a_alpha <- function(q, d, p, c, o, prior) {
   # q: c(log(a), logit(alpha))
   # others is a list
   #   y:     data
@@ -173,8 +174,8 @@ neg_log_post_a_alpha <- function(q, others) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  nknots  <- nrow(others$a)
-  nt      <- ncol(others$a)
+  nknots  <- nrow(p$a)
+  nt      <- ncol(p$a)
   q.a     <- matrix(q[1:(nknots * nt)], nknots, nt)
   q.alpha <- tail(q, 1)
   a       <- exp(q.a)
@@ -182,8 +183,8 @@ neg_log_post_a_alpha <- function(q, others) {
   alpha1m <- 1 - alpha
   
   # extract from the list and get calculated quantities
-  y       <- others$y
-  b       <- others$b
+  y       <- d$y
+  b       <- p$b
   lc      <- logc(b = b, alpha = alpha)
   
   # log prior
@@ -193,7 +194,7 @@ neg_log_post_a_alpha <- function(q, others) {
         nknots * (log(alpha) - log(alpha1m))
   
   # data and log likelihood
-  theta <- getThetaCPP(wz = others$wz, a_star = a^alpha, alpha = alpha)
+  theta <- getTheta(d = d, p = p, c = c, o = o)
   ll <- ll + sum(logLikeY(y = y, theta = theta))
 
   return (-ll)
@@ -211,7 +212,7 @@ logc <- function(b, alpha) {
   return(results)
 }
 
-neg_log_post_grad_a <- function(q, others) {
+neg_log_post_grad_a <- function(q, d, p, c, o, prior) {
   # q: log(a)
   # others is a list
   #   y:     data
@@ -221,22 +222,21 @@ neg_log_post_grad_a <- function(q, others) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  a      <- exp(q)
+  a  <- p$a  <- exp(q)
+  aw <- c$aw <- getAW(d = d, p = p, c = c, o = o)
   
   nt     <- ncol(a)
   nknots <- nrow(a)
   
   # extract from the list and get calculated quantities
-  alpha <- others$alpha
-  wz    <- others$wz
-  y     <- others$y
-  b     <- others$b
+  alpha <- p$alpha
+  y     <- d$y
+  b     <- p$b
   
   # get calculated values
   lc      <- logc(b = b, alpha = alpha)
-  theta   <- getThetaCPP(wz = wz, a_star = a^alpha, alpha = alpha)
+  theta <- c$theta <- getTheta(d = d, p = p, c = c, o = o)
   alpha1m <- 1 - alpha
-  wz.star <- wz^(1 / alpha)
   
   # grad wrt log(a)
   grad <- matrix(0, nknots, nt)
@@ -247,10 +247,10 @@ neg_log_post_grad_a <- function(q, others) {
   # For observances:
   #   a.lt * wz.star.lt / expm1(theta.t)
   for (t in 1:nt) {
+    wz.star.t <- exp((log(c$w) - log(c$z[, t])) / alpha)
     for (l in 1:nknots) {
-      these <- which(y[, t] == 1)
-      grad[l, t] <- a[l, t] * (sum(wz.star[y == 0, l, t]) - 
-                               sum(wz.star[y == 1, l, t] / expm1(theta[y == 1, t])))
+      grad[l, t] <- a[l, t] * (sum(wz.star.t[y == 0, l]) - 
+                               sum(wz.star.t[y == 1, l] / expm1(theta[y == 1, t])))
     }
   }
   grad <- grad - alpha / alpha1m * (1 + exp(lc) * a^(-alpha / alpha1m))
@@ -258,7 +258,7 @@ neg_log_post_grad_a <- function(q, others) {
   return(grad)
 }
 
-neg_log_post_grad_b <- function(q, others) {
+neg_log_post_grad_b <- function(q, d, p, c, o, prior) {
   # q: logit(b)
   # others is a list
   #   y:     data
@@ -268,12 +268,12 @@ neg_log_post_grad_b <- function(q, others) {
   #   b:     auxiliary random variable
   
   # parameter transformation
-  b  <- transform$inv.logit(q)
+  b <- p$b <- transform$inv.logit(q)
   
   # extract from the list and get calculated quantities
-  alpha   <- others$alpha
+  alpha   <- p$alpha
   alpha1m <- 1 - alpha  # used a lot in gradiant for b
-  a       <- others$a
+  a       <- p$a
   apb     <- alpha * pi * b
   a1mpb   <- alpha1m * pi * b
   pb      <- pi * b
@@ -298,7 +298,7 @@ neg_log_post_grad_b <- function(q, others) {
   return(grad)
 }
 
-neg_log_post_grad_alpha <- function(q, others, eps = 0.0001) {
+neg_log_post_grad_alpha <- function(q, d, p, c, o, prior, eps = 0.0001) {
   # q: logit(alpha)
   # others is a list
   #   y:     data
@@ -310,13 +310,15 @@ neg_log_post_grad_alpha <- function(q, others, eps = 0.0001) {
   # using a quick and easy numerical approximation
   # might be good to eventually get the actual value, but this is pretty reliable
   
-  grad <- (neg_log_post_alpha(q = q + eps, others = others) - 
-           neg_log_post_alpha(q = q, others = others)) / eps
+  grad <- (neg_log_post_alpha(q = q + eps, d = d, p = p, c = c, o = o, 
+                              prior = prior) - 
+           neg_log_post_alpha(q = q, d = d, p = p, c = c, o = o, 
+                              prior = prior)) / eps
   
   return(grad)
 }
 
-neg_log_post_grad_beta <- function(q, others, eps = 0.0001) {
+neg_log_post_grad_beta <- function(q, d, p, c, o, prior, eps = 0.0001) {
   # q: beta
   # others is a list
   #   y:      data
@@ -333,13 +335,14 @@ neg_log_post_grad_beta <- function(q, others, eps = 0.0001) {
   # using a quick and easy numerical approximation
   # might be good to eventually get the actual value, but this is pretty reliable
   
-  grad <- (neg_log_post_beta(q = q + eps, others = others) - 
-           neg_log_post_beta(q = q, others = others)) / eps
+  grad <- (neg_log_post_beta(q = q + eps, d = d, p = p, c = c, o = o, 
+                             prior = prior) - 
+           neg_log_post_beta(q = q, d = d, p = p, c = c, o = o, prior = prior)) / eps
   
   return(grad)
 }
 
-neg_log_post_grad_a_alpha <- function(q, others) {
+neg_log_post_grad_a_alpha <- function(q, d, p, c, o, prior) {
   # q is a list: 
   #   a:     log(a)
   #   alpha: logit(alpha))
@@ -361,8 +364,10 @@ neg_log_post_grad_a_alpha <- function(q, others) {
   others$a <- exp(q.a)
   others$alpha <- transform$inv.logit(q.alpha)
   
-  grad[1:nknots] <- neg_log_post_grad_a(q = q.a, others = others)
-  grad[(nknots + 1)] <- neg_log_post_grad_alpha(q = q.alpha, others = others)
+  grad[1:nknots] <- neg_log_post_grad_a(q = q.a, d = d, p = p, c = c, o = o, 
+                                        prior = prior)
+  grad[(nknots + 1)] <- neg_log_post_grad_alpha(q = q.alpha, d = d, p = p, 
+                                                c = c, o = o, prior = prior)
   
   return(grad)
 }

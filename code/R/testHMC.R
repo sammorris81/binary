@@ -9,8 +9,8 @@ library(evd)
 set.seed(200)
 ns <- 10
 nt <- 1
-nknotsx <- 5
-nknotsy <- 5
+nknotsx <- 2
+nknotsy <- 3
 nknots <- nknotsx * nknotsy
 rho.t <- 0.25
 alpha.t <- 0.25
@@ -35,11 +35,11 @@ y <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-calc.t$theta)), ns, nt)
 data   <- list(y = y, x = x, s = s, knots = knots, dw2 = dw2)
 params <- list(beta = 0, xi = 0, rho = rho.t, alpha = alpha.t)  # still need a and b
 calc   <- list(z = calc.t$z, x.beta = 0, w = calc.t$w)  # need aw, theta
-priors <- list(beta.mn = 0, beta.sd = 100)
+prior  <- list(beta.mn = 0, beta.sd = 100)
 
 # initial values
-a <- matrix(log(10), nknots, nt)
-b <- matrix(0, nknots, nt)
+a <- matrix(10, nknots, nt)
+b <- matrix(0.5, nknots, nt)
 
 params$a <- a
 params$b <- b
@@ -51,23 +51,32 @@ niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
 set.seed(200)
+
+getwzCPP(z = calc$z, w = calc$w)
+exp(log(calc$w) - log(calc$z[, 1]))
+
+library(numDeriv)
+neg_log_post_a(q = log(params$a), d = data, p = params, c = calc, o = others, prior = prior)
+neg_log_post_grad_a(q = log(params$a), d = data, p = params, c = calc, o = others, prior = prior)
+
+
 tic.1 <- proc.time()
 for (i in 1:niters) {
   q <- log(params$a)
   HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, epsilon = 0.01, L = 10, 
-                 dothers)
+                 d = data, p = params, c = calc, o = others, prior = prior)
   if (HMCout$accept) {
-    a   <- exp(q.a)
+    params$a <- exp(q.a)
   }
   
-  others <- list(y = y)
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.01, L=10, others)
+  q <- transform$logit(params$b)
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = 0.01, L = 10, 
+                 d = data, p = params, c = calc, o = others, prior = prior)
   if (HMCout$accept) {
-    others$b <- transform$inv.logit(HMCout$q)
-    q.b <- HMCout$q
+    params$b <- transform$inv.logit(HMCout$q)
   }
-  storage.a[i, , ] <- others$a
-  storage.b[i, , ] <- others$b
+  storage.a[i, , ] <- params$a
+  storage.b[i, , ] <- params$b
   if (i %% 100 == 0) {
     par(mfrow=c(3, 4))
     plot.idx <- seq(1, 23, by = 2)
