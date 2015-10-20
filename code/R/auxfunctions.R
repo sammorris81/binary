@@ -23,6 +23,51 @@ source('hmc_aux.R')
 
 source('pairwise.R')
 
+# calculated values for the MCMC
+getAW <- function(d, p, c) {
+  a.star <- p$a^p$alpha
+  w <- c$w
+  alpha <- p$alpha
+  aw <- getawCPP(a_star = p$a^p$alpha, w = c$w, alpha = p$alpha)
+  
+  return(aw)
+} 
+
+getTheta <- function(d, p, c) {
+  theta <- c$z * c$aw
+}
+
+getXBeta <- function(d, p, c) {
+  ns <- nrow(d$y)
+  nt <- ncol(d$y)
+  if (nt == 1) {
+    return(d$x %*% p$beta)
+  } else {
+    x.beta <- matrix(NA, ns, nt)
+    for (t in 1:nt) {
+      start <- (t - 1) * ns + 1
+      end   <- t * ns
+      x.beta[, t] <- d$x[start:end, ] %*% p$beta
+    }
+  }
+}
+
+# (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
+getZ <- function(d, p, c, thresh = 0) {
+  if (p$xi != 0) {
+    z <- (1 + p$xi * (thresh - c$x.beta))^(1 / p$xi)
+  } else {
+    z <- exp(thresh - c$x.beta)
+  }
+  
+  return(z)
+}
+
+getW <- function(d, p, c) {
+  w <- stdW(makeW(dw2 = d$dw2, rho = p$rho, A.cutoff = o$A.cutoff))
+}
+
+# useful functions
 adjustX <- function(x, y) {
   # always want a matrix that has ns * nt rows and np cols
   # we do this to simplify the multiplication of x %*% beta
@@ -62,30 +107,7 @@ adjustX <- function(x, y) {
   }
 }
 
-getXBeta <- function(x, ns, nt, beta) {
-  if (nt == 1) {
-    return(x %*% beta)
-  } else {
-    x.beta <- matrix(NA, ns, nt)
-    for (t in 1:nt) {
-      start <- (t - 1) * ns + 1
-      end   <- t * ns
-      x.beta[, t] <- x[start:end, ] %*% beta
-    }
-  }
-}
 
-# TODO: There needs to be more checks here.
-# (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
-getZ <- function(xi, x.beta, thresh = 0) {
-  if (xi != 0) {
-    z <- (1 + xi * (thresh - x.beta))^(1 / xi)
-  } else {
-    z <- exp(thresh - x.beta)
-  }
-
-  return(z)
-}
 
 # storing each day as an element of a list
 getwzStar <- function(z, w, alpha) {
@@ -105,49 +127,49 @@ getwzStar <- function(z, w, alpha) {
   return(wz.star)
 }
 
-getwz <- function(z, w) {
-  nknots  <- ncol(w)
-  ns      <- nrow(w)
-  nt      <- ncol(z)
-  
-  wz <- array(NA, dim=c(ns, nknots, nt))
-  for (t in 1:nt) {
-    wz[, , t] <- w / rep(z[, t], nknots)
-  }
-  
-  # wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
-  
-  return(wz)
-}
+# getwz <- function(z, w) {
+#   nknots  <- ncol(w)
+#   ns      <- nrow(w)
+#   nt      <- ncol(z)
+#   
+#   wz <- array(NA, dim=c(ns, nknots, nt))
+#   for (t in 1:nt) {
+#     wz[, , t] <- w / rep(z[, t], nknots)
+#   }
+#   
+#   # wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
+#   
+#   return(wz)
+# }
 
-# trying a slightly different calculation
-getTheta <- function(wz.star, a, IDs = NULL) {
-  nt <- dim(wz.star)[3]
-  nknots <- dim(wz.star)[2]
-  ns <- dim(wz.star)[1]
-
-  theta <- matrix(NA, nrow = ns, ncol = nt)
-
-  if (is.null(IDs)) {
-    for (t in 1:nt) {
-      if (nknots == 1) {
-        theta[, t] <- wz.star[, , t] * a[ , t]
-      } else if (nknots > 1) {
-        theta[, t] <- wz.star[, , t] %*% a[, t]
-      }
-    }
-  } else {  # when using IDs, there needs to be more than one knot
-    for (t in 1:nt) {
-      a.t <- a[, t]
-      for (i in 1:ns) {
-        these <- IDs[[i]]
-        theta[i, t] <- wz.star[i, these, t] %*% a.t[these]
-      }
-    }
-  }
-
-  return(theta)
-}
+# # trying a slightly different calculation
+# getTheta <- function(wz.star, a, IDs = NULL) {
+#   nt <- dim(wz.star)[3]
+#   nknots <- dim(wz.star)[2]
+#   ns <- dim(wz.star)[1]
+# 
+#   theta <- matrix(NA, nrow = ns, ncol = nt)
+# 
+#   if (is.null(IDs)) {
+#     for (t in 1:nt) {
+#       if (nknots == 1) {
+#         theta[, t] <- wz.star[, , t] * a[ , t]
+#       } else if (nknots > 1) {
+#         theta[, t] <- wz.star[, , t] %*% a[, t]
+#       }
+#     }
+#   } else {  # when using IDs, there needs to be more than one knot
+#     for (t in 1:nt) {
+#       a.t <- a[, t]
+#       for (i in 1:ns) {
+#         these <- IDs[[i]]
+#         theta[i, t] <- wz.star[i, these, t] %*% a.t[these]
+#       }
+#     }
+#   }
+# 
+#   return(theta)
+# }
 
 getIDs <- function(dw2, A.cutoff) {
   nknots <- ncol(dw2)

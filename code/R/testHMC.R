@@ -1,6 +1,6 @@
 rm(list=ls())
 source("./hmc_aux.R")
-
+source("./auxfunctions.R")
 options(warn = 2)
 
 # Test out the functions
@@ -22,23 +22,30 @@ z.t <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
 a.t <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
 wz.t <- getwzCPP(z = z.t, w = w.t)
 theta.t <- getThetaCPP(wz= wz.t, a_star = a.t^alpha.t, alpha = alpha.t)
-y.t <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt) 
+y <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt) 
 
 niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
 q.a <- matrix(log(10), nknots, nt)
 q.b <- matrix(0, nknots, nt)
-others <- list(y = y.t, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
+others <- list(y = y, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
+
+data <- list(y = y, x = x)
+parameters <- list(beta = beta, xi = xi, rho = rho, alpha = alpha, a = a, b = b)
+calculated <- list(wa = wa, theta = theta, z = z, x.beta = x.beta)
 
 set.seed(200)
 tic.1 <- proc.time()
 for (i in 1:niters) {
+  
   HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
-    q.a      <- HMCout$q
-    others$a <- exp(HMCout$q)
+    q.a <- HMCout$q
+    a   <- exp(q.a)
   }
+  
+  others <- list(y = y)
   HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.01, L=10, others)
   if (HMCout$accept) {
     others$b <- transform$inv.logit(HMCout$q)
@@ -50,7 +57,7 @@ for (i in 1:niters) {
     par(mfrow=c(3, 4))
     plot.idx <- seq(1, 23, by = 2)
     for (idx in plot.idx){
-      plot(log(storage.a[1:i, idx, 1]), type = "l")
+      plot(log(storage.a[1:i, idx, 1]), type = "l", main = round(log(a.t[idx, 1]), 2))
     }
     print(paste("iter:", i, "of", niters, sep=" "))
   }

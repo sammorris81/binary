@@ -40,7 +40,8 @@
 # ------------------------------------------------------------------
 
 
-HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
+HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10, 
+                data, parameters, calculated)
 {
   dist = numeric(L+1)
 
@@ -50,7 +51,7 @@ HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
 
   # Make a half step for momentum at the beginning
 
-  p = p - epsilon * grad_U(q, others) / 2
+  p = p - epsilon * grad_U(q, data, parameters, calculated, prior) / 2
 
   # Alternate full steps for position and momentum
 
@@ -63,14 +64,14 @@ HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
 
     # Make a full step for the momentum, except at end of trajectory
 
-    if (i!=L) p = p - epsilon * grad_U(q, others)
+    if (i!=L) p = p - epsilon * grad_U(q, data, parameters, calculated, prior)
 #     if (any(is.nan(p))) print(i)
 #     if (any(is.nan(q))) print(i)
   }
 
   # Make a half step for momentum at the end.
 
-  p = p - epsilon * grad_U(q, others) / 2
+  p = p - epsilon * grad_U(q, data, parameters, calculated, prior) / 2
 
   # Negate momentum at end of trajectory to make the proposal symmetric
 
@@ -78,18 +79,19 @@ HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
 
   # Evaluate potential & kinetic energies at start & end of trajectory
   
-  current_U = U(current_q, others)
+  current_U = U(current_q, data, parameters, calculated, prior)
   current_K = sum(current_p^2) / 2
-  proposed_U = U(q, others)
+  proposed_U = U(q, data, parameters, calculated, prior)
   proposed_K = sum(p^2) / 2
   
-  if (any(is.nan(current_U)) | any(is.nan(current_K)) | any(is.nan(proposed_U)) | any(is.nan(proposed_K))) {
-    print(current_U)
-    print(current_K)
-    print(proposed_U)
-    print(proposed_K)
-    print(q)
-    print(p)
+  if (any(is.nan(current_U))) {
+    print("The value of the log likelihood is NaN at the current values")
+  } else if (any(is.nan(current_K))) {
+    print("The potential is NaN at at the current values")
+  } else if (any(is.nan(proposed_U))) {
+    print("The value of the log likelihood is NaN at the proposed values")
+  } else if (any(is.nan(proposed_K))) {
+    print("The potential is NaN at the proposed values")
   }
   
   R <- current_U - proposed_U + current_K - proposed_K
