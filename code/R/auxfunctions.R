@@ -25,16 +25,14 @@ source('pairwise.R')
 
 # calculated values for the MCMC
 getAW <- function(d, p, c, o) {
-  a.star <- p$a^p$alpha
   w <- c$w
   alpha <- p$alpha
-  aw <- getawCPP(a_star = p$a^p$alpha, w = c$w, alpha = p$alpha)
   
-  return(aw)
+  return(getawCPP(a_star = p$a^p$alpha, w = c$w, alpha = p$alpha))
 } 
 
 getTheta <- function(d, p, c, o) {
-  theta <- c$z * c$aw
+  return(c$z^(-1 / p$alpha) * c$aw)
 }
 
 getXBeta <- function(d, p, c, o) {
