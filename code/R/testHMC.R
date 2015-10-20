@@ -7,41 +7,56 @@ options(warn = 2)
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 1500
+ns <- 10
 nt <- 1
 nknotsx <- 5
 nknotsy <- 5
 nknots <- nknotsx * nknotsy
 rho.t <- 0.25
 alpha.t <- 0.25
+x <- matrix(1, ns, nt)
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
 dw2 <- rdist(s, knots)
-w.t <- stdW(makeW(dw2 = dw2, rho = rho.t))
-z.t <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
-a.t <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
-wz.t <- getwzCPP(z = z.t, w = w.t)
-theta.t <- getThetaCPP(wz= wz.t, a_star = a.t^alpha.t, alpha = alpha.t)
-y <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt) 
+
+others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0)
+data <- list(x = x, s = s, knots = knots, dw2 = dw2)
+params.t <- list(rho = rho.t, alpha = alpha.t)
+calc.t <- list()
+calc.t$w <- getW(d = data, p = params.t, c = calc.t, o = others)
+calc.t$z <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
+params.t$a <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
+calc.t$aw <- getAW(d = data, p = params.t, c = calc.t, o = others)
+calc.t$theta <- getTheta(d = data, p = params.t, c = calc.t, o = others)
+
+y <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-calc.t$theta)), ns, nt) 
+
+# create lists for MCMC
+data   <- list(y = y, x = x, s = s, knots = knots, dw2 = dw2)
+params <- list(beta = 0, xi = 0, rho = rho.t, alpha = alpha.t)  # still need a and b
+calc   <- list(z = calc.t$z, x.beta = 0, w = calc.t$w)  # need aw, theta
+priors <- list(beta.mn = 0, beta.sd = 100)
+
+# initial values
+a <- matrix(log(10), nknots, nt)
+b <- matrix(0, nknots, nt)
+
+params$a <- a
+params$b <- b
+
+calc$aw <- getAW(d = data, p = params, c = calc)
+calc$theta <- getTheta(d = data, p = params, c = calc)
 
 niters <- 30000
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
-q.a <- matrix(log(10), nknots, nt)
-q.b <- matrix(0, nknots, nt)
-others <- list(y = y, alpha = alpha.t, wz = wz.t, b = q.b, a = q.a)
-
-data <- list(y = y, x = x)
-parameters <- list(beta = beta, xi = xi, rho = rho, alpha = alpha, a = a, b = b)
-calculated <- list(wa = wa, theta = theta, z = z, x.beta = x.beta)
-
 set.seed(200)
 tic.1 <- proc.time()
 for (i in 1:niters) {
-  
-  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q.a, epsilon=0.01, L=10, others)
+  q <- log(params$a)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, epsilon = 0.01, L = 10, 
+                 dothers)
   if (HMCout$accept) {
-    q.a <- HMCout$q
     a   <- exp(q.a)
   }
   

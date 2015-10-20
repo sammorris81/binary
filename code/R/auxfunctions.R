@@ -24,7 +24,7 @@ source('hmc_aux.R')
 source('pairwise.R')
 
 # calculated values for the MCMC
-getAW <- function(d, p, c) {
+getAW <- function(d, p, c, o) {
   a.star <- p$a^p$alpha
   w <- c$w
   alpha <- p$alpha
@@ -33,11 +33,11 @@ getAW <- function(d, p, c) {
   return(aw)
 } 
 
-getTheta <- function(d, p, c) {
+getTheta <- function(d, p, c, o) {
   theta <- c$z * c$aw
 }
 
-getXBeta <- function(d, p, c) {
+getXBeta <- function(d, p, c, o) {
   ns <- nrow(d$y)
   nt <- ncol(d$y)
   if (nt == 1) {
@@ -53,7 +53,7 @@ getXBeta <- function(d, p, c) {
 }
 
 # (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
-getZ <- function(d, p, c, thresh = 0) {
+getZ <- function(d, p, c, o) {
   if (p$xi != 0) {
     z <- (1 + p$xi * (thresh - c$x.beta))^(1 / p$xi)
   } else {
@@ -63,7 +63,7 @@ getZ <- function(d, p, c, thresh = 0) {
   return(z)
 }
 
-getW <- function(d, p, c) {
+getW <- function(d, p, c, o) {
   w <- stdW(makeW(dw2 = d$dw2, rho = p$rho, A.cutoff = o$A.cutoff))
 }
 
