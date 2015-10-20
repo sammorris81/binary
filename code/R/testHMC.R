@@ -208,6 +208,7 @@ toc.1 <- proc.time()
 
 # try with the update for a and alpha
 rm(list=ls())
+library(Rcpp)
 source("./auxfunctions.R")
 source("./hmc_aux.R")
 source("./updateModel.R")
@@ -236,7 +237,7 @@ wz.t <- getwzCPP(z = z.t, w = w.t)
 theta.t <- getThetaCPP(wz = wz.t, a_star = a.t^alpha.t, alpha = alpha.t)
 y   <- matrix(rbinom(ns * nt, size = 1, prob = -expm1(-theta.t)), ns, nt) 
 
-niters <- 500
+niters <- 10000
 burn   <- 100
 storage.a <- array(NA, dim=c(niters, nknots, nt))
 storage.b <- array(NA, dim=c(niters, nknots, nt))
@@ -246,11 +247,13 @@ q.a <- log(a)
 b <- matrix(0.5, nknots, nt)
 q.b <- transform$logit(b)
 q.ps <- c(as.vector(q.a), 0)
+q.beta <- 0
 
 x <- matrix(rep(1, ns * nt), nrow = ns, ncol = nt)
 beta <- 0
 xi <- 0
 thresh <- 0
+alpha <- 0.5
 x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = beta)
 z <- getZ(xi = xi, x.beta = x.beta, thresh = thresh)
 wz <- getwzCPP(z = z, w = w.t)
@@ -265,42 +268,43 @@ storage.beta <- rep(NA, niters)
 theta  <- theta.t
 set.seed(200)
 tic.1 <- proc.time()
-others <- list(y = y, alpha = 0.5, wz = wz, b = b, a = a.t)
-q.beta <- 0.5
-others$beta <- q.beta
-neg_log_post_beta(q = q.beta, others = others)
 Rprof(filename = "Rprof.out", line.profiling = TRUE)
 for (iter in 1:niters) {
-  others$x  <- x
-  others$xi <- 0
-  others$w  <- w.t
-  others$pri.mn <- 0
-  others$pri.sd <- 100
-  HMCout  <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q.beta, 
-                 epsilon = 0.005, L = 10, others)
+  aw <- getawCPP(a_star = a^alpha, w = w.t, alpha = alpha)
+  others <- list(y = y, x = x, xi = xi, aw = aw, alpha = alpha, 
+                 pri.mn = 0, pri.sd = 10)
+  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q.beta, 
+                epsilon = 0.005, L = 10, others)
   if (HMCout$accept) {
     q.beta <- HMCout$q
-    others$beta <- q.beta
+    beta   <- q.beta
+    x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = beta)
+    z <- getZ(xi = xi, x.beta = x.beta, thresh = 0)
   }
   
+  wz <- getwzCPP(z = z, w = w.t)
+  others <- list(y = y, alpha = alpha, b = b, a = a, wz = wz)
   HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q.ps, 
-                 epsilon = 0.01, L = 10, others)
+                 epsilon = 0.001, L = 10, others)
   if (HMCout$accept) {
     q.ps     <- HMCout$q
     q.a      <- matrix(q.ps[1:nkt], nknots, nt)
     q.alpha  <- tail(q.ps, 1)
-    others$a <- exp(q.a)
-    others$alpha <- transform$inv.logit(q.alpha)
+    a <- exp(q.a)
+    alpha <- transform$inv.logit(q.alpha)
   }
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.01, L=10, others)
+  
+  others <- list(a = a, alpha = alpha)
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon = 0.005, 
+                 L = 10, others)
   if (HMCout$accept) {
-    others$b <- transform$inv.logit(HMCout$q)
     q.b <- HMCout$q
+    b   <- transform$inv.logit(q.b)
   }
-  storage.a[iter, , ] <- others$a
-  storage.b[iter, , ] <- others$b
-  storage.alpha[iter] <- others$alpha
-  storage.beta[iter]  <- others$beta
+  storage.a[iter, , ] <- a
+  storage.b[iter, , ] <- b
+  storage.alpha[iter] <- alpha
+  storage.beta[iter]  <- beta
   if (iter %% 500 == 0) {
     par(mfrow=c(3, 4))
     plot.idx <- seq(1, 5)
@@ -334,7 +338,7 @@ toc.1 <- proc.time()
 #   pri.sd: prior standard deviation
 xi.t <- 0
 others1 <- list(y = y, x = x, xi = xi.t, w = w.t, alpha = alpha.t, wz = wz.t, a = a.t, b = b, pri.mn = 0, pri.sd = 10)
-neg_log_post_beta(0, others = others1)
+neg_log_post_beta(0.5, others = others1)
 
 #   y(ns, nt):      data
 #   x(ns, nt * np): covariates
@@ -345,7 +349,7 @@ neg_log_post_beta(0, others = others1)
 #   pri.sd(1):      prior standard deviation
 aw <- getawCPP(a_star = a.t^alpha.t, w = w.t, alpha = alpha.t)
 others2 <- list(y = y, x = x, xi = xi.t, aw = aw, alpha = alpha.t, pri.mn = 0, pri.sd = 10)
-neg_log_post_beta_2(0, others = others2)
+neg_log_post_beta_2(0.5, others = others2)
 
 library(microbenchmark)
 microbenchmark(neg_log_post_beta(0, others = others1), neg_log_post_beta_2(0, others = others2))

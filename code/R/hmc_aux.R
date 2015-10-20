@@ -4,44 +4,6 @@ source("./HMC.R")
 neg_log_post_beta <- function(q, others) {
   # q: beta
   # others is a list
-  #   y:      data
-  #   x:      covariates
-  #   xi:     xi
-  #   w:      w
-  #   alpha:  spatial dependence
-  #   wz:     kernel weights
-  #   a:      positive stable random effects
-  #   b:      auxiliary random variable
-  #   pri.mn: prior mean
-  #   pri.sd: prior standard deviation
-  
-  # extract from the list and get calculated quantities
-  y     <- others$y
-  xi    <- others$xi
-  alpha <- others$alpha
-  w     <- others$w
-  a     <- others$a
-  wz    <- others$wz
-  x     <- others$x
-  ns <- nrow(y)
-  nt <- ncol(y)
-  
-  x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = q)
-  z      <- getZ(xi = xi, x.beta = x.beta, thresh = 0)
-  wz     <- getwzCPP(z = z, w = w)
-  
-  # log prior
-  ll <- dnorm(x = q, mean = others$pri.mn, sd = others$pri.sd, log = TRUE)
-  
-  theta <- getThetaCPP(wz = wz, a_star = a^alpha, alpha = alpha)
-  ll    <- ll + sum(logLikeY(y = y, theta = theta))
-  
-  return(-ll)
-}
-
-neg_log_post_beta_2 <- function(q, others) {
-  # q: beta
-  # others is a list
   #   y(ns, nt):      data
   #   x(ns, nt * np): covariates
   #   xi(1):          xi
