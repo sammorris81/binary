@@ -413,7 +413,7 @@ calc   <- list(z = calc.t$z, x.beta = 0, w = calc.t$w)  # need aw, theta
 prior  <- list(beta.mn = 0, beta.sd = 10)
 
 # initial values
-a <- matrix(1, nknots, nt)
+a <- matrix(100, nknots, nt)
 b <- matrix(0.5, nknots, nt)
 alpha <- 0.5
 beta  <- 0
@@ -467,7 +467,7 @@ for (i in 1:niters) {
   }
   
   q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
-  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, epsilon = 0.005, L = 10, 
+  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, epsilon = 0.01, L = 10, 
                  data = data, params = params, calc = calc, others = others, 
                  prior = prior)
   if (HMCout$accept) {
