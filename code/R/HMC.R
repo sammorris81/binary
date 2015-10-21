@@ -41,17 +41,18 @@
 
 
 HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10, 
-                d, p, c, o, prior)
+                data, params, calc, others, prior)
 {
   dist = numeric(L+1)
 
   q = current_q
-  p = rnorm(length(q),0,1)  # independent standard normal variates
+  p = rnorm(length(q), 0, 1)  # independent standard normal variates
   current_p = p
 
   # Make a half step for momentum at the beginning
 
-  p = p - epsilon * grad_U(q, d, p, c, o, prior) / 2
+  p = p - epsilon * grad_U(q = q, d = data, p = params, c = calc, o = others, 
+                           prior = prior) / 2
 
   # Alternate full steps for position and momentum
 
@@ -64,14 +65,16 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
 
     # Make a full step for the momentum, except at end of trajectory
 
-    if (i!=L) p = p - epsilon * grad_U(q, d, p, c, o, prior)
+    if (i!=L) p = p - epsilon * grad_U(q = q, d = data, p = params, c = calc, 
+                                       o = others, prior = prior)
 #     if (any(is.nan(p))) print(i)
 #     if (any(is.nan(q))) print(i)
   }
 
   # Make a half step for momentum at the end.
 
-  p = p - epsilon * grad_U(q, d, p, c, o, prior) / 2
+  p = p - epsilon * grad_U(q = q, d = data, p = params, c = calc, o = others, 
+                           prior = prior) / 2
 
   # Negate momentum at end of trajectory to make the proposal symmetric
 
@@ -79,9 +82,11 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
 
   # Evaluate potential & kinetic energies at start & end of trajectory
   
-  current_U = U(current_q, d, p, c, o, prior)
+  current_U = U(current_q, d = data, p = params, c = calc, o = others, 
+                prior = prior)
   current_K = sum(current_p^2) / 2
-  proposed_U = U(q, d, p, c, o, prior)
+  proposed_U = U(q, d = data, p = params, c = calc, o = others, 
+                 prior = prior)
   proposed_K = sum(p^2) / 2
   
   if (any(is.nan(current_U))) {

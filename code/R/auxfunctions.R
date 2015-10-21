@@ -25,9 +25,6 @@ source('pairwise.R')
 
 # calculated values for the MCMC
 getAW <- function(d, p, c, o) {
-  w <- c$w
-  alpha <- p$alpha
-  
   return(getawCPP(a_star = p$a^p$alpha, w = c$w, alpha = p$alpha))
 } 
 
@@ -53,9 +50,9 @@ getXBeta <- function(d, p, c, o) {
 # (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
 getZ <- function(d, p, c, o) {
   if (p$xi != 0) {
-    z <- (1 + p$xi * (thresh - c$x.beta))^(1 / p$xi)
+    z <- (1 + p$xi * (o$thresh - c$x.beta))^(1 / p$xi)
   } else {
-    z <- exp(thresh - c$x.beta)
+    z <- exp(o$thresh - c$x.beta)
   }
   
   return(z)
@@ -64,6 +61,19 @@ getZ <- function(d, p, c, o) {
 getW <- function(d, p, c, o) {
   w <- stdW(makeW(dw2 = d$dw2, rho = p$rho, A.cutoff = o$A.cutoff))
 }
+
+logLikeY <- function(d, p, c, o) {
+  ll.y <- matrix(-Inf, nrow(d$y), ncol(d$y))
+  
+  # numerical stability issue. originally was using
+  # (1 - y) * P(Y = 0) + y * P(Y = 1)
+  # would return NaN because 0 * -Inf is not a number
+  ll.y[d$y == 0] <- -c$theta[d$y == 0]
+  ll.y[d$y == 1]  <- log(1 - exp(-c$theta[d$y == 1]))
+  
+  return(ll.y)
+}
+
 
 # useful functions
 adjustX <- function(x, y) {
@@ -202,18 +212,6 @@ stdW <- function(x, single = FALSE) {
 }
 
 
-logLikeY <- function(y, theta) {
-  ll.y <- matrix(-Inf, nrow(y), ncol(y))
-
-  # numerical stability issue. originally was using
-  # (1 - y) * P(Y = 0) + y * P(Y = 1)
-  # would return NaN because 0 * -Inf is not a number
-  ll.y[y == 0] <- -theta[y == 0]
-  ll.y[y == 1]  <- log(1 - exp(-theta[y == 1]))
-
-  return(ll.y)
-}
-
 ################################################################################
 #### positive stable density functions
 ################################################################################
@@ -323,8 +321,10 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
 
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
-
-  x.beta <- getXBeta(x = x, ns = ns, nt = nt, beta = beta)
+  
+  d <- list(y = y, x = x)
+  p <- list(beta = beta)
+  x.beta <- getXBeta(d = d, p = p)
 
   # get weights
   if (is.null(dw2)) {  # for predictions, already have dw2
