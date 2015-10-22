@@ -614,9 +614,10 @@ set.seed(200)
 
 for (i in 1:niters) {
   q <- params$beta
-  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = 0.01, 
-                L = 10, data = data, params = params, calc = calc, others = others, 
-                prior = prior)
+  epsilon <- rgamma(1, 10, 1000)
+  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = epsilon, 
+                L = 10, data = data, params = params, calc = calc, 
+                others = others, prior = prior)
   if (HMCout$accept) {
     params$beta <- HMCout$q
     calc$x.beta <- getXBeta(d = data, p = params, c = calc, o = others)
@@ -625,7 +626,9 @@ for (i in 1:niters) {
   }
   
   q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
-  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, epsilon = 0.01, L = 10, 
+  epsilon <- rgamma(1, 10, 1000)
+  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+                 epsilon = epsilon, L = 10, 
                  data = data, params = params, calc = calc, others = others, 
                  prior = prior)
   if (HMCout$accept) {
@@ -636,9 +639,10 @@ for (i in 1:niters) {
   }
   
   q <- transform$logit(params$b)
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = 0.01, L = 10, 
-                 data = data, params = params, calc = calc, others = others, 
-                 prior = prior)
+  epsilon <- rgamma(1, 10, 1000)
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = epsilon, 
+                 L = 10, data = data, params = params, calc = calc, 
+                 others = others, prior = prior)
   if (HMCout$accept) {
     params$b <- transform$inv.logit(HMCout$q)
   }
@@ -653,19 +657,19 @@ for (i in 1:niters) {
     start <- max(i - 5000, 1)
     end   <- i
     par(mfrow=c(4, 5))
-    #     plot.idx <- seq(1, 5)
-    #     for (idx in plot.idx){
-    #       plot(log(storage.a[1:i, idx, 1]), type = "l", 
-    #            main = round(log(gen$a[idx, 1]), 2))
-    #     }
-    #     plot.idx <- seq(1, 5)
-    #     for (idx in plot.idx){
-    #       plot(storage.b[1:i, idx, 1], type = "l")
-    #     }
-    plot.idx <- 1:18
-    for (idx in plot.idx){
-      plot(storage.prob[start:end, idx, 1], type = "l")
-    }
+        plot.idx <- seq(1, 5)
+        for (idx in plot.idx){
+          plot(log(storage.a[1:i, idx, 1]), type = "l", 
+               main = round(log(gen$a[idx, 1]), 2))
+        }
+        plot.idx <- seq(1, 5)
+        for (idx in plot.idx){
+          plot(storage.b[1:i, idx, 1], type = "l")
+        }
+#     plot.idx <- 1:18
+#     for (idx in plot.idx){
+#       plot(storage.prob[start:end, idx, 1], type = "l")
+#     }
     plot(storage.beta[start:end], type = "l")
     plot(storage.alpha[start:end], type = "l")
     print(paste("iter:", i, "of", niters, sep=" "))
