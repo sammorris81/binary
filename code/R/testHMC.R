@@ -612,26 +612,34 @@ storage.beta  <- rep(NA, niters)
 storage.prob  <- array(NA, dim = c(niters, ns, nt))
 set.seed(200)
 
+beta.att    <- beta.acc    <- beta.eps    <- 0.01
+a_alpha.att <- a_alpha.acc <- a_alpha.eps <- 0.01
+b.att       <- b.acc       <- b.eps       <- 0.01
+
+
+
 for (i in 1:niters) {
+  beta.att <- beta.att + 1
   q <- params$beta
-  epsilon <- rgamma(1, 10, 1000)
-  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = epsilon, 
+  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = beta.eps, 
                 L = 10, data = data, params = params, calc = calc, 
-                others = others, prior = prior)
+                others = others, prior = prior, this.param = "beta")
   if (HMCout$accept) {
+    beta.acc <- beta.acc + 1
     params$beta <- HMCout$q
     calc$x.beta <- getXBeta(d = data, p = params, c = calc, o = others)
     calc$z <- getZ(d = data, p = params, c = calc, o = others)
     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
   }
   
+  a_alpha.att <- a_alpha.att + 1
   q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
-  epsilon <- rgamma(1, 10, 1000)
   HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
-                 epsilon = epsilon, L = 10, 
+                 epsilon = a_alpha.eps, L = 10, 
                  data = data, params = params, calc = calc, others = others, 
-                 prior = prior)
+                 prior = prior, this.param = "a and alpha")
   if (HMCout$accept) {
+    a_alpha.acc <- a_alpha.acc + 1
     params$a <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
     params$alpha <- transform$inv.logit(tail(HMCout$q, 1))
     calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
@@ -639,11 +647,12 @@ for (i in 1:niters) {
   }
   
   q <- transform$logit(params$b)
-  epsilon <- rgamma(1, 10, 1000)
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = epsilon, 
+  b.att <- b.att + 1
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b.eps, 
                  L = 10, data = data, params = params, calc = calc, 
-                 others = others, prior = prior)
+                 others = others, prior = prior, this.param = "b")
   if (HMCout$accept) {
+    b.acc <- b.acc + 1
     params$b <- transform$inv.logit(HMCout$q)
   }
   
@@ -657,12 +666,12 @@ for (i in 1:niters) {
     start <- max(i - 5000, 1)
     end   <- i
     par(mfrow=c(4, 5))
-        plot.idx <- seq(1, 5)
+        plot.idx <- seq(1, 18, by = 2)
         for (idx in plot.idx){
           plot(log(storage.a[1:i, idx, 1]), type = "l", 
                main = round(log(gen$a[idx, 1]), 2))
         }
-        plot.idx <- seq(1, 5)
+        plot.idx <- seq(1, 18, by = 2)
         for (idx in plot.idx){
           plot(storage.b[1:i, idx, 1], type = "l")
         }

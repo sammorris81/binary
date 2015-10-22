@@ -41,7 +41,7 @@
 
 
 HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10, 
-                data, params, calc, others, prior)
+                data, params, calc, others, prior, this.param = NULL)
 {
   dist = numeric(L+1)
 
@@ -91,12 +91,20 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   
   if (any(is.nan(current_U))) {
     print("The value of the log likelihood is NaN at the current values")
+    print(paste("Parameter: ", this.param))
+    print(paste("epsilon is: ", epsilon))
   } else if (any(is.nan(current_K))) {
     print("The potential is NaN at at the current values")
+    print(paste("Parameter: ", this.param))
+    print(paste("epsilon is: ", epsilon))
   } else if (any(is.nan(proposed_U))) {
     print("The value of the log likelihood is NaN at the proposed values")
+    print(paste("Parameter: ", this.param))
+    print(paste("epsilon is: ", epsilon))
   } else if (any(is.nan(proposed_K))) {
     print("The potential is NaN at the proposed values")
+    print(paste("Parameter: ", this.param))
+    print(paste("epsilon is: ", epsilon))
   }
   
   R <- current_U - proposed_U + current_K - proposed_K
