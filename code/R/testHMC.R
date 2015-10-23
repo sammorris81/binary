@@ -455,62 +455,154 @@ storage.beta  <- rep(NA, niters)
 storage.prob  <- array(NA, dim = c(niters, ns, nt))
 set.seed(200)
 
+beta.att  <- beta.acc  <- beta.eps  <- 0.02
+a.att     <- a.acc     <- a.eps     <- 0.08       
+alpha.att <- alpha.acc <- alpha.eps <- 0.02
+b.att     <- b.acc     <- b.eps     <- 0.08
+
 for (i in 1:niters) {
+  beta.att <- beta.att + 1
   q <- params$beta
-  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = 0.01, 
-                L = 10, data = data, params = params, calc = calc, others = others, 
-                prior = prior)
+  HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = beta.eps, 
+                L = 20, data = data, params = params, calc = calc, 
+                others = others, prior = prior, this.param = "beta")
   if (HMCout$accept) {
+    beta.acc <- beta.acc + 1
     params$beta <- HMCout$q
     calc$x.beta <- getXBeta(d = data, p = params, c = calc, o = others)
     calc$z <- getZ(d = data, p = params, c = calc, o = others)
     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
   }
   
-  q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
-  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, epsilon = 0.01, L = 10, 
+  #   if (beta.att > 500) {
+  #     beta.rate <- beta.acc / beta.att
+  #     if (beta.rate < 0.20) {
+  #       beta.eps <- beta.eps * 0.8
+  #     } else if (beta.rate > 0.60) {
+  #       beta.eps <- beta.eps * 1.2
+  #     }
+  #     beta.acc <- beta.att <- 0
+  #   }
+  
+  a.att <- a.att + 1
+  q <- log(params$a)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+                 epsilon = a.eps, L = 30, 
                  data = data, params = params, calc = calc, others = others, 
-                 prior = prior)
+                 prior = prior, this.param = "a")
   if (HMCout$accept) {
-    params$a <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
-    params$alpha <- transform$inv.logit(tail(HMCout$q, 1))
+    a.acc <- a.acc + 1
+    params$a <- exp(HMCout$q)
     calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
   }
   
-  q <- transform$logit(params$b)
-  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = 0.01, L = 10, 
+  #   if (a.att > 100) {
+  #     a.rate <- a.acc / a.att
+  #     if (a.rate < 0.20) {
+  #       a.eps <- a.eps * 0.8
+  #     } else if (a.rate > 0.60) {
+  #       a.eps <- a.eps * 1.2
+  #     }
+  #     a.acc <- a.att <- 0
+  #   }
+  
+  alpha.att <- alpha.att + 1
+  q <- transform$logit(params$alpha)
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+                 epsilon = alpha.eps, L = 30, 
                  data = data, params = params, calc = calc, others = others, 
-                 prior = prior)
+                 prior = prior, this.param = "alpha")
   if (HMCout$accept) {
+    alpha.acc <- alpha.acc + 1
+    params$alpha <- transform$inv.logit(HMCout$q)
+    calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
+    calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
+  }
+  
+  #   if (alpha.att > 500) {
+  #     alpha.rate <- alpha.acc / alpha.att
+  #     if (alpha.rate < 0.20) {
+  #       alpha.eps <- alpha.eps * 0.8
+  #     } else if (alpha.rate > 0.60) {
+  #       alpha.eps <- alpha.eps * 1.2
+  #     }
+  #     alpha.acc <- alpha.att <- 0
+  #   }
+  
+  #   a_alpha.att <- a_alpha.att + 1
+  #   q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
+  #   HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+  #                  epsilon = a_alpha.eps, L = 30, 
+  #                  data = data, params = params, calc = calc, others = others, 
+  #                  prior = prior, this.param = "a and alpha")
+  #   if (HMCout$accept) {
+  #     a_alpha.acc <- a_alpha.acc + 1
+  #     params$a <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
+  #     params$alpha <- transform$inv.logit(tail(HMCout$q, 1))
+  #     calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
+  #     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
+  #   }
+  
+  #   if (a_alpha.att > 100) {
+  #     a_alpha.rate <- a_alpha.acc / a_alpha.att
+  #     if (a_alpha.rate < 0.20) {
+  #       a_alpha.eps <- a_alpha.eps * 0.8
+  #     } else if (a_alpha.rate > 0.60) {
+  #       a_alpha.eps <- a_alpha.eps * 1.2
+  #     }
+  #     a_alpha.acc <- a_alpha.att <- 0
+  #   }
+  
+  q <- transform$logit(params$b)
+  b.att <- b.att + 1
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b.eps, 
+                 L = 10, data = data, params = params, calc = calc, 
+                 others = others, prior = prior, this.param = "b")
+  if (HMCout$accept) {
+    b.acc <- b.acc + 1
     params$b <- transform$inv.logit(HMCout$q)
   }
+  
+  #   if (b.att > 100) {
+  #     b.rate <- b.acc / b.att
+  #     if (b.rate < 0.20) {
+  #       b.eps <- b.eps * 0.8
+  #     } else if (b.rate > 0.60) {
+  #       b.eps <- b.eps * 1.2
+  #     }
+  #     b.acc <- b.att <- 0
+  #   }
   
   storage.a[i, , ] <- params$a
   storage.b[i, , ] <- params$b
   storage.alpha[i] <- params$alpha
   storage.beta[i]  <- params$beta
-  storage.prob[i, , ] <- transform$logit(1 - exp(-calc$theta))
+  storage.prob[i, , ] <- 1 - exp(-calc$theta)
   
   if (i %% 500 == 0) {
     start <- max(i - 5000, 1)
     end   <- i
     par(mfrow=c(4, 5))
-#     plot.idx <- seq(1, 5)
-#     for (idx in plot.idx){
-#       plot(log(storage.a[1:i, idx, 1]), type = "l", 
-#            main = round(log(gen$a[idx, 1]), 2))
-#     }
-#     plot.idx <- seq(1, 5)
-#     for (idx in plot.idx){
-#       plot(storage.b[1:i, idx, 1], type = "l")
-#     }
-    plot.idx <- 1:18
+    plot.idx <- seq(1, 18, by = 2)
     for (idx in plot.idx){
-      plot(storage.prob[start:end, idx, 1], type = "l")
+      plot(log(storage.a[1:i, idx, 1]), type = "l", 
+           main = round(log(gen$a[idx, 1]), 2), 
+           xlab = round(a.acc / a.att, 3))
     }
-    plot(storage.beta[start:end], type = "l")
-    plot(storage.alpha[start:end], type = "l")
+    plot.idx <- seq(1, 18, by = 2)
+    for (idx in plot.idx){
+      plot(storage.b[1:i, idx, 1], type = "l", 
+           xlab = round(b.acc / b.att, 3))
+    }
+    #     plot.idx <- 1:18
+    #     for (idx in plot.idx){
+    #       plot(storage.prob[start:end, idx, 1], type = "l")
+    #     }
+    plot(storage.beta[start:end], type = "l", 
+         xlab = round(beta.acc / beta.att, 2))
+    plot(storage.alpha[start:end], type = "l",
+         xlab = round(alpha.acc / alpha.att, 2))
     print(paste("iter:", i, "of", niters, sep=" "))
   }
 }
@@ -570,7 +662,7 @@ calc   <- list(z = calc.t$z, x.beta = 0, w = calc.t$w)  # need aw, theta
 prior  <- list(beta.mn = 0, beta.sd = 10)
 
 # initial values
-a <- matrix(100, nknots, nt)
+a <- matrix(10, nknots, nt)
 b <- matrix(0.5, nknots, nt)
 alpha <- 0.5
 beta  <- 0
@@ -612,17 +704,16 @@ storage.beta  <- rep(NA, niters)
 storage.prob  <- array(NA, dim = c(niters, ns, nt))
 set.seed(200)
 
-beta.att    <- beta.acc    <- beta.eps    <- 0.01
-a_alpha.att <- a_alpha.acc <- a_alpha.eps <- 0.01
-b.att       <- b.acc       <- b.eps       <- 0.01
-
-
+beta.att  <- beta.acc  <- beta.eps  <- 0.01
+a.att     <- a.acc     <- a.eps     <- 0.1       
+alpha.att <- alpha.acc <- alpha.eps <- 0.005
+b.att     <- b.acc     <- b.eps     <- 0.3
 
 for (i in 1:niters) {
   beta.att <- beta.att + 1
   q <- params$beta
   HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, epsilon = beta.eps, 
-                L = 10, data = data, params = params, calc = calc, 
+                L = 20, data = data, params = params, calc = calc, 
                 others = others, prior = prior, this.param = "beta")
   if (HMCout$accept) {
     beta.acc <- beta.acc + 1
@@ -632,19 +723,85 @@ for (i in 1:niters) {
     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
   }
   
-  a_alpha.att <- a_alpha.att + 1
-  q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
-  HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
-                 epsilon = a_alpha.eps, L = 10, 
+#   if (beta.att > 500) {
+#     beta.rate <- beta.acc / beta.att
+#     if (beta.rate < 0.20) {
+#       beta.eps <- beta.eps * 0.8
+#     } else if (beta.rate > 0.60) {
+#       beta.eps <- beta.eps * 1.2
+#     }
+#     beta.acc <- beta.att <- 0
+#   }
+  
+  a.att <- a.att + 1
+  q <- log(params$a)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+                 epsilon = a.eps, L = 30, 
                  data = data, params = params, calc = calc, others = others, 
-                 prior = prior, this.param = "a and alpha")
+                 prior = prior, this.param = "a")
   if (HMCout$accept) {
-    a_alpha.acc <- a_alpha.acc + 1
-    params$a <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
-    params$alpha <- transform$inv.logit(tail(HMCout$q, 1))
+    a.acc <- a.acc + 1
+    params$a <- exp(HMCout$q)
     calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
   }
+  
+#   if (a.att > 100) {
+#     a.rate <- a.acc / a.att
+#     if (a.rate < 0.20) {
+#       a.eps <- a.eps * 0.8
+#     } else if (a.rate > 0.60) {
+#       a.eps <- a.eps * 1.2
+#     }
+#     a.acc <- a.att <- 0
+#   }
+  
+  alpha.att <- alpha.att + 1
+  q <- transform$logit(params$alpha)
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+                 epsilon = alpha.eps, L = 30, 
+                 data = data, params = params, calc = calc, others = others, 
+                 prior = prior, this.param = "alpha")
+  if (HMCout$accept) {
+    alpha.acc <- alpha.acc + 1
+    params$alpha <- transform$inv.logit(HMCout$q)
+    calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
+    calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
+  }
+  
+#   if (alpha.att > 500) {
+#     alpha.rate <- alpha.acc / alpha.att
+#     if (alpha.rate < 0.20) {
+#       alpha.eps <- alpha.eps * 0.8
+#     } else if (alpha.rate > 0.60) {
+#       alpha.eps <- alpha.eps * 1.2
+#     }
+#     alpha.acc <- alpha.att <- 0
+#   }
+  
+#   a_alpha.att <- a_alpha.att + 1
+#   q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
+#   HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+#                  epsilon = a_alpha.eps, L = 30, 
+#                  data = data, params = params, calc = calc, others = others, 
+#                  prior = prior, this.param = "a and alpha")
+#   if (HMCout$accept) {
+#     a_alpha.acc <- a_alpha.acc + 1
+#     params$a <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
+#     params$alpha <- transform$inv.logit(tail(HMCout$q, 1))
+#     calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
+#     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
+#   }
+  
+#   if (a_alpha.att > 100) {
+#     a_alpha.rate <- a_alpha.acc / a_alpha.att
+#     if (a_alpha.rate < 0.20) {
+#       a_alpha.eps <- a_alpha.eps * 0.8
+#     } else if (a_alpha.rate > 0.60) {
+#       a_alpha.eps <- a_alpha.eps * 1.2
+#     }
+#     a_alpha.acc <- a_alpha.att <- 0
+#   }
   
   q <- transform$logit(params$b)
   b.att <- b.att + 1
@@ -655,6 +812,16 @@ for (i in 1:niters) {
     b.acc <- b.acc + 1
     params$b <- transform$inv.logit(HMCout$q)
   }
+  
+#   if (b.att > 100) {
+#     b.rate <- b.acc / b.att
+#     if (b.rate < 0.20) {
+#       b.eps <- b.eps * 0.8
+#     } else if (b.rate > 0.60) {
+#       b.eps <- b.eps * 1.2
+#     }
+#     b.acc <- b.att <- 0
+#   }
   
   storage.a[i, , ] <- params$a
   storage.b[i, , ] <- params$b
@@ -669,18 +836,22 @@ for (i in 1:niters) {
         plot.idx <- seq(1, 18, by = 2)
         for (idx in plot.idx){
           plot(log(storage.a[1:i, idx, 1]), type = "l", 
-               main = round(log(gen$a[idx, 1]), 2))
+               main = round(log(gen$a[idx, 1]), 2), 
+               xlab = round(a.acc / a.att, 3))
         }
         plot.idx <- seq(1, 18, by = 2)
         for (idx in plot.idx){
-          plot(storage.b[1:i, idx, 1], type = "l")
+          plot(storage.b[1:i, idx, 1], type = "l", 
+               xlab = round(b.acc / b.att, 3))
         }
 #     plot.idx <- 1:18
 #     for (idx in plot.idx){
 #       plot(storage.prob[start:end, idx, 1], type = "l")
 #     }
-    plot(storage.beta[start:end], type = "l")
-    plot(storage.alpha[start:end], type = "l")
+    plot(storage.beta[start:end], type = "l", 
+         xlab = round(beta.acc / beta.att, 2))
+    plot(storage.alpha[start:end], type = "l",
+         xlab = round(alpha.acc / alpha.att, 2))
     print(paste("iter:", i, "of", niters, sep=" "))
   }
 }
