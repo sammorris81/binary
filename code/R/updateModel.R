@@ -48,6 +48,57 @@ updateBeta <- function(y, theta, alpha, a.star, z, w, wz, beta, beta.m, beta.s,
   return(results)
 }
 
+updateBeta <- function(d, p, c, o, prior) {
+  np  <- length(p$beta)
+  ns  <- nrow(d$y)
+  nt  <- ncol(d$y)
+  
+  can.beta <- rnorm(np, p$beta, mh)
+  
+  for (p in 1:np) {
+    att[p]      <- att[p] + 1
+    can.beta    <- rnorm(1, beta[p], mh[p])
+    # trying to save a little time by just updating for the pth column of x
+    if (nt == 1) {
+      can.x.beta <- x.beta + x[, p] * (can.beta - beta[p])
+    } else {
+      can.x.beta <- matrix(NA, ns, nt)
+      for (t in 1:nt) {
+        start <- (t - 1) * ns + 1
+        end   <- t * ns
+        can.x.beta[, t]  <- x.beta[, t] + x[start:end, p] * (can.beta - beta[p])
+      }
+    }
+    
+    if (any(xi * (can.x.beta - thresh) > 1)) {  # numerical stability
+      can.lly <- -Inf
+    } else {
+      can.z     <- getZ(xi = xi, x.beta = can.x.beta, thresh = thresh)
+      can.wz    <- getwzCPP(z = can.z, w = w)
+      can.theta <- getThetaCPP(wz = can.wz, a_star = a.star, alpha = alpha)
+      can.lly   <- logLikeY(y = y, theta = can.theta)
+    }
+    
+    R <- sum(can.lly - cur.lly) +
+      dnorm(can.beta, beta.m, beta.s, log = TRUE) -
+      dnorm(beta[p], beta.m, beta.s, log = TRUE)
+    
+    if (!is.na(R)) { if (log(runif(1)) < R) {
+      beta[p] <- can.beta
+      x.beta  <- can.x.beta
+      z       <- can.z
+      wz      <- can.wz
+      theta   <- can.theta
+      cur.lly <- can.lly
+      acc[p]  <- acc[p] + 1
+    }}
+  }
+  
+  results <- list(beta = beta, x.beta = x.beta, z = z, wz = wz,
+                  theta = theta, cur.lly = cur.lly, att = att, acc = acc)
+  return(results)
+}
+
 updateXi <- function(y, theta, alpha, a.star, z, w, wz, x.beta, xi, xi.m, xi.s,
                      cur.lly, acc, att, mh, thresh = 0) {
   nt  <- ncol(y)

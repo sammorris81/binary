@@ -455,10 +455,10 @@ storage.beta  <- rep(NA, niters)
 storage.prob  <- array(NA, dim = c(niters, ns, nt))
 set.seed(200)
 
-beta.att  <- beta.acc  <- beta.eps  <- 0.02
-a.att     <- a.acc     <- a.eps     <- 0.08       
-alpha.att <- alpha.acc <- alpha.eps <- 0.02
-b.att     <- b.acc     <- b.eps     <- 0.08
+beta.att  <- beta.acc  <- beta.eps  <- 0.01
+a.att     <- a.acc     <- a.eps     <- 0.05       
+alpha.att <- alpha.acc <- alpha.eps <- 0.01
+b.att     <- b.acc     <- b.eps     <- 0.05
 
 for (i in 1:niters) {
   beta.att <- beta.att + 1
@@ -611,7 +611,7 @@ toc.1 <- proc.time()
 par(mfrow = c(5, 5))
 plot.idx <- seq(1, 46, by = 2)
 for (idx in plot.idx) {
-  plot(transform$inv.logit(storage.prob[5001:30000, idx, 1]), type = "l",
+  plot(storage.prob[5001:30000, idx, 1], type = "l",
        main = paste("Site ", idx), ylab = "P(Y = 1)")
 }
 plot(storage.alpha[5001:30000], type = "l", main = bquote(alpha))
