@@ -1,3 +1,96 @@
+updateBeta <- function(data, beta, xi, alpha, calc, others) {
+  np  <- length(beta$cur)
+  ns  <- nrow(data$y)
+  nt  <- ncol(data$y)
+  
+  cur.lly <- logLikeY(data = data, calc = calc, others = others)
+  cur.beta <- beta$cur
+  
+  can.beta <- beta$cur <- rnorm(np, beta$cur, beta$mh)
+  calc$x.beta <- getXBeta(data = data, beta = beta) 
+  
+  if (any(xi$cur * (calc$x.beta - others$thresh) > 1)) {  # numerical stability
+    can.lly <- -Inf
+  } else {
+    calc$z     <- getZ(xi = xi, calc = calc, others = others)
+    calc$theta <- getTheta(alpha = alpha, calc = calc)
+    can.lly    <- logLikeY(data = data, calc = calc, others = others)
+  }
+  
+  R <- sum(can.lly - cur.lly) +
+    sum(dnorm(can.beta, beta$mn, beta$sd, log = TRUE) -
+          dnorm(cur.beta, beta$mn, beta$sd, log = TRUE))
+  
+  if (!is.na(R)) { if (log(runif(1)) < R) {
+    results <- list(q = can.beta, accept = TRUE)
+  } else {
+    results <- list(q = cur.beta, accept = TRUE)
+  }} else {
+    results <- list(q = cur.beta, accept = TRUE)
+  }
+  
+  return(results)
+}
+
+updateXi <- function(data, xi, alpha, calc, others) {
+  nt  <- ncol(data$y)
+  
+  cur.lly <- logLikeY(data = data, calc = calc, others = others)
+  cur.xi <- xi$cur
+  
+  can.xi <- xi$cur <- rnorm(1, xi$cur, xi$mh)
+  
+  if (sum(can.xi * (calc$x.beta - others$thresh) > 1) > 0) {
+    can.lly <- -Inf
+  } else {
+    calc$z     <- getZ(xi = xi, calc = calc, others = others)
+    calc$theta <- getTheta(alpha = alpha, calc = calc)
+    can.lly   <- logLikeY(data = data, calc = calc, others = others)
+  }
+  
+  R <- sum(can.lly - cur.lly) +
+    dnorm(can.xi, xi$mn, xi$sd, log = TRUE) - 
+    dnorm(cur.xi, xi$mn, xi$sd, log = TRUE)
+  
+  if (!is.na(R)) { if (log(runif(1)) < R) {
+    results <- list(q = can.xi, accept = TRUE)
+  } else {
+    results <- list(q = cur.xi, accept = TRUE)
+  }} else {
+    results <- list(q = cur.xi, accept = TRUE)
+  }
+  
+  return(results)
+}
+
+updateRho <- function(data, a, alpha, rho, calc, others) {
+  nt     <- ncol(data$y)
+  nknots <- nrow(a$cur)
+  
+  cur.lly <- logLikeY(data = data, calc = calc, others = others)
+  cur.rho <- rho$cur
+  
+  can.rho    <- rho$cur <- exp(rnorm(1, log(rho$cur), rho$mh))
+  calc$w     <- getW(rho = rho, others = others)
+  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
+  calc$theta <- getTheta(alpha = alpha, calc = calc)
+  can.lly    <- logLikeY(data = data, calc = calc, others = others)
+  
+  R <- sum(can.lly - cur.lly) +
+    dnorm(log(can.rho), rho$mn, rho$sd, log=TRUE) -
+    dnorm(log(cur.rho), rho$mn, rho$sd, log=TRUE)
+  
+  if (!is.na(R)) { if (log(runif(1)) < R) {
+    results <- list(q = can.rho, accept = TRUE)
+  } else {
+    results <- list(q = cur.rho, accept = TRUE)
+  }} else {
+    results <- list(q = cur.rho, accept = TRUE)
+  }
+
+  return(results)
+}
+
 # updateBeta <- function(y, theta, alpha, a.star, z, w, wz, beta, beta.m, beta.s,
 #                        x.beta, xi, x, cur.lly, acc, att, mh, thresh = 0) {
 #   np  <- length(beta)
@@ -48,72 +141,72 @@
 #   return(results)
 # }
 
-updateBeta <- function(q, d, p, c, o, prior) {
-  np  <- length(p$beta)
-  ns  <- nrow(d$y)
-  nt  <- ncol(d$y)
-  
-  cur.lly <- logLikeY(d = d, p = p, c = c, o = o)
-  cur.beta <- q
-  
-  can.beta <- p$beta <- rnorm(np, p$beta, mh)
-  c$x.beta <- getXBeta(d = d, p = p, c = c, o = o) 
-  
-  if (any(p$xi * (c$x.beta - o$thresh) > 1)) {  # numerical stability
-    can.lly <- -Inf
-  } else {
-    c$z      <- getZ(d = d, p = p, c = c, o = o)
-    c$theta  <- getTheta(d = d, p = p, c = c, o = o)
-    can.lly  <- logLikeY(d = d, p = p, c = c, o = o)
-  }
-  
-  R <- sum(can.lly - cur.lly) +
-    sum(dnorm(can.beta, prior$beta.mn, prior$beta.sd, log = TRUE) -
-          dnorm(cur.beta, prior$beta.mn, prior$beta.sd, log = TRUE))
-  
-  if (!is.na(R)) { if (log(runif(1)) < R) {
-    results <- list(q = can.beta, accept = TRUE)
-  } else {
-    results <- list(q = cur.beta, accept = TRUE)
-  }} else {
-    results <- list(q = cur.beta, accept = TRUE)
-  }
-  
-  return(results)
-}
+# updateXi <- function(y, theta, alpha, a.star, z, w, wz, x.beta, xi, xi.m, xi.s,
+#                      cur.lly, acc, att, mh, thresh = 0) {
+#   nt  <- ncol(y)
+# 
+#   att <- att + 1
+#   can.xi     <- rnorm(1, xi, mh)
+# 
+#   if (sum(can.xi * (x.beta - thresh) > 1) > 0) {
+#     can.lly <- -Inf
+#   } else {
+#     can.z     <- getZ(xi = can.xi, x.beta = x.beta, thresh = thresh)
+#     can.wz    <- getwzStarCPP(z = can.z, w = w)
+#     can.theta <- getThetaCPP(wz = can.wz, a_star = a.star, alpha = alpha)
+#     can.lly   <- logLikeY(y = y, theta = can.theta)
+#   }
+# 
+#   R <- sum(can.lly - cur.lly) +
+#        dnorm(can.xi, xi.m, xi.s, log = TRUE) - dnorm(xi, xi.m, xi.s, log = TRUE)
+# 
+#   if (!is.na(R)) { if (log(runif(1)) < R) {
+#     xi      <- can.xi
+#     z       <- can.z
+#     wz      <- can.wz
+#     theta   <- can.theta
+#     cur.lly <- can.lly
+#     acc     <- acc + 1
+#   }}
+# 
+#   results <- list(xi = xi, z = z, wz = wz, theta = theta,
+#                   cur.lly = cur.lly, att = att, acc = acc)
+#   return(results)
+# }
 
-updateXi <- function(y, theta, alpha, a.star, z, w, wz, x.beta, xi, xi.m, xi.s,
-                     cur.lly, acc, att, mh, thresh = 0) {
-  nt  <- ncol(y)
-
-  att <- att + 1
-  can.xi     <- rnorm(1, xi, mh)
-
-  if (sum(can.xi * (x.beta - thresh) > 1) > 0) {
-    can.lly <- -Inf
-  } else {
-    can.z     <- getZ(xi = can.xi, x.beta = x.beta, thresh = thresh)
-    can.wz    <- getwzStarCPP(z = can.z, w = w)
-    can.theta <- getThetaCPP(wz = can.wz, a_star = a.star, alpha = alpha)
-    can.lly   <- logLikeY(y = y, theta = can.theta)
-  }
-
-  R <- sum(can.lly - cur.lly) +
-       dnorm(can.xi, xi.m, xi.s, log = TRUE) - dnorm(xi, xi.m, xi.s, log = TRUE)
-
-  if (!is.na(R)) { if (log(runif(1)) < R) {
-    xi      <- can.xi
-    z       <- can.z
-    wz      <- can.wz
-    theta   <- can.theta
-    cur.lly <- can.lly
-    acc     <- acc + 1
-  }}
-
-  results <- list(xi = xi, z = z, wz = wz, theta = theta,
-                  cur.lly = cur.lly, att = att, acc = acc)
-  return(results)
-}
+# updateRho <- function(y, theta, a.star, alpha, cur.lly, w, z, wz, dw2,
+#                       rho, logrho.m, logrho.s, rho.upper = Inf, A.cutoff,
+#                       acc, att, mh) {
+#   nt     <- ncol(y)
+#   nknots <- nrow(a.star)
+#   
+#   att <- att + 1
+#   
+#   rho.star     <- log(rho)
+#   can.rho.star <- rnorm(1, rho.star, mh)
+#   can.rho      <- exp(can.rho.star)
+#   can.w        <- stdW(makeW(dw2 = dw2, rho = can.rho, A.cutoff = A.cutoff))
+#   can.wz       <- getwzCPP(z = z, w = can.w)
+#   can.theta    <- getThetaCPP(wz = can.wz, a_star = a.star, alpha = alpha)
+#   can.lly      <- logLikeY(y = y, theta = can.theta)
+#   
+#   R <- sum(can.lly - cur.lly) +
+#     dnorm(can.rho.star, logrho.m, logrho.s, log=TRUE) -
+#     dnorm(rho.star, logrho.m, logrho.s, log=TRUE)
+#   
+#   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
+#     rho     <- can.rho
+#     w       <- can.w
+#     wz      <- can.wz
+#     theta   <- can.theta
+#     cur.lly <- can.lly
+#     acc     <- acc + 1
+#   }}
+#   
+#   results <- list(rho = rho, w = w, wz = wz, theta = theta,
+#                   cur.lly = cur.lly, att = att, acc = acc)
+#   return(results)
+# }
 
 updateXiBeta <- function(y, alpha, z, w, wz, beta, theta, a.star,
                          x.beta, xi, x, xt, xtx.inv, xi.m, xi.s, cur.lly,
@@ -259,16 +352,6 @@ updateA <- function(y, theta, a, a.star, alpha, wz, cur.lly, cur.llps,
   return(results)
 }
 
-updateABHMC <- function(a, b, others) {
-  # others is a list containing:
-  #  alpha(1): spatial dependence
-  #  wz(ns x nknots x nt): kernel weights
-  #  y(ns x nt): data
-  
-  dist = numeric(L + 1)
-  
-}
-
 # update the alpha term for theta.star
 updateAlpha <- function(y, theta, a, a.star, alpha, z, w, wz, alpha.a, alpha.b,
                         cur.lly, cur.llps, mid.points, bin.width,
@@ -307,39 +390,7 @@ updateAlpha <- function(y, theta, a, a.star, alpha, z, w, wz, alpha.a, alpha.b,
   return(results)
 }
 
-updateRho <- function(y, theta, a.star, alpha, cur.lly, w, z, wz, dw2,
-                      rho, logrho.m, logrho.s, rho.upper = Inf, A.cutoff,
-                      acc, att, mh) {
-  nt     <- ncol(y)
-  nknots <- nrow(a.star)
 
-  att <- att + 1
-
-  rho.star     <- log(rho)
-  can.rho.star <- rnorm(1, rho.star, mh)
-  can.rho      <- exp(can.rho.star)
-  can.w        <- stdW(makeW(dw2 = dw2, rho = can.rho, A.cutoff = A.cutoff))
-  can.wz       <- getwzCPP(z = z, w = can.w)
-  can.theta    <- getThetaCPP(wz = can.wz, a_star = a.star, alpha = alpha)
-  can.lly      <- logLikeY(y = y, theta = can.theta)
-
-  R <- sum(can.lly - cur.lly) +
-       dnorm(can.rho.star, logrho.m, logrho.s, log=TRUE) -
-       dnorm(rho.star, logrho.m, logrho.s, log=TRUE)
-
-  if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
-    rho     <- can.rho
-    w       <- can.w
-    wz      <- can.wz
-    theta   <- can.theta
-    cur.lly <- can.lly
-    acc     <- acc + 1
-  }}
-
-  results <- list(rho = rho, w = w, wz = wz, theta = theta,
-                  cur.lly = cur.lly, att = att, acc = acc)
-  return(results)
-}
 
 # rewrite to use theta function not theta.star
 pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,

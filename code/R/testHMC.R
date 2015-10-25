@@ -883,65 +883,73 @@ nknotsx <- 5
 nknotsy <- 5
 nknots <- nknotsx * nknotsy
 nkt <- nknots * nt
-rho.t <- 0.25
-alpha.t <- 0.25
+rho.t <- list(cur = 0.25)
+alpha.t <- list(cur = 0.25)
 x <- matrix(1, ns, nt)
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
 dw2 <- rdist(s, knots)
 
-others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0)
-data <- list(x = x, s = s, knots = knots, dw2 = dw2)
-params.t <- list(rho = rho.t, alpha = alpha.t)
+others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0, dw2 = dw2)
+data <- list(x = x, s = s, knots = knots)
 calc.t <- list()
-calc.t$w <- getW(d = data, p = params.t, c = calc.t, o = others)
+calc.t$w <- getW(rho = rho.t, others = others)
 calc.t$z <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
-params.t$a <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
-calc.t$aw <- getAW(d = data, p = params.t, c = calc.t, o = others)
-calc.t$theta <- getTheta(d = data, p = params.t, c = calc.t, o = others)
+a <- list(cur = matrix(rPS(nknots * nt, alpha = alpha.t$cur), nknots, nt))
+calc.t$aw <- getAW(alpha = alpha.t, a = a, calc = calc.t)
+calc.t$theta <- getTheta(alpha = alpha.t, calc = calc.t)
 
 gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0, alpha = alpha.t,
                        rho = rho.t, nt = 1, prob.success = 0.05, dw2 = dw2)
 
 # create lists for MCMC
-data   <- list(y = gen$y, x = x, s = s, knots = knots, dw2 = dw2)
-params <- list(beta = 0, xi = 0, rho = rho.t, alpha = alpha.t)  # still need a and b
-calc   <- list(z = calc.t$z, x.beta = 0, w = calc.t$w)  # need aw, theta
-prior  <- list(beta.mn = 0, beta.sd = 10)
+data   <- list(y = gen$y, x = x, s = s, knots = knots)
+calc   <- list(w = calc.t$w)  # need aw, theta
 
 # initial values
-a <- matrix(10, nknots, nt)
-b <- matrix(0.5, nknots, nt)
-alpha <- 0.5
-beta  <- 0
+beta  <- list(cur = 0, att = 0, acc = 0, mh = 0.01, mn = 0, sd = 1)
+xi    <- list(cur = 0, att = 0, acc = 0, mh = 0.01, mn = 0, sd = 0.5)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0)
+alpha <- list(cur = 0.5, att = 0, acc = 0)
+rho   <- list(cur = 0.1, att = 0, acc = 0, mh = 0.01, mn = 0, sd = 1)
 
-params$a <- a
-params$b <- b
-params$alpha <- alpha
-params$beta <- beta
-
-calc$x.beta <- getXBeta(d = data, p = params, c = calc, o = others)
-calc$z      <- getZ(d = data, p = params, c = calc, o = others)
-calc$aw     <- getAW(d = data, p = params, c = calc, o = others)
-calc$theta  <- getTheta(d = data, p = params, c = calc, o = others)
+calc$x.beta <- getXBeta(data = data, beta = beta)
+calc$z      <- getZ(xi = xi, calc = calc, others = others)
+calc$aw     <- getAW(alpha = alpha, a = a, calc = calc)
+calc$theta  <- getTheta(alpha = alpha, calc = calc)
 
 library(numDeriv)
-neg_log_post_a(q = log(params$a), d = data, p = params, c = calc, o = others, prior = prior)
-neg_log_post_grad_a(q = log(params$a), d = data, p = params, c = calc, o = others, prior = prior)
-neg_log_post_grad_a_alpha(q = as.vector(c(log(params$a), transform$logit(params$alpha))), 
-                          d = data, p = params, c = calc, o = others, prior = prior)
-grad(func = neg_log_post_a_alpha, x = as.vector(c(log(params$a), transform$logit(params$alpha))), 
-     d = data, p = params, c = calc, o = others, prior = prior)
-neg_log_post_alpha(q = transform$logit(params$alpha), d = data, p = params, c = calc, o = others, prior = prior)
-neg_log_post_grad_alpha(q = transform$logit(params$alpha), d = data, p = params, c = calc, o = others, prior = prior)
-grad(func = neg_log_post_alpha, x = transform$logit(params$alpha), d = data, p = params, c = calc, o = others, prior = prior)
+neg_log_post_a(q = log(a$cur), data = data, beta = beta, xi = xi, 
+               a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_a(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_a_alpha(q = as.vector(c(log(a$cur), transform$logit(alpha$cur))),
+                          data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha,
+                          rho = rho, calc = calc, others = others, eps = 0.0001)
 
-neg_log_post_beta(q = params$beta, d = data, p = params, c = calc, o = others, 
-                  prior = prior)
-neg_log_post_grad_beta(q = params$beta, d = data, p = params, c = calc, o = others, 
-                       prior = prior)
-grad(func = neg_log_post_beta, x = params$beta, d = data, p = params, c = calc, o = others, 
-     prior = prior)
+neg_log_post_grad_a_alpha(q = q, data = , beta = , xi = , a = , b = , alpha = , rho = , calc = ,
+                          others = , eps = )
+grad(func = neg_log_post_a_alpha, 
+     x = as.vector(c(log(a$cur), transform$logit(alpha$cur))), 
+     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, rho = rho, calc = calc,
+     others = others)
+neg_log_post_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, 
+                   a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, 
+                        a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others, 
+                        eps = 0.0001)
+grad(func = neg_log_post_alpha, x = transform$logit(alpha$cur), 
+     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, rho = rho, 
+     calc = calc, others = others)
+
+neg_log_post_beta(q = beta$cur, data = data, beta = beta, xi = xi, a = a, 
+                  b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_beta(q = beta$cur, data = data, beta = beta, xi = xi, a = a,
+                       b = b, alpha = alpha, rho = rho, calc = calc, 
+                       others = others, eps = 0.0001)
+grad(func = neg_log_post_beta, x = beta$cur, data = data, beta = beta, xi = xi,
+     a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
 
 
 niters <- 30000

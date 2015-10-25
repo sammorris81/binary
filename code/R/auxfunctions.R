@@ -24,56 +24,68 @@ source('hmc_aux.R')
 source('pairwise.R')
 
 # calculated values for the MCMC
-getAW <- function(d, p, c, o) {
-  return(getawCPP(a_star = p$a^p$alpha, w = c$w, alpha = p$alpha))
+getAW <- function(alpha, a, calc) {
+  return(getawCPP(a_star = a$cur^alpha$cur, w = calc$w, 
+                  alpha = alpha$cur))
 } 
 
-getTheta <- function(d, p, c, o) {
-  return(c$z^(-1 / p$alpha) * c$aw)
+getTheta <- function(alpha, calc) {
+  return(calc$z^(-1 / alpha$cur) * calc$aw)
 }
 
-getXBeta <- function(d, p, c, o) {
-  ns <- nrow(d$y)
-  nt <- ncol(d$y)
+getXBeta <- function(data, beta) {
+  ns <- nrow(data$y)
+  nt <- ncol(data$y)
   if (nt == 1) {
-    return(d$x %*% p$beta)
+    return(data$x %*% beta$cur)
   } else {
     x.beta <- matrix(NA, ns, nt)
     for (t in 1:nt) {
       start <- (t - 1) * ns + 1
       end   <- t * ns
-      x.beta[, t] <- d$x[start:end, ] %*% p$beta
+      x.beta[, t] <- data$x[start:end, ] %*% beta$cur
     }
   }
 }
 
 # (1 + xi * (thresh - x.beta)) > 0 for all x and x.pred
-getZ <- function(d, p, c, o) {
-  if (p$xi != 0) {
-    z <- (1 + p$xi * (o$thresh - c$x.beta))^(1 / p$xi)
+getZ <- function(xi, calc, others) {
+  if (xi$cur != 0) {
+    z <- (1 + xi$cur * (others$thresh - calc$x.beta))^(1 / xi$cur)
   } else {
-    z <- exp(o$thresh - c$x.beta)
+    z <- exp(others$thresh - calc$x.beta)
   }
   
   return(z)
 }
 
-getW <- function(d, p, c, o) {
-  w <- stdW(makeW(dw2 = d$dw2, rho = p$rho, A.cutoff = o$A.cutoff))
+getW <- function(rho, others) {
+  w <- stdW(makeW(dw2 = others$dw2, rho = rho$cur, A.cutoff = others$A.cutoff))
 }
 
-logLikeY <- function(d, p, c, o) {
-  ll.y <- matrix(-Inf, nrow(d$y), ncol(d$y))
+logLikeY <- function(data, calc, others) {
+  ll.y <- matrix(-Inf, nrow(data$y), ncol(data$y))
   
   # numerical stability issue. originally was using
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
-  ll.y[d$y == 0] <- -c$theta[d$y == 0]
-  ll.y[d$y == 1]  <- log(1 - exp(-c$theta[d$y == 1]))
+  ll.y[data$y == 0] <- -calc$theta[data$y == 0]
+  ll.y[data$y == 1]  <- log(1 - exp(-calc$theta[data$y == 1]))
   
   return(ll.y)
 }
 
+logc <- function(alpha, b) {
+  alpha1m <- 1 - alpha$cur
+  apb <- alpha$cur * pi * b$cur
+  pb  <- pi * b$cur
+  a1mpb <- alpha1m * pi * b$cur 
+  
+  results <- alpha$cur * log(sin(apb)) / alpha1m - log(sin(pb)) / alpha1m +
+    log(sin(a1mpb))
+  
+  return(results)
+}
 
 # useful functions
 adjustX <- function(x, y) {
@@ -262,11 +274,17 @@ ld2 <- function(u, logs, alpha, shift = 0, log = TRUE) {
 }
 
 rPS <- function(n, alpha) {
+  if (is.list(alpha)) {
+    alpha <- alpha$cur
+  }
+  
+  alpha1m <- 1 - alpha
+  
   #### PS(alpha) generation as given by Stephenson(2003)
   unif <- runif(n) * pi
   stdexp.ps <- rexp(n, 1)
-  logs <- (1 - alpha) / alpha * log(sin((1 - alpha) * unif)) +
-    log(sin(alpha * unif)) - (1 - alpha) / alpha * log(stdexp.ps) -
+  logs <- (alpha1m) / alpha * log(sin((alpha1m) * unif)) +
+    log(sin(alpha * unif)) - (alpha1m) / alpha * log(stdexp.ps) -
     1 / alpha * log(sin(unif))
   return(exp(logs))
 }
@@ -309,7 +327,21 @@ getThetaStar <- function(w.star, a) {
 # generate dependent rare binary data
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
                             prob.success = 0.05, dw2 = NULL, a = NULL) {
-  p <- length(beta)
+  
+  if (!is.list(beta)) {
+    beta   <- list(cur = beta)
+  }
+  if (!is.list(xi)) {
+    xi     <- list(cur = xi)
+  }
+  if (!is.list(rho)) {
+    rho    <- list(cur = rho)
+  }
+  if (!is.list(alpha)) {
+    alpha  <- list(cur = alpha)
+  }
+  
+  p <- length(beta$cur)
   if (nt == 1) {
     ns <- nrow(x)
   } else {
@@ -322,40 +354,50 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
   
-  d <- list(y = y, x = x)
-  p <- list(beta = beta)
-  x.beta <- getXBeta(d = d, p = p)
+  data   <- list(y = y, x = x, knots = knots)
+  calc   <- list()
+  others <- list(thresh = 0)
+  
+  calc$x.beta <- getXBeta(data = data, beta = beta)
+  calc$z      <- getZ(xi = xi, calc = calc, others = others)
 
   # get weights
   if (is.null(dw2)) {  # for predictions, already have dw2
-    dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+    others$dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+  } else {
+    others$dw2 <- dw2
   }
-  w      <- stdW(makeW(dw2 = dw2, rho = rho))  # w is ns x nknots
-  w.star <- w^(1 / alpha)
+
+  calc$w <- getW(rho = rho, others = others)  # w is ns x nknots
 
   # get random effects and theta.star
   if (is.null(a)) {
-    a <- matrix(rPS(n = nknots * nt, alpha = alpha), nknots, nt)
+    a <- list(cur = matrix(rPS(n = nknots * nt, alpha = alpha), nknots, nt))
+  } else {
+    a <- list(cur = a)
   }
-  theta.star <- getThetaStar(w.star = w.star, a = a)
+  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
+  calc$theta <- getTheta(alpha = alpha, calc = calc)
 
   # get underlying latent variable
-  u <- matrix(rgev(n = ns * nt, 1, alpha, alpha), ns, nt)
-  z <- u * theta.star^alpha
-
-  if (xi == 0) {
-    h <- x.beta + log(z)
+  u <- matrix(rgev(n = ns * nt, 1, alpha$cur, alpha$cur), ns, nt)
+  calc$z <- u * calc$theta
+  
+  # z = u * theta ~ GEV(1, 1, 1)
+  # h = x.beta + (z^xi - 1) / xi ~ GEV(x.beta, 1, xi)
+  if (xi$cur == 0) {
+    h <- calc$x.beta + log(calc$z)
   } else {
-    h <- x.beta + (z^xi - 1) / xi
+    h <- calc$x.beta + (calc$z^xi$cur - 1) / xi$cur
   }
 
   # set the threshold for success at whatever value will give us
   # our desired percentage of 1s.
   thresh <- quantile(h, probs = (1 - prob.success))
 
-  y <- ifelse(h > thresh, 1, 0)
+  data$y <- ifelse(h > thresh, 1, 0)
 
-  results <- list(y = y, a = a, thresh = thresh)
+  results <- list(y = data$y, a = a$cur, thresh = thresh)
   return(results)
 }
 
