@@ -6,7 +6,7 @@ updateBeta <- function(data, beta, xi, alpha, calc, others) {
   cur.lly <- logLikeY(data = data, calc = calc, others = others)
   cur.beta <- beta$cur
   
-  can.beta <- beta$cur <- rnorm(np, beta$cur, beta$mh)
+  can.beta <- beta$cur <- rnorm(np, beta$cur, beta$eps)
   calc$x.beta <- getXBeta(data = data, beta = beta) 
   
   if (any(xi$cur * (calc$x.beta - others$thresh) > 1)) {  # numerical stability
@@ -24,9 +24,9 @@ updateBeta <- function(data, beta, xi, alpha, calc, others) {
   if (!is.na(R)) { if (log(runif(1)) < R) {
     results <- list(q = can.beta, accept = TRUE)
   } else {
-    results <- list(q = cur.beta, accept = TRUE)
+    results <- list(q = cur.beta, accept = FALSE)
   }} else {
-    results <- list(q = cur.beta, accept = TRUE)
+    results <- list(q = cur.beta, accept = FALSE)
   }
   
   return(results)
@@ -38,7 +38,7 @@ updateXi <- function(data, xi, alpha, calc, others) {
   cur.lly <- logLikeY(data = data, calc = calc, others = others)
   cur.xi <- xi$cur
   
-  can.xi <- xi$cur <- rnorm(1, xi$cur, xi$mh)
+  can.xi <- xi$cur <- rnorm(1, xi$cur, xi$eps)
   
   if (sum(can.xi * (calc$x.beta - others$thresh) > 1) > 0) {
     can.lly <- -Inf
@@ -55,9 +55,9 @@ updateXi <- function(data, xi, alpha, calc, others) {
   if (!is.na(R)) { if (log(runif(1)) < R) {
     results <- list(q = can.xi, accept = TRUE)
   } else {
-    results <- list(q = cur.xi, accept = TRUE)
+    results <- list(q = cur.xi, accept = FALSE)
   }} else {
-    results <- list(q = cur.xi, accept = TRUE)
+    results <- list(q = cur.xi, accept = FALSE)
   }
   
   return(results)
@@ -70,7 +70,7 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   cur.lly <- logLikeY(data = data, calc = calc, others = others)
   cur.rho <- rho$cur
   
-  can.rho    <- rho$cur <- exp(rnorm(1, log(rho$cur), rho$mh))
+  can.rho    <- rho$cur <- exp(rnorm(1, log(rho$cur), rho$eps))
   calc$w     <- getW(rho = rho, others = others)
   calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
   calc$theta <- getTheta(alpha = alpha, calc = calc)
@@ -83,9 +83,9 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   if (!is.na(R)) { if (log(runif(1)) < R) {
     results <- list(q = can.rho, accept = TRUE)
   } else {
-    results <- list(q = cur.rho, accept = TRUE)
+    results <- list(q = cur.rho, accept = FALSE)
   }} else {
-    results <- list(q = cur.rho, accept = TRUE)
+    results <- list(q = cur.rho, accept = FALSE)
   }
 
   return(results)

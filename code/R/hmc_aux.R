@@ -158,7 +158,7 @@ llps <- function(q, data, beta, xi, a, b, alpha, rho, calc, others,
   
   # log prior
   lc <- logc(b = b, alpha = alpha)
-  ll <- lc - exp(lc) * a^(-alpha$cur / alpha1m) + log(b$cur) + log(1 - b$cur)
+  ll <- lc - exp(lc) * a$cur^(-alpha$cur / alpha1m) + log(b$cur) + log(1 - b$cur)
   
   if (addup) {
     ll <- sum(ll)
@@ -285,7 +285,7 @@ neg_log_post_grad_b <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   dcdq <- dcdb * dbdq
   
   # dcdb
-  grad <- dcdq * (-1 / c + a^(-alpha$cur / alpha1m)) + 2 * b$cur - 1
+  grad <- dcdq * (-1 / c + a$cur^(-alpha$cur / alpha1m)) + 2 * b$cur - 1
   
   return(grad)
 }
