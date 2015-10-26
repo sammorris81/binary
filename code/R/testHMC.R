@@ -1122,8 +1122,8 @@ library(evd)
 set.seed(200)
 ns <- 1000
 nt <- 1
-nknotsx <- 21
-nknotsy <- 21
+nknotsx <- 2
+nknotsy <- 3
 nknots <- nknotsx * nknotsy
 nkt <- nknots * nt
 rho.t <- list(cur = 0.25)

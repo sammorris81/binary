@@ -35,63 +35,91 @@ source('pairwise.R')
 #                   alpha = alpha$cur))
 # } 
 
-diffAlphall <- function(q, y, alpha, a, calc) {
+diffalpha.2 <- function(q, data, alpha, a, calc) {
+  nknots <- nrow(a$cur)
+  nt     <- ncol(data$y)
+  ns     <- nrow(data$y)
   grad <- 0
   alpha$cur <- q
   w.star <- getWStar(alpha = alpha$cur, w = calc$w)
   aw     <- getAW(a = a$cur, w.star = w.star)
   theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
-  lw.star <- log(w.star)
+  lw     <- log(calc$w)
   for (t in 1:nt) {
-    wz.star.t <- exp(lw.star - log(calc$z[, t]) / alpha$cur)
-    these <- data$y[, t] == 1
-    theta.t <- theta[these, t]
-    for (l in 1:nknots) {
-      grad <- grad + a$cur[l, t] / alpha$cur^2 * 
-        (sum(wz.star.t[!these, l] * log(calc$w[!these, l] / calc$z[!these, t])) + 
-         sum(wz.star.t[these, l] / expm1(theta.t)))
-#       these.1 <- wz.star.t[!these, l] * log(calc$w[!these, l] / calc$z[!these, t])
-#       these.2 <- wz.star.t[these, l] / expm1(theta.t)
-#       grad <- grad + a$cur[l, t] / alpha$cur^2 * (sum(these.1) + sum(these.2))
+    for (k in 1:nknots) {
+      for (i in 1:ns) {
+        if (data$y[i, t] == 0) {
+          grad.m <- a$cur[k, t] * (calc$w[i, k] / calc$z[i, t])^(1 / alpha$cur) /
+            alpha$cur^2 * (log(calc$w[i, k] / calc$z[i, t]))
+          if (data$y[i, t] == 0) {
+            grad <- grad + grad.m
+          } else {
+            grad <- grad + grad.m / expm1(theta[i, t])
+          }
+        }
+      }
     }
   }
   
   return(grad)
 }
 
-alpha2 <- function(q, y, a, alpha, calc) {
+alpha.2 <- function(q, data, a, alpha, calc) {
   alpha$cur <- q
   w.star <- getWStar(alpha = alpha$cur, w = calc$w)
   aw    <- getAW(a = a$cur, w.star = w.star)
   theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
-  sum(logLikeY(y = y, theta = theta))
+  sum(logLikeY(y = data$y, theta = theta))
 }
 
-diffalpha1 <- function(alpha, b, a) {
-  alpha1m <- 1 - alpha
-  apb <- alpha * pi * b
-  pb <- pi * b
-  a1mpb <- alpha1m * pi * b
+alpha.1 <- function(q, alpha, b, a) {
+  alpha$cur <- q
+  alpha1m <- 1 - alpha$cur
+  -sum(log(alpha$cur) - log(alpha1m) - log(a$cur) / alpha1m + logc(b = b$cur, alpha = alpha$cur))
+}
+
+# verified using grad function
+diffalpha.1 <- function(q, alpha, b, a) {
+  alpha$cur <- q
+  alpha1m <- 1 - alpha$cur
+  apb <- alpha$cur * pi * b$cur
+  pb <- pi * b$cur
+  a1mpb <- alpha1m * pi * b$cur
   
-  1 / alpha + 1 / alpha1m + log(a) / alpha1m^2 + pi * b * cos(apb) / (alpha1m * sin(apb)) -
-    log(sin(apb)) / alpha1m^2 + log(sin(pi * b)) / alpha1m^2 - pi * b * cos(a1mpb) / sin(a1mpb) -
-    pi * b * cos(apb) / sin(apb)
+  grad <- sum(1 / alpha$cur + 1 / alpha1m - log(a$cur) / alpha1m^2 + 
+                pi * b$cur * cos(apb) / (alpha1m * sin(apb)) +
+                log(sin(apb)) / alpha1m^2 - log(sin(pi * b$cur)) / alpha1m^2 - 
+                pi * b$cur * cos(a1mpb) / sin(a1mpb) -
+                pi * b$cur * cos(apb) / sin(apb))
+  
+  return (-grad)
 }
 
+cba <- function(q, alpha, b, a) {
+  alpha$cur <- q
+  cba <- exp(logc(alpha = alpha$cur, b = b$cur)) * a$cur^(-alpha$cur / (1 - alpha$cur))
+  return(sum(cba))
+}
 
 # derivative of c(b) * a^(-alpha / (1 - alpha)) wrt alpha
 # taken from SAGE and confirmed using grad function
-diffca <- function(alpha, b, a){
+diffcba <- function(q, alpha, b, a){
+  alpha$cur <- q
+  alpha <- alpha$cur
+  a <- a$cur
+  b <- b$cur
   alpha1m <- 1 - alpha
   apb <- alpha * pi * b
   pb  <- pi * b
   a1mpb <- alpha1m * pi * b
-  pi * a^(-alpha / alpha1m) * b * cos(apb) * sin(-a1mpb) / ((sin(apb)/sin(pb))^(-1 / alpha1m) * sin(apb)^2) - 
+  grad <- sum(pi * a^(-alpha / alpha1m) * b * cos(apb) * sin(-a1mpb) / ((sin(apb)/sin(pb))^(-1 / alpha1m) * sin(apb)^2) - 
     pi * a^(-alpha / alpha1m) * b * cos(-a1mpb) / ((sin(apb) / sin(pb))^(-1 / alpha1m) * sin(apb)) - 
     a^(-alpha / alpha1m) * (-1 / alpha1m - alpha / alpha1m^2) * log(a) * sin(-a1mpb) / 
     ((sin(apb) / sin(pb))^(-1/alpha1m) * sin(apb)) + a^(-alpha / alpha1m) * 
     (pb * cos(apb) / (-alpha1m * sin(apb)) - log(sin(apb) / sin(pb)) / (alpha1m)^2) * 
-    sin(-a1mpb) / ((sin(apb) / sin(pb))^(-1 / alpha1m) * sin(apb))
+    sin(-a1mpb) / ((sin(apb) / sin(pb))^(-1 / alpha1m) * sin(apb)))
+  
+  return(grad)
 }
 
 getWStar <- function(alpha, w) {
