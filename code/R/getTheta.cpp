@@ -132,3 +132,20 @@ arma::mat getawCPP(arma::mat a_star, arma::mat w, double alpha) {
   
   return aw;
 }
+
+// [[Rcpp::export]]
+arma::mat getawCPP2(arma::mat a, arma::mat w, double alpha) {
+  /* when beta is being updated, it is quicker to work with 
+   * aw_it = sum(a_lt w_li^1 / alpha)
+   * 
+   * this avoids unnecessary calculation and summing since only z changes.
+   * using a_star to help with numerical stability in multiplication.
+   */ 
+  uword ns = w.n_rows;
+  uword nt = a.n_cols;
+  
+  // return storage
+  arma::mat aw = pow(w, 1 / alpha) * a;
+  
+  return aw;
+}

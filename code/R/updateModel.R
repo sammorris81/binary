@@ -3,18 +3,18 @@ updateBeta <- function(data, beta, xi, alpha, calc, others) {
   ns  <- nrow(data$y)
   nt  <- ncol(data$y)
   
-  cur.lly <- logLikeY(data = data, calc = calc, others = others)
+  cur.lly <- logLikeY(y = data$y, theta = calc$theta)
   cur.beta <- beta$cur
   
-  can.beta <- beta$cur <- rnorm(np, beta$cur, beta$eps)
-  calc$x.beta <- getXBeta(data = data, beta = beta) 
+  can.beta <- rnorm(np, beta$cur, beta$eps)
+  x.beta   <- getXBeta(y = data$y, x = data$x, beta = can.beta) 
   
-  if (any(xi$cur * (calc$x.beta - others$thresh) > 1)) {  # numerical stability
+  if (any(xi$cur * (x.beta - others$thresh) > 1)) {  # numerical stability
     can.lly <- -Inf
   } else {
-    calc$z     <- getZ(xi = xi, calc = calc, others = others)
-    calc$theta <- getTheta(alpha = alpha, calc = calc)
-    can.lly    <- logLikeY(data = data, calc = calc, others = others)
+    z       <- getZ(xi = xi$cur, x.beta = x.beta, thresh = others$thres)
+    theta   <- getTheta(alpha = alpha$cur, z = z, aw = calc$aw)
+    can.lly <- logLikeY(y = data$y, theta = theta)
   }
   
   R <- sum(can.lly - cur.lly) +
@@ -35,17 +35,17 @@ updateBeta <- function(data, beta, xi, alpha, calc, others) {
 updateXi <- function(data, xi, alpha, calc, others) {
   nt  <- ncol(data$y)
   
-  cur.lly <- logLikeY(data = data, calc = calc, others = others)
+  cur.lly <- logLikeY(y = data$y, theta = calc$theta)
   cur.xi <- xi$cur
   
-  can.xi <- xi$cur <- rnorm(1, xi$cur, xi$eps)
+  can.xi <- rnorm(1, xi$cur, xi$eps)
   
   if (sum(can.xi * (calc$x.beta - others$thresh) > 1) > 0) {
     can.lly <- -Inf
   } else {
-    calc$z     <- getZ(xi = xi, calc = calc, others = others)
-    calc$theta <- getTheta(alpha = alpha, calc = calc)
-    can.lly   <- logLikeY(data = data, calc = calc, others = others)
+    z       <- getZ(xi = can.xi, x.beta = calc$x.beta, thresh = others$thresh)
+    theta   <- getTheta(alpha = alpha$cur, z = z, aw = calc$aw)
+    can.lly <- logLikeY(y = data$y, theta = theta)
   }
   
   R <- sum(can.lly - cur.lly) +
@@ -67,14 +67,15 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   nt     <- ncol(data$y)
   nknots <- nrow(a$cur)
   
-  cur.lly <- logLikeY(data = data, calc = calc, others = others)
+  cur.lly <- logLikeY(y = data$y, theta = calc$theta)
   cur.rho <- rho$cur
   
-  can.rho    <- rho$cur <- exp(rnorm(1, log(rho$cur), rho$eps))
-  calc$w     <- getW(rho = rho, others = others)
-  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
-  can.lly    <- logLikeY(data = data, calc = calc, others = others)
+  can.rho <- exp(rnorm(1, log(rho$cur), rho$eps))
+  w       <- getW(rho = can.rho, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+  w.star  <- getWStar(alpha = alpha$cur, w = w)
+  aw      <- getAW(a = a$cur, w.star = w.star)
+  theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  can.lly <- logLikeY(y = data$y, theta = theta)
   
   R <- sum(can.lly - cur.lly) +
     dnorm(log(can.rho), rho$mn, rho$sd, log=TRUE) -

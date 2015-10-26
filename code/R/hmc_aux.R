@@ -13,14 +13,15 @@ log_ps_full <- function(data, alpha, b, a, calc, others) {
 
 log_post_full <- function(data, beta, xi, a, b, alpha, rho, calc, others) {
   alpha1m <- 1 - alpha$cur
-  lc      <- logc(b = b, alpha = alpha)
+  lc      <- logc(b = b$cur, alpha = alpha$cur)
   
   # redo calculated
-  calc$x.beta <- getXBeta(data = data, beta = beta)
-  calc$z      <- getZ(xi = xi, calc = calc, others = others)
-  calc$w      <- getW(rho = rho, others = others)
-  calc$aw     <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta  <- getTheta(alpha = alpha, calc = calc)
+  x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+  z      <- getZ(xi = xi$cur, x.beta = x.beta, thresh = others$thresh)
+  w      <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+  w.star <- getWStar(alpha = alpha$cur, w = w)
+  aw     <- getAW(a = a$cur, w.star = w.star)
+  theta  <- getTheta(alpha = alpha$cur, z = z, aw = aw)
   
 #   ll <- log_ps_full(d = d, p = p, c = c, o = o) + 
 #         sum(logLikeY(d = d, p = p, c = c, o = o)) +
@@ -39,9 +40,6 @@ log_post_full <- function(data, beta, xi, a, b, alpha, rho, calc, others) {
 neg_log_post_beta_full <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
                                    others) {
   beta$cur <- q
-  calc$x.beta <- getXBeta(data = data, beta = beta)
-  calc$z <- getZ(xi = xi, calc = calc, others = others)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
   ll <- log_post_full(data = data, beta = beta, a = a, b = b, alpha = alpha, 
                       rho = rho, calc = calc, others = others)
   return (-ll)
@@ -68,13 +66,13 @@ neg_log_post_beta <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   # extract from the list and get calculated quantities
   beta$cur <- q
   
-  calc$x.beta <- getXBeta(data = data, beta = beta)
-  calc$z      <- getZ(xi = xi, calc = calc, others = others)
-  calc$theta  <- getTheta(alpha = alpha, calc = calc)
+  x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+  z      <- getZ(xi = xi$cur, x.beta = x.beta, thresh = others$thresh)
+  theta  <- getTheta(alpha = alpha$cur, z = z, aw = calc$aw)
   
   # log prior
   ll <- sum(dnorm(x = beta$cur, mean = beta$mn, sd = beta$sd, log = TRUE))
-  ll <- ll + sum(logLikeY(data = data, calc = calc, others = others))
+  ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
   return(-ll)
 }
@@ -88,13 +86,14 @@ neg_log_post_a <- function(q, data, beta, xi, a, b, alpha, rho, calc, others) {
   
   # log prior
   # Remember: q = log(a) and jacobian is included
-  lc <- logc(b = b, alpha = alpha)
+  lc <- logc(b = b$cur, alpha = alpha$cur)
   ll <- sum(-alpha$cur / alpha1m * q - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
   # data and log likelihood
-  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
-  ll <- ll + sum(logLikeY(data = data, calc = calc, others = others))
+  aw <- getAW(a = a$cur, w.star = calc$w.star)
+  theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  
+  ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
   return (-ll)
 }
@@ -102,13 +101,14 @@ neg_log_post_a <- function(q, data, beta, xi, a, b, alpha, rho, calc, others) {
 neg_log_post_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
                                others) {
   # parameter transformation
-  alpha$cur  <- transform$inv.logit(q)
-  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
-  alpha1m    <- 1 - alpha$cur
+  alpha$cur <- transform$inv.logit(q)
+  w.star    <- getWStar(alpha = alpha$cur, w = calc$w)
+  aw        <- getAW(a = a$cur, w.star = w.star)
+  theta     <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  alpha1m   <- 1 - alpha$cur
   
   # extract from the list and get calculated quantities
-  lc <- logc(b = b, alpha = alpha)
+  lc <- logc(b = b$cur, alpha = alpha$cur)
   
   nt     <- ncol(a$cur)
   nknots <- nrow(a$cur)
@@ -118,7 +118,7 @@ neg_log_post_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
               exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
   # data and log likelihood
-  ll <- ll + sum(logLikeY(data = data, calc = calc, others = others))
+  ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
   return(-ll)
 }
@@ -136,14 +136,15 @@ neg_log_post_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   # log prior
   # Remember: q = log(a) and jacobian is included
-  lc <- logc(b = b, alpha = alpha)
+  lc <- logc(b = b$cur, alpha = alpha$cur)
   ll <- sum(-alpha$cur / alpha1m * q.a + lc - exp(lc) * a$cur^(-alpha$cur / alpha1m)) +
     nknots * nt * (log(alpha$cur) - log(alpha1m))
   
   # data and log likelihood
-  calc$aw  <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
-  ll <- ll + sum(logLikeY(data = data, calc = calc, others = others))
+  w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  aw     <- getAW(a = a$cur, w.star = w.star)
+  theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
   return (-ll)
 }
@@ -157,7 +158,7 @@ llps <- function(q, data, beta, xi, a, b, alpha, rho, calc, others,
   alpha1m <- 1 - alpha$cur
   
   # log prior
-  lc <- logc(b = b, alpha = alpha)
+  lc <- logc(b = b$cur, alpha = alpha$cur)
   ll <- lc - exp(lc) * a$cur^(-alpha$cur / alpha1m) + log(b$cur) + log(1 - b$cur)
   
   if (addup) {
@@ -182,7 +183,7 @@ neg_log_post_b <- function(q, data, beta, xi, a, b, alpha, rho, calc, others,
   alpha1m <- 1 - alpha$cur
   
   # prior is U(0, 1)
-  lc <- logc(b = b, alpha = alpha)
+  lc <- logc(b = b$cur, alpha = alpha$cur)
   ll <- lc - exp(lc) * a$cur^(-alpha$cur / alpha1m) + 
         log(b$cur) + log(1 - b$cur)  # jacobian
   
@@ -201,14 +202,14 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   a$cur  <- exp(q)
   
   # for the gradiant of a_alpha, we calculate this before calling this function
-  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
+  aw    <- getAW(a = a$cur, w.star = calc$w.star)
+  theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
   
   nt     <- ncol(a$cur)
   nknots <- nrow(a$cur)
   
   # extract from the list and get calculated quantities
-  lc      <- logc(b = b, alpha = alpha)
+  lc      <- logc(b = b$cur, alpha = alpha$cur)
   alpha1m <- 1 - alpha$cur
   
   # grad wrt log(a)
@@ -219,12 +220,15 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   #   a.lt * wz.star.lt
   # For observances:
   #   a.lt * wz.star.lt / expm1(theta.t)
+  lw.star <- log(calc$w.star)
   for (t in 1:nt) {
-    wz.star.t <- exp((log(calc$w) - log(calc$z[, t])) / alpha$cur)
+    wz.star.t <- exp(lw.star - log(calc$z[, t]) / alpha$cur)
+    these <- data$y[, t] == 1
+    theta.t <- theta[these, t]
     for (l in 1:nknots) {
       grad[l, t] <- a$cur[l, t] * 
-        (-sum(wz.star.t[data$y == 0, l]) + 
-           sum(wz.star.t[data$y == 1, l] / expm1(calc$theta[data$y == 1, t])))
+        (-sum(wz.star.t[!these, l]) + 
+           sum(wz.star.t[these, l] / expm1(theta.t)))
     }
   }
   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
@@ -269,7 +273,7 @@ neg_log_post_grad_b <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   apb     <- alpha$cur * pi * b$cur
   a1mpb   <- alpha1m * pi * b$cur
   pb      <- pi * b$cur
-  c       <- exp(logc(b = b, alpha = alpha))
+  c       <- exp(logc(b = b$cur, alpha = alpha$cur))
   
   # chain rule work
   u <- sin(apb)^(alpha$cur / alpha1m)
@@ -336,10 +340,8 @@ neg_log_post_grad_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   grad <- rep(NA, length(q))
   
-  a$cur      <- exp(q.a)
-  alpha$cur  <- transform$inv.logit(q.alpha)
-  calc$aw    <- getAW(alpha = alpha, a = a, calc = calc)
-  calc$theta <- getTheta(alpha = alpha, calc = calc)
+  a$cur       <- exp(q.a)
+  alpha$cur   <- transform$inv.logit(q.alpha)
   
   grad[1:nknots] <- neg_log_post_grad_a(q = q.a, data = data, beta = beta, 
                                         xi = xi, a = a, b = b, alpha = alpha, 
