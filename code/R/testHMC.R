@@ -1120,7 +1120,7 @@ options(warn = 2)
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 1000
+ns <- 10
 nt <- 1
 nknotsx <- 2
 nknotsy <- 3

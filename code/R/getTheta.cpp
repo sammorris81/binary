@@ -141,8 +141,8 @@ arma::mat getawCPP2(arma::mat a, arma::mat w, double alpha) {
    * this avoids unnecessary calculation and summing since only z changes.
    * using a_star to help with numerical stability in multiplication.
    */ 
-  uword ns = w.n_rows;
-  uword nt = a.n_cols;
+//   uword ns = w.n_rows;
+//   uword nt = a.n_cols;
   
   // return storage
   arma::mat aw = pow(w, 1 / alpha) * a;

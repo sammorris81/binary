@@ -35,6 +35,97 @@ source('pairwise.R')
 #                   alpha = alpha$cur))
 # } 
 
+neg_log_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
+                               others) {
+  nknots <- nrow(a$cur)
+  nt     <- ncol(data$y)
+  ns     <- nrow(data$y)
+  
+  alpha$cur <- q
+  w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  aw     <- getAW(a = a$cur, w.star = w.star)
+  theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  lw     <- log(calc$w)
+  lz     <- log(calc$z)
+  
+  grad <- 0
+  
+  for (t in 1:nt) {
+    wz.star.t <- exp((lw - lz[, t]) / alpha$cur)
+    these <- data$y[, t] == 1
+    for (k in 1:nknots) {
+      grad <- grad + a$cur[k, t] / alpha$cur^2 * 
+        (sum(wz.star.t[!these, k] * (lw[!these, k] - lz[!these, t])) - 
+           sum(wz.star.t[these, k] * (lw[these, k] - lz[these, t]) / expm1(theta[these, t])))
+    }
+  }
+  
+  alpha <- alpha$cur
+  a <- a$cur
+  la <- log(a)
+  b <- b$cur
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  capb <- cos(apb)
+  sapb <- sin(apb)
+  a.aa1m <- a^(-alpha / alpha1m)
+  
+  grad <- grad + sum(1 / alpha + 1 / alpha1m - la / alpha1m^2 + 
+                pb * capb / (alpha1m * sapb) +
+                log(sapb) / alpha1m^2 - log(sin(pb)) / alpha1m^2 - 
+                pb * cos(a1mpb) / sin(a1mpb) - pb * capb / sapb) - 
+    sum(pb * a.aa1m * cos(apb) * sin(-a1mpb) / 
+          ((sapb/sin(pb))^(-1 / alpha1m) * sapb^2) - 
+          pb * a.aa1m * cos(-a1mpb) / ((sapb / sin(pb))^(-1 / alpha1m) * sapb) - 
+          a.aa1m * (-1 / alpha1m - alpha / alpha1m^2) * la * sin(-a1mpb) / 
+          ((sapb / sin(pb))^(-1/alpha1m) * sapb) + a.aa1m * 
+          (pb * capb / (-alpha1m * sapb) - log(sapb / sin(pb)) / (alpha1m)^2) * 
+          sin(-a1mpb) / ((sapb / sin(pb))^(-1 / alpha1m) * sapb))
+  
+  return(-grad)
+}
+
+alpha.all <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
+                      others) {
+  alpha$cur <- q
+  w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  aw    <- getAW(a = a$cur, w.star = w.star)
+  theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  post <- -sum(logLikeY(y = data$y, theta = theta))
+  
+  alpha$cur <- q
+  alpha1m <- 1 - alpha$cur
+  post <- post -sum(log(alpha$cur) - log(alpha1m) - log(a$cur) / alpha1m + logc(b = b$cur, alpha = alpha$cur) - 
+                 exp(logc(alpha = alpha$cur, b = b$cur)) * a$cur^(-alpha$cur / (1 - alpha$cur)))
+  return(post)
+}
+
+diffalpha.2.a <- function(q, data, alpha, a, calc) {
+  nknots <- nrow(a$cur)
+  nt     <- ncol(data$y)
+  ns     <- nrow(data$y)
+  grad <- 0
+  alpha$cur <- q
+  w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  aw     <- getAW(a = a$cur, w.star = w.star)
+  theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  lw     <- log(calc$w)
+  lz     <- log(calc$z)
+  for (t in 1:nt) {
+    wz.star.t <- exp((lw - lz[, t]) / alpha$cur)
+    these <- data$y[, t] == 1
+    for (k in 1:nknots) {
+      grad <- grad + a$cur[k, t] / alpha$cur^2 * 
+        (sum(wz.star.t[!these, k] * (lw[!these, k] - lz[!these, t])) - 
+           sum(wz.star.t[these, k] * (lw[these, k] - lz[these, t]) / expm1(theta[these, t])))
+    }
+  }
+  
+  return(grad)
+}
+
 diffalpha.2 <- function(q, data, alpha, a, calc) {
   nknots <- nrow(a$cur)
   nt     <- ncol(data$y)
@@ -49,19 +140,17 @@ diffalpha.2 <- function(q, data, alpha, a, calc) {
     for (k in 1:nknots) {
       for (i in 1:ns) {
         if (data$y[i, t] == 0) {
-          grad.m <- a$cur[k, t] * (calc$w[i, k] / calc$z[i, t])^(1 / alpha$cur) /
+          grad <- grad + a$cur[k, t] * (calc$w[i, k] / calc$z[i, t])^(1 / alpha$cur) /
             alpha$cur^2 * (log(calc$w[i, k] / calc$z[i, t]))
-          if (data$y[i, t] == 0) {
-            grad <- grad + grad.m
-          } else {
-            grad <- grad + grad.m / expm1(theta[i, t])
-          }
+        } else {
+          grad <- grad - a$cur[k, t] * (calc$w[i, k] / calc$z[i, t])^(1 / alpha$cur) /
+            alpha$cur^2 * (log(calc$w[i, k] / calc$z[i, t])) / expm1(theta[i, t])
         }
       }
     }
   }
   
-  return(grad)
+  return(-grad)
 }
 
 alpha.2 <- function(q, data, a, alpha, calc) {
@@ -69,7 +158,7 @@ alpha.2 <- function(q, data, a, alpha, calc) {
   w.star <- getWStar(alpha = alpha$cur, w = calc$w)
   aw    <- getAW(a = a$cur, w.star = w.star)
   theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
-  sum(logLikeY(y = data$y, theta = theta))
+  -sum(logLikeY(y = data$y, theta = theta))
 }
 
 alpha.1 <- function(q, alpha, b, a) {
@@ -77,6 +166,44 @@ alpha.1 <- function(q, alpha, b, a) {
   alpha1m <- 1 - alpha$cur
   -sum(log(alpha$cur) - log(alpha1m) - log(a$cur) / alpha1m + logc(b = b$cur, alpha = alpha$cur))
 }
+
+diffalpha.cba1 <- function(q, alpha, a, b) {
+  alpha$cur <- q
+  alpha <- alpha$cur
+  a <- a$cur
+  la <- log(a)
+  b <- b$cur
+  alpha1m <- 1 - alpha
+  apb <- alpha * pi * b
+  pb  <- pi * b
+  a1mpb <- alpha1m * pi * b
+  capb <- cos(apb)
+  sapb <- sin(apb)
+  a.aa1m <- a^(-alpha / alpha1m)
+  
+  grad <- sum(1 / alpha + 1 / alpha1m - la / alpha1m^2 + 
+                pb * capb / (alpha1m * sapb) +
+                log(sapb) / alpha1m^2 - log(sin(pb)) / alpha1m^2 - 
+                pb * cos(a1mpb) / sin(a1mpb) - pb * capb / sapb) - 
+    sum(pb * a.aa1m * cos(apb) * sin(-a1mpb) / 
+          ((sapb/sin(pb))^(-1 / alpha1m) * sapb^2) - 
+          pb * a.aa1m * cos(-a1mpb) / ((sapb / sin(pb))^(-1 / alpha1m) * sapb) - 
+          a.aa1m * (-1 / alpha1m - alpha / alpha1m^2) * la * sin(-a1mpb) / 
+          ((sapb / sin(pb))^(-1/alpha1m) * sapb) + a.aa1m * 
+          (pb * capb / (-alpha1m * sapb) - log(sapb / sin(pb)) / (alpha1m)^2) * 
+          sin(-a1mpb) / ((sapb / sin(pb))^(-1 / alpha1m) * sapb))
+
+  return(-grad)  
+}
+
+cba.alpha.1 <- function(q, alpha, a, b) {
+  alpha$cur <- q
+  alpha1m <- 1 - alpha$cur
+  post <- -sum(log(alpha$cur) - log(alpha1m) - log(a$cur) / alpha1m + logc(b = b$cur, alpha = alpha$cur) - 
+    exp(logc(alpha = alpha$cur, b = b$cur)) * a$cur^(-alpha$cur / (1 - alpha$cur)))
+  return(post)
+}
+
 
 # verified using grad function
 diffalpha.1 <- function(q, alpha, b, a) {
@@ -112,7 +239,8 @@ diffcba <- function(q, alpha, b, a){
   apb <- alpha * pi * b
   pb  <- pi * b
   a1mpb <- alpha1m * pi * b
-  grad <- sum(pi * a^(-alpha / alpha1m) * b * cos(apb) * sin(-a1mpb) / ((sin(apb)/sin(pb))^(-1 / alpha1m) * sin(apb)^2) - 
+  grad <- sum(pi * a^(-alpha / alpha1m) * b * cos(apb) * sin(-a1mpb) / 
+                ((sin(apb)/sin(pb))^(-1 / alpha1m) * sin(apb)^2) - 
     pi * a^(-alpha / alpha1m) * b * cos(-a1mpb) / ((sin(apb) / sin(pb))^(-1 / alpha1m) * sin(apb)) - 
     a^(-alpha / alpha1m) * (-1 / alpha1m - alpha / alpha1m^2) * log(a) * sin(-a1mpb) / 
     ((sin(apb) / sin(pb))^(-1/alpha1m) * sin(apb)) + a^(-alpha / alpha1m) * 
