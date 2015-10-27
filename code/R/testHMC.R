@@ -1763,7 +1763,7 @@ calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
 calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
 calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
 
-niters <- 1000
+niters <- 10000
 storage.a     <- array(NA, dim=c(niters, nknots, nt))
 storage.b     <- array(NA, dim=c(niters, nknots, nt))
 storage.alpha <- rep(NA, niters)
