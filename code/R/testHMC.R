@@ -1120,10 +1120,10 @@ options(warn = 2)
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 10
+ns <- 1000
 nt <- 1
-nknotsx <- 2
-nknotsy <- 3
+nknotsx <- 21
+nknotsy <- 21
 nknots <- nknotsx * nknotsy
 nkt <- nknots * nt
 rho.t <- list(cur = 0.25)
@@ -1162,51 +1162,23 @@ rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 1)
 
 calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
 calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+calc$lz     <- log(calc$z)
 calc$w      <- getW(rho = rho.t$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+calc$lw     <- log(calc$w)
 calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
 calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
 calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
 
-library(numDeriv)
-neg_log_post_a(q = log(a$cur), data = data, beta = beta, xi = xi, 
-               a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
-neg_log_post_grad_a(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, 
-                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
-neg_log_post_grad_a_alpha(q = as.vector(c(log(a$cur), transform$logit(alpha$cur))),
-                          data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha,
-                          rho = rho, calc = calc, others = others, eps = 0.0001)
-
-grad(func = neg_log_post_a_alpha, 
-     x = as.vector(c(log(a$cur), transform$logit(alpha$cur))), 
-     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, rho = rho, calc = calc,
-     others = others)
-neg_log_post_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, 
-                   a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
-neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, 
-                        a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others, 
-                        eps = 0.0001)
-grad(func = neg_log_post_alpha, x = transform$logit(alpha$cur), 
-     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, rho = rho, 
-     calc = calc, others = others)
-
-neg_log_post_beta(q = beta$cur, data = data, beta = beta, xi = xi, a = a, 
-                  b = b, alpha = alpha, rho = rho, calc = calc, others = others)
-neg_log_post_grad_beta(q = beta$cur, data = data, beta = beta, xi = xi, a = a,
-                       b = b, alpha = alpha, rho = rho, calc = calc, 
-                       others = others, eps = 0.0001)
-grad(func = neg_log_post_beta, x = beta$cur, data = data, beta = beta, xi = xi,
-     a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
-
-
-niters <- 10
-storage.a <- array(NA, dim=c(niters, nknots, nt))
-storage.b <- array(NA, dim=c(niters, nknots, nt))
-storage.alpha <- rep(NA, niters)
-storage.beta  <- rep(NA, niters)
-storage.prob  <- array(NA, dim = c(niters, ns, nt))
+niters <- 1000
+storage.a.1 <- array(NA, dim=c(niters, nknots, nt))
+storage.b.1 <- array(NA, dim=c(niters, nknots, nt))
+storage.alpha.1 <- rep(NA, niters)
+storage.beta.1  <- rep(NA, niters)
+storage.prob.1  <- array(NA, dim = c(niters, ns, nt))
 
 set.seed(200)
-Rprof(filename = "Rprof.out", line.profiling = TRUE)
+Rprof(filename = "Rprof1.out", line.profiling = TRUE)
+tic <- proc.time()
 for (i in 1:niters) {
   beta$att <- beta$att + 1
   q <- beta$cur
@@ -1228,6 +1200,7 @@ for (i in 1:niters) {
     beta$cur <- MHout$q
     calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
     calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+    calc$lz     <- log(calc$z)
     calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   }
   if (beta$att > 100) {
@@ -1332,47 +1305,301 @@ for (i in 1:niters) {
   #     b.acc <- b.att <- 0
   #   }
   
-  storage.a[i, , ] <- a$cur
-  storage.b[i, , ] <- b$cur
-  storage.alpha[i] <- alpha$cur
-  storage.beta[i]  <- beta$cur
-  storage.prob[i, , ] <- 1 - exp(-calc$theta)
+  storage.a.1[i, , ] <- a$cur
+  storage.b.1[i, , ] <- b$cur
+  storage.alpha.1[i] <- alpha$cur
+  storage.beta.1[i]  <- beta$cur
+  storage.prob.1[i, , ] <- 1 - exp(-calc$theta)
   
-  if (i %% 10 == 0) {
+  if (i %% 50 == 0) {
     start <- max(i - 5000, 1)
     end   <- i
     par(mfrow=c(4, 5))
     plot.idx <- seq(1, 18, by = 2)
     for (idx in plot.idx){
-      plot(log(storage.a[1:i, idx, 1]), type = "l", 
+      plot(log(storage.a.1[1:i, idx, 1]), type = "l", 
            main = round(log(gen$a[idx, 1]), 2), 
            xlab = round(a$acc / a$att, 3))
     }
     plot.idx <- seq(1, 18, by = 2)
     for (idx in plot.idx){
-      plot(storage.b[1:i, idx, 1], type = "l", 
+      plot(storage.b.1[1:i, idx, 1], type = "l", 
            xlab = round(b$acc / b$att, 3))
     }
     #     plot.idx <- 1:18
     #     for (idx in plot.idx){
     #       plot(storage.prob[start:end, idx, 1], type = "l")
     #     }
-    plot(storage.beta[start:end], type = "l", 
+    plot(storage.beta.1[start:end], type = "l", 
          xlab = round(beta$acc / beta$att, 2), main = round(beta$eps, 3))
-    plot(storage.alpha[start:end], type = "l",
+    plot(storage.alpha.1[start:end], type = "l",
          xlab = round(alpha$acc / alpha$att, 2))
     print(paste("iter:", i, "of", niters, sep=" "))
   }
 }
 toc.1 <- proc.time()
 Rprof(NULL)
-summaryRprof(filename = "Rprof.out", lines = "show")
+
+# initial values
+beta.init <- -log(-log(mean(data$y)))
+beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 100)
+xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.3)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.3)
+alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.005)
+rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 1)
+
+calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+calc$lz     <- log(calc$z)
+calc$w      <- getW(rho = rho.t$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+calc$lw     <- log(calc$w)
+calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+
+niters <- 1000
+storage.a.2 <- array(NA, dim=c(niters, nknots, nt))
+storage.b.2 <- array(NA, dim=c(niters, nknots, nt))
+storage.alpha.2 <- rep(NA, niters)
+storage.beta.2  <- rep(NA, niters)
+storage.prob.2  <- array(NA, dim = c(niters, ns, nt))
+
+set.seed(200)
+Rprof(filename = "Rprof2.out", line.profiling = TRUE)
+tic.2 <- proc.time()
+for (i in 1:niters) {
+  beta$att <- beta$att + 1
+  q <- beta$cur
+  #   HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, 
+  #                 epsilon = beta$eps, L = 10, 
+  #                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+  #                 calc = calc, others = others, this.param = "beta")
+  #   if (HMCout$accept) {
+  #     beta$acc    <- beta$acc + 1
+  #     beta$cur    <- HMCout$q
+  #     calc$x.beta <- getXBeta(data = data, beta = beta)
+  #     calc$z      <- getZ(xi = xi, calc = calc, others = others)
+  #     calc$theta  <- getTheta(alpha = alpha, calc = calc)
+  #   }
+  MHout <- updateBeta(data = data, beta = beta, xi = xi, alpha = alpha, 
+                      calc = calc, others = others)
+  if (MHout$accept) {
+    beta$acc <- beta$acc + 1
+    beta$cur <- MHout$q
+    calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+    calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+    calc$lz     <- log(calc$z)
+    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  if (beta$att > 100) {
+    beta.rate <- beta$acc / beta$att
+    if (beta.rate < 0.20) {
+      beta$eps <- beta$eps * 0.8
+    } else if (beta.rate > 0.60) {
+      beta$eps <- beta$eps * 1.2
+    }
+    beta$acc <- beta$att <- 0
+  }
+  
+  a$att <- a$att + 1
+  q <- log(a$cur)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+                 epsilon = a$eps, L = 20, 
+                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                 rho = rho, calc = calc, others = others, this.param = "a")
+  if (HMCout$accept) {
+    a$acc <- a$acc + 1
+    a$cur <- exp(HMCout$q)
+    calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
+    calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  
+  #   if (a.att > 100) {
+  #     a.rate <- a.acc / a.att
+  #     if (a.rate < 0.20) {
+  #       a.eps <- a.eps * 0.8
+  #     } else if (a.rate > 0.60) {
+  #       a.eps <- a.eps * 1.2
+  #     }
+  #     a.acc <- a.att <- 0
+  #   }
+  
+  alpha$att <- alpha$att + 1
+  q <- transform$logit(alpha$cur)
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha_s, q, 
+                 epsilon = alpha$eps, L = 10, 
+                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                 rho = rho, calc = calc, others = others, this.param = "alpha")
+  if (HMCout$accept) {
+    alpha$acc   <- alpha$acc + 1
+    alpha$cur   <- transform$inv.logit(HMCout$q)
+    calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+    calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, calc$aw)
+  }
+  
+  #   if (alpha.att > 500) {
+  #     alpha.rate <- alpha.acc / alpha.att
+  #     if (alpha.rate < 0.20) {
+  #       alpha.eps <- alpha.eps * 0.8
+  #     } else if (alpha.rate > 0.60) {
+  #       alpha.eps <- alpha.eps * 1.2
+  #     }
+  #     alpha.acc <- alpha.att <- 0
+  #   }
+  
+  #   a_alpha.att <- a_alpha.att + 1
+  #   q <- as.vector(c(log(params$a), transform$logit(params$alpha)))
+  #   HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+  #                  epsilon = a_alpha.eps, L = 30, 
+  #                  data = data, params = params, calc = calc, others = others, 
+  #                  prior = prior, this.param = "a and alpha")
+  #   if (HMCout$accept) {
+  #     a_alpha.acc <- a_alpha.acc + 1
+  #     params$a <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
+  #     params$alpha <- transform$inv.logit(tail(HMCout$q, 1))
+  #     calc$aw  <- getAW(d = data, p = params, c = calc, o = others)
+  #     calc$theta <- getTheta(d = data, p = params, c = calc, o = others)
+  #   }
+  
+  #   if (a_alpha.att > 100) {
+  #     a_alpha.rate <- a_alpha.acc / a_alpha.att
+  #     if (a_alpha.rate < 0.20) {
+  #       a_alpha.eps <- a_alpha.eps * 0.8
+  #     } else if (a_alpha.rate > 0.60) {
+  #       a_alpha.eps <- a_alpha.eps * 1.2
+  #     }
+  #     a_alpha.acc <- a_alpha.att <- 0
+  #   }
+  
+  q <- transform$logit(b$cur)
+  b$att <- b$att + 1
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
+                 L = 10, 
+                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                 rho = rho, calc = calc, others = others, this.para = "b")
+  if (HMCout$accept) {
+    b$acc <- b$acc + 1
+    b$cur <- transform$inv.logit(HMCout$q)
+  }
+  
+  #   if (b.att > 100) {
+  #     b.rate <- b.acc / b.att
+  #     if (b.rate < 0.20) {
+  #       b.eps <- b.eps * 0.8
+  #     } else if (b.rate > 0.60) {
+  #       b.eps <- b.eps * 1.2
+  #     }
+  #     b.acc <- b.att <- 0
+  #   }
+  
+  storage.a.2[i, , ] <- a$cur
+  storage.b.2[i, , ] <- b$cur
+  storage.alpha.2[i] <- alpha$cur
+  storage.beta.2[i]  <- beta$cur
+  storage.prob.2[i, , ] <- 1 - exp(-calc$theta)
+  
+  if (i %% 50 == 0) {
+    start <- max(i - 5000, 1)
+    end   <- i
+    par(mfrow=c(4, 5))
+    plot.idx <- seq(1, 18, by = 2)
+    for (idx in plot.idx){
+      plot(log(storage.a.2[1:i, idx, 1]), type = "l", 
+           main = round(log(gen$a[idx, 1]), 2), 
+           xlab = round(a$acc / a$att, 3))
+    }
+    plot.idx <- seq(1, 18, by = 2)
+    for (idx in plot.idx){
+      plot(storage.b.2[1:i, idx, 1], type = "l", 
+           xlab = round(b$acc / b$att, 3))
+    }
+    #     plot.idx <- 1:18
+    #     for (idx in plot.idx){
+    #       plot(storage.prob[start:end, idx, 1], type = "l")
+    #     }
+    plot(storage.beta.2[start:end], type = "l", 
+         xlab = round(beta$acc / beta$att, 2), main = round(beta$eps, 3))
+    plot(storage.alpha.2[start:end], type = "l",
+         xlab = round(alpha$acc / alpha$att, 2))
+    print(paste("iter:", i, "of", niters, sep=" "))
+  }
+}
+toc.2 <- proc.time()
+Rprof(NULL)
+summaryRprof(filename = "Rprof1.out", lines = "show")
+
+
+library(microbenchmark) 
+Rprof(file = "Rprof.out", line.profiling = TRUE)
+microbenchmark(neg_log_post_grad_alpha(0.5, data = data, beta = beta, xi = xi, 
+                                       a = a, b = b, alpha = alpha, rho = rho, 
+                                       calc = calc, others = others),
+               neg_log_post_grad_alpha_s(0.5, data = data, beta = beta, xi = xi, 
+                                         a = a, b = b, alpha = alpha, rho = rho, 
+                                         calc = calc, others = others))
+Rprof(NULL)
+summaryRprof("Rprof.out", lines = "show")
+
+Rprof(file = "Rprof.out", line.profiling = TRUE)
+for (i in 1:100) {
+  neg_log_post_grad_alpha(0.5, data = data, beta = beta, xi = xi, 
+                          a = a, b = b, alpha = alpha, rho = rho, 
+                          calc = calc, others = others)
+}
+Rprof(NULL)
+summaryRprof("Rprof.out", lines = "show")
+
+Rprof(file = "Rprof.out", line.profiling = TRUE)
+for (i in 1:100) {
+  neg_log_post_grad_alpha_s(0.5, data = data, beta = beta, xi = xi, 
+                            a = a, b = b, alpha = alpha, rho = rho, 
+                            calc = calc, others = others)
+}
+Rprof(NULL)
+summaryRprof("Rprof.out", lines = "show")
+
+library(numDeriv)
+neg_log_post_a(q = log(a$cur), data = data, beta = beta, xi = xi, 
+               a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_a(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_a_alpha(q = as.vector(c(log(a$cur), transform$logit(alpha$cur))),
+                          data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha,
+                          rho = rho, calc = calc, others = others, eps = 0.0001)
+
+grad(func = neg_log_post_a_alpha, neg_log_post_grad_alpha(0.5, data = data, beta = beta, xi = xi, 
+                                                          a = a, b = b, alpha = alpha, rho = rho, 
+                                                          calc = calc, others = others)
+     x = as.vector(c(log(a$cur), transform$logit(alpha$cur))), 
+     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, rho = rho, calc = calc,
+     others = others)
+neg_log_post_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, 
+                   a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, 
+                        a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others, 
+                        eps = 0.0001)
+grad(func = neg_log_post_alpha, x = transform$logit(alpha$cur), 
+     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, rho = rho, 
+     calc = calc, others = others)
+
+neg_log_post_beta(q = beta$cur, data = data, beta = beta, xi = xi, a = a, 
+                  b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_beta(q = beta$cur, data = data, beta = beta, xi = xi, a = a,
+                       b = b, alpha = alpha, rho = rho, calc = calc, 
+                       others = others, eps = 0.0001)
+grad(func = neg_log_post_beta, x = beta$cur, data = data, beta = beta, xi = xi,
+     a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+
 
 # checking to make sure that the gradients are coming back near what we expect from the 
 # full log posterior
 
+# try with the update for beta (HMC), a, alpha (higher rate of occurrence)
 rm(list=ls())
 source("./hmc_aux.R")
+source("./updateModel.R")
 source("./auxfunctions.R")
 options(warn = 2)
 
@@ -1380,54 +1607,74 @@ options(warn = 2)
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 10
+ns <- 1000
 nt <- 1
-nknotsx <- 2
-nknotsy <- 3
+nknotsx <- 21
+nknotsy <- 21
 nknots <- nknotsx * nknotsy
 nkt <- nknots * nt
-rho.t <- 0.25
-alpha.t <- 0.25
+rho.t <- list(cur = 0.25)
+alpha.t <- list(cur = 0.50)
 x <- matrix(1, ns, nt)
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
 dw2 <- rdist(s, knots)
 
-others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0)
-data <- list(x = x, s = s, knots = knots, dw2 = dw2)
-params.t <- list(rho = rho.t, alpha = alpha.t)
+others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0, dw2 = dw2)
+data <- list(x = x, s = s, knots = knots)
 calc.t <- list()
-calc.t$w <- getW(d = data, p = params.t, c = calc.t, o = others)
+calc.t$w <- getW(rho = rho.t$cur, dw2 = dw2, A.cutoff = others$A.cutoff)
 calc.t$z <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
-params.t$a <- matrix(rPS(nknots * nt, alpha = alpha.t), nknots, nt)
-calc.t$aw <- getAW(d = data, p = params.t, c = calc.t, o = others)
-calc.t$theta <- getTheta(d = data, p = params.t, c = calc.t, o = others)
+a <- list(cur = matrix(rPS(nknots * nt, alpha = alpha.t$cur), nknots, nt))
+calc.t$w.star <- getWStar(alpha = alpha.t$cur, w = calc.t$w)
+calc.t$aw <- getAW(a = a$cur, w.star = calc.t$w.star)
+calc.t$theta <- getTheta(alpha = alpha.t$cur, z = calc.t$z, aw = calc.t$aw)
 
-gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0, alpha = alpha.t,
-                       rho = rho.t, nt = 1, prob.success = 0.05, dw2 = dw2)
+gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0, 
+                       alpha = alpha.t$cur, rho = rho.t$cur, nt = 1, 
+                       prob.success = 0.05, dw2 = dw2)
 
 # create lists for MCMC
-data   <- list(y = gen$y, x = x, s = s, knots = knots, dw2 = dw2)
-params <- list(beta = 0, xi = 0, rho = rho.t, alpha = alpha.t)  # still need a and b
-calc   <- list(z = calc.t$z, x.beta = 0, w = calc.t$w)  # need aw, theta
-prior  <- list(beta.mn = 0, beta.sd = 100)
+data   <- list(y = gen$y, x = x, s = s, knots = knots)
+calc   <- list(w = calc.t$w)  # need aw, theta
 
 # initial values
-a <- matrix(1, nknots, nt)
-b <- matrix(0.5, nknots, nt)
-alpha <- 0.5
-beta  <- 0
+beta.init <- -log(-log(mean(data$y)))
+beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 100)
+xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.3)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.3)
+alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.005)
+rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 1)
 
-params$a <- a
-params$b <- b
-params$alpha <- alpha
-params$beta <- beta
+calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+calc$lz     <- log(calc$z)
+calc$w      <- getW(rho = rho.t$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+calc$lw     <- log(calc$w)
+calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
 
-calc$x.beta <- getXBeta(d = data, p = params, c = calc, o = others)
-calc$z      <- getZ(d = data, p = params, c = calc, o = others)
-calc$aw     <- getAW(d = data, p = params, c = calc, o = others)
-calc$theta  <- getTheta(d = data, p = params, c = calc, o = others)
+niters <- 1000
+storage.a.1 <- array(NA, dim=c(niters, nknots, nt))
+storage.b.1 <- array(NA, dim=c(niters, nknots, nt))
+storage.alpha.1 <- rep(NA, niters)
+storage.beta.1  <- rep(NA, niters)
+storage.prob.1  <- array(NA, dim = c(niters, ns, nt))
 
+library(numDeriv)
+library(microbenchmark)
+sum(neg_log_post_grad_a(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                        rho = rho, calc = calc, others = others))
+sum(neg_log_post_grad_a_s(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                        rho = rho, calc = calc, others = others))
+sum(grad(neg_log_post_a, x = log(a$cur), data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+         rho = rho, calc = calc, others = others))
+microbenchmark(neg_log_post_grad_a(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                                   rho = rho, calc = calc, others = others),
+               neg_log_post_grad_a_s(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                                     rho = rho, calc = calc, others = others))
 
 neg_log_post_beta_full(q = 0, d = data, p = params, c = calc, o = others, prior = prior)
 grad(neg_log_post_beta_full, x = 0, d = data, p = params, c = calc, o = others, prior = prior)
@@ -1444,6 +1691,8 @@ neg_log_post_grad_a2(q = log(params$a), d = data, p = params, c = calc, o = othe
 microbenchmark(neg_log_post_grad_a(q = log(params$a), d = data, p = params, c = calc, o = others, prior = prior), 
                neg_log_post_grad_a2(q = log(params$a), d = data, p = params, c = calc, o = others, prior = prior))
 
+
+
 grad(neg_log_post_a, x = log(params$a), d = data, p = params, c = calc, o = others, prior = prior)
 
 neg_log_post_alpha_full(q = 0, d = data, p = params, c = calc, o = others, prior = prior)
@@ -1452,3 +1701,224 @@ neg_log_post_grad_alpha(q = 0, d = data, p = params, c = calc, o = others, prior
 
 microbenchmark(grad(neg_log_post_alpha_full, x = 0, d = data, p = params, c = calc, o = others, prior = prior),
                neg_log_post_grad_alpha(q = 0, d = data, p = params, c = calc, o = others, prior = prior))
+
+
+# try with the update for beta (HMC), a, alpha (higher rate of occurrence)
+rm(list=ls())
+source("./hmc_aux.R")
+source("./updateModel.R")
+source("./auxfunctions.R")
+options(warn = 2)
+
+# Test out the functions
+library(fields)
+library(evd)
+set.seed(200)
+ns <- 1000
+nt <- 1
+nknotsx <- 21
+nknotsy <- 21
+nknots <- nknotsx * nknotsy
+nkt <- nknots * nt
+rho.t <- list(cur = 0.05)
+alpha.t <- list(cur = 0.50)
+x <- matrix(1, ns, nt)
+s <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
+dw2 <- rdist(s, knots)
+
+others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0, dw2 = dw2)
+data <- list(x = x, s = s, knots = knots)
+calc.t <- list()
+calc.t$w <- getW(rho = rho.t$cur, dw2 = dw2, A.cutoff = others$A.cutoff)
+calc.t$z <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
+a <- list(cur = matrix(rPS(nknots * nt, alpha = alpha.t$cur), nknots, nt))
+calc.t$w.star <- getWStar(alpha = alpha.t$cur, w = calc.t$w)
+calc.t$aw <- getAW(a = a$cur, w.star = calc.t$w.star)
+calc.t$theta <- getTheta(alpha = alpha.t$cur, z = calc.t$z, aw = calc.t$aw)
+
+gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0, 
+                       alpha = alpha.t$cur, rho = rho.t$cur, nt = 1, 
+                       prob.success = 0.05, dw2 = dw2)
+
+# create lists for MCMC
+data   <- list(y = gen$y, x = x, s = s, knots = knots)
+calc   <- list()  # need aw, theta
+
+# initial values
+beta.init <- -log(-log(mean(data$y)))
+beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 100)
+xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.3)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.3)
+alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.005)
+rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2)
+
+calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+calc$lz     <- log(calc$z)
+calc$w      <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+calc$lw     <- log(calc$w)
+calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+
+niters <- 1000
+storage.a     <- array(NA, dim=c(niters, nknots, nt))
+storage.b     <- array(NA, dim=c(niters, nknots, nt))
+storage.alpha <- rep(NA, niters)
+storage.beta  <- rep(NA, niters)
+storage.rho   <- rep(NA, niters)
+storage.prob  <- array(NA, dim = c(niters, ns, nt))
+
+set.seed(200)
+Rprof(filename = "Rprof1.out", line.profiling = TRUE)
+tic.1 <- proc.time()
+for (i in 1:niters) {
+  beta$att <- beta$att + 1
+  q <- beta$cur
+  #   HMCout <- HMC(neg_log_post_beta, neg_log_post_grad_beta, q, 
+  #                 epsilon = beta$eps, L = 10, 
+  #                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+  #                 calc = calc, others = others, this.param = "beta")
+  #   if (HMCout$accept) {
+  #     beta$acc    <- beta$acc + 1
+  #     beta$cur    <- HMCout$q
+  #     calc$x.beta <- getXBeta(data = data, beta = beta)
+  #     calc$z      <- getZ(xi = xi, calc = calc, others = others)
+  #     calc$lz     <- log(calc$z)
+  #     calc$theta  <- getTheta(alpha = alpha, calc = calc)
+  #   }
+  MHout <- updateBeta(data = data, beta = beta, xi = xi, alpha = alpha, 
+                      calc = calc, others = others)
+  if (MHout$accept) {
+    beta$acc    <- beta$acc + 1
+    beta$cur    <- MHout$q
+    calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+    calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+    calc$lz     <- log(calc$z)
+    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  if (beta$att > 100) {
+    beta.rate <- beta$acc / beta$att
+    if (beta.rate < 0.20) {
+      beta$eps <- beta$eps * 0.8
+    } else if (beta.rate > 0.60) {
+      beta$eps <- beta$eps * 1.2
+    }
+    beta$acc <- beta$att <- 0
+  }
+  
+  # random effect
+  a$att <- a$att + 1
+  q <- log(a$cur)
+  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+                 epsilon = a$eps, L = 20, 
+                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                 rho = rho, calc = calc, others = others, this.param = "a")
+  if (HMCout$accept) {
+    a$acc <- a$acc + 1
+    a$cur <- exp(HMCout$q)
+    calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
+    calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  
+  q <- transform$logit(b$cur)
+  b$att <- b$att + 1
+  HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
+                 L = 10, 
+                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                 rho = rho, calc = calc, others = others, this.para = "b")
+  if (HMCout$accept) {
+    b$acc <- b$acc + 1
+    b$cur <- transform$inv.logit(HMCout$q)
+  }
+  
+  # spatial dependence
+  alpha$att <- alpha$att + 1
+  q <- transform$logit(alpha$cur)
+  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+                 epsilon = alpha$eps, L = 10, 
+                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                 rho = rho, calc = calc, others = others, this.param = "alpha")
+  if (HMCout$accept) {
+    alpha$acc   <- alpha$acc + 1
+    alpha$cur   <- transform$inv.logit(HMCout$q)
+    calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+    calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  
+  rho$att <- rho$att + 1
+  MHout <- updateRho(data = data, a = a, alpha = alpha, rho = rho, calc = calc, 
+                     others = others)
+  if (MHout$accept) {
+    rho$acc     <- rho$acc + 1
+    rho$cur     <- MHout$q
+    calc$w      <- getW(rho = rho$cur, dw2 = others$dw2, 
+                        A.cutoff = others$A.cutoff)
+    calc$lw     <- log(calc$w)
+    calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+    calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  
+  if (rho$att > 100) {
+    rho.rate <- rho$acc / rho$att
+    if (rho.rate < 0.20) {
+      rho$eps <- rho$eps * 0.8
+    } else if (rho.rate > 0.60) {
+      rho$eps <- rho$eps * 1.2
+    }
+    rho$acc <- rho$att <- 0
+  }
+  
+  storage.a[i, , ] <- a$cur
+  storage.b[i, , ] <- b$cur
+  storage.alpha[i] <- alpha$cur
+  storage.beta[i]  <- beta$cur
+  storage.rho[i]   <- rho$cur
+  storage.prob[i, , ] <- 1 - exp(-calc$theta)
+  
+  if (i %% 50 == 0) {
+    start <- max(i - 5000, 1)
+    end   <- i
+    par(mfrow=c(4, 5))
+    plot.idx <- seq(1, 18, by = 2)
+    for (idx in plot.idx){
+      plot(log(storage.a[1:i, idx, 1]), type = "l", 
+           main = round(log(gen$a[idx, 1]), 2), 
+           xlab = round(a$acc / a$att, 3))
+    }
+    plot.idx <- seq(1, 16, by = 2)
+    for (idx in plot.idx){
+      plot(storage.b[1:i, idx, 1], type = "l", 
+           xlab = round(b$acc / b$att, 3))
+    }
+    #     plot.idx <- 1:18
+    #     for (idx in plot.idx){
+    #       plot(storage.prob[start:end, idx, 1], type = "l")
+    #     }
+    plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),
+         xlab = round(beta$acc / beta$att, 2), ylab = round(beta$eps, 3))
+    plot(storage.alpha[start:end], type = "l", main = bquote(alpha),
+         xlab = round(alpha$acc / alpha$att, 2), ylab = "")
+    plot(storage.rho[start:end], type = "l", main = bquote(rho),
+         xlab = round(rho$acc / rho$att, 2), ylab = round(rho$eps, 3))
+    print(paste("iter:", i, "of", niters, sep=" "))
+  }
+}
+toc.1 <- proc.time()
+Rprof(NULL)
+
+xplot <- seq(-4, 0, by = 0.01)
+yplot <- rep(NA, length(xplot)) 
+for (i in 1:length(xplot)) {
+  rho$cur <- exp(xplot[i])
+  w <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+  w.star <- getWStar(alpha = alpha$cur, w = w)
+  aw <- getAW(a = a$cur, w.star = w.star)
+  theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  
+  yplot[i] <- -sum(logLikeY(y = data$y, theta = theta))
+}

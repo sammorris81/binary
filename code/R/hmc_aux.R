@@ -222,20 +222,60 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   #   a.lt * wz.star.lt / expm1(theta.t)
   lw.star <- log(calc$w.star)
   for (t in 1:nt) {
-    wz.star.t <- exp(lw.star - log(calc$z[, t]) / alpha$cur)
     these <- data$y[, t] == 1
+    wz.star.t <- -exp((calc$lw - calc$lz[, t]) / alpha$cur)
+    wz.star.t[these, ] <- -wz.star.t[these, ] / expm1(theta[these, t])
     theta.t <- theta[these, t]
-    for (l in 1:nknots) {
-      grad[l, t] <- a$cur[l, t] * 
-        (-sum(wz.star.t[!these, l]) + 
-           sum(wz.star.t[these, l] / expm1(theta.t)))
-    }
+    grad[, t] <- a$cur[, t] * colSums(wz.star.t)
   }
+  
   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
   # whole function is written as gradient of log likelihood
   return(-grad)
 }
+
+# neg_log_post_grad_a_s <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
+#                                 others) {
+#   # parameter transformation
+#   a$cur  <- exp(q)
+#   
+#   # for the gradiant of a_alpha, we calculate this before calling this function
+#   aw    <- getAW(a = a$cur, w.star = calc$w.star)
+#   theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+#   
+#   nt     <- ncol(a$cur)
+#   nknots <- nrow(a$cur)
+#   
+#   # extract from the list and get calculated quantities
+#   lc      <- logc(b = b$cur, alpha = alpha$cur)
+#   alpha1m <- 1 - alpha$cur
+#   
+#   # grad wrt log(a)
+#   grad <- matrix(0, nknots, nt)
+#   
+#   # the likelihood component should be
+#   # For non-observances:
+#   #   a.lt * wz.star.lt
+#   # For observances:
+#   #   a.lt * wz.star.lt / expm1(theta.t)
+#   lw.star <- log(calc$w.star)
+#   for (t in 1:nt) {
+#     wz.star.t <- exp(lw.star - log(calc$z[, t]) / alpha$cur)
+#     these <- data$y[, t] == 1
+#     theta.t <- theta[these, t]
+#     for (l in 1:nknots) {
+#     grad[l, t] <- a$cur[l, t] * 
+#             (-sum(wz.star.t[!these, l]) + 
+#                sum(wz.star.t[these, l] / expm1(theta.t)))
+#     }
+#     
+#   }
+#   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
+#   
+#   # whole function is written as gradient of log likelihood
+#   return(-grad)
+# }
 
 # just to verify that the gradient is coming back as it should
 # neg_log_post_grad_a2 <- function(q, d, p, c, o, prior) {
@@ -294,7 +334,7 @@ neg_log_post_grad_b <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   return(grad)
 }
 
-neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
+neg_log_post_grad_alpha_s <- function(q, data, beta, xi, a, b, alpha, rho, calc,
                                     others, eps = 0.0001) {
   # q: logit(alpha)
 
@@ -311,6 +351,58 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
                               others = others)) / eps
   
   return(grad)
+}
+
+neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
+                                    others) {
+  # q: logit(alpha)
+  nknots <- nrow(a$cur)
+  nt     <- ncol(data$y)
+  ns     <- nrow(data$y)
+  
+  alpha <- transform$inv.logit(q)
+  w.star <- getWStar(alpha = alpha, w = calc$w)
+  aw     <- getAW(a = a$cur, w.star = w.star)
+  theta  <- getTheta(alpha = alpha, z = calc$z, aw = aw)
+  
+  grad <- 0
+  alpha.sq <- alpha * alpha
+  la <- log(a$cur)
+  alpha1m <- 1 - alpha
+  alpha1m.sq <- alpha1m * alpha1m
+  apb <- alpha * pi * b$cur
+  pb  <- pi * b$cur
+  a1mpb <- alpha1m * pi * b$cur
+  capb <- cos(apb)
+  sapb <- sin(apb)
+  a.aa1m <- a$cur^(-alpha / alpha1m)
+  
+  # very concise way to express this. Likely as fast as we can get it
+  for (t in 1:nt) {
+    these <- data$y[, t] == 1
+    diff.t <- calc$lw - calc$lz[, t]  # ns x nknots
+    diff.t <- diff.t * exp(diff.t / alpha)
+    diff.t[these, ] <- -diff.t[these, ] / expm1(theta[these, t])
+    grad <- grad + sum(diff.t %*% a$cur)
+  }
+  
+  grad <- grad / alpha.sq
+  
+  grad <- grad + sum(1 / alpha + 1 / alpha1m - la / alpha1m.sq + 
+                       pb * capb / (alpha1m * sapb) +
+                       log(sapb) / alpha1m.sq - log(sin(pb)) / alpha1m.sq - 
+                       pb * cos(a1mpb) / sin(a1mpb) - pb * capb / sapb) - 
+    sum(pb * a.aa1m * cos(apb) * sin(-a1mpb) / 
+          ((sapb/sin(pb))^(-1 / alpha1m) * sapb^2) - 
+          pb * a.aa1m * cos(-a1mpb) / ((sapb / sin(pb))^(-1 / alpha1m) * sapb) - 
+          a.aa1m * (-1 / alpha1m - alpha / alpha1m.sq) * la * sin(-a1mpb) / 
+          ((sapb / sin(pb))^(-1/alpha1m) * sapb) + a.aa1m * 
+          (pb * capb / (-alpha1m * sapb) - log(sapb / sin(pb)) / alpha1m.sq) * 
+          sin(-a1mpb) / ((sapb / sin(pb))^(-1 / alpha1m) * sapb))
+  
+  grad <- grad * alpha * alpha1m  # Jacobian
+  
+  return(-grad)
 }
 
 neg_log_post_grad_beta <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
@@ -349,8 +441,7 @@ neg_log_post_grad_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   grad[(nknots + 1)] <- neg_log_post_grad_alpha(q = q.alpha, data = data, 
                                                 beta = beta, xi = xi, a = a, 
                                                 b = b, alpha = alpha, rho = rho, 
-                                                calc = calc, others = others, 
-                                                eps = eps)
+                                                calc = calc, others = others)
   
   return(grad)
 }

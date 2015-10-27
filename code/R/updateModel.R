@@ -71,15 +71,20 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   cur.rho <- rho$cur
   
   can.rho <- exp(rnorm(1, log(rho$cur), rho$eps))
-  w       <- getW(rho = can.rho, dw2 = others$dw2, A.cutoff = others$A.cutoff)
-  w.star  <- getWStar(alpha = alpha$cur, w = w)
-  aw      <- getAW(a = a$cur, w.star = w.star)
-  theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
-  can.lly <- logLikeY(y = data$y, theta = theta)
   
-  R <- sum(can.lly - cur.lly) +
-    dnorm(log(can.rho), rho$mn, rho$sd, log=TRUE) -
-    dnorm(log(cur.rho), rho$mn, rho$sd, log=TRUE)
+  if (can.rho < max(sqrt(others$dw2)) & can.rho > 1e-6) {
+    w       <- getW(rho = can.rho, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+    w.star  <- getWStar(alpha = alpha$cur, w = w)
+    aw      <- getAW(a = a$cur, w.star = w.star)
+    theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+    can.lly <- logLikeY(y = data$y, theta = theta)
+    
+    R <- sum(can.lly - cur.lly) +
+      dnorm(log(can.rho), rho$mn, rho$sd, log=TRUE) -
+      dnorm(log(cur.rho), rho$mn, rho$sd, log=TRUE)
+  } else {
+    R <- -Inf
+  }
   
   if (!is.na(R)) { if (log(runif(1)) < R) {
     results <- list(q = can.rho, accept = TRUE)
