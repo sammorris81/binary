@@ -30,8 +30,8 @@ log_post_full <- function(data, beta, xi, a, b, alpha, rho, calc, others) {
   ll <- sum(log(alpha$cur) - log(alpha1m) - log(a$cur) / alpha1m + lc - 
               exp(lc) * a$cur^(-alpha$cur / alpha1m) +
               log(a$cur) + log(b$cur) + log(1 - b$cur))
-  ll <- ll + sum(-calc$theta[data$y == 0]) + 
-    sum(log(1 - exp(-calc$theta[data$y == 1])))
+  ll <- ll + sum(-theta[data$y == 0]) + 
+    sum(log(1 - exp(-theta[data$y == 1])))
   ll <- ll + sum(dnorm(beta$cur, beta$mn, beta$sd, log = TRUE))
   
   return(ll)
@@ -40,7 +40,7 @@ log_post_full <- function(data, beta, xi, a, b, alpha, rho, calc, others) {
 neg_log_post_beta_full <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
                                    others) {
   beta$cur <- q
-  ll <- log_post_full(data = data, beta = beta, a = a, b = b, alpha = alpha, 
+  ll <- log_post_full(data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
                       rho = rho, calc = calc, others = others)
   return (-ll)
 }
@@ -48,7 +48,15 @@ neg_log_post_beta_full <- function(q, data, beta, xi, a, b, alpha, rho, calc,
 neg_log_post_a_full <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
                                 others) {
   a$cur <- exp(q)
-  ll <- log_post_full(data = data, beta = beta, a = a, b = b, alpha = alpha, 
+  ll <- log_post_full(data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                      rho = rho, calc = calc, others = others)
+  return (-ll)
+}
+
+neg_log_post_b_full <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
+                                others) {
+  b$cur <- transform$inv.logit(q)
+  ll <- log_post_full(data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
                       rho = rho, calc = calc, others = others)
   return (-ll)
 }
@@ -56,7 +64,7 @@ neg_log_post_a_full <- function(q, data, beta, xi, a, b, alpha, rho, calc,
 neg_log_post_alpha_full <- function(q, data, beta, xi, a, b, alpha, rho, calc, 
                                     others) {
   alpha$cur <- transform$inv.logit(q)
-  ll <- log_post_full(data = data, beta = beta, a = a, b = b, alpha = alpha, 
+  ll <- log_post_full(data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
                       rho = rho, calc = calc, others = others)
   return(-ll)
 }

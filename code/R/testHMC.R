@@ -1714,8 +1714,11 @@ options(warn = 2)
 library(fields)
 library(evd)
 set.seed(200)
-ns <- 1000
+# ns <- 20
+# nknotsx <- 2
+# nknotsy <- 3
 nt <- 1
+ns <- 1000
 nknotsx <- 21
 nknotsy <- 21
 nknots <- nknotsx * nknotsy
@@ -1749,8 +1752,8 @@ calc   <- list()  # need aw, theta
 beta.init <- -log(-log(mean(data$y)))
 beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 100)
 xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
-a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.3)
-b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.3)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2)
 alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.005)
 rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2)
 
@@ -1910,6 +1913,29 @@ for (i in 1:niters) {
 }
 toc.1 <- proc.time()
 Rprof(NULL)
+
+# check the gradient functions
+library(numDeriv)
+neg_log_post_a_full(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+grad(neg_log_post_a_full, x = log(a$cur), data = data, beta = beta, xi = xi, a = a, 
+     b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_a(q = log(a$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+
+neg_log_post_b_full(q = transform$logit(b$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+grad(neg_log_post_b_full, x = transform$logit(b$cur), data = data, beta = beta, xi = xi, a = a, 
+     b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_b(q = transform$logit(b$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+
+neg_log_post_alpha_full(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+grad(neg_log_post_alpha_full, x = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
+     b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
+                    b = b, alpha = alpha, rho = rho, calc = calc, others = others)
 
 xplot <- seq(-4, 0, by = 0.01)
 yplot <- rep(NA, length(xplot)) 
