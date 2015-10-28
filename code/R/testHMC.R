@@ -1937,6 +1937,11 @@ grad(neg_log_post_alpha_full, x = transform$logit(alpha$cur), data = data, beta 
 neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
                     b = b, alpha = alpha, rho = rho, calc = calc, others = others)
 
+microbenchmark(neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
+                                       b = b, alpha = alpha, rho = rho, calc = calc, others = others),
+               neg_log_post_grad_alpha_s(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
+                                       b = b, alpha = alpha, rho = rho, calc = calc, others = others))
+
 xplot <- seq(-4, 0, by = 0.01)
 yplot <- rep(NA, length(xplot)) 
 for (i in 1:length(xplot)) {

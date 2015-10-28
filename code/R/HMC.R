@@ -94,7 +94,7 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   
   if (any(is.nan(current_U))) {
     print("The value of the log likelihood is NaN at the current values")
-    print(paste("Parameter: ", this.param))
+    print(paste("Parameter: ", this.param, "=", current_q))
     print(paste("epsilon is: ", epsilon))
   } else if (any(is.nan(current_K))) {
     print("The potential is NaN at at the current values")
@@ -102,8 +102,16 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
     print(paste("epsilon is: ", epsilon))
   } else if (any(is.nan(proposed_U))) {
     print("The value of the log likelihood is NaN at the proposed values")
-    print(paste("Parameter: ", this.param))
+    print(paste("Parameter: ", this.param, "=", q))
     print(paste("epsilon is: ", epsilon))
+    q.trouble <<- q
+    beta.trouble <<- beta
+    xi.trouble <<- xi
+    a.trouble <<- a
+    b.trouble <<- b
+    alpha.trouble <<- alpha
+    rho.trouble <<- rho
+    calc.trouble <<- calc
   } else if (any(is.nan(proposed_K))) {
     print("The potential is NaN at the proposed values")
     print(paste("Parameter: ", this.param))

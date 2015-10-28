@@ -385,12 +385,16 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   sapb <- sin(apb)
   a.aa1m <- a$cur^(-alpha / alpha1m)
   
+  # likelihood
   # very concise way to express this. Likely as fast as we can get it
+  # below, we set some of these to zero for numerical stability
+  #   when w = 0, log(w / z) = -Inf, so diff * exp(diff) = 0 * -Inf = NaN
   for (t in 1:nt) {
     these <- data$y[, t] == 1
     diff.t <- calc$lw - calc$lz[, t]  # ns x nknots
     diff.t <- diff.t * exp(diff.t / alpha)
     diff.t[these, ] <- -diff.t[these, ] / expm1(theta[these, t])
+    diff.t[is.nan(diff.t)] <- 0  # gradient should be zero when weight is 0
     grad <- grad + sum(diff.t %*% a$cur)
   }
   
