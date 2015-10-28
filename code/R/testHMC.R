@@ -1752,8 +1752,8 @@ calc   <- list()  # need aw, theta
 beta.init <- -log(-log(mean(data$y)))
 beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 100)
 xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
-a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2)
-b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.1)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.1)
 alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.005)
 rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2)
 
