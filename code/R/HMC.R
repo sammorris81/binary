@@ -60,6 +60,18 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   for (i in 1:L)
   { 
     # Make a full step for the position
+    if (any(is.nan(p))) {
+      p.trouble.hmc <<- p
+      q.trouble.hmc <<- q
+      beta.trouble.hmc <<- beta
+      xi.trouble.hmc <<- xi
+      a.trouble.hmc <<- a
+      b.trouble.hmc <<- b
+      alpha.trouble.hmc <<- alpha
+      rho.trouble.hmc <<- rho
+      calc.trouble.hmc <<- calc
+      stop("p is NaN in HMC")
+    }
 
     q = q + epsilon * p
     dist[i+1] = sqrt(sum((q - current_q)^2))

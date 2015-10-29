@@ -95,11 +95,28 @@ neg_log_post_a <- function(q, data, beta, xi, a, b, alpha, rho, calc, others) {
   # log prior
   # Remember: q = log(a) and jacobian is included
   lc <- logc(b = b$cur, alpha = alpha$cur)
+  if (any(is.nan(lc))) {
+    b.trouble.lc <<- b
+    alpha.trouble.lc <<- alpha
+    stop("nan in logc")
+  }
   ll <- sum(-alpha$cur / alpha1m * q - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
   # data and log likelihood
   aw <- getAW(a = a$cur, w.star = calc$w.star)
+  if (any(is.nan(aw))) {
+    a.trouble.aw <<- a
+    calc.trouble.aw <<- calc
+    stop("nan in getAW")
+  }
+  
   theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
+  if (any(is.nan(theta))) {
+    alpha.trouble.theta <<- alpha
+    calc.trouble.theta  <<- calc
+    aw.trouble.theta    <<- aw
+    stop("nan in theta")
+  }
   
   ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
@@ -239,6 +256,18 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
+  if (any(is.nan(grad))) {
+    beta.trouble.a.grad <<- beta
+    xi.trouble.a.grad <<- xi
+    a.trouble.a.grad <<- a
+    b.trouble.a.grad <<- b
+    alpha.trouble.a.grad <<- alpha
+    rho.trouble.a.grad <<- rho
+    calc.trouble.a.grad <<- calc
+    aw.trouble.a.grad <<- aw
+    theta.trouble.a.grad <<- theta
+    lc.trouble.a.grad <<- lc
+  }
   # whole function is written as gradient of log likelihood
   return(-grad)
 }
