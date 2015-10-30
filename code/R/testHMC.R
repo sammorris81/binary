@@ -1795,12 +1795,12 @@ for (i in 1:niters) {
   MHout <- updateBeta(data = data, beta = beta, xi = xi, alpha = alpha, 
                       calc = calc, others = others)
   if (MHout$accept) {
-    beta$acc    <- beta$acc + 1
-    beta$cur    <- MHout$q
-    calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
-    calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
-    calc$lz     <- log(calc$z)
-    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+    beta$acc     <- beta$acc + 1
+    beta$cur     <- MHout$q
+    calc$x.beta  <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+    calc$z       <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+    calc$lz      <- log(calc$z)
+    calc$theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   }
   if (beta$att > 100) {
     beta.rate <- beta$acc / beta$att

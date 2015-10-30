@@ -245,7 +245,7 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   #   a.lt * wz.star.lt
   # For observances:
   #   a.lt * wz.star.lt / expm1(theta.t)
-  lw.star <- log(calc$w.star)
+  # lw.star <- log(calc$w.star)
   for (t in 1:nt) {
     these <- data$y[, t] == 1
     wz.star.t <- -exp((calc$lw - calc$lz[, t]) / alpha$cur)
