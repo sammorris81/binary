@@ -60,18 +60,18 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   for (i in 1:L)
   { 
     # Make a full step for the position
-    if (any(is.nan(p))) {
-      p.trouble.hmc <<- p
-      q.trouble.hmc <<- q
-      beta.trouble.hmc <<- beta
-      xi.trouble.hmc <<- xi
-      a.trouble.hmc <<- a
-      b.trouble.hmc <<- b
-      alpha.trouble.hmc <<- alpha
-      rho.trouble.hmc <<- rho
-      calc.trouble.hmc <<- calc
-      stop("p is NaN in HMC")
-    }
+    # if (any(is.nan(p))) {
+#       p.trouble.hmc <<- p
+#       q.trouble.hmc <<- q
+#       beta.trouble.hmc <<- beta
+#       xi.trouble.hmc <<- xi
+#       a.trouble.hmc <<- a
+#       b.trouble.hmc <<- b
+#       alpha.trouble.hmc <<- alpha
+#       rho.trouble.hmc <<- rho
+#       calc.trouble.hmc <<- calc
+#       stop("p is NaN in HMC")
+    # }
 
     q = q + epsilon * p
     dist[i+1] = sqrt(sum((q - current_q)^2))
@@ -81,6 +81,10 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
     if (i!=L) p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi,
                                        a = a, b = b, alpha = alpha, rho = rho,
                                        calc = calc, others = others)
+    if (any(p == Inf | p == -Inf)) {
+      print(paste("Momentum variable is infinity for", this.param, "Automatically rejecting."))
+      return(list(q = current_q, accept = FALSE, infinite = TRUE))
+    }
 #     if (any(is.nan(p))) print(i)
 #     if (any(is.nan(q))) print(i)
   }
@@ -104,31 +108,31 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                  alpha = alpha, rho = rho, calc = calc, others = others)
   proposed_K = sum(p^2) / 2
   
-  if (any(is.nan(current_U))) {
-    print("The value of the log likelihood is NaN at the current values")
-    print(paste("Parameter: ", this.param, "=", current_q))
-    print(paste("epsilon is: ", epsilon))
-  } else if (any(is.nan(current_K))) {
-    print("The potential is NaN at at the current values")
-    print(paste("Parameter: ", this.param))
-    print(paste("epsilon is: ", epsilon))
-  } else if (any(is.nan(proposed_U))) {
-    print("The value of the log likelihood is NaN at the proposed values")
-    print(paste("Parameter: ", this.param, "=", q))
-    print(paste("epsilon is: ", epsilon))
-    q.trouble <<- q
-    beta.trouble <<- beta
-    xi.trouble <<- xi
-    a.trouble <<- a
-    b.trouble <<- b
-    alpha.trouble <<- alpha
-    rho.trouble <<- rho
-    calc.trouble <<- calc
-  } else if (any(is.nan(proposed_K))) {
-    print("The potential is NaN at the proposed values")
-    print(paste("Parameter: ", this.param))
-    print(paste("epsilon is: ", epsilon))
-  }
+#   if (any(is.nan(current_U))) {
+#     print("The value of the log likelihood is NaN at the current values")
+#     print(paste("Parameter: ", this.param, "=", current_q))
+#     print(paste("epsilon is: ", epsilon))
+#   } else if (any(is.nan(current_K))) {
+#     print("The potential is NaN at at the current values")
+#     print(paste("Parameter: ", this.param))
+#     print(paste("epsilon is: ", epsilon))
+#   } else if (any(is.nan(proposed_U))) {
+#     print("The value of the log likelihood is NaN at the proposed values")
+#     print(paste("Parameter: ", this.param, "=", q))
+#     print(paste("epsilon is: ", epsilon))
+#     q.trouble <<- q
+#     beta.trouble <<- beta
+#     xi.trouble <<- xi
+#     a.trouble <<- a
+#     b.trouble <<- b
+#     alpha.trouble <<- alpha
+#     rho.trouble <<- rho
+#     calc.trouble <<- calc
+#   } else if (any(is.nan(proposed_K))) {
+#     print("The potential is NaN at the proposed values")
+#     print(paste("Parameter: ", this.param))
+#     print(paste("epsilon is: ", epsilon))
+#   }
   
   R <- current_U - proposed_U + current_K - proposed_K
   # print(paste("R is ", R))
@@ -138,13 +142,13 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   if (!is.nan(R)) {
     if (runif(1) < exp(R))
     {
-      list(q=q, accept=TRUE)
+      list(q = q, accept = TRUE, infinite = FALSE)
     }
     else
     {
-      list(q=current_q, accept=FALSE)
+      list(q = current_q, accept = FALSE, infinite = FALSE)
     }
   } else {
-    list(q=current_q, accept=FALSE)
+    list(q = current_q, accept = FALSE, infinite = TRUE)
   }
 }

@@ -1752,9 +1752,9 @@ calc   <- list()  # need aw, theta
 beta.init <- -log(-log(mean(data$y)))
 beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.1, mn = 0, sd = 100)
 xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
-a     <- list(cur = matrix(exp(-5), nknots, nt), att = 0, acc = 0, eps = 0.2)
-b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2)
-alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.01)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0)
+alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.01, infinite = 0)
 rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2)
 
 calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
@@ -1766,7 +1766,7 @@ calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
 calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
 calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
 
-niters <- 30000
+niters <- 100
 storage.a     <- array(NA, dim=c(niters, nknots, nt))
 storage.b     <- array(NA, dim=c(niters, nknots, nt))
 storage.alpha <- rep(NA, niters)
@@ -1825,6 +1825,12 @@ for (i in 1:niters) {
     calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
     calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   }
+  a$infinite <- a$infinite + HMCout$infinite
+  if (a$infinite > 50) {
+    print("reducing a$eps")
+    a$eps <- a$eps * 0.8
+    a$infinite <- 0
+  }
   
   q <- transform$logit(b$cur)
   b$att <- b$att + 1
@@ -1835,6 +1841,12 @@ for (i in 1:niters) {
   if (HMCout$accept) {
     b$acc <- b$acc + 1
     b$cur <- transform$inv.logit(HMCout$q)
+  }
+  b$infinite <- b$infinite + HMCout$infinite
+  if (b$infinite > 50) {
+    print("reducing b$eps")
+    b$eps <- b$eps * 0.8
+    b$infinite <- 0
   }
   
   # spatial dependence
@@ -1850,6 +1862,13 @@ for (i in 1:niters) {
     calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
     calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
     calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+  }
+  
+  alpha$infinite <- alpha$infinite + HMCout$infinite
+  if (alpha$infinite > 50) {
+    print("reducing alpha$eps")
+    alpha$eps <- alpha$eps * 0.8
+    alpha$infinite <- 0
   }
   
   rho$att <- rho$att + 1
@@ -1913,6 +1932,7 @@ for (i in 1:niters) {
 }
 toc.1 <- proc.time()
 Rprof(NULL)
+summaryRprof("Rprof1.out", lines = "show")
 
 # check the gradient functions
 library(numDeriv)

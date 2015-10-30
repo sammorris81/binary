@@ -109,29 +109,29 @@ arma::cube getwzCPP(arma::mat z, arma::mat w) {
   return wz;
 }
 
-// [[Rcpp::export]]
-arma::mat getawCPP(arma::mat a_star, arma::mat w, double alpha) {
-  /* when beta is being updated, it is quicker to work with 
-   * aw_it = sum(a_lt w_li^1 / alpha)
-   * 
-   * this avoids unnecessary calculation and summing since only z changes.
-   * using a_star to help with numerical stability in multiplication.
-   */ 
-  uword ns = w.n_rows;
-  uword nt = a_star.n_cols;
-  
-  // return storage
-  arma::mat aw = zeros<mat>(ns, nt);
-  
-  // temp
-  
-  for (uword t = 0; t < nt; t++) {
-    // Take the tth column of A and multiply each row of w, then add up the row
-    aw.col(t) = sum(pow(w.each_row() % a_star.col(t).t(), 1 / alpha), 1);
-  }
-  
-  return aw;
-}
+// // [[Rcpp::export]]
+// arma::mat getawCPP(arma::mat a_star, arma::mat w, double alpha) {
+//   /* when beta is being updated, it is quicker to work with 
+//    * aw_it = sum(a_lt w_li^1 / alpha)
+//    * 
+//    * this avoids unnecessary calculation and summing since only z changes.
+//    * using a_star to help with numerical stability in multiplication.
+//    */ 
+//   uword ns = w.n_rows;
+//   uword nt = a_star.n_cols;
+//   
+//   // return storage
+//   arma::mat aw = zeros<mat>(ns, nt);
+//   
+//   // temp
+//   
+//   for (uword t = 0; t < nt; t++) {
+//     // Take the tth column of A and multiply each row of w, then add up the row
+//     aw.col(t) = sum(pow(w.each_row() % a_star.col(t).t(), 1 / alpha), 1);
+//   }
+//   
+//   return aw;
+// }
 
 // [[Rcpp::export]]
 arma::mat getawCPP2(arma::mat a, arma::mat w, double alpha) {

@@ -95,28 +95,28 @@ neg_log_post_a <- function(q, data, beta, xi, a, b, alpha, rho, calc, others) {
   # log prior
   # Remember: q = log(a) and jacobian is included
   lc <- logc(b = b$cur, alpha = alpha$cur)
-  if (any(is.nan(lc))) {
-    b.trouble.lc <<- b
-    alpha.trouble.lc <<- alpha
-    stop("nan in logc")
-  }
+#   if (any(is.nan(lc))) {
+#     b.trouble.lc <<- b
+#     alpha.trouble.lc <<- alpha
+#     stop("nan in logc")
+#   }
   ll <- sum(-alpha$cur / alpha1m * q - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
   # data and log likelihood
   aw <- getAW(a = a$cur, w.star = calc$w.star)
-  if (any(is.nan(aw))) {
-    a.trouble.aw <<- a
-    calc.trouble.aw <<- calc
-    stop("nan in getAW")
-  }
+#   if (any(is.nan(aw))) {
+#     a.trouble.aw <<- a
+#     calc.trouble.aw <<- calc
+#     stop("nan in getAW")
+#   }
   
   theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
-  if (any(is.nan(theta))) {
-    alpha.trouble.theta <<- alpha
-    calc.trouble.theta  <<- calc
-    aw.trouble.theta    <<- aw
-    stop("nan in theta")
-  }
+#   if (any(is.nan(theta))) {
+#     alpha.trouble.theta <<- alpha
+#     calc.trouble.theta  <<- calc
+#     aw.trouble.theta    <<- aw
+#     stop("nan in theta")
+#   }
   
   ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
