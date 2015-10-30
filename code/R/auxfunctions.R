@@ -565,19 +565,24 @@ rHotSpotSpat <- function(x, s, xlim = NULL, ylim = NULL, bw,
 }
 
 # update mh settings
-mhUpdate <- function(acc, att, mh, nattempts = 50, lower = 0.8, higher = 1.2) {
+epsUpdate <- function(param, lower = 0.8, higher = 1.2) {
+  acc <- param$acc
+  att <- param$att
+  eps <- param$eps
+  attempts <- param$attempts
+  
   acc.rate     <- acc / att
-  these.update <- att > nattempts
+  these.update <- att > attempts
   these.low    <- (acc.rate < 0.25) & these.update
   these.high   <- (acc.rate > 0.50) & these.update
 
-  mh[these.low]  <- mh[these.low] * lower
-  mh[these.high] <- mh[these.high] * higher
+  eps[these.low]  <- eps[these.low] * lower
+  eps[these.high] <- eps[these.high] * higher
 
   acc[these.update] <- 0
   att[these.update] <- 0
 
-  results <- list(acc=acc, att=att, mh=mh)
+  results <- list(acc = acc, att = att, eps = eps)
   return(results)
 }
 
