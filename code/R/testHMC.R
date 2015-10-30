@@ -1766,7 +1766,7 @@ calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
 calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
 calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
 
-niters <- 100
+niters <- 10000
 storage.a     <- array(NA, dim=c(niters, nknots, nt))
 storage.b     <- array(NA, dim=c(niters, nknots, nt))
 storage.alpha <- rep(NA, niters)
@@ -1908,13 +1908,13 @@ for (i in 1:niters) {
     par(mfrow=c(4, 5))
     plot.idx <- seq(1, 18, by = 2)
     for (idx in plot.idx){
-      plot(log(storage.a[1:i, idx, 1]), type = "l", 
+      plot(log(storage.a[start:end, idx, 1]), type = "l", 
            main = round(log(gen$a[idx, 1]), 2), 
            xlab = round(a$acc / a$att, 3))
     }
     plot.idx <- seq(1, 16, by = 2)
     for (idx in plot.idx){
-      plot(storage.b[1:i, idx, 1], type = "l", 
+      plot(storage.b[etart:end, idx, 1], type = "l", 
            xlab = round(b$acc / b$att, 3))
     }
     #     plot.idx <- 1:18
