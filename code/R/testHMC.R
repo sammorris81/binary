@@ -1749,7 +1749,8 @@ data   <- list(y = gen$y, x = x, s = s, knots = knots)
 calc   <- list()  # need aw, theta
 
 # initial values
-beta.init <- -log(-log(mean(data$y)))
+alpha.a.joint <- TRUE
+beta.init <- log(-log(1 - mean(data$y)))
 beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.1, mn = 0, sd = 100)
 xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
 a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0)
@@ -1813,23 +1814,80 @@ for (i in 1:niters) {
   }
   
   # random effect
-  a$att <- a$att + 1
-  q <- log(a$cur)
-  HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
-                 epsilon = a$eps, L = 20, 
-                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                 rho = rho, calc = calc, others = others, this.param = "a")
-  if (HMCout$accept) {
-    a$acc <- a$acc + 1
-    a$cur <- exp(HMCout$q)
-    calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
-    calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
-  }
-  a$infinite <- a$infinite + HMCout$infinite
-  if (a$infinite > 50) {
-    print("reducing a$eps")
-    a$eps <- a$eps * 0.8
-    a$infinite <- 0
+  if (alpha.a.joint) {
+    a$att <- a$att + 1
+    alpha$att <- alpha$att + 1
+    
+    q <- c(as.vector(log(a$cur)), transform$logit(alpha$cur))
+    epsilon <- c(rep(a$eps, nkt), alpha$eps)
+    HMCout <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+                  epsilon = epsilon, L = 20, 
+                  data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha,
+                  rho = rho, calc = calc, others = others, this.param = "a_alpha")
+    if (HMCout$accept) {
+      a$acc     <- a$acc + 1
+      a$cur     <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
+      alpha$acc <- alpha$acc + 1
+      alpha$cur <- transform$inv.logit(tail(HMCout$q, 1))
+      calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+      calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+      calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+    }
+    
+    a$infinite <- a$infinite + HMCout$infinite
+    alpha$infinite <- alpha$infinite + HMCout$infinite
+    
+    if (a$infinite > 50) {
+      print("reducing a$eps")
+      a$eps <- a$eps * 0.8
+      a$infinite <- 0
+    }
+    if (alpha$infinite > 50) {
+      print("reducing alpha$eps")
+      alpha$eps <- alpha$eps * 0.8
+      alpha$infinite <- 0
+    }
+  } else {
+    a$att <- a$att + 1
+    q <- log(a$cur)
+    HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+                   epsilon = a$eps, L = 20, 
+                   data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                   rho = rho, calc = calc, others = others, this.param = "a")
+    if (HMCout$accept) {
+      a$acc <- a$acc + 1
+      a$cur <- exp(HMCout$q)
+      calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
+      calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+    }
+    a$infinite <- a$infinite + HMCout$infinite
+    if (a$infinite > 50) {
+      print("reducing a$eps")
+      a$eps <- a$eps * 0.8
+      a$infinite <- 0
+    }
+    
+    # spatial dependence
+    alpha$att <- alpha$att + 1
+    q <- transform$logit(alpha$cur)
+    HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+                   epsilon = alpha$eps, L = 10, 
+                   data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                   rho = rho, calc = calc, others = others, this.param = "alpha")
+    if (HMCout$accept) {
+      alpha$acc   <- alpha$acc + 1
+      alpha$cur   <- transform$inv.logit(HMCout$q)
+      calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+      calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+      calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+    }
+    
+    alpha$infinite <- alpha$infinite + HMCout$infinite
+    if (alpha$infinite > 50) {
+      print("reducing alpha$eps")
+      alpha$eps <- alpha$eps * 0.8
+      alpha$infinite <- 0
+    }
   }
   
   q <- transform$logit(b$cur)
@@ -1847,28 +1905,6 @@ for (i in 1:niters) {
     print("reducing b$eps")
     b$eps <- b$eps * 0.8
     b$infinite <- 0
-  }
-  
-  # spatial dependence
-  alpha$att <- alpha$att + 1
-  q <- transform$logit(alpha$cur)
-  HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
-                 epsilon = alpha$eps, L = 10, 
-                 data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                 rho = rho, calc = calc, others = others, this.param = "alpha")
-  if (HMCout$accept) {
-    alpha$acc   <- alpha$acc + 1
-    alpha$cur   <- transform$inv.logit(HMCout$q)
-    calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
-    calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
-    calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
-  }
-  
-  alpha$infinite <- alpha$infinite + HMCout$infinite
-  if (alpha$infinite > 50) {
-    print("reducing alpha$eps")
-    alpha$eps <- alpha$eps * 0.8
-    alpha$infinite <- 0
   }
   
   rho$att <- rho$att + 1
@@ -1914,7 +1950,7 @@ for (i in 1:niters) {
     }
     plot.idx <- seq(1, 16, by = 2)
     for (idx in plot.idx){
-      plot(storage.b[etart:end, idx, 1], type = "l", 
+      plot(storage.b[start:end, idx, 1], type = "l", 
            xlab = round(b$acc / b$att, 3))
     }
     #     plot.idx <- 1:18
@@ -1961,6 +1997,23 @@ microbenchmark(neg_log_post_grad_alpha(q = transform$logit(alpha$cur), data = da
                                        b = b, alpha = alpha, rho = rho, calc = calc, others = others),
                neg_log_post_grad_alpha_s(q = transform$logit(alpha$cur), data = data, beta = beta, xi = xi, a = a, 
                                        b = b, alpha = alpha, rho = rho, calc = calc, others = others))
+
+q <- c(as.vector(log(a$cur)), 0)
+neg_log_post_a_alpha(q, data, beta, xi, a, b, alpha, rho, calc, others)
+neg_log_post_grad_a_alpha(q, data, beta, xi, a, b, alpha, rho, calc, others)
+neg_log_post_grad_alpha(q = 0, data, beta, xi, a, b, alpha, rho, calc, others)
+library(numDeriv)
+temp <- grad(neg_log_post_a_alpha, x = q, data = data, beta = beta, xi = xi, 
+             a = a, b = b, alpha = alpha, rho = rho, calc = calc, others = others)
+
+microbenchmark(neg_log_post_a_alpha(q, data, beta, xi, a, b, alpha, rho, calc, others), 
+               neg_log_post_a(q = log(a$cur), data, beta, xi, a, b, alpha, rho, calc, others),
+               neg_log_post_alpha(q = 0, data, beta, xi, a, b, alpha, rho, calc, others))
+
+microbenchmark(neg_log_post_grad_a_alpha(q, data, beta, xi, a, b, alpha, rho, calc, others), 
+               neg_log_post_grad_a(q = log(a$cur), data, beta, xi, a, b, alpha, rho, calc, others),
+               neg_log_post_grad_alpha(q = 0, data, beta, xi, a, b, alpha, rho, calc, others))
+
 
 xplot <- seq(-4, 0, by = 0.01)
 yplot <- rep(NA, length(xplot)) 
