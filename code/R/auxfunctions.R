@@ -573,8 +573,8 @@ epsUpdate <- function(param, lower = 0.8, higher = 1.2) {
   
   acc.rate     <- acc / att
   these.update <- att > attempts
-  these.low    <- (acc.rate < 0.25) & these.update
-  these.high   <- (acc.rate > 0.50) & these.update
+  these.low    <- (acc.rate < param$target.l) & these.update
+  these.high   <- (acc.rate > param$target.u) & these.update
 
   eps[these.low]  <- eps[these.low] * lower
   eps[these.high] <- eps[these.high] * higher
@@ -582,7 +582,7 @@ epsUpdate <- function(param, lower = 0.8, higher = 1.2) {
   acc[these.update] <- 0
   att[these.update] <- 0
 
-  results <- list(acc = acc, att = att, eps = eps)
+  results <- list(att = att, acc = acc, eps = eps)
   return(results)
 }
 

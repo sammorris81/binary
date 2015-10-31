@@ -44,7 +44,13 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                 data, beta, xi, a, b, alpha, rho, calc, others, this.param)
 {
   dist = numeric(L+1)
-
+  
+  if (this.param == "a_alpha") {
+    infinite <- c(FALSE, FALSE)
+  } else {
+    infinite <- FALSE
+  }
+  
   q = current_q
   p = rnorm(length(q), 0, 1)  # independent standard normal variates
   current_p = p
@@ -82,9 +88,20 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                                        a = a, b = b, alpha = alpha, rho = rho,
                                        calc = calc, others = others)
     if (any(is.nan(p))) {
-      print(paste("NaN in p for", this.param, "automatically rejecting"))
-      return(list(q = current_q, accept = FALSE, infinite = TRUE))
-      return
+      print("nan in p")
+      if (this.param == "a_alpha") {
+        infinite = c(FALSE, FALSE)
+        if (tail(is.nan(p), 1)) {
+          infinite[2] <- TRUE
+        }
+        if (any(is.nan(p[1:(length(p) - 1)]))) {
+          infinite[1] <- TRUE
+        }
+        return(list(q = current_q, accept = FALSE, infinite = infinite))
+      } else {
+        print(paste("NaN in p for", this.param, "automatically rejecting"))
+        return(list(q = current_q, accept = FALSE, infinite = TRUE))
+      }
     } else if (any(p == Inf | p == -Inf)) {
       print(paste("Momentum variable is infinity for", this.param, "Automatically rejecting."))
       return(list(q = current_q, accept = FALSE, infinite = TRUE))
@@ -146,13 +163,24 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   if (!is.nan(R)) {
     if (runif(1) < exp(R))
     {
-      list(q = q, accept = TRUE, infinite = FALSE)
+      return(list(q = q, accept = TRUE, infinite = infinite))
     }
     else
     {
-      list(q = current_q, accept = FALSE, infinite = FALSE)
+      return(list(q = current_q, accept = FALSE, infinite = infinite))
     }
   } else {
-    list(q = current_q, accept = FALSE, infinite = TRUE)
+    if (this.param == "a_alpha") {
+      infinite = c(FALSE, FALSE)
+      if (tail(is.nan(p), 1)) {
+        infinite[2] <- TRUE
+      }
+      if (any(is.nan(p[1:(length(p) - 1)]))) {
+        infinite[1] <- TRUE
+      }
+      return(list(q = current_q, accept = FALSE, infinite = infinite))
+    } else {
+      return(list(q = current_q, accept = FALSE, infinite = infinite))
+    }
   }
 }

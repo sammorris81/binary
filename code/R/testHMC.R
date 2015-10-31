@@ -2019,12 +2019,18 @@ calc   <- list()  # need aw, theta
 # initial values
 alpha.a.joint <- TRUE
 beta.init <- log(-log(1 - mean(data$y)))
-beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.1, mn = 0, sd = 100)
-xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5)
-a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0)
-b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0)
-alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.01, infinite = 0)
-rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2)
+beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.1, mn = 0, sd = 100, 
+              attempts = 50, target.l = 0.25, target.u = 0.5)
+xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5, 
+              attempts = 50, target.l = 0.25, target.u = 0.5)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0,
+              attempts = 50, target.l = 0.5, target.u = 0.8)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0,
+              attempts = 50, target.l = 0.5, target.u = 0.8)
+alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.001, infinite = 0, 
+              attempts = 50, target.l = 0.5, target.u = 0.8)
+rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2, 
+              attempts = 50, target.l = 0.25, target.u = 0.5)
 
 calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
 calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
@@ -2036,6 +2042,7 @@ calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
 calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
 
 niters <- 10000
+burn   <- 5000
 storage.a     <- array(NA, dim=c(niters, nknots, nt))
 storage.b     <- array(NA, dim=c(niters, nknots, nt))
 storage.alpha <- rep(NA, niters)
@@ -2071,14 +2078,12 @@ for (i in 1:niters) {
     calc$lz      <- log(calc$z)
     calc$theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   }
-  if (beta$att > 100) {
-    beta.rate <- beta$acc / beta$att
-    if (beta.rate < 0.20) {
-      beta$eps <- beta$eps * 0.8
-    } else if (beta.rate > 0.60) {
-      beta$eps <- beta$eps * 1.2
-    }
-    beta$acc <- beta$att <- 0
+  
+  if (i < burn / 2) {
+    eps.update <- epsUpdate(beta)
+    beta$att   <- eps.update$att
+    beta$acc   <- eps.update$acc
+    beta$eps   <- eps.update$eps
   }
   
   # random effect
@@ -2102,8 +2107,8 @@ for (i in 1:niters) {
       calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
     }
     
-    a$infinite <- a$infinite + HMCout$infinite
-    alpha$infinite <- alpha$infinite + HMCout$infinite
+    a$infinite <- a$infinite + HMCout$infinite[1]
+    alpha$infinite <- alpha$infinite + HMCout$infinite[2]
     
     if (a$infinite > 50) {
       print("reducing a$eps")
@@ -2114,6 +2119,18 @@ for (i in 1:niters) {
       print("reducing alpha$eps")
       alpha$eps <- alpha$eps * 0.8
       alpha$infinite <- 0
+    }
+    
+    if (i < burn / 2) {
+      eps.update <- epsUpdate(a)
+      a$att      <- eps.update$att
+      a$acc      <- eps.update$acc
+      a$eps      <- eps.update$eps
+      
+      eps.update <- epsUpdate(alpha)
+      alpha$att  <- eps.update$att
+      alpha$acc  <- eps.update$acc
+      alpha$eps  <- eps.update$eps
     }
   } else {
     a$att <- a$att + 1
@@ -2128,11 +2145,18 @@ for (i in 1:niters) {
       calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
       calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
     }
-    a$infinite <- a$infinite + HMCout$infinite
+    a$infinite <- a$infinite + HMCout$infinite[1]
     if (a$infinite > 50) {
       print("reducing a$eps")
       a$eps <- a$eps * 0.8
       a$infinite <- 0
+    }
+    
+    if (i < burn / 2) {
+      eps.update <- epsUpdate(a)
+      a$att      <- eps.update$att
+      a$acc      <- eps.update$acc
+      a$eps      <- eps.update$eps
     }
     
     # spatial dependence
@@ -2150,11 +2174,18 @@ for (i in 1:niters) {
       calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
     }
     
-    alpha$infinite <- alpha$infinite + HMCout$infinite
+    alpha$infinite <- alpha$infinite + HMCout$infinite[2]
     if (alpha$infinite > 50) {
       print("reducing alpha$eps")
       alpha$eps <- alpha$eps * 0.8
       alpha$infinite <- 0
+    }
+    
+    if (i < burn / 2) {
+      eps.update <- epsUpdate(alpha)
+      alpha$att  <- eps.update$att
+      alpha$acc  <- eps.update$acc
+      alpha$eps  <- eps.update$eps
     }
   }
   
@@ -2175,6 +2206,13 @@ for (i in 1:niters) {
     b$infinite <- 0
   }
   
+  if (i < burn / 2) {
+    eps.update <- epsUpdate(b)
+    b$att      <- eps.update$att
+    b$acc      <- eps.update$acc
+    b$eps      <- eps.update$eps
+  }
+  
   rho$att <- rho$att + 1
   MHout <- updateRho(data = data, a = a, alpha = alpha, rho = rho, calc = calc, 
                      others = others)
@@ -2189,14 +2227,11 @@ for (i in 1:niters) {
     calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   }
   
-  if (rho$att > 100) {
-    rho.rate <- rho$acc / rho$att
-    if (rho.rate < 0.20) {
-      rho$eps <- rho$eps * 0.8
-    } else if (rho.rate > 0.60) {
-      rho$eps <- rho$eps * 1.2
-    }
-    rho$acc <- rho$att <- 0
+  if (i < burn / 2) {
+    eps.update <- epsUpdate(rho)
+    rho$att    <- eps.update$att
+    rho$acc    <- eps.update$acc
+    rho$eps    <- eps.update$eps
   }
   
   storage.a[i, , ] <- a$cur
@@ -2214,23 +2249,23 @@ for (i in 1:niters) {
     for (idx in plot.idx){
       plot(log(storage.a[start:end, idx, 1]), type = "l", 
            main = round(log(gen$a[idx, 1]), 2), 
-           xlab = round(a$acc / a$att, 3))
+           xlab = round(a$acc / a$att, 3), ylab = round(a$eps, 4))
     }
     plot.idx <- seq(1, 16, by = 2)
     for (idx in plot.idx){
       plot(storage.b[start:end, idx, 1], type = "l", 
-           xlab = round(b$acc / b$att, 3))
+           xlab = round(b$acc / b$att, 3), ylab = round(b$eps, 4))
     }
     #     plot.idx <- 1:18
     #     for (idx in plot.idx){
     #       plot(storage.prob[start:end, idx, 1], type = "l")
     #     }
     plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),
-         xlab = round(beta$acc / beta$att, 2), ylab = round(beta$eps, 3))
+         xlab = round(beta$acc / beta$att, 3), ylab = round(beta$eps, 4))
     plot(storage.alpha[start:end], type = "l", main = bquote(alpha),
-         xlab = round(alpha$acc / alpha$att, 2), ylab = "")
+         xlab = round(alpha$acc / alpha$att, 3), ylab = round(alpha$eps, 4))
     plot(storage.rho[start:end], type = "l", main = bquote(rho),
-         xlab = round(rho$acc / rho$att, 2), ylab = round(rho$eps, 3))
+         xlab = round(rho$acc / rho$att, 3), ylab = round(rho$eps, 4))
     print(paste("iter:", i, "of", niters, sep=" "))
   }
 }
