@@ -81,7 +81,11 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
     if (i!=L) p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi,
                                        a = a, b = b, alpha = alpha, rho = rho,
                                        calc = calc, others = others)
-    if (any(p == Inf | p == -Inf)) {
+    if (any(is.nan(p))) {
+      print(paste("NaN in p for", this.param, "automatically rejecting"))
+      return(list(q = current_q, accept = FALSE, infinite = TRUE))
+      return
+    } else if (any(p == Inf | p == -Inf)) {
       print(paste("Momentum variable is infinity for", this.param, "Automatically rejecting."))
       return(list(q = current_q, accept = FALSE, infinite = TRUE))
     }
