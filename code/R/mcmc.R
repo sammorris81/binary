@@ -1,7 +1,7 @@
 mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                      beta.init = NULL, beta.m = 0, beta.s = 20,
                      xi.init = NULL, xi.m = 0, xi.s = 0.5,
-         	           npts = 100, knots = NULL, thresh = 0,
+                     npts = 100, knots = NULL, thresh = 0,
                      beta.tune = 0.01, xi.tune = 0.1,
                      alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
                      rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
@@ -14,23 +14,22 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                      rho.fix = FALSE, alpha.fix = FALSE, # debug
                      xibeta.joint = FALSE, threads = 1,
                      iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
-    ) {
+) {
   library(fields)
-
+  
   # initial setup
   if (is.null(dim(y))){
     y <- matrix(y, length(y), 1)
   }
-
+  
   ns <- nrow(y)
   nt <- ncol(y)
-
+  
   x <- adjustX(x=x, y=y)
   np <- ncol(x)
-
+  
   nknots <- dim(knots)[1]
-  nkt    <- nknots * nt
-
+  
   # predictions
   predictions <- !is.null(s.pred) & !is.null(x.pred)
   if (predictions) {
@@ -41,7 +40,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     npred <- 0
     keepers.y.pred <- NULL
   }
-
+  
   # get initial z
   if (is.null(beta.init)) {
     if (xi == 0) {
@@ -58,23 +57,23 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       beta   <- beta.init
     }
   }
-
+  
   if (is.null(xi.init)) {
     xi <- 0
   } else {
     xi <- xi.init
   }
-
+  
   x.beta <- getXBeta(x, ns, nt, beta)
   xt <- t(x)
   xtx.inv <- solve(xt %*% x)
-
+  
   z <- getZ(xi=xi, x.beta=x.beta)
-
+  
   # distance squared
   dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   dw2[dw2 < 1e-6] <- 0
-
+  
   if (length(a.init) > 1) {
     a <- a.init
   } else {
@@ -90,34 +89,30 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     IDs <- getIDs(dw2, A.cutoff)
   }
   
-  b    <- matrix(0.5, nknots, nt)
-  q.b  <- transform$logit(b)
-  q.ps <- c(as.vector(a), alpha.init)
-
   # get the initial set of weights for the sites and knots
   rho    <- rho.init
   w      <- stdW(makeW(dw2, rho, A.cutoff))  # w is ns x nknots
-
+  
   if (spatial) {
     alpha <- alpha.init
-#     u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
-#     mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
-#     bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
-#     cur.llps <- dPS.Rcpp(a = a, alpha = alpha, mid.points = mid.points,
-#                          bin.width = bin.width, threads = threads)
+    u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
+    mid.points <- (u.beta[-1] + u.beta[-(npts + 1)]) / 2
+    bin.width <- u.beta[-1] - u.beta[-(npts + 1)]
+    cur.llps <- dPS.Rcpp(a = a, alpha = alpha, mid.points = mid.points,
+                         bin.width = bin.width, threads = threads)
   } else {
     alpha <- 1
   }
   
-#   alpha.a <- (1 - alpha.m) * alpha.m^2 / alpha.s^2 - alpha.m
-#   alpha.b <- alpha.a * (1 / alpha.m - 1)
+  alpha.a <- (1 - alpha.m) * alpha.m^2 / alpha.s^2 - alpha.m
+  alpha.b <- alpha.a * (1 / alpha.m - 1)
   a.star  <- a^alpha
   wz      <- getwzCPP(z = z, w = w)
-  theta   <- getThetaCPP(wz = wz, a_star = a.star, alpha = alpha)
-
+  kernel  <- getKernelCPP(wz = wz, a_star = a.star, alpha = alpha)
+  
   # keep current likelihood values in mcmc for time savings
-  cur.lly  <- logLikeY(y = y, theta = theta)
-
+  cur.lly  <- logLikeY(y = y, kernel = kernel)
+  
   # MH tuning parameters
   if (length(beta.tune) == 1) {
     acc.beta <- att.beta <- mh.beta <- rep(beta.tune, np)
@@ -130,131 +125,179 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   acc.a     <- att.a     <- 0 * mh.a
   acc.alpha <- att.alpha <- mh.alpha <- alpha.tune
   acc.rho   <- att.rho   <- mh.rho   <- rho.tune
-
+  
   # storage
-  keepers.beta  <- matrix(NA, nrow = iters, ncol = np)
+  keepers.beta  <- matrix(NA, nrow=iters, ncol=np)
   keepers.xi    <- rep(NA, iters)
-  keepers.a     <- array(NA, dim = c(iters, nknots, nt))
-  keepers.b     <- array(NA, dim = c(iters, nknots, nt))
+  keepers.a     <- array(NA, dim=c(iters, nknots, nt))
   keepers.alpha <- rep(NA, iters)
   keepers.rho   <- rep(NA, iters)
   keepers.lly   <- rep(NA, iters)
-
+  
   for (iter in 1:iters) { for (ttt in 1:thin) {
-
-#     if (xibeta.joint) {  # update beta and xi
-#       # we are actual sampling for p = P(Y = 0)
-#       xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
-#                                     wz = wz, beta = beta, theta = theta, 
-#                                     a.star = a.star, x.beta = x.beta,
-#                                     xi = xi, x = x, xt = xt, xtx.inv = xtx.inv,
-#                                     xi.m = xi.m, xi.s = xi.s, cur.lly = cur.lly,
-#                                     xi.fix = xi.fix, beta.fix = beta.fix,
-#                                     acc.p = acc.beta, att.p = att.beta,
-#                                     mh.p = mh.beta,
-#                                     acc.xi = acc.xi, att.xi = att.xi,
-#                                     mh.xi = mh.xi, thresh = 0)
-# 
-#       beta     <- xibeta.update$beta
-#       x.beta   <- xibeta.update$x.beta
-#       xi       <- xibeta.update$xi
-#       z        <- xibeta.update$z
-#       wz       <- xibeta.update$wz
-#       theta    <- xibeta.update$theta
-#       cur.lly  <- xibeta.update$cur.lly
-#       att.beta <- xibeta.update$att.p
-#       acc.beta <- xibeta.update$acc.p
-#       att.xi   <- xibeta.update$att.xi
-#       acc.xi   <- xibeta.update$acc.xi
-# 
-#       if (iter < burn / 2) {
-#         mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
-#                               nattempts=beta.attempts)
-#         acc.beta  <- mh.update$acc
-#         att.beta  <- mh.update$att
-#         mh.beta   <- mh.update$mh
-# 
-#         mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
-#                               nattempts=xi.attempts)
-#         acc.xi  <- mh.update$acc
-#         att.xi  <- mh.update$att
-#         mh.xi   <- mh.update$mh
-#       }
-# 
-#     } else {  # update beta
-#       if (!beta.fix) {
-#         beta.update <- updateBeta(y = y, theta = theta, alpha = alpha,
-#                                   a.star = a.star, z = z, w = w, wz = wz,
-#                                   beta = beta, beta.m = beta.m, beta.s = beta.s,
-#                                   x.beta = x.beta, xi = xi, x = x,
-#                                   cur.lly = cur.lly, acc = acc.beta,
-#                                   att = att.beta, mh = mh.beta, thresh = thresh)
-#         beta     <- beta.update$beta
-#         x.beta   <- beta.update$x.beta
-#         z        <- beta.update$z
-#         wz       <- beta.update$wz
-#         theta    <- beta.update$theta
-#         cur.lly  <- beta.update$cur.lly
-#         att.beta <- beta.update$att
-#         acc.beta <- beta.update$acc
-# 
-#         if (iter < burn / 2) {
-#           mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
-#                                 nattempts=beta.attempts)
-#           acc.beta  <- mh.update$acc
-#           att.beta  <- mh.update$att
-#           mh.beta   <- mh.update$mh
-#         }
-#       }
-# 
-#       # update xi
-#       if (!xi.fix) {
-#         xi.update <- updateXi(y = y, theta = theta, alpha = alpha,
-#                               a.star = a.star, z = z, w = w, wz = wz,
-#                               x.beta = x.beta, xi = xi, xi.m = xi.m,
-#                               xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi,
-#                               att = att.xi, mh = mh.xi, thresh = thresh)
-#         xi      <- xi.update$xi
-#         z       <- xi.update$z
-#         wz      <- xi.update$wz
-#         theta   <- xi.update$theta
-#         cur.lly <- xi.update$cur.lly
-#         att.xi  <- xi.update$att
-#         acc.xi  <- xi.update$acc
-# 
-#         if (iter < burn / 2) {
-#           mh.update <- mhUpdate(acc = acc.xi, att = att.xi, mh = mh.xi,
-#                                 nattempts = xi.attempts)
-#           acc.xi  <- mh.update$acc
-#           att.xi  <- mh.update$att
-#           mh.xi   <- mh.update$mh
-#         }
-#       }
-#     }
     
-    if (spatial) {
-      # update A and alpha
-      others <- list(y = y, alpha = alpha, wz = wz, b = b, a = a)
-      HMCout  <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q.ps, 
-                     epsilon=0.001, L=10, others)
-      # print(HMCout$accept)
-      if (HMCout$accept) {
-        q.ps    <- HMCout$q
-        q.a     <- matrix(q.ps[1:nkt], nknots, nt)
-        q.alpha <- tail(q.ps, 1)
-        others$a <- a <- exp(q.a)
-        others$alpha <- alpha <- transform$inv.logit(q.alpha)
+    if (xibeta.joint) {  # update beta and xi
+      # we are actual sampling for p = P(Y = 0)
+      xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
+                                    wz = wz, beta = beta, kernel = kernel, 
+                                    a.star = a.star, x.beta = x.beta,
+                                    xi = xi, x = x, xt = xt, xtx.inv = xtx.inv,
+                                    xi.m = xi.m, xi.s = xi.s, cur.lly = cur.lly,
+                                    xi.fix = xi.fix, beta.fix = beta.fix,
+                                    acc.p = acc.beta, att.p = att.beta,
+                                    mh.p = mh.beta,
+                                    acc.xi = acc.xi, att.xi = att.xi,
+                                    mh.xi = mh.xi, thresh = 0)
+      
+      beta     <- xibeta.update$beta
+      x.beta   <- xibeta.update$x.beta
+      xi       <- xibeta.update$xi
+      z        <- xibeta.update$z
+      wz       <- xibeta.update$wz
+      kernel   <- xibeta.update$kernel
+      cur.lly  <- xibeta.update$cur.lly
+      att.beta <- xibeta.update$att.p
+      acc.beta <- xibeta.update$acc.p
+      att.xi   <- xibeta.update$att.xi
+      acc.xi   <- xibeta.update$acc.xi
+      
+      if (iter < burn / 2) {
+        mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+                              nattempts=beta.attempts)
+        acc.beta  <- mh.update$acc
+        att.beta  <- mh.update$att
+        mh.beta   <- mh.update$mh
+        
+        mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
+                              nattempts=xi.attempts)
+        acc.xi  <- mh.update$acc
+        att.xi  <- mh.update$att
+        mh.xi   <- mh.update$mh
       }
       
-      HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q.b, epsilon=0.01, L=10, others)
-      if (HMCout$accept) {
-        others$b <- b <- transform$inv.logit(HMCout$q)
-        q.b <- HMCout$q
+    } else {  # update beta
+      if (!beta.fix) {
+        beta.update <- updateBeta(y = y, kernel = kernel, alpha = alpha,
+                                  a.star = a.star, z = z, w = w, wz = wz,
+                                  beta = beta, beta.m = beta.m, beta.s = beta.s,
+                                  x.beta = x.beta, xi = xi, x = x,
+                                  cur.lly = cur.lly, acc = acc.beta,
+                                  att = att.beta, mh = mh.beta, thresh = thresh)
+        beta     <- beta.update$beta
+        x.beta   <- beta.update$x.beta
+        z        <- beta.update$z
+        wz       <- beta.update$wz
+        kernel   <- beta.update$kernel
+        cur.lly  <- beta.update$cur.lly
+        att.beta <- beta.update$att
+        acc.beta <- beta.update$acc
+        
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
+                                nattempts=beta.attempts)
+          acc.beta  <- mh.update$acc
+          att.beta  <- mh.update$att
+          mh.beta   <- mh.update$mh
+        }
       }
-
+      
+      # update xi
+      if (!xi.fix) {
+        xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha,
+                              a.star = a.star, z = z, w = w, wz = wz,
+                              x.beta = x.beta, xi = xi, xi.m = xi.m,
+                              xi.s = xi.s, cur.lly = cur.lly, acc = acc.xi,
+                              att = att.xi, mh = mh.xi, thresh = thresh)
+        xi      <- xi.update$xi
+        z       <- xi.update$z
+        wz      <- xi.update$wz
+        kernel  <- xi.update$kernel
+        cur.lly <- xi.update$cur.lly
+        att.xi  <- xi.update$att
+        acc.xi  <- xi.update$acc
+        
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc = acc.xi, att = att.xi, mh = mh.xi,
+                                nattempts = xi.attempts)
+          acc.xi  <- mh.update$acc
+          att.xi  <- mh.update$att
+          mh.xi   <- mh.update$mh
+        }
+      }
+    }
+    
+    if (spatial) {
+      # update a - NOTE: does not use acc, att, and mh like usual
+      old.a    <- a
+      a.update <- updateA(y = y, kernel = kernel, a = a, a.star = a.star,
+                          alpha = alpha, wz = wz, cur.lly = cur.lly,
+                          cur.llps = cur.llps, mid.points = mid.points,
+                          bin.width = bin.width, mh = mh.a, cuts = cuts,
+                          IDs = IDs, threads = threads)
+      a        <- a.update$a
+      a.star   <- a.update$a.star
+      kernel   <- a.update$kernel
+      cur.lly  <- a.update$cur.lly
+      cur.llps <- a.update$cur.llps
+      
+      if (iter < burn / 2) {
+        # adjust the candidate standard deviations
+        level <- get.level(old.a, cuts)
+        for (j in 1:length(mh.a)) {
+          acc.a[j] <- acc.a[j] + sum(old.a[level == j] != a[level == j])
+          att.a[j] <- att.a[j] + sum(level == j)
+          if (att.a[j] > 100) {
+            if (acc.a[j] / att.a[j] < 0.3) { mh.a[j] <- mh.a[j] * 0.9 }
+            if (acc.a[j] / att.a[j] > 0.6) { mh.a[j] <- mh.a[j] * 1.1 }
+            acc.a[j] <- att.a[j] <- 0
+          }
+        }
+        
+        # adjust A.cutoff if any a's have not moved since the start
+        # this is typically the case when A.cutoff is too small
+        if (any((a - a.init) == 0)) {
+          if ((iter %% A.attempts == 0) & (A.cutoff < sqrt(max(dw2)))) {
+            if (iter < burn / 2) {
+              A.cutoff <- A.cutoff * 1.2
+              IDs <- getIDs(dw2 = dw2, A.cutoff = A.cutoff)
+              w <- stdW(makeW(dw2 = dw2, rho = rho, A.cutoff = A.cutoff))
+            }
+          }
+        }
+      }
+      
+      # update alpha
+      if (!alpha.fix) {
+        alpha.update <- updateAlpha(y = y, kernel = kernel, a = a, 
+                                    a.star = a.star, alpha = alpha, z = z, 
+                                    w = w, wz = wz,
+                                    alpha.a = alpha.a, alpha.b = alpha.b,
+                                    cur.lly = cur.lly, cur.llps = cur.llps,
+                                    mid.points = mid.points,
+                                    bin.width = bin.width,
+                                    acc = acc.alpha, att = att.alpha,
+                                    mh = mh.alpha, threads = threads)
+        
+        alpha     <- alpha.update$alpha
+        kernel    <- alpha.update$kernel
+        a.star    <- alpha.update$a.star
+        cur.lly   <- alpha.update$cur.lly
+        cur.llps  <- alpha.update$cur.llps
+        att.alpha <- alpha.update$att
+        acc.alpha <- alpha.update$acc
+        
+        if (iter < burn / 2) {
+          mh.update <- mhUpdate(acc = acc.alpha, att = att.alpha, mh = mh.alpha,
+                                nattempts = alpha.attempts)
+          acc.alpha <- mh.update$acc
+          att.alpha <- mh.update$att
+          mh.alpha  <- mh.update$mh
+        }
+      }  # fi !alpha.fix
+      
       # update rho
       if (!rho.fix) {
-        rho.update <- updateRho(y = y, theta = theta, a.star = a.star, 
+        rho.update <- updateRho(y = y, kernel = kernel, a.star = a.star, 
                                 alpha = alpha, cur.lly = cur.lly, w = w, z = z,
                                 wz = wz, dw2 = dw2, rho = rho,
                                 logrho.m = logrho.m, logrho.s = logrho.s,
@@ -263,11 +306,11 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         rho     <- rho.update$rho
         w       <- rho.update$w
         wz      <- rho.update$wz
-        theta   <- rho.update$theta
+        kernel  <- rho.update$kernel
         cur.lly <- rho.update$cur.lly
         att.rho <- rho.update$att
         acc.rho <- rho.update$acc
-
+        
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc = acc.rho, att = att.rho, mh = mh.rho,
                                 nattempts = rho.attempts)
@@ -277,27 +320,26 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         }
       }  # fi rho.fix
     }
-
-    }  # end thin
-
+    
+  }  # end thin
+    
     if ((iter > burn) & predictions) {
       yp <- rRareBinarySpat(x = x.pred, s = s.pred, knots = knots,
                             beta = beta, xi = xi, alpha = alpha, rho = rho,
                             thresh = thresh, dw2 = dw2p, a = a)
       keepers.y.pred[(iter - burn), , ] <- yp$y
     }
-
+    
     # storage
     keepers.beta[iter, ] <- beta
     keepers.xi[iter]     <- xi
     if (spatial) {
-      keepers.a[iter, , ] <- a
-      keepers.alpha[iter] <- alpha
-      keepers.b[iter, , ] <- b
-      keepers.rho[iter]   <- rho
+      keepers.a[iter, , ]  <- a
+      keepers.alpha[iter]  <- alpha
+      keepers.rho[iter]    <- rho
     }
-    keepers.lly[iter] <- sum(logLikeY(y = y, theta = theta))
-
+    keepers.lly[iter] <- sum(logLikeY(y = y, kernel = kernel))
+    
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)
       acc.rate.xi    <- round(acc.xi / att.xi, 3)
@@ -305,14 +347,14 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         acc.rate.alpha <- round(acc.alpha / att.alpha, 3)
         acc.rate.rho   <- round(acc.rho / att.rho, 3)
       }
-
+      
       if (iterplot) {
         if (iter < burn) {
           begin <- max(1, (iter - 2000))
         } else {
           begin <- burn
         }
-
+        
         par(mfrow=c(2, 4))
         plot(keepers.beta[begin:iter, 1], type="l", main=bquote(beta[0]),
              xlab=round(mh.beta[1], 4), ylab=acc.rate.beta[1])
@@ -326,13 +368,13 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         }
         plot(keepers.xi[begin:iter], type="l", main=bquote(xi),
              xlab=round(mh.xi, 4), ylab=acc.rate.xi)
-
+        
         if (spatial) {
           plot(keepers.alpha[begin:iter], type="l", main=bquote(alpha),
                xlab=round(mh.alpha, 4), ylab=acc.rate.alpha)
           plot(keepers.rho[begin:iter], type="l", main=bquote(rho),
                xlab=round(mh.rho, 4), ylab=acc.rate.rho)
-
+          
           for (i in 1:4) {
             plot(keepers.a[begin:iter, i, 1], type="l",
                  main=paste("knot ", i, ", day 1", sep=""),
@@ -343,16 +385,15 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       }
       cat("\t Iter", iter, "\n")
     }
-
+    
   } # end iter
-
+  
   return.iters <- (burn + 1):iters
-
+  
   if (spatial) {
     results <- list(beta = keepers.beta[return.iters, , drop = F],
                     xi = keepers.xi[return.iters],
                     a = keepers.a[return.iters, , , drop = F],
-                    b = keepers.b[return.iters, , , drop = F],
                     alpha = keepers.alpha[return.iters],
                     rho = keepers.rho[return.iters],
                     lly = keepers.lly[return.iters],
@@ -361,11 +402,11 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   } else {
     results <- list(beta = keepers.beta[return.iters, , drop = F],
                     xi = keepers.xi[return.iters],
-                    a = NULL, b = NULL, alpha = NULL, rho = NULL,
+                    a = NULL, alpha = NULL, rho = NULL,
                     lly = keepers.lly[return.iters],
                     y.pred = keepers.y.pred,
                     A.cutoff = A.cutoff)
   }
-
+  
   return(results)
 }  # end mcmc
