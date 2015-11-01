@@ -1,17 +1,17 @@
 mcmc.gev.HMC <- function(y, s, x, knots = NULL, 
                          beta.init = NULL, beta.mn = 0, beta.sd = 20, 
-                         beta.eps = 0.1, beta.attempts = 50, beta.fix = FALSE,
+                         beta.eps = 0.1, beta.attempts = 50,
                          xi.init = NULL, xi.mn = 0, xi.sd = 0.5, 
                          xi.eps = 0.1, xi.attempts = 50, xi.fix = TRUE,
                          a.init = 10, a.eps = 0.2, a.attempts = 100, 
-                         a.fix = FALSE,
+                         IDs = NULL, A.cutoff = NULL,
                          b.init = 0.5, b.eps = 0.2, b.attempts = 100,
-                         b.fix = FALSE,
-                         alpha.init = 0.5, alpha.eps = 0.1, alpha.fix = FALSE,
+                         alpha.init = 0.5, alpha.eps = NULL, alpha.attempts = 50,
+                         a.alpha.joint = TRUE,
                          rho.init = 1, logrho.mn = -1, logrho.sd = 2, 
-                         rho.eps = 0.1, rho.fix = FALSE,
-                         threads = 1, iterplot=FALSE, iters=50000, burn=10000, 
-                         update=100, thin=1, thresh = 0) {
+                         rho.eps = 0.1, rho.attempts = 50,
+                         threads = 1, iterplot = FALSE, iters = 50000, 
+                         burn = 10000, update = 100, thin = 1, thresh = 0) {
 
   library(fields)
   
@@ -94,17 +94,21 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
   
   # create lists for MCMC parameters
   beta  <- list(cur = beta.init, att = 0, acc = 0, eps = beta.eps, 
-                mn = beta.mn, sd = beta.sd, attempts = beta.attempts)
+                mn = beta.mn, sd = beta.sd, attempts = beta.attempts,
+                target.l = 0.25, target.u = 0.5)
   xi    <- list(cur = xi.init, att = 0, acc = 0, eps = xi.eps, 
-                mn = xi.mn, sd = xi.sd, attempts = xi.attempts)
+                mn = xi.mn, sd = xi.sd, attempts = xi.attempts,
+                target.l = 0.25, target.u = 0.5, fix = xi.fix)
   a     <- list(cur = a.init, att = 0, acc = 0, eps = a.eps, infinite = 0,
-                attempts = a.attempts)
+                attempts = a.attempts, target.l = 0.5, target.u = 0.8)
   b     <- list(cur = b.init, att = 0, acc = 0, eps = b.eps, infinite = 0,
-                attempts = b.attempts)
+                attempts = b.attempts, target.l = 0.5, target.u = 0.8)
   alpha <- list(cur = alpha.init, att = 0, acc = 0, eps = alpha.eps, 
-                infinite = 0, attempts = alpha.attempts)
+                infinite = 0, attempts = alpha.attempts, 
+                target.l = 0.5, target.u = 0.8)
   rho   <- list(cur = rho.init, att = 0, acc = 0, eps = rho.eps, 
-                mn = logrho.mn, sd = logrho.sd, attempts = rho.attempts)
+                mn = logrho.mn, sd = logrho.sd, attempts = rho.attempts,
+                target.l = 0.25, target.u = 0.5)
   
   # get calculated list
   calc <- list()
@@ -117,17 +121,28 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
   calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
   calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   
-  # storage for MCMC
-  storage.a     <- array(NA, dim=c(niters, nknots, nt))
-  storage.b     <- array(NA, dim=c(niters, nknots, nt))
-  storage.alpha <- rep(NA, niters)
-  storage.beta  <- rep(NA, niters)
-  storage.rho   <- rep(NA, niters)
-  storage.prob  <- array(NA, dim = c(niters, ns, nt))
-    
+  # the stepsize for a and alpha should be standardized to account for the 
+  # different magnitudes in the gradient
+  if (is.null(alpha$eps)) {
+    temp.q <- c(as.vector(log(a$cur)), transform$inv.logit(alpha$cur))
+    temp.grad <- neg_log_post_grad_a_alpha(
+      q = temp.q, data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+      rho = rho, calc = calc, others = others
+    )
+    alpha$eps <- a$eps * mean(temp.grad[1:nkt]) / tail(temp.grad, 1)
+  } 
   
+  # storage for MCMC
+  storage.beta  <- rep(NA, iters)
+  storage.xi    <- rep(NA, iters)
+  storage.a     <- array(NA, dim=c(iters, nknots, nt))
+  storage.b     <- array(NA, dim=c(iters, nknots, nt))
+  storage.alpha <- rep(NA, iters)
+  storage.rho   <- rep(NA, iters)
+  storage.prob  <- array(NA, dim = c(iters, ns, nt))
+    
   tic.1 <- proc.time()
-  for (i in 1:niters) {
+  for (iter in 1:iters) {
     beta$att <- beta$att + 1
     MHout <- updateBeta(data = data, beta = beta, xi = xi, alpha = alpha, 
                         calc = calc, others = others)
@@ -135,40 +150,84 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       beta$acc     <- beta$acc + 1
       beta$cur     <- MHout$q
       calc$x.beta  <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
-      calc$z       <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+      calc$z       <- getZ(xi = xi$cur, x.beta = calc$x.beta, 
+                           thresh = others$thresh)
       calc$lz      <- log(calc$z)
       calc$theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
     }
-    if (beta$att > 100) {
-      beta.rate <- beta$acc / beta$att
-      if (beta.rate < 0.20) {
-        beta$eps <- beta$eps * 0.8
-      } else if (beta.rate > 0.60) {
-        beta$eps <- beta$eps * 1.2
+    
+    if (!(xi$fix)) {
+      xi$att <- xi$att + 1
+      MHout <- updateXi(data = data, xi = xi, alpha = alpha, calc = calc, 
+                        others = others)
+      if (MHout$accept) {
+        xi$acc     <- xi$acc + 1
+        xi$cur     <- MHout$q
+        calc$z     <- getZ(xi = xi$cur, x.beta = calc$x.beta, 
+                          thresh = others$thresh)
+        calc$lz    <- log(calc$z)
+        calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
       }
-      beta$acc <- beta$att <- 0
     }
     
-    # random effect
-    a$att <- a$att + 1
-    q <- log(a$cur)
-    HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
-                   epsilon = a$eps, L = 20, 
-                   data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                   rho = rho, calc = calc, others = others, this.param = "a")
-    if (HMCout$accept) {
-      a$acc <- a$acc + 1
-      a$cur <- exp(HMCout$q)
-      calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
-      calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
-    }
-    a$infinite <- a$infinite + HMCout$infinite
-    if (a$infinite > 50) {
-      print("reducing a$eps")
-      a$eps <- a$eps * 0.8
-      a$infinite <- 0
+    if (a.alpha.joint) {
+      a$att <- a$att + 1
+      alpha$att <- alpha$att + 1
+      
+      q <- c(as.vector(log(a$cur)), transform$logit(alpha$cur))
+      epsilon <- c(rep(a$eps, nkt), alpha$eps)
+      HMCout <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+                    epsilon = epsilon, L = 20, 
+                    data = data, beta = beta, xi = xi, a = a, b = b, 
+                    alpha = alpha, rho = rho, calc = calc, others = others, 
+                    this.param = "a_alpha")
+      if (HMCout$accept) {
+        a$acc     <- a$acc + 1
+        a$cur     <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
+        alpha$acc <- alpha$acc + 1
+        alpha$cur <- transform$inv.logit(tail(HMCout$q, 1))
+        calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+        calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+        calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+      }
+      
+      a$infinite <- a$infinite + HMCout$infinite[1]
+      alpha$infinite <- alpha$infinite + HMCout$infinite[2]
+      
+    } else {  # update a and alpha separately
+      # random effect
+      a$att <- a$att + 1
+      q <- log(a$cur)
+      HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+                     epsilon = a$eps, L = 20, 
+                     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                     rho = rho, calc = calc, others = others, this.param = "a")
+      if (HMCout$accept) {
+        a$acc <- a$acc + 1
+        a$cur <- exp(HMCout$q)
+        calc$aw  <- getAW(a = a$cur, w.star = calc$w.star)
+        calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+      }
+      a$infinite <- a$infinite + HMCout$infinite
+      
+      # spatial dependence
+      alpha$att <- alpha$att + 1
+      q <- transform$logit(alpha$cur)
+      HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+                     epsilon = alpha$eps, L = 10, 
+                     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
+                     rho = rho, calc = calc, others = others, this.param = "alpha")
+      if (HMCout$accept) {
+        alpha$acc   <- alpha$acc + 1
+        alpha$cur   <- transform$inv.logit(HMCout$q)
+        calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+        calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+        calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+      }
+      alpha$infinite <- alpha$infinite + HMCout$infinite
     }
     
+    # auxiliary variable
     q <- transform$logit(b$cur)
     b$att <- b$att + 1
     HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
@@ -180,34 +239,8 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       b$cur <- transform$inv.logit(HMCout$q)
     }
     b$infinite <- b$infinite + HMCout$infinite
-    if (b$infinite > 50) {
-      print("reducing b$eps")
-      b$eps <- b$eps * 0.8
-      b$infinite <- 0
-    }
-    
-    # spatial dependence
-    alpha$att <- alpha$att + 1
-    q <- transform$logit(alpha$cur)
-    HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
-                   epsilon = alpha$eps, L = 10, 
-                   data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                   rho = rho, calc = calc, others = others, this.param = "alpha")
-    if (HMCout$accept) {
-      alpha$acc   <- alpha$acc + 1
-      alpha$cur   <- transform$inv.logit(HMCout$q)
-      calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
-      calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
-      calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
-    }
-    
-    alpha$infinite <- alpha$infinite + HMCout$infinite
-    if (alpha$infinite > 50) {
-      print("reducing alpha$eps")
-      alpha$eps <- alpha$eps * 0.8
-      alpha$infinite <- 0
-    }
-    
+  
+    # kernel bandwidth
     rho$att <- rho$att + 1
     MHout <- updateRho(data = data, a = a, alpha = alpha, rho = rho, calc = calc, 
                        others = others)
@@ -222,55 +255,88 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
     }
     
-    if (rho$att > 100) {
-      rho.rate <- rho$acc / rho$att
-      if (rho.rate < 0.20) {
-        rho$eps <- rho$eps * 0.8
-      } else if (rho.rate > 0.60) {
-        rho$eps <- rho$eps * 1.2
-      }
-      rho$acc <- rho$att <- 0
-    }
-    
+    # adjustments to eps
     if (iter < burn / 2) {
-      mh.update <- mhUpdate(acc = acc.rho, att = att.rho, mh = mh.rho,
-                            nattempts = rho.attempts)
-      acc.rho   <- mh.update$acc
-      att.rho   <- mh.update$att
-      mh.rho    <- mh.update$mh
+      eps.update <- epsUpdate(beta)
+      beta$att   <- eps.update$att
+      beta$acc   <- eps.update$acc
+      beta$eps   <- eps.update$eps
+      
+      if (!xi$fix) {
+        eps.update <- epsUpdate(xi)
+        xi$att     <- eps.update$att
+        xi$acc     <- eps.update$acc
+        xi$eps     <- eps.update$eps
+      }
+      
+      if (a$infinite > 50) {
+        print("reducing a$eps")
+        a$eps <- a$eps * 0.8
+        a$infinite <- 0
+      }
+      eps.update <- epsUpdate(a)
+      a$att      <- eps.update$att
+      a$acc      <- eps.update$acc
+      a$eps      <- eps.update$eps
+      
+      if (b$infinite > 50) {
+        print("reducing b$eps")
+        b$eps <- b$eps * 0.8
+        b$infinite <- 0
+      }
+      eps.update <- epsUpdate(b)
+      b$att      <- eps.update$att
+      b$acc      <- eps.update$acc
+      b$eps      <- eps.update$eps
+      
+      if (alpha$infinite > 50) {
+        print("reducing alpha$eps")
+        alpha$eps <- alpha$eps * 0.8
+        alpha$infinite <- 0
+      }
+      eps.update <- epsUpdate(alpha)
+      alpha$att  <- eps.update$att
+      alpha$acc  <- eps.update$acc
+      alpha$eps  <- eps.update$eps
+      
+      eps.update <- epsUpdate(rho)
+      rho$att    <- eps.update$att
+      rho$acc    <- eps.update$acc
+      rho$eps    <- eps.update$eps
     }
     
-    storage.a[i, , ] <- a$cur
-    storage.b[i, , ] <- b$cur
-    storage.alpha[i] <- alpha$cur
-    storage.beta[i]  <- beta$cur
-    storage.rho[i]   <- rho$cur
-    storage.prob[i, , ] <- 1 - exp(-calc$theta)
+    storage.a[iter, , ] <- a$cur
+    storage.b[iter, , ] <- b$cur
+    storage.alpha[iter] <- alpha$cur
+    storage.beta[iter]  <- beta$cur
+    storage.rho[iter]   <- rho$cur
+    storage.prob[iter, , ] <- 1 - exp(-calc$theta)
     
-    if (i %% update == 0) {
-      print(paste("iter:", i, "of", niters, sep=" "))
+    if (iter %% update == 0) {
+      print(paste("iter:", iter, "of", iters, sep=" "))
       if (iterplot) {
-        start <- max(i - 5000, 1)
-        end   <- i
+        start <- max(iter - 5000, 1)
+        end   <- iter
         par(mfrow=c(4, 5))
         plot.idx <- seq(1, 18, by = 2)
         for (idx in plot.idx){
-          plot(log(storage.a[1:i, idx, 1]), type = "l", 
-               main = round(log(gen$a[idx, 1]), 2), 
-               xlab = round(a$acc / a$att, 3))
+          plot(log(storage.a[start:end, idx, 1]), type = "l", 
+               main = paste("a", idx), 
+               xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
         }
         plot.idx <- seq(1, 16, by = 2)
         for (idx in plot.idx){
-          plot(storage.b[1:i, idx, 1], type = "l", 
-               xlab = round(b$acc / b$att, 3))
+          plot(storage.b[start:end, idx, 1], type = "l", 
+               main = paste("b", idx),
+               xlab = round(b$acc / b$att, 2), ylab = round(b$eps, 4))
         }
         
         plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),
-             xlab = round(beta$acc / beta$att, 2), ylab = round(beta$eps, 3))
+             xlab = round(beta$acc / beta$att, 2), ylab = round(beta$eps, 4))
         plot(storage.alpha[start:end], type = "l", main = bquote(alpha),
-             xlab = round(alpha$acc / alpha$att, 2), ylab = "")
+             xlab = round(alpha$acc / alpha$att, 2), ylab = round(alpha$eps, 4))
         plot(storage.rho[start:end], type = "l", main = bquote(rho),
-             xlab = round(rho$acc / rho$att, 2), ylab = round(rho$eps, 3))
+             xlab = round(rho$acc / rho$att, 2), ylab = round(rho$eps, 4))
       }
     }
   }

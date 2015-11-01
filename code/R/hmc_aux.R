@@ -261,18 +261,18 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
-  if (any(is.nan(grad))) {
-    beta.trouble.a.grad <<- beta
-    xi.trouble.a.grad <<- xi
-    a.trouble.a.grad <<- a
-    b.trouble.a.grad <<- b
-    alpha.trouble.a.grad <<- alpha
-    rho.trouble.a.grad <<- rho
-    calc.trouble.a.grad <<- calc
-    aw.trouble.a.grad <<- aw
-    theta.trouble.a.grad <<- theta
-    lc.trouble.a.grad <<- lc
-  }
+#   if (any(is.nan(grad))) {
+#     beta.trouble.a.grad <<- beta
+#     xi.trouble.a.grad <<- xi
+#     a.trouble.a.grad <<- a
+#     b.trouble.a.grad <<- b
+#     alpha.trouble.a.grad <<- alpha
+#     rho.trouble.a.grad <<- rho
+#     calc.trouble.a.grad <<- calc
+#     aw.trouble.a.grad <<- aw
+#     theta.trouble.a.grad <<- theta
+#     lc.trouble.a.grad <<- lc
+#   }
   # whole function is written as gradient of log likelihood
   return(-grad)
 }
