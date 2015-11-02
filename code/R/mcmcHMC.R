@@ -134,7 +134,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
   } 
   
   # storage for MCMC
-  storage.beta  <- rep(NA, iters)
+  storage.beta  <- matrix(NA, iters, np)
   storage.xi    <- rep(NA, iters)
   storage.a     <- array(NA, dim=c(iters, nknots, nt))
   storage.b     <- array(NA, dim=c(iters, nknots, nt))
@@ -270,7 +270,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
         xi$eps     <- eps.update$eps
       }
       
-      if (a$infinite > 50) {
+      if (a$infinite > 10) {
         print("reducing a$eps")
         a$eps <- a$eps * 0.8
         a$infinite <- 0
@@ -280,7 +280,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       a$acc      <- eps.update$acc
       a$eps      <- eps.update$eps
       
-      if (b$infinite > 50) {
+      if (b$infinite > 10) {
         print("reducing b$eps")
         b$eps <- b$eps * 0.8
         b$infinite <- 0
@@ -290,7 +290,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       b$acc      <- eps.update$acc
       b$eps      <- eps.update$eps
       
-      if (alpha$infinite > 50) {
+      if (alpha$infinite > 10) {
         print("reducing alpha$eps")
         alpha$eps <- alpha$eps * 0.8
         alpha$infinite <- 0

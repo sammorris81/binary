@@ -80,6 +80,26 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
     # }
 
     q = q + epsilon * p
+    if (any(q == Inf | q == -Inf)) {
+      print(paste("Proposed variable is infinity for", this.param, "Automatically rejecting."))
+      if (this.param == "a_alpha") {
+        infinite = c(FALSE, FALSE)
+        if(any(q[1:(length(q) - 1)] == Inf | q[1:(length(q) - 1)] == -Inf)) {
+          print("inf for a in spot")
+          print(which(q[1:(length(q) - 1)] == Inf | q[1:(length(q) - 1)] == -Inf))
+          infinite[1] <- TRUE
+        }
+        if (tail(q, 1) == Inf | tail(q, 1) == -Inf) {
+          print("inf for alpha")
+          infinite[2] <- TRUE
+        }
+        return(list(q = current_q, accept = FALSE, infinite = infinite))
+      } else {
+        return(list(q = current_q, accept = FALSE, infinite = TRUE))
+      }
+      
+    }
+    
     dist[i+1] = sqrt(sum((q - current_q)^2))
 
     # Make a full step for the momentum, except at end of trajectory
@@ -88,18 +108,20 @@ HMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                                        a = a, b = b, alpha = alpha, rho = rho,
                                        calc = calc, others = others)
     if (any(is.nan(p))) {
-      print("nan in p")
+      print(paste("NaN in p for", this.param, "automatically rejecting"))
       if (this.param == "a_alpha") {
         infinite = c(FALSE, FALSE)
-        if (tail(is.nan(p), 1)) {
-          infinite[2] <- TRUE
-        }
         if (any(is.nan(p[1:(length(p) - 1)]))) {
+          print("nan for a in spot")
+          print(which(is.nan(p[1:(length(p) - 1)])))
           infinite[1] <- TRUE
+        }
+        if (tail(is.nan(p), 1)) {
+          print("nan for alpha")
+          infinite[2] <- TRUE
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("NaN in p for", this.param, "automatically rejecting"))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     } else if (any(p == Inf | p == -Inf)) {

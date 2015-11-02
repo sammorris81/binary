@@ -2352,7 +2352,7 @@ nknotsy <- 21
 nknots <- nknotsx * nknotsy
 nkt <- nknots * nt
 rho.t <- 0.05
-alpha.t <- 0.2
+alpha.t <- 0.3
 x <- matrix(1, ns, nt)
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
@@ -2373,10 +2373,10 @@ results <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots,
                         beta.eps = 0.1, beta.attempts = 50, 
                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
                         xi.attempts = 50, xi.fix = TRUE, 
-                        a.init = 10, a.eps = 0.2, a.attempts = 50, a.cutoff = 0.2,
+                        a.init = 10, a.eps = 0.2, a.attempts = 50, a.cutoff = 0.1,
                         b.init = 0.5, b.eps = 0.2, b.attempts = 50,
                         alpha.init = 0.5, alpha.attempts = 50, 
-                        alpha.eps = 0.001, a.alpha.joint = TRUE, 
+                        a.alpha.joint = TRUE, 
                         rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                         iterplot = TRUE, iters = 10000, burn = 5000, 

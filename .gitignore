@@ -16,7 +16,7 @@
 # Rprof.out
 
 # Regular output
-*.out
+# *.out
 
 # LaTeX aux typsetting files
 *.aux
