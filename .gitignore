@@ -13,7 +13,7 @@
 *.rdx
 
 # Profiled output
-Rprof.out
+# Rprof.out
 
 # Regular output
 *.out
