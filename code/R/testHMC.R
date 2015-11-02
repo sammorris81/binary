@@ -2343,7 +2343,7 @@ options(warn = 2)
 # Test out the functions
 library(fields)
 library(evd)
-set.seed(200)
+set.seed(250)
 
 nt <- 1
 ns <- 1000
@@ -2352,7 +2352,7 @@ nknotsy <- 21
 nknots <- nknotsx * nknotsy
 nkt <- nknots * nt
 rho.t <- 0.05
-alpha.t <- 0.75
+alpha.t <- 0.2
 x <- matrix(1, ns, nt)
 s <- cbind(runif(ns), runif(ns))
 knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
@@ -2373,7 +2373,7 @@ results <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots,
                         beta.eps = 0.1, beta.attempts = 50, 
                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
                         xi.attempts = 50, xi.fix = TRUE, 
-                        a.init = 10, a.eps = 0.2, a.attempts = 50, 
+                        a.init = 10, a.eps = 0.2, a.attempts = 50, a.cutoff = 0.2,
                         b.init = 0.5, b.eps = 0.2, b.attempts = 50,
                         alpha.init = 0.5, alpha.attempts = 50, 
                         alpha.eps = 0.001, a.alpha.joint = TRUE, 
@@ -2384,6 +2384,92 @@ results <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots,
 toc.1 <- proc.time()
 Rprof(filename = NULL)
 summaryRprof(filename = "Rprof.out", lines = "show")
+
+# trying to speed up MCMC by not doing as many calculations...
+rm(list=ls())
+source("./hmc_aux.R")
+source("./updateModel.R")
+source("./auxfunctions.R")
+options(warn = 2)
+
+# Test out the functions
+library(fields)
+library(evd)
+set.seed(200)
+nt <- 1
+ns <- 1000
+nknotsx <- 21
+nknotsy <- 21
+nknots <- nknotsx * nknotsy
+nkt <- nknots * nt
+rho.t <- list(cur = 0.05)
+alpha.t <- list(cur = 0.75)
+x <- matrix(1, ns, nt)
+s <- cbind(runif(ns), runif(ns))
+knots <- expand.grid(seq(0, 1, length = nknotsx), seq(0, 1, length = nknotsy))
+dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
+dw2[dw2 < 1e-6] <- 0
+
+others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0, dw2 = dw2)
+data <- list(x = x, s = s, knots = knots)
+calc.t <- list()
+calc.t$w <- getW(rho = rho.t$cur, dw2 = dw2, A.cutoff = others$A.cutoff)
+calc.t$z <- matrix(rgev(n = ns * nt, 1, 1, 1), ns, nt)
+a <- list(cur = matrix(rPS(nknots * nt, alpha = alpha.t$cur), nknots, nt))
+calc.t$w.star <- getWStar(alpha = alpha.t$cur, w = calc.t$w)
+calc.t$aw <- getAW(a = a$cur, w.star = calc.t$w.star)
+calc.t$theta <- getTheta(alpha = alpha.t$cur, z = calc.t$z, aw = calc.t$aw)
+
+gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0, 
+                       alpha = alpha.t$cur, rho = rho.t$cur, nt = 1, 
+                       prob.success = 0.05, dw2 = dw2)
+
+# create lists for MCMC
+data   <- list(y = gen$y, x = x, s = s, knots = knots)
+calc   <- list()  # need aw, theta
+
+# initial values
+alpha.a.joint <- TRUE
+beta.init <- log(-log(1 - mean(data$y)))
+beta  <- list(cur = beta.init, att = 0, acc = 0, eps = 0.1, mn = 0, sd = 100, 
+              attempts = 50, target.l = 0.25, target.u = 0.5)
+xi    <- list(cur = 0, att = 0, acc = 0, eps = 0.01, mn = 0, sd = 0.5, 
+              attempts = 50, target.l = 0.25, target.u = 0.5)
+a     <- list(cur = matrix(10, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0,
+              attempts = 50, target.l = 0.5, target.u = 0.8)
+b     <- list(cur = matrix(0.5, nknots, nt), att = 0, acc = 0, eps = 0.2, infinite = 0,
+              attempts = 50, target.l = 0.5, target.u = 0.8)
+alpha <- list(cur = 0.5, att = 0, acc = 0, eps = 0.001, infinite = 0, 
+              attempts = 50, target.l = 0.5, target.u = 0.8)
+rho   <- list(cur = 0.1, att = 0, acc = 0, eps = 0.1, mn = -1, sd = 2, 
+              attempts = 50, target.l = 0.25, target.u = 0.5)
+
+calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
+calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
+calc$lz     <- log(calc$z)
+calc$w      <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+calc$lw     <- log(calc$w)
+calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+
+A.cutoff <- 0.1
+w <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = A.cutoff)
+IDs <- getIDs(dw2 = dw2, A.cutoff = A.cutoff)
+
+w.star.nIDs <- getWStar(alpha = alpha$cur, w = w)
+aw.nIDs <- getAW(a = a$cur, w.star = w.star)
+
+w.star.yIDs <- getWStarIDs(alpha = alpha$cur, w = w, IDs = IDs)
+aw.yIDs <- getAWIDs(a = a$cur, w.star = w.star, IDs = IDs)
+
+library(microbenchmark)
+microbenchmark(getWStar(alpha = alpha$cur, w = w),
+               getWStarIDs(alpha = alpha$cur, w = w, IDs = IDs))
+
+
+microbenchmark(getAW(a = a$cur, w.star = w.star), 
+               getAWIDs(a = a$cur, w.star = w.star, IDs = IDs))
 
 # posterior functions and gradients
 checkStrict(neg_log_post_a)

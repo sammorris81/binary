@@ -73,8 +73,8 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   can.rho <- exp(rnorm(1, log(rho$cur), rho$eps))
   
   if (can.rho < max(sqrt(others$dw2)) & can.rho > 1e-6) {
-    w       <- getW(rho = can.rho, dw2 = others$dw2, A.cutoff = others$A.cutoff)
-    w.star  <- getWStar(alpha = alpha$cur, w = w)
+    w       <- getW(rho = can.rho, dw2 = others$dw2, a.cutoff = others$a.cutoff)
+    w.star  <- getWStarIDs(alpha = alpha$cur, w = w, IDs = others$IDs)
     aw      <- getAW(a = a$cur, w.star = w.star)
     theta   <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
     can.lly <- logLikeY(y = data$y, theta = theta)
@@ -95,6 +95,77 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   }
 
   return(results)
+}
+
+# rewrite to use theta function not theta.star
+pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
+                       thin = 1, thresh = 0, update = NULL) {
+  if (is.null(end)) {
+    end <- length(mcmcoutput$xi)
+  }
+  
+  np     <- nrow(s.pred)
+  niters <- length(start:end)
+  nknots <- dim(mcmcoutput$a)[2]
+  
+  if (is.null(dim(mcmcoutput$beta))) {
+    p <- 1
+  } else {
+    p <- dim(mcmcoutput$beta)[2]
+  }
+  
+  if (is.null(dim(x.pred))) {
+    nt <- 1
+  } else {
+    if (p == 1) {
+      nt <- ncol(x.pred)
+    } else {
+      nt <- dim(x.pred)[2]
+    }
+  }
+  
+  niters <- length(start:end)
+  # b is only an auxiliary variable for model fitting
+  beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
+  xi    <- mcmcoutput$xi[start:end]
+  a     <- mcmcoutput$a[start:end, , , drop = F]
+  alpha <- mcmcoutput$alpha[start:end]
+  rho   <- mcmcoutput$rho[start:end]
+  
+  dw2p  <- as.matrix(rdist(s.pred, knots))^2
+  a.cutoff <- mcmcoutput$a.cutoff
+  IDs.p <- getIDs(dw2 = dw2p, a.cutoff = a.cutoff)
+  
+  prob.success <- matrix(NA, nrow=niters, ncol=np)
+  x.beta <- matrix(NA, np, nt)
+  y      <- matrix(NA, ns, nt)
+  
+  for (i in 1:length(start:end)) {
+    alpha.i <- alpha[i]
+    x.beta  <- getXBeta(x = x.pred, beta = beta[i, ], ns = np, nt = nt)
+    z       <- getZ(xi = xi[i], x.beta = x.beta, thresh = thresh)
+    w       <- getW(rho = rho[i], dw2 = dw2p, a.cutoff = a.cutoff)
+    w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs)
+    aw      <- getAW(a = a[i, , ], w.star = w.star)
+    theta   <- getTheta(alpha = alpha.i, z = z, aw = aw)
+    prob.success[i, ] <- 1 - exp(-theta)
+    
+    # if z is nan, it means that x.beta is such a large number there is
+    # basically 0 probability that z < 0
+    if (any(is.nan(z))) {
+      these <- which(is.nan(z))
+      prob.success[i, these] <- 1
+    }
+    
+    if (!is.null(update)) {
+      if (i %% update == 0) {
+        cat("\t Iter", i, "\n")
+      }
+    }
+  }
+  
+  return(prob.success)
+  
 }
 
 # updateBeta <- function(y, theta, alpha, a.star, z, w, wz, beta, beta.m, beta.s,
@@ -433,7 +504,7 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
   rho   <- mcmcoutput$rho[start:end]
 
   dw2p  <- as.matrix(rdist(s.pred, knots))^2
-  A.cutoff <- mcmcoutput$A.cutoff
+  a.cutoff <- mcmcoutput$a.cutoff
 
   prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
@@ -442,7 +513,7 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
     alpha.i <- alpha[i]
     x.beta  <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
     z       <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
-    w       <- stdW(makeW(dw2 = dw2p, rho = rho[i], A.cutoff = A.cutoff))
+    w       <- stdW(makeW(dw2 = dw2p, rho = rho[i], a.cutoff = a.cutoff))
     wz      <- getwzCPP(z = z, w = w)
     theta   <- getThetaCPP(wz = wz, 
                             a_star = matrix(a[i, , ], nknots, nt)^alpha.i, 

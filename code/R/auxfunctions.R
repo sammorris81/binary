@@ -39,6 +39,14 @@ getWStar <- function(alpha, w) {
   return(exp(log(w) / alpha))
 }
 
+getWStarIDs <- function(alpha, w, IDs) {
+  ns     <- nrow(w)
+  nknots <- ncol(w)
+  w.star <- matrix(0, ns, nknots)
+  w.star[IDs] <- exp(log(w[IDs]) / alpha)
+  return(w.star)
+}
+
 getAW <- function(a, w.star) {
   return(w.star %*% a)
 }
@@ -47,9 +55,14 @@ getTheta <- function(alpha, z, aw) {
   return(z^(-1 / alpha) * aw)
 }
 
-getXBeta <- function(y, x, beta) {
-  ns <- nrow(y)
-  nt <- ncol(y)
+getXBeta <- function(y = NULL, x, beta, ns = NULL, nt = NULL) {
+  if (is.null(ns)) {
+    ns <- nrow(y)
+  }
+  if (is.null(nt)) {
+    nt <- ncol(y)
+  }
+  
   if (nt == 1) {
     return(x %*% beta)
   } else {
@@ -73,8 +86,8 @@ getZ <- function(xi, x.beta, thresh) {
   return(z)
 }
 
-getW <- function(rho, dw2, A.cutoff) {
-  w <- stdW(makeW(dw2 = dw2, rho = rho, A.cutoff = A.cutoff))
+getW <- function(rho, dw2, a.cutoff) {
+  w <- stdW(makeW(dw2 = dw2, rho = rho, a.cutoff = a.cutoff))
 }
 
 logLikeY <- function(y, theta) {
@@ -99,6 +112,12 @@ logc <- function(alpha, b) {
     log(sin(a1mpb))
   
   return(results)
+}
+
+getIDs <- function(dw2, a.cutoff) {
+  nknots <- nrow(dw2)
+  IDs <- sqrt(dw2) <= a.cutoff 
+  return(IDs)
 }
 
 # useful functions
@@ -205,19 +224,10 @@ getwzStar <- function(z, w, alpha) {
 #   return(theta)
 # }
 
-getIDs <- function(dw2, A.cutoff) {
-  nknots <- ncol(dw2)
-  IDs <- vector(mode = "list", length = nknots)
-  for (k in 1:nknots) {
-    IDs[[k]] <- which(sqrt(dw2[, k]) <= A.cutoff)
-  }
-  return(IDs)
-}
-
 # get the kernel weighting
-makeW <- function(dw2, rho, A.cutoff = NULL) {
-  if (is.null(A.cutoff)) {
-    A.cutoff <- max(sqrt(dw2))
+makeW <- function(dw2, rho, a.cutoff = NULL) {
+  if (is.null(a.cutoff)) {
+    a.cutoff <- max(sqrt(dw2))
   }
   w <- exp(-0.5 * dw2 / (rho^2))
   
@@ -226,7 +236,7 @@ makeW <- function(dw2, rho, A.cutoff = NULL) {
   # active knots needs to sum to 1. If we don't set the knots beyond the 
   # cutoff to 0, then when we don't include them later on, the weights will 
   # sum to something slightly smaller than 1
-  w[sqrt(dw2) > A.cutoff] <- 0  
+  w[sqrt(dw2) > a.cutoff] <- 0  
   return(w)
 }
 
@@ -362,7 +372,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
     dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   }
 
-  w <- getW(rho = rho, dw2 = dw2, A.cutoff = NULL) # w is ns x nknots
+  w <- getW(rho = rho, dw2 = dw2, a.cutoff = NULL) # w is ns x nknots
 
   # get random effects and theta.star
   if (is.null(a)) {

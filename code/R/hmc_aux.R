@@ -18,8 +18,8 @@ log_post_full <- function(data, beta, xi, a, b, alpha, rho, calc, others) {
   # redo calculated
   x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
   z      <- getZ(xi = xi$cur, x.beta = x.beta, thresh = others$thresh)
-  w      <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
-  w.star <- getWStar(alpha = alpha$cur, w = w)
+  w      <- getW(rho = rho$cur, dw2 = others$dw2, a.cutoff = others$a.cutoff)
+  w.star <- getWStarIDs(alpha = alpha$cur, w = w, IDs = others$IDs)
   aw     <- getAW(a = a$cur, w.star = w.star)
   theta  <- getTheta(alpha = alpha$cur, z = z, aw = aw)
   
@@ -127,7 +127,7 @@ neg_log_post_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
                                others) {
   # parameter transformation
   alpha$cur <- transform$inv.logit(q)
-  w.star    <- getWStar(alpha = alpha$cur, w = calc$w)
+  w.star    <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
   aw        <- getAW(a = a$cur, w.star = w.star)
   theta     <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
   alpha1m   <- 1 - alpha$cur
@@ -166,7 +166,7 @@ neg_log_post_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
     nknots * nt * (log(alpha$cur) - log(alpha1m))
   
   # data and log likelihood
-  w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
   aw     <- getAW(a = a$cur, w.star = w.star)
   theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
   ll <- ll + sum(logLikeY(y = data$y, theta = theta))
@@ -404,7 +404,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   alpha <- transform$inv.logit(q)
   if (recalc) {
-    w.star <- getWStar(alpha = alpha, w = calc$w)
+    w.star <- getWStarIDs(alpha = alpha, w = calc$w, IDs = others$IDs)
     aw     <- getAW(a = a$cur, w.star = w.star)
     theta  <- getTheta(alpha = alpha, z = calc$z, aw = aw)
   } else {
@@ -489,7 +489,7 @@ neg_log_post_grad_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   alpha$cur   <- transform$inv.logit(q.alpha)
   
   # a and alpha only impact a.star, aw, and theta
-  calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
   calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
   calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   

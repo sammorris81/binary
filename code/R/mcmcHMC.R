@@ -4,7 +4,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
                          xi.init = NULL, xi.mn = 0, xi.sd = 0.5, 
                          xi.eps = 0.1, xi.attempts = 50, xi.fix = TRUE,
                          a.init = 10, a.eps = 0.2, a.attempts = 100, 
-                         IDs = NULL, A.cutoff = NULL,
+                         a.cutoff = NULL,
                          b.init = 0.5, b.eps = 0.2, b.attempts = 100,
                          alpha.init = 0.5, alpha.eps = NULL, alpha.attempts = 50,
                          a.alpha.joint = TRUE,
@@ -41,7 +41,16 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
   dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   dw2[dw2 < 1e-6] <- 0
   
-  others <- list(A.cutoff = max(sqrt(dw2)), thresh = 0, dw2 = dw2)
+  if (is.null(a.cutoff)) {
+    a.cutoff <- max(sqrt(dw2)) + 0.001
+    print("Including all sites for every knot")
+  }
+  
+  # IDs is assigned after creating A
+  others <- list(a.cutoff = a.cutoff, thresh = 0, dw2 = dw2)
+  
+  # if not specified, make the list of sites that are impacted by each knot
+  others$IDs <- getIDs(dw2, others$a.cutoff)
   
   # initialize MCMC params
   if (is.null(beta.init)) {
@@ -72,14 +81,6 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
     a <- matrix(a.init, nknots, nt)
   }
   a.init <- a  # used to make sure all random effects are moving after updateA
-  if (is.null(IDs)) {
-    # if not specified, make the list of sites that are impacted by each knot
-    if (is.null(A.cutoff)) {
-      A.cutoff <- 2 * max(dw2)
-      print("Including all sites for every knot")
-    }
-    IDs <- getIDs(dw2, A.cutoff)
-  }
   
   if (length(b.init) > 1) {
     b <- b.init
@@ -115,9 +116,9 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
   calc$x.beta <- getXBeta(y = data$y, x = data$x, beta = beta$cur)
   calc$z      <- getZ(xi = xi$cur, x.beta = calc$x.beta, thresh = others$thresh)
   calc$lz     <- log(calc$z)
-  calc$w      <- getW(rho = rho$cur, dw2 = others$dw2, A.cutoff = others$A.cutoff)
+  calc$w      <- getW(rho = rho$cur, dw2 = others$dw2, a.cutoff = others$a.cutoff)
   calc$lw     <- log(calc$w)
-  calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+  calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
   calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
   calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
   
@@ -186,7 +187,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
         a$cur     <- matrix(exp(HMCout$q[1:nkt]), nknots, nt)
         alpha$acc <- alpha$acc + 1
         alpha$cur <- transform$inv.logit(tail(HMCout$q, 1))
-        calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+        calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
         calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
         calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
       }
@@ -220,7 +221,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       if (HMCout$accept) {
         alpha$acc   <- alpha$acc + 1
         alpha$cur   <- transform$inv.logit(HMCout$q)
-        calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+        calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
         calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
         calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
       }
@@ -248,9 +249,9 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       rho$acc     <- rho$acc + 1
       rho$cur     <- MHout$q
       calc$w      <- getW(rho = rho$cur, dw2 = others$dw2, 
-                          A.cutoff = others$A.cutoff)
+                          a.cutoff = others$a.cutoff)
       calc$lw     <- log(calc$w)
-      calc$w.star <- getWStar(alpha = alpha$cur, w = calc$w)
+      calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, others$IDs)
       calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
       calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
     }
@@ -349,5 +350,5 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
                   b = storage.b[return.iters, , , drop = F],
                   alpha = storage.alpha[return.iters],
                   rho = storage.rho[return.iters],
-                  A.cutoff = A.cutoff)
+                  a.cutoff = a.cutoff)
 }
