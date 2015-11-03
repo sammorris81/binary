@@ -145,7 +145,7 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
     x.beta  <- getXBeta(x = x.pred, beta = beta[i, ], ns = np, nt = nt)
     z       <- getZ(xi = xi[i], x.beta = x.beta, thresh = thresh)
     w       <- getW(rho = rho[i], dw2 = dw2p, a.cutoff = a.cutoff)
-    w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs)
+    w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs.p)
     aw      <- getAW(a = a[i, , ], w.star = w.star)
     theta   <- getTheta(alpha = alpha.i, z = z, aw = aw)
     prob.success[i, ] <- 1 - exp(-theta)
@@ -469,74 +469,74 @@ updateAlpha <- function(y, theta, a, a.star, alpha, z, w, wz, alpha.a, alpha.b,
 
 
 
-# rewrite to use theta function not theta.star
-pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
-                       thin = 1, thresh = 0, update = NULL) {
-  if (is.null(end)) {
-    end <- length(mcmcoutput$xi)
-  }
-
-  np     <- nrow(s.pred)
-  niters <- length(start:end)
-  nknots <- dim(mcmcoutput$a)[2]
-
-  if (is.null(dim(mcmcoutput$beta))) {
-    p <- 1
-  } else {
-    p <- dim(mcmcoutput$beta)[2]
-  }
-
-  if (is.null(dim(x.pred))) {
-    nt <- 1
-  } else {
-    if (p == 1) {
-      nt <- ncol(x.pred)
-    } else {
-      nt <- dim(x.pred)[2]
-    }
-  }
-
-  niters <- length(start:end)
-  beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
-  xi    <- mcmcoutput$xi[start:end]
-  a     <- mcmcoutput$a[start:end, , , drop = F]
-  alpha <- mcmcoutput$alpha[start:end]
-  rho   <- mcmcoutput$rho[start:end]
-
-  dw2p  <- as.matrix(rdist(s.pred, knots))^2
-  a.cutoff <- mcmcoutput$a.cutoff
-
-  prob.success <- matrix(NA, nrow=niters, ncol=np)
-  x.beta <- matrix(NA, np, nt)
-  
-  for (i in 1:length(start:end)) {
-    alpha.i <- alpha[i]
-    x.beta  <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
-    z       <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
-    w       <- stdW(makeW(dw2 = dw2p, rho = rho[i], a.cutoff = a.cutoff))
-    wz      <- getwzCPP(z = z, w = w)
-    theta   <- getThetaCPP(wz = wz, 
-                            a_star = matrix(a[i, , ], nknots, nt)^alpha.i, 
-                            alpha = alpha.i)
-    prob.success[i, ] <- 1 - exp(-theta)
-
-    # if z is nan, it means that x.beta is such a large number there is
-    # basically 0 probability that z < 0
-    if (any(is.nan(z))) {
-      these <- which(is.nan(z))
-      prob.success[i, these] <- 1
-    }
-
-    if (!is.null(update)) {
-      if (i %% update == 0) {
-        cat("\t Iter", i, "\n")
-      }
-    }
-  }
-
-  return(prob.success)
-
-}
+# # rewrite to use theta function not theta.star
+# pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
+#                        thin = 1, thresh = 0, update = NULL) {
+#   if (is.null(end)) {
+#     end <- length(mcmcoutput$xi)
+#   }
+# 
+#   np     <- nrow(s.pred)
+#   niters <- length(start:end)
+#   nknots <- dim(mcmcoutput$a)[2]
+# 
+#   if (is.null(dim(mcmcoutput$beta))) {
+#     p <- 1
+#   } else {
+#     p <- dim(mcmcoutput$beta)[2]
+#   }
+# 
+#   if (is.null(dim(x.pred))) {
+#     nt <- 1
+#   } else {
+#     if (p == 1) {
+#       nt <- ncol(x.pred)
+#     } else {
+#       nt <- dim(x.pred)[2]
+#     }
+#   }
+# 
+#   niters <- length(start:end)
+#   beta  <- matrix(mcmcoutput$beta[start:end, , drop = F], niters, p)
+#   xi    <- mcmcoutput$xi[start:end]
+#   a     <- mcmcoutput$a[start:end, , , drop = F]
+#   alpha <- mcmcoutput$alpha[start:end]
+#   rho   <- mcmcoutput$rho[start:end]
+# 
+#   dw2p  <- as.matrix(rdist(s.pred, knots))^2
+#   a.cutoff <- mcmcoutput$a.cutoff
+# 
+#   prob.success <- matrix(NA, nrow=niters, ncol=np)
+#   x.beta <- matrix(NA, np, nt)
+#   
+#   for (i in 1:length(start:end)) {
+#     alpha.i <- alpha[i]
+#     x.beta  <- getXBeta(x.pred, ns = np, nt = nt, beta = beta[i, ])
+#     z       <- getZ(xi = xi[i], x.beta=x.beta, thresh=thresh)
+#     w       <- stdW(makeW(dw2 = dw2p, rho = rho[i], a.cutoff = a.cutoff))
+#     wz      <- getwzCPP(z = z, w = w)
+#     theta   <- getThetaCPP(wz = wz, 
+#                             a_star = matrix(a[i, , ], nknots, nt)^alpha.i, 
+#                             alpha = alpha.i)
+#     prob.success[i, ] <- 1 - exp(-theta)
+# 
+#     # if z is nan, it means that x.beta is such a large number there is
+#     # basically 0 probability that z < 0
+#     if (any(is.nan(z))) {
+#       these <- which(is.nan(z))
+#       prob.success[i, these] <- 1
+#     }
+# 
+#     if (!is.null(update)) {
+#       if (i %% update == 0) {
+#         cat("\t Iter", i, "\n")
+#       }
+#     }
+#   }
+# 
+#   return(prob.success)
+# 
+# }
 
 predictY <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
                      thin = 1, thresh = 0, update = NULL) {

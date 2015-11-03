@@ -306,11 +306,12 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       rho$eps    <- eps.update$eps
     }
     
-    storage.a[iter, , ] <- a$cur
-    storage.b[iter, , ] <- b$cur
-    storage.alpha[iter] <- alpha$cur
-    storage.beta[iter]  <- beta$cur
-    storage.rho[iter]   <- rho$cur
+    storage.beta[iter, ] <- beta$cur
+    storage.xi[iter]     <- xi$cur
+    storage.a[iter, , ]  <- a$cur
+    storage.b[iter, , ]  <- b$cur
+    storage.alpha[iter]  <- alpha$cur
+    storage.rho[iter]    <- rho$cur
     storage.prob[iter, , ] <- 1 - exp(-calc$theta)
     
     if (iter %% update == 0) {
