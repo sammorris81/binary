@@ -58,6 +58,7 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
     L     <- nrow(knots)
     W     <- W$W
   }
+  nknots <- nrow(knots)
   M     <- rowSums(ADJ)
   adj1  <- row(ADJ)[ADJ == 1]
   adj2  <- col(ADJ)[ADJ == 1]
@@ -100,6 +101,12 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
       beta  <- beta$coef[-1]
       Xb    <- X %*% beta
     }
+  } else {
+    X    <- matrix(1, n, 1)
+    p    <- 1
+    beta <- glm(Y ~ X, family = "binomial")
+    beta <- beta$coef[1]
+    Xb   <- X %*% beta
   }
   
   # Initial values for the spatial random effects
@@ -123,7 +130,6 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
   rm(tWW, phat, wahat, ddd)
   
   # More bookkeeping
-  
   Wa    <- W %*% alpha
   curp  <- expit(Xb + Wa)
   curll <- sum(dbinom(Y, 1, curp, log = TRUE))
@@ -158,8 +164,6 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
     if (p > 0) {
       att[1] <- att[1] + 1
       if (p == 1) {
-        print(beta)
-        print(MH[1])
         canb    <- rnorm(1, beta, MH[1])
         canXb   <- X * canb
       }
@@ -233,13 +237,17 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
     if (iter %% update == 0) {
       print(paste("Done with", iter, "of", iters))
       if (iterplot) {
-        par(mfrow = c(ifelse(p > 0, 3, 2), 2))
-        for (j in 1:3) {plot(alpha1[1:iter, j], type = "l")}
-        plot(keep.hyper[1:iter, 3], type = "l")
-        if (p > 0) {
-          plot(keep.beta[1:iter, 1], type = "l")
-          plot(keep.beta[1:iter, p], type = "l")
+        par(mfrow = c(ifelse(p > 0, 3, 2), 3))
+        for (j in 1:5) {
+          plot(keep.alpha[1:iter, j], type = "l", main = paste("a", j),
+               xlab = round(acc[2] / att[2], 2), ylab = round(MH[2], 4))
         }
+        plot(keep.beta[1:iter, 1], type = "l", main = bquote(beta[0]),
+             xlab = round(acc[1] / att[1], 2), ylab = round(MH[1], 4))
+        plot(keep.hyper[1:iter, 1], type = "l")
+        plot(keep.hyper[1:iter, 2], type = "l")
+        plot(keep.hyper[1:iter, 3], type = "l")
+        
       }
     }
   }
@@ -248,7 +256,7 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
   out <-list(knots = knots, W = W, ADJ = ADJ,
              fitted = fitted,
              alpha.mn = MNA, alpha.var = VARA - MNA^2,
-             alpha = alpha, beta = keep.beta, hyper = keep.hyper,
+             alpha = keep.alpha, beta = keep.beta, hyper = keep.hyper,
              acc.rate = acc / att, minutes = (tock - tick) / 60)
   
   return(out)
@@ -309,12 +317,14 @@ make.W.knots <- function(s, knots) {
   return(list(W = W, ADJ = ADJ))
 }
 
-pred.splogit <- function(mcmcoutput, X.pred, s.pred, knots,
+pred.splogit <- function(mcmcoutput, X.pred = NULL, s.pred, knots,
                          start = 1, end = NULL, update = NULL) {
   
   if (is.null(end)) {
     end <- nrow(mcmcoutput$beta)
   }
+  
+  print(dim(mcmcoutput$alpha))
   
   # bookkeeping
   np    <- nrow(s.pred)
@@ -326,6 +336,9 @@ pred.splogit <- function(mcmcoutput, X.pred, s.pred, knots,
   alpha <- mcmcoutput$alpha[start:end, , drop = F]
   
   W <- make.W.knots(s.pred, knots)$W
+  if (is.null(X.pred)) {
+    X.pred <- matrix(1, np, 1)
+  }
   
   for (i in 1:iters) {
     # beta and bandwidth come directly from output

@@ -2377,9 +2377,9 @@ results <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots,
                         beta.eps = 0.1, beta.attempts = 50, 
                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
                         xi.attempts = 50, xi.fix = TRUE, 
-                        a.init = 10, a.eps = 0.2, a.attempts = 50, a.cutoff = 0.1,
-                        b.init = 0.5, b.eps = 0.2, b.attempts = 50,
-                        alpha.init = 0.5, alpha.attempts = 50, 
+                        a.init = 10, a.eps = 0.2, a.attempts = 50, 
+                        a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
+                        b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
                         a.alpha.joint = TRUE, 
                         rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
@@ -2393,12 +2393,22 @@ summaryRprof(filename = "Rprof.out", lines = "show")
 set.seed(100)
 s.pred <- cbind(runif(400), runif(400))
 x.pred <- matrix(1, nrow(s.pred), 1)
-preds <- pred.spgev(mcmcoutput = results, s.pred = s.pred, x.pred = x.pred, knots = knots, 
-                    start = 1, end = 900, thin = 1, thresh = 0, update = 100)
+preds <- pred.spgev(mcmcoutput = results, s.pred = s.pred, x.pred = x.pred, 
+                    knots = knots, start = 1, end = 900, thin = 1, thresh = 0, 
+                    update = 100)
 
 set.seed(200) 
 tic.1 <- proc.time()
-results <- spatial_logit(Y = gen$y, s = s, X = x, knots = knots, iters = iters, burn = burn)
+results <- spatial_logit(Y = gen$y, s = s, iterplot = TRUE, # X = x, 
+                         knots = knots, iters = iters, 
+                         burn = burn)
+toc.1 <- proc.time()
+
+set.seed(100)
+s.pred <- cbind(runif(400), runif(400))
+x.pred <- matrix(1, nrow(s.pred), 1)
+preds <- pred.splogit(mcmcoutput = results, s.pred = s.pred, knots = knots, 
+                      start = 1, end = 900, update = 100)
 
 # trying to speed up MCMC by not doing as many calculations...
 rm(list=ls())
