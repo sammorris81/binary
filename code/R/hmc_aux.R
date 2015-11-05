@@ -1,5 +1,4 @@
 library(Rcpp)
-source("./HMC.R")
 
 log_ps_full <- function(data, alpha, b, a, calc, others) {
   alpha1m <- 1 - alpha$cur

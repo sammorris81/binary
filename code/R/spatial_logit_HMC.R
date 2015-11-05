@@ -35,7 +35,8 @@ source("logitHMC.R")
 spatial_logit <- function(Y, s, knots = NULL, X = NULL,
                           nknots = 10, MH = c(0.5, 0.1),
                           a = 0.1, b = 0.1, eps = 0.01, ar = 5, br = 1,
-                          iters = 2000, burn = 1000, iterplot = FALSE, update = 100){
+                          iters = 2000, burn = 1000, iterplot = FALSE, 
+                          update = 100){
   library(fields)
   library(emulator)
   library(spam)
@@ -189,7 +190,7 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
     Q       <- as.spam(diag(M) - rho * ADJ)
     att[2]  <- att[2] + 1
     others  <- list(Y = Y, Q = Q, Xb = Xb, W = W, mu = mu, tau = tau)
-    HMCout  <- HMC(neg_log_post, neg_log_post_grad, alpha, epsilon = MH[2], L = 10, others)
+    HMCout  <- logitHMC(neg_log_post, neg_log_post_grad, alpha, epsilon = MH[2], L = 10, others)
     if (HMCout$accept) {
       acc[2] <- acc[2] + 1
       alpha  <- HMCout$q
@@ -324,7 +325,6 @@ pred.splogit <- function(mcmcoutput, X.pred = NULL, s.pred, knots,
     end <- nrow(mcmcoutput$beta)
   }
   
-  print(dim(mcmcoutput$alpha))
   
   # bookkeeping
   np    <- nrow(s.pred)

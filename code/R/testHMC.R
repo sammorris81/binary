@@ -2339,6 +2339,9 @@ source("./updateModel.R")
 source("./auxfunctions.R")
 source("./mcmcHMC.R")
 source("./spatial_logit_HMC.R")
+source("./gevHMC.R")
+source("./logitHMC.R")
+source("./probit.R")
 options(warn = 2)
 
 # Test out the functions
@@ -2366,13 +2369,14 @@ gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0,
 alpha.a.joint <- TRUE
 beta.init <- log(-log(1 - mean(gen$y)))
 
-iters <- 1000
-burn  <- 100
+iters  <- 1000
+burn   <- 100
+update <- 100
 
 set.seed(200)
 Rprof(filename = "Rprof.out", line.profiling = TRUE)
 tic.1 <- proc.time()
-results <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots, 
+results.gev <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots, 
                         beta.init = beta.init, beta.mn = 0, beta.sd = 10,
                         beta.eps = 0.1, beta.attempts = 50, 
                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
@@ -2384,7 +2388,7 @@ results <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots,
                         rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                         iterplot = TRUE, iters = iters, burn = burn, 
-                        update = 100, thin = 1, thresh = 0)
+                        update = update, thin = 1, thresh = 0)
 toc.1 <- proc.time()
 Rprof(filename = NULL)
 summaryRprof(filename = "Rprof.out", lines = "show")
@@ -2393,22 +2397,28 @@ summaryRprof(filename = "Rprof.out", lines = "show")
 set.seed(100)
 s.pred <- cbind(runif(400), runif(400))
 x.pred <- matrix(1, nrow(s.pred), 1)
-preds <- pred.spgev(mcmcoutput = results, s.pred = s.pred, x.pred = x.pred, 
-                    knots = knots, start = 1, end = 900, thin = 1, thresh = 0, 
-                    update = 100)
+preds.gev <- pred.spgev(mcmcoutput = results.gev, s.pred = s.pred, x.pred = x.pred, 
+                        knots = knots, start = 1, end = 900, thin = 1, thresh = 0, 
+                        update = update)
 
 set.seed(200) 
 tic.1 <- proc.time()
-results <- spatial_logit(Y = gen$y, s = s, iterplot = TRUE, # X = x, 
-                         knots = knots, iters = iters, 
-                         burn = burn)
+results.log <- spatial_logit(Y = gen$y, s = s, iterplot = TRUE, # X = x, 
+                         knots = knots, iters = iters, burn = burn, 
+                         update = update)
 toc.1 <- proc.time()
 
 set.seed(100)
-s.pred <- cbind(runif(400), runif(400))
-x.pred <- matrix(1, nrow(s.pred), 1)
-preds <- pred.splogit(mcmcoutput = results, s.pred = s.pred, knots = knots, 
-                      start = 1, end = 900, update = 100)
+preds.log <- pred.splogit(mcmcoutput = results.log, s.pred = s.pred, knots = knots, 
+                      start = 1, end = 900, update = update)
+
+set.seed(100)
+results.pro <- probit(Y = gen$y, X = x, s = s, knots = knots, 
+                      iters = iters, burn = burn, update = update)
+
+preds.pro <- pred.spprob(mcmcoutput = results.pro, X.pred = x.pred, 
+                         s.pred = s.pred, knots = knots, start = 1, end = 900,
+                         update = update)
 
 # trying to speed up MCMC by not doing as many calculations...
 rm(list=ls())

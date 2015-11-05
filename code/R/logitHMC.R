@@ -40,7 +40,7 @@
 # ------------------------------------------------------------------
 
 
-HMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
+logitHMC = function (U, grad_U, current_q, epsilon=0.01, L=10, others)
 {
   dist = numeric(L+1)
 

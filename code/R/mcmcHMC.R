@@ -177,7 +177,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       
       q <- c(as.vector(log(a$cur)), transform$logit(alpha$cur))
       epsilon <- c(rep(a$eps, nkt), alpha$eps)
-      HMCout <- HMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
+      HMCout <- gevHMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
                     epsilon = epsilon, L = 20, 
                     data = data, beta = beta, xi = xi, a = a, b = b, 
                     alpha = alpha, rho = rho, calc = calc, others = others, 
@@ -199,7 +199,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       # random effect
       a$att <- a$att + 1
       q <- log(a$cur)
-      HMCout  <- HMC(neg_log_post_a, neg_log_post_grad_a, q, 
+      HMCout  <- gevHMC(neg_log_post_a, neg_log_post_grad_a, q, 
                      epsilon = a$eps, L = 20, 
                      data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
                      rho = rho, calc = calc, others = others, this.param = "a")
@@ -214,7 +214,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       # spatial dependence
       alpha$att <- alpha$att + 1
       q <- transform$logit(alpha$cur)
-      HMCout  <- HMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+      HMCout  <- gevHMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
                      epsilon = alpha$eps, L = 10, 
                      data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
                      rho = rho, calc = calc, others = others, this.param = "alpha")
@@ -231,7 +231,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
     # auxiliary variable
     q <- transform$logit(b$cur)
     b$att <- b$att + 1
-    HMCout  <- HMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
+    HMCout  <- gevHMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
                    L = 10, 
                    data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
                    rho = rho, calc = calc, others = others, this.para = "b")
