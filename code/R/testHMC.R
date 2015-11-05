@@ -2372,45 +2372,49 @@ beta.init <- log(-log(1 - mean(gen$y)))
 iters  <- 20000
 burn   <- 15000
 update <- 100
+y.o    <- gen$y[1:750, , drop = FALSE]
+x.o    <- x[1:750, , drop = FALSE]
+s.o    <- s[1:750, , drop = FALSE]
 
 set.seed(200)
-results.gev <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots, 
-                        beta.init = beta.init, beta.mn = 0, beta.sd = 10,
-                        beta.eps = 0.1, beta.attempts = 50, 
-                        xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                        xi.attempts = 50, xi.fix = TRUE, 
-                        a.init = 10, a.eps = 0.2, a.attempts = 50, 
-                        a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
-                        b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
-                        a.alpha.joint = TRUE, 
-                        rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
-                        rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                        iterplot = TRUE, iters = iters, burn = burn, 
-                        update = update, thin = 1, thresh = 0)
+results.gev <- mcmc.gev.HMC(y = y.o, s = s.o, x = x.o, knots = knots, 
+                            beta.init = beta.init, beta.mn = 0, beta.sd = 10,
+                            beta.eps = 0.1, beta.attempts = 50, 
+                            xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
+                            xi.attempts = 50, xi.fix = TRUE, 
+                            a.init = 10, a.eps = 0.2, a.attempts = 50, 
+                            a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
+                            b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
+                            a.alpha.joint = TRUE, 
+                            rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
+                            rho.eps = 0.1, rho.attempts = 50, threads = 1, 
+                            iterplot = TRUE, iters = iters, burn = burn, 
+                            update = update, thin = 1, thresh = 0)
 
 # test out predictions
 set.seed(100)
-s.pred <- cbind(runif(400), runif(400))
-x.pred <- matrix(1, nrow(s.pred), 1)
-preds.gev <- pred.spgev(mcmcoutput = results.gev, s.pred = s.pred, x.pred = x.pred, 
+y.p <- gen$y[751:1000, , drop = FALSE]
+s.p <- s[751:1000, , drop = FALSE]
+x.p <- x[751:1000, , drop = FALSE]
+preds.gev <- pred.spgev(mcmcoutput = results.gev, s.pred = s.p, x.pred = x.p, 
                         knots = knots, start = 1, end = 5000, thin = 1, thresh = 0, 
                         update = update)
 
 set.seed(200) 
-results.log <- spatial_logit(Y = gen$y, s = s, iterplot = TRUE, eps = 0.1, # X = x, 
-                             knots = knots, iters = iters, burn = burn, 
-                             update = update)
+results.log <- spatial_logit(Y = y.o, s = s.o, iterplot = TRUE, eps = 0.1, # X = x, 
+                             a = 1, b = 1, knots = knots, 
+                             iters = iters, burn = burn, update = update)
 
 set.seed(100)
-preds.log <- pred.splogit(mcmcoutput = results.log, s.pred = s.pred, knots = knots, 
-                      start = 1, end = 5000, update = update)
+preds.log <- pred.splogit(mcmcoutput = results.log, s.pred = s.p, knots = knots, 
+                          start = 1, end = 5000, update = update)
 
 set.seed(200)
-results.pro <- probit(Y = gen$y, X = x, s = s, knots = knots, 
+results.pro <- probit(Y = y.o, X = x.o, s = s.o, knots = knots, 
                       iters = iters, burn = burn, update = update)
 
-preds.pro <- pred.spprob(mcmcoutput = results.pro, X.pred = x.pred, 
-                         s.pred = s.pred, knots = knots, start = 1, end = 5000,
+preds.pro <- pred.spprob(mcmcoutput = results.pro, X.pred = x.p, 
+                         s.pred = s.p, knots = knots, start = 1, end = 5000,
                          update = update)
 
 # trying to speed up MCMC by not doing as many calculations...
