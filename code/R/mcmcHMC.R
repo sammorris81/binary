@@ -142,7 +142,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
   storage.rho   <- rep(NA, iters)
   storage.prob  <- array(NA, dim = c(iters, ns, nt))
     
-  tic.1 <- proc.time()
+  tic <- proc.time()[3]
   for (iter in 1:iters) {
     beta$att <- beta$att + 1
     MHout <- updateBeta(data = data, beta = beta, xi = xi, alpha = alpha, 
@@ -342,7 +342,7 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
       }
     }
   }
-  toc <- proc.time()
+  toc <- proc.time()[3]
   
   return.iters <- (burn + 1):iters
   results <- list(beta = storage.beta[return.iters, , drop = F],
@@ -351,5 +351,6 @@ mcmc.gev.HMC <- function(y, s, x, knots = NULL,
                   b = storage.b[return.iters, , , drop = F],
                   alpha = storage.alpha[return.iters],
                   rho = storage.rho[return.iters],
-                  a.cutoff = a.cutoff)
+                  a.cutoff = a.cutoff,
+                  minutes = (toc - tic) / 60)
 }

@@ -2369,13 +2369,11 @@ gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0,
 alpha.a.joint <- TRUE
 beta.init <- log(-log(1 - mean(gen$y)))
 
-iters  <- 1000
-burn   <- 100
+iters  <- 20000
+burn   <- 15000
 update <- 100
 
 set.seed(200)
-Rprof(filename = "Rprof.out", line.profiling = TRUE)
-tic.1 <- proc.time()
 results.gev <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots, 
                         beta.init = beta.init, beta.mn = 0, beta.sd = 10,
                         beta.eps = 0.1, beta.attempts = 50, 
@@ -2389,35 +2387,30 @@ results.gev <- mcmc.gev.HMC(y = gen$y, s = s, x = x, knots = knots,
                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                         iterplot = TRUE, iters = iters, burn = burn, 
                         update = update, thin = 1, thresh = 0)
-toc.1 <- proc.time()
-Rprof(filename = NULL)
-summaryRprof(filename = "Rprof.out", lines = "show")
 
 # test out predictions
 set.seed(100)
 s.pred <- cbind(runif(400), runif(400))
 x.pred <- matrix(1, nrow(s.pred), 1)
 preds.gev <- pred.spgev(mcmcoutput = results.gev, s.pred = s.pred, x.pred = x.pred, 
-                        knots = knots, start = 1, end = 900, thin = 1, thresh = 0, 
+                        knots = knots, start = 1, end = 5000, thin = 1, thresh = 0, 
                         update = update)
 
 set.seed(200) 
-tic.1 <- proc.time()
-results.log <- spatial_logit(Y = gen$y, s = s, iterplot = TRUE, # X = x, 
-                         knots = knots, iters = iters, burn = burn, 
-                         update = update)
-toc.1 <- proc.time()
+results.log <- spatial_logit(Y = gen$y, s = s, iterplot = TRUE, eps = 0.1, # X = x, 
+                             knots = knots, iters = iters, burn = burn, 
+                             update = update)
 
 set.seed(100)
 preds.log <- pred.splogit(mcmcoutput = results.log, s.pred = s.pred, knots = knots, 
-                      start = 1, end = 900, update = update)
+                      start = 1, end = 5000, update = update)
 
-set.seed(100)
+set.seed(200)
 results.pro <- probit(Y = gen$y, X = x, s = s, knots = knots, 
                       iters = iters, burn = burn, update = update)
 
 preds.pro <- pred.spprob(mcmcoutput = results.pro, X.pred = x.pred, 
-                         s.pred = s.pred, knots = knots, start = 1, end = 900,
+                         s.pred = s.pred, knots = knots, start = 1, end = 5000,
                          update = update)
 
 # trying to speed up MCMC by not doing as many calculations...

@@ -149,8 +149,10 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
   
   
   # Metropolis tuning
-  
-  acc <- att <- rep(0, 2)
+  beta.mh  <- list(acc = 0, att = 0, eps = MH[1], attempts = 50, 
+                   target.l = 0.5, target.u = 0.8)
+  alpha.mh <- list(acc = 0, att = 0, eps = MH[2], attempts = 50,
+                   target.l = 0.5, target.u = 0.8)
   
   # Start the timer
   
@@ -162,37 +164,50 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
     
     # Update beta (Random-walk Metropolis)
     
-    if (p > 0) {
-      att[1] <- att[1] + 1
-      if (p == 1) {
-        canb    <- rnorm(1, beta, MH[1])
-        canXb   <- X * canb
-      }
-      if (p > 1) {
-        canb    <- beta + as.vector(Pb %*% rnorm(p, 0, MH[1]))
-        canXb   <- X %*% canb
-      }
-      canp     <- make.prob(canXb + Wa)
-      canll    <- sum(dbinom(Y, 1, canp, log=TRUE))
-      R        <- canll - curll +
-        sum(dnorm(canb, 0, 1 / sqrt(eps), log = TRUE)) -
-        sum(dnorm(beta, 0, 1 / sqrt(eps), log=TRUE))
-      if (!is.na(R)) {if (log(runif(1)) < R) {
-        acc[1] <- acc[1] + 1
-        beta   <- canb
-        Xb     <- canXb
-        curll  <- canll
-        curp   <- canp
-      }}   
+#     if (p > 0) {
+#       beta.mh$att <- beta.mh$att + 1
+#       if (p == 1) {
+#         canb    <- rnorm(1, beta, beta.mh$eps)
+#         canXb   <- X * canb
+#       }
+#       if (p > 1) {
+#         canb    <- beta + as.vector(Pb %*% rnorm(p, 0, beta.mh$eps))
+#         canXb   <- X %*% canb
+#       }
+#       canp     <- make.prob(canXb + Wa)
+#       canll    <- sum(dbinom(Y, 1, canp, log=TRUE))
+#       R        <- canll - curll +
+#         sum(dnorm(canb, 0, 1 / sqrt(eps), log = TRUE)) -
+#         sum(dnorm(beta, 0, 1 / sqrt(eps), log=TRUE))
+#       if (!is.na(R)) {if (log(runif(1)) < R) {
+#         beta.mh$acc <- beta.mh$acc + 1
+#         beta   <- canb
+#         Xb     <- canXb
+#         curll  <- canll
+#         curp   <- canp
+#       }}   
+#     }
+    beta.mh$att <- beta.mh$att + 1
+    others <- list(Y = Y, X = X, Wa = Wa, beta.mn = rep(0, p), 
+                   beta.sd = 1 / sqrt(eps))
+    HMCout <- logitHMC(neg_log_post_beta.logit, neg_log_post_grad_beta.logit, 
+                       beta, epsilon = beta.mh$eps, L = 10, others)
+    if (HMCout$accept) {
+      beta.mh$acc <- beta.mh$acc + 1
+      beta <- HMCout$q
+      Xb   <- X %*% beta
+      curp <- make.prob(Xb + Wa)
+      curll <- sum(dbinom(Y, 1, curp, log = TRUE))
     }
     
     # Update alpha (HMC)
     Q       <- as.spam(diag(M) - rho * ADJ)
-    att[2]  <- att[2] + 1
+    alpha.mh$att  <- alpha.mh$att + 1
     others  <- list(Y = Y, Q = Q, Xb = Xb, W = W, mu = mu, tau = tau)
-    HMCout  <- logitHMC(neg_log_post, neg_log_post_grad, alpha, epsilon = MH[2], L = 10, others)
+    HMCout  <- logitHMC(neg_log_post_alpha.logit, neg_log_post_grad_alpha.logit, 
+                        alpha, epsilon = alpha.mh$eps, L = 10, others)
     if (HMCout$accept) {
-      acc[2] <- acc[2] + 1
+      alpha.mh$acc <- alpha.mh$acc + 1
       alpha  <- HMCout$q
       Wa     <- W %*% alpha
       curp   <- make.prob(Xb + Wa)
@@ -227,11 +242,17 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
     
     # Metropolis tuning
     
-    for (j in 1:length(att)) {if (iter < burn & att[j] > 25) {
-      if (acc[j] / att[j] < 0.3) {MH[j] <- MH[j] * 0.9}
-      if (acc[j] / att[j] > 0.5) {MH[j] <- MH[j] * 1.1}
-      acc[j] <- att[j] <-0
-    }}
+    if (iter < burn) {
+      eps.update <- epsUpdate(beta.mh)
+      beta.mh$att   <- eps.update$att
+      beta.mh$acc   <- eps.update$acc
+      beta.mh$eps   <- eps.update$eps
+      
+      eps.update <- epsUpdate(alpha.mh)
+      alpha.mh$att  <- eps.update$att
+      alpha.mh$acc  <- eps.update$acc
+      alpha.mh$eps  <- eps.update$eps
+    }
     
     # Plot the current iteration
     
@@ -241,10 +262,12 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
         par(mfrow = c(ifelse(p > 0, 3, 2), 3))
         for (j in 1:5) {
           plot(keep.alpha[1:iter, j], type = "l", main = paste("a", j),
-               xlab = round(acc[2] / att[2], 2), ylab = round(MH[2], 4))
+               xlab = round(alpha.mh$acc / alpha.mh$att, 2), 
+               ylab = round(alpha.mh$eps, 4))
         }
         plot(keep.beta[1:iter, 1], type = "l", main = bquote(beta[0]),
-             xlab = round(acc[1] / att[1], 2), ylab = round(MH[1], 4))
+             xlab = round(beta.mh$acc / beta.mh$att, 2), 
+             ylab = round(beta.mh$eps, 4))
         plot(keep.hyper[1:iter, 1], type = "l")
         plot(keep.hyper[1:iter, 2], type = "l")
         plot(keep.hyper[1:iter, 3], type = "l")
@@ -258,7 +281,8 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
              fitted = fitted,
              alpha.mn = MNA, alpha.var = VARA - MNA^2,
              alpha = keep.alpha, beta = keep.beta, hyper = keep.hyper,
-             acc.rate = acc / att, minutes = (tock - tick) / 60)
+             acc.rate = c(beta.mh$acc / beta.mh$att, alpha.mh$acc / alpha.mh$att), 
+             minutes = (tock - tick) / 60)
   
   return(out)
 }
@@ -270,7 +294,7 @@ make.prob<-function(Xb){
   expit(ifelse(Xb > 10, 10, Xb))
 }
 
-neg_log_post <- function(alpha, o) {
+neg_log_post_alpha.logit <- function(alpha, o) {
   prob <- make.prob(o$Xb + o$W %*% alpha)
   R    <- alpha - o$mu
   SS   <- sum(R * (o$Q %*% R))
@@ -278,12 +302,46 @@ neg_log_post <- function(alpha, o) {
   return(-ll)
 }
 
-neg_log_post_grad <- function(alpha, o) {
+neg_log_post_grad_alpha.logit <- function(alpha, o) {
   prob <- make.prob(o$Xb + o$W %*% alpha)
   grad <- t(o$W) %*% (prob - o$Y) + o$tau * o$Q %*% (alpha - o$mu)
   return(grad)
 }
 
+neg_log_post_beta.logit <- function(beta, o) {
+  prob <- make.prob(o$X %*% beta + o$Wa)
+  ll <- sum(dbinom(o$Y, 1, prob, log = TRUE))
+  ll <- ll + sum(dnorm(beta, o$beta.mn, o$beta.sd, log = TRUE))
+  return(-ll)
+}
+
+neg_log_post_grad_beta.logit <- function(beta, o) {
+  prob <- make.prob(o$X %*% beta + o$Wa)
+  grad <- t(o$X) %*% (prob - o$Y) + (beta - o$beta.mn) / o$beta.sd
+  return(grad)
+}
+
+# update mh settings
+epsUpdate <- function(param, lower = 0.8, higher = 1.2) {
+  acc <- param$acc
+  att <- param$att
+  eps <- param$eps
+  attempts <- param$attempts
+  
+  acc.rate     <- acc / att
+  these.update <- att > attempts
+  these.low    <- (acc.rate < param$target.l) & these.update
+  these.high   <- (acc.rate > param$target.u) & these.update
+  
+  eps[these.low]  <- eps[these.low] * lower
+  eps[these.high] <- eps[these.high] * higher
+  
+  acc[these.update] <- 0
+  att[these.update] <- 0
+  
+  results <- list(att = att, acc = acc, eps = eps)
+  return(results)
+}
 
 make.W <- function(s, nknots, buffer = 0) {
   r1     <- range(s[, 1])
