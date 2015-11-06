@@ -2395,6 +2395,8 @@ preds.gev <- pred.spgev(mcmcoutput = results.gev, s.pred = s.p, x.pred = x.p,
                         knots = knots, start = 1, end = 5000, thin = 1, thresh = 0, 
                         update = update)
 
+bs.gev <- BrierScore(preds.gev, y.p)
+
 set.seed(200) 
 results.log <- spatial_logit(Y = y.o, s = s.o, iterplot = TRUE, eps = 0.1, # X = x, 
                              a = 1, b = 1, knots = knots, 
@@ -2404,6 +2406,8 @@ set.seed(100)
 preds.log <- pred.splogit(mcmcoutput = results.log, s.pred = s.p, knots = knots, 
                           start = 1, end = 5000, update = update)
 
+bs.log <- BrierScore(preds.log, y.p)
+
 set.seed(200)
 results.pro <- probit(Y = y.o, X = x.o, s = s.o, knots = knots, 
                       iters = iters, burn = burn, update = update, 
@@ -2412,6 +2416,8 @@ results.pro <- probit(Y = y.o, X = x.o, s = s.o, knots = knots,
 preds.pro <- pred.spprob(mcmcoutput = results.pro, X.pred = x.p, 
                          s.pred = s.p, knots = knots, start = 1, end = 5000,
                          update = update)
+
+bs.pro <- BrierScore(preds.pro, y.p)
 
 # trying to speed up MCMC by not doing as many calculations...
 rm(list=ls())
