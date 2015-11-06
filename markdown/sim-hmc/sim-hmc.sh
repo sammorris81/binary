@@ -45,7 +45,7 @@ do
     if [ $((GROUPSTART - 1)) -eq "$END" ]
     then
       INCLUDE="$END"
-    ficat("      Iter", iter, "of", iters, "\n")
+    fi
     SET=$((SET + BY))
   fi
   MCMC="$OUT-$SETTING-$INCLUDE-bw$EXT"
