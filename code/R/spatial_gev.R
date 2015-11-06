@@ -13,7 +13,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                         b.init = 0.5, b.eps = 0.2, b.attempts = 100,
                         alpha.init = 0.5, alpha.eps = NULL, alpha.attempts = 50,
                         a.alpha.joint = TRUE,
-                        rho.init = 1, logrho.mn = -1, logrho.sd = 2, 
+                        rho.init = 1, logrho.mn = -2, logrho.sd = 1, 
                         rho.eps = 0.1, rho.attempts = 50,
                         threads = 1, iterplot = FALSE, iters = 50000, 
                         burn = 10000, update = 100, thin = 1, thresh = 0) {

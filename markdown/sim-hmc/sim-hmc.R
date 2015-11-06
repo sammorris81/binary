@@ -84,7 +84,7 @@ for (i in sets) {
                          a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
                          b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
-                         rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
+                         rho.init = 0.1, logrho.mn = -2, logrho.sd = 1,  
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                          iters = iters, burn = burn, 
                          update = update, thin = 1, thresh = 0)
