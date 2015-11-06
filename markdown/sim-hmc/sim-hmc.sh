@@ -45,7 +45,7 @@ do
     if [ $((GROUPSTART - 1)) -eq "$END" ]
     then
       INCLUDE="$END"
-    fi
+    ficat("      Iter", iter, "of", iters, "\n")
     SET=$((SET + BY))
   fi
   MCMC="$OUT-$SETTING-$INCLUDE-bw$EXT"
@@ -53,8 +53,8 @@ do
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
   cp "$1" "$MCMC"
-  sed "24 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
-  sed "25 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
+  sed "23 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
+  sed "24 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
   rm "$MCMC.tmp"
   bwsubmit r "$MCMC"
   ((GROUP++))
