@@ -2334,14 +2334,9 @@ for (i in 1:length(xplot)) {
 
 # try with the update for beta (HMC), a, alpha (higher rate of occurrence)
 rm(list=ls())
-source("./hmc_aux.R")
-source("./updateModel.R")
-source("./auxfunctions.R")
-source("./mcmcHMC.R")
-source("./spatial_logit_HMC.R")
-source("./gevHMC.R")
-source("./logitHMC.R")
-source("./probit.R")
+source("./spatial_gev.R", chdir = TRUE)
+source("./spatial_logit.R", chdir = TRUE)
+source("./spatial_probit.R", chdir = TRUE)
 options(warn = 2)
 
 # Test out the functions
@@ -2369,27 +2364,27 @@ gen <- rRareBinarySpat(x = x, s = s, knots = knots, beta = 0, xi = 0,
 alpha.a.joint <- TRUE
 beta.init <- log(-log(1 - mean(gen$y)))
 
-iters  <- 20000
-burn   <- 15000
+iters  <- 10000
+burn   <- 5000
 update <- 100
 y.o    <- gen$y[1:750, , drop = FALSE]
 x.o    <- x[1:750, , drop = FALSE]
 s.o    <- s[1:750, , drop = FALSE]
 
 set.seed(200)
-results.gev <- mcmc.gev.HMC(y = y.o, s = s.o, x = x.o, knots = knots, 
-                            beta.init = beta.init, beta.mn = 0, beta.sd = 10,
-                            beta.eps = 0.1, beta.attempts = 50, 
-                            xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                            xi.attempts = 50, xi.fix = TRUE, 
-                            a.init = 10, a.eps = 0.2, a.attempts = 50, 
-                            a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
-                            b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
-                            a.alpha.joint = TRUE, 
-                            rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
-                            rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                            iterplot = TRUE, iters = iters, burn = burn, 
-                            update = update, thin = 1, thresh = 0)
+results.gev <- spatial_GEV(y = y.o, s = s.o, x = x.o, knots = knots, 
+                           beta.init = beta.init, beta.mn = 0, beta.sd = 10,
+                           beta.eps = 0.1, beta.attempts = 50, 
+                           xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
+                           xi.attempts = 50, xi.fix = TRUE, 
+                           a.init = 10, a.eps = 0.2, a.attempts = 50, 
+                           a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
+                           b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
+                           a.alpha.joint = TRUE, alpha.eps = 0.0001,
+                           rho.init = 0.1, logrho.mn = -1, logrho.sd = 2, 
+                           rho.eps = 0.1, rho.attempts = 50, threads = 1, 
+                           iterplot = TRUE, iters = iters, burn = burn, 
+                           update = update, thin = 1, thresh = 0)
 
 # test out predictions
 set.seed(100)
@@ -2411,7 +2406,8 @@ preds.log <- pred.splogit(mcmcoutput = results.log, s.pred = s.p, knots = knots,
 
 set.seed(200)
 results.pro <- probit(Y = y.o, X = x.o, s = s.o, knots = knots, 
-                      iters = iters, burn = burn, update = update)
+                      iters = iters, burn = burn, update = update, 
+                      iterplot = TRUE)
 
 preds.pro <- pred.spprob(mcmcoutput = results.pro, X.pred = x.p, 
                          s.pred = s.p, knots = knots, start = 1, end = 5000,
