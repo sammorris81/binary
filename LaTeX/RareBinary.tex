@@ -68,48 +68,60 @@ Therefore, it should also be suitable to model phenomena that are rare.
 
 \section{Spatial dependence for binary regression}
 
-In many binary regression applications, spatial dependence is handled using a hierarchical model.
-Logistic and probit regression typically incorporate a hierarchical model that is based on a Gaussian process.
-We present this in section \ref{s:nonrarespatial}.
-
-\subsection{Non-rare data}\label{s:nonrarespatial}
-
-In this section we present the spatial logistic and probit models.
-
-In the case that $n$ is large, low-rank predictive process models can be used to ease the computation.
-
-\subsection{Rare binary data}\label{s:rarebinary}
-
-In this section we extend the GEV link function to allow for spatial dependence.
+In many binary regression applications, spatial dependence is handled using a hierarchical model assuming an latent spatial process.
 Let $Y(\bs)$ be the observation at spatial location $\bs$ in a spatial domain of interest $\calD \in \calR^2$.
-As before, we assume $Y(\bs) = I[z(\bs) > 0]$ where $z(\bs) = [1 - \xi \bX(\bs) \bbeta]^{1 / \xi}$.
-Although $\bbeta$ and $\xi$ could be permitted to vary across space, we assume that they are constant across $\calD$.
-As with logistic and probit regression, we also account for the spatial dependence using a hierarchical framework by assuming that the $Z(\bs)$ come from a realization of a max-stable process.
+We assume $Y(\bs) = I[Z(\bs) > 0]$ where $Z(\bs)$ is a latent spatial process.
+In spatial logistic and probit regression, the latent spatial process is assumed to be a Gaussian process.
+A Gaussian process may not be appropriate when describing dependence in the tails of the distribution because it always exhibits asymptotic independence, except in the case of perfect dependence.
+Therefore, we assume that $Z(\bs)$ is a max-stable process.
 
-To incorporate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
+% \subsection{Gaussian process}\label{s:nonrarespatial}
+
+% In this section we present the spatial logistic and probit models.
+
+% In the case that $n$ is large, low-rank predictive process models can be used to ease the computation.
+
+% \subsection{Max-stable process}\label{s:rarebinary}
+
+To capture rare event probabilities, we model $Z$ as a max-stable process.
+A max-stable process has generalized extreme value marginal distributions with location $\bX^T(\bs) \bbeta$, scale $\sigma$, and shape $\xi$.
+For identifiability purposes we fix $\sigma = 1$.
+Although $\bbeta$ and $\xi$ could be permitted to vary across space, we assume that they are constant across $\calD$.
+
 For a finite collection of locations $\bs_1, \ldots, \bs_n,$ denote the vector of observations $\bY = [Y(\bs_1), \ldots, Y(\bs_n)]^T$.
-The spatial dependence is determined by the joint distribution of $\bz = [z(\bs_1),\ldots, z(\bs_n)]^T$,
-\begin{align}\label{jointCDF}
+The spatial dependence is determined by the joint distribution of $\bZ = [Z(\bs_1),\ldots, Z(\bs_n)]^T$,
+\begin{align}\label{eq:jointCDF}
   G(\bz) = \mbox{P}[Z(\bs_1) < z(\bs_1), \ldots, Z(\bs_n) < z(\bs_n)] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z(\bs_i)}\right)^{1/\alpha}\right]^{\alpha}\right\},
 \end{align}
-where $w_{l}(\bs_i)$ are a set of weights that determine the spatial dependence structure and are discussed further in Section \ref{s:weights}, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
-This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
-One nice feature to this representation for the max-stable process is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
-More importantly, at a single site $i$, the marginal distribution gives \mbox{$P[Y(\bs_i) = 1] = 1 - \exp\left[ -\frac{ 1 }{ z(\bs_i)} \right]$} which is the same as the marginal distributions given by \citet{Wang2010}.
-
-\subsection{Weight functions}\label{s:weights}
-The weights $w_{l}(\bs_i)$ in (\ref{jointCDF}) should vary smoothly across space to induce spatial dependence.
+where $w_{l}(\bs_i)$ are a set of $L$ weights that determine the spatial dependence structure , and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
+The weights $w_{l}(\bs_i)$ in (\ref{eq:jointCDF}) vary smoothly across space to induce spatial dependence.
 Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
-For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$, that is
+For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$,
 \begin{align}\label{w}
    w_{l}(\bs_i) = \frac{\exp\left[-0.5\left(||\bs_i-\bv_l||/\rho\right)^2\right]}
                  {\sum_{j=1}^L\exp\left[-0.5\left(||\bs_i-\bv_j||/\rho\right)^2\right]}.
 \end{align}
 The kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
 
-\section{Joint distribution}\label{s:multivariate}
+This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
+One nice feature to this representation for the max-stable process is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
+More importantly, at a single site $i$, the marginal distribution gives \mbox{$P[Y(\bs_i) = 1] = 1 - \exp\left[ -\frac{ 1 }{ z(\bs_i)} \right]$} which is the same as the marginal distribution given by \citet{Wang2010}.
+
 The joint likelihood of $Y$ is computationally challenging to obtain.
-In this paper, we combine the random effect representation with MCMC; however, when exact expressions of the likelihood are available, better methods could be used.
+Therefore, to incorporate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
+Consider a set of $A_1, \ldots, A_l \iid \text{PS}(\alpha)$ random effects associated with spatial knots $\bv_1, \ldots, \bv_L$.
+The hierarchical model is given by
+\begin{align}
+  Z(\bs) | A_l, \ldots, A_l &\indep \text{GEV}[\theta(\bs), \alpha \theta(\bs), \alpha] \\
+  A_l &\iid \text{PS}(\alpha)
+\end{align}
+where $\theta(\bs) = \left[\sum_{l = 1}^L A_l w_l (\bs)^{1 / \alpha} \right]^\alpha$.
+
+% \subsubsection{Weight functions}\label{s:weights}
+
+
+\section{Joint distribution}\label{s:multivariate}
+
 In section \ref{s:bivariate}, we give an exact expression in the case where there are only two spatial locations which is useful for constructing a pairwise composite likelihood and studying spatial dependence.
 For more than two locations, we are also able to compute the exact likelihood when the number of locations is large but the number of events is small, as might be expected for very rare events (see Appendix \ref{a:likelihoodderivation}).
 
