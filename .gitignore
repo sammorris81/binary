@@ -41,4 +41,6 @@ extended-covariates.csv
 
 *.rdb
 
+markdown/sim-hmc/sim-tables/*.txt
+markdown/sim-hmc/sim-results/*.*
 code/analysis/birds/birds/2002/checklists.csv
