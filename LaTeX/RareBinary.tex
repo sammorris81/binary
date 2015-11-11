@@ -58,13 +58,14 @@ Max-stable processes are extremely flexible, but are often challenging to work w
 
 Here, we provide a brief review of the the GEV link of \citet{Wang2010}.
 Let $Y_i \in \{0, 1\}, i = 1, \ldots, n$ be a collection of i.i.d. binary responses.
-We assume that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = [1 - \xi \bX_i \bbeta]^{1 / \xi}$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
-Therefore, the marginal probability of an event is given by
+It is assumed that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = [1 - \xi \bX_i \bbeta]^{1 / \xi}$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
+So, the marginal probability of an event is given by
 \begin{align} \label{eq:gevlink}
   \pi_i= 1 - \exp \left( -\frac{ 1 }{ z_i } \right).
 \end{align}
 Although this link was selected by \citeauthor{Wang2010} based on its ability to handle asymmetry, the GEV distribution is one of the primary distributions used for modeling extremes.
-Therefore, it should also be suitable to model phenomena that are rare.
+Traditionally, analysis of extreme events is done using block maxima or occurrences over a suitably high threshold.
+Because extreme events are rare, it is therefore reasonable to use similar methods when analyzing rare binary data.
 
 \section{Spatial dependence for binary regression}
 
@@ -73,7 +74,7 @@ Let $Y(\bs)$ be the observation at spatial location $\bs$ in a spatial domain of
 We assume $Y(\bs) = I[Z(\bs) > 0]$ where $Z(\bs)$ is a latent spatial process.
 In spatial logistic and probit regression, the latent spatial process is assumed to be a Gaussian process.
 A Gaussian process may not be appropriate when describing dependence in the tails of the distribution because it always exhibits asymptotic independence, except in the case of perfect dependence.
-Therefore, we assume that $Z(\bs)$ is a max-stable process.
+Because we use extreme values analysis as the foundation for rare binary analysis, we propose useing a max-stable process to model the latent spatial process
 
 % \subsection{Gaussian process}\label{s:nonrarespatial}
 
@@ -83,7 +84,6 @@ Therefore, we assume that $Z(\bs)$ is a max-stable process.
 
 % \subsection{Max-stable process}\label{s:rarebinary}
 
-To capture rare event probabilities, we model $Z$ as a max-stable process.
 A max-stable process has generalized extreme value marginal distributions with location $\bX^T(\bs) \bbeta$, scale $\sigma$, and shape $\xi$.
 For identifiability purposes we fix $\sigma = 1$.
 Although $\bbeta$ and $\xi$ could be permitted to vary across space, we assume that they are constant across $\calD$.
@@ -93,7 +93,8 @@ The spatial dependence is determined by the joint distribution of $\bZ = [Z(\bs_
 \begin{align}\label{eq:jointCDF}
   G(\bz) = \mbox{P}[Z(\bs_1) < z(\bs_1), \ldots, Z(\bs_n) < z(\bs_n)] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z(\bs_i)}\right)^{1/\alpha}\right]^{\alpha}\right\},
 \end{align}
-where $w_{l}(\bs_i)$ are a set of $L$ weights that determine the spatial dependence structure , and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
+where $w_{l}(\bs_i)$ are a set of $L$ weights that determine the spatial dependence structure, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
+This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
 The weights $w_{l}(\bs_i)$ in (\ref{eq:jointCDF}) vary smoothly across space to induce spatial dependence.
 Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
 For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$,
@@ -103,7 +104,6 @@ For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels wit
 \end{align}
 The kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
 
-This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
 One nice feature to this representation for the max-stable process is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
 More importantly, at a single site $i$, the marginal distribution gives \mbox{$P[Y(\bs_i) = 1] = 1 - \exp\left[ -\frac{ 1 }{ z(\bs_i)} \right]$} which is the same as the marginal distribution given by \citet{Wang2010}.
 
@@ -161,18 +161,66 @@ In the case of complete dependence, $\kappa = 1$, and in the case of complete in
 
 \section{Computation}\label{s:comp}
 For small $K$ we can evaluate the likelihood directly.
-In the random effects model, the expression for the joint density conditional on $\theta$ is
+In the random effects model, the expression for the joint density conditional on $A_1, \ldots, A_L$ is
 \begin{align}
 	P(Y_1=y_1,\ldots,Y_n=y_n) = \prod_{ i = 1 }^{ n } \left[ \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ 1 - Y_i } \left[ 1 - \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ Y_i }.
 \end{align}
 
 \section{Simulation study}\label{s:sim}
+
 For our simulation study, we generate $n_m = 100$ datasets under 4 different settings to explore the impact of rareness of observations, sample size, and knot spacing.
 We consider two degrees of rareness $\pi = 0.01, 0.05$ and two sample sizes $n_s = 1000, 2000$.
 For the different knot spacings, we use knots in $[0, 1] \times [0, 1]$ on a $21 \times 21$ grid and $31 \times 31$ grid.
 For each dataset, we fit the model using three different methods, spatial logistic regression, spatial probit regression, and the proposed spatial GEV method.
 In each case, we fit the model using Bayesian methods with proper, but fairly uninformative priors.
-For each method, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
+
+
+\subsection{Spatial logistic and probit methods}
+
+\subsection{Cross validation}\label{s:modelselect}
+For each dataset, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
+Because our goal is to predict a the occurrence of an event, we use Brier scores to compare the models \citep{Gneiting2007}.
+The Brier score for predicting an occurrence at site $\bs$ is given by $\{I[Y(\bs)=1] - P[Y(bs)=1]\}^2$ where $I[y(\bs) = 1]$ is an indicator function indicating that an event occurred at site $\bs$, and $P[Y(\bs) = 1]$ is obtained by taking the median of the posterior distribution.
+We average the Brier scores over all test sites, and a lower score indicates a better fit.
+
+\subsection{Results}
+Table \ref{tbl:simresults} gives the Brier score relative to the Brier score for the spatial logistic method calculated as
+\begin{align}
+  \text{BS}_{\text{rel}} = \frac{\text{BS}_{\text{method}}}{\text{BS}_{\text{logistic}}}.
+\end{align}
+
+\begin{table}
+  \caption{Relative Brier scores for GEV and Probit methods}
+  \label{tbl:simresults}
+  \centering
+  \begin{tabular}{r|ll}
+    \cline{2-3}
+              & GEV    & Probit\\
+    \hline
+    Setting 1 & 0.4900 & 0.5474\\
+    Setting 2 & 0.4788 & 0.5648\\
+    Setting 3 & 0.5337 & 0.5985\\
+    Setting 4 & 0.5270 & 0.5929\\
+    \hline
+  \end{tabular}
+\end{table}
+
+Figures \ref{fig:post-med-2} and \ref{fig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively.
+As you can see on the figures, the both the spatial probit and logistic models oversmooth $P(Y = 1)$, whereas the spatial GEV method is able to capture small pockets of spatial dependence.
+
+\begin{figure}
+  % this figure comes from markdown/sim-hmc/predict-maps.R
+  \includegraphics[width=\linewidth]{plots/post-med-2.pdf}
+  \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 2.}
+  \label{fig:post-med-2}
+\end{figure}
+
+\begin{figure}
+  % this figure comes from markdown/sim-hmc/predict-maps.R
+  \includegraphics[width=\linewidth]{plots/post-med-3.pdf}
+  \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 3.}
+  \label{fig:post-med-3}
+\end{figure}
 
 \section{Data analysis}\label{s:analysis}
 For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
