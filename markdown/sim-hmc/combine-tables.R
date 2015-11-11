@@ -39,30 +39,30 @@ setting.2 <- which(rowSums(is.na(results[[2]])) == 3)
 setting.3 <- which(rowSums(is.na(results[[3]])) == 3)
 setting.4 <- which(rowSums(is.na(results[[4]])) == 3)
 
-# look at a few iteration plots
-set <- 1
-setting <- 1
-dataset <- paste("sim-results/", setting, "-", set, ".RData", sep = "")
-load(dataset)
-
-par(mfrow = c(4, 5))
-for (i in 1:4) {
-  plot(log(fit.gev$a[, i, ]), type = "l", 
-       main = paste("log(a[", i, "])", sep = ""))
-}
-plot(fit.gev$beta, type = "l", main = bquote(beta[0]))
-
-for (i in 8:11) {
-  plot(log(fit.gev$a[, i, ]), type = "l", 
-       main = paste("log(a[", i, "])", sep = ""))
-}
-plot(fit.gev$alpha, type = "l", main = bquote(alpha))
-
-for (i in 1:4) {
-  plot(fit.gev$b[, i, ], type = "l", main = paste("b[", i, "]", sep = ""))
-}
-plot(fit.gev$rho, type = "l", main = bquote(rho))
-
-for (i in 6:10) {
-  plot(fit.gev$b[, i, ], type = "l", main = paste("b[", i, "]", sep = ""))
-}
+# # look at a few iteration plots
+# set <- 1
+# setting <- 1
+# dataset <- paste("sim-results/", setting, "-", set, ".RData", sep = "")
+# load(dataset)
+# 
+# par(mfrow = c(4, 5))
+# for (i in 1:4) {
+#   plot(log(fit.gev$a[, i, ]), type = "l", 
+#        main = paste("log(a[", i, "])", sep = ""))
+# }
+# plot(fit.gev$beta, type = "l", main = bquote(beta[0]))
+# 
+# for (i in 8:11) {
+#   plot(log(fit.gev$a[, i, ]), type = "l", 
+#        main = paste("log(a[", i, "])", sep = ""))
+# }
+# plot(fit.gev$alpha, type = "l", main = bquote(alpha))
+# 
+# for (i in 1:4) {
+#   plot(fit.gev$b[, i, ], type = "l", main = paste("b[", i, "]", sep = ""))
+# }
+# plot(fit.gev$rho, type = "l", main = bquote(rho))
+# 
+# for (i in 6:10) {
+#   plot(fit.gev$b[, i, ], type = "l", main = paste("b[", i, "]", sep = ""))
+# }

@@ -138,7 +138,6 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
   
   prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
-  y      <- matrix(NA, ns, nt)
   
   for (i in 1:length(start:end)) {
     alpha.i <- alpha[i]
