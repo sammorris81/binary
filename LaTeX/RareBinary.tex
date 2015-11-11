@@ -161,10 +161,19 @@ In the case of complete dependence, $\kappa = 1$, and in the case of complete in
 
 \section{Computation}\label{s:comp}
 For small $K$ we can evaluate the likelihood directly.
-In the random effects model, the expression for the joint density conditional on $A_1, \ldots, A_L$ is
+When $K$ is large, we use MCMC methods with the random effects model to explore the posterior distribution.
+This is possible because the expression for the joint density, conditional on $A_1, \ldots, A_L$, is given by
 \begin{align}
-	P(Y_1=y_1,\ldots,Y_n=y_n) = \prod_{ i = 1 }^{ n } \left[ \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ 1 - Y_i } \left[ 1 - \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z_i } \right)^{ 1/\alpha} \right\} \right]^{ Y_i }.
+	P[Y(\bs_1)=y(\bs_1),\ldots,Y(\bs_n)=y(\bs_n)] = \prod_{ i = 1 }^{ n } \pi(\bs_i)^{ 1 - Y_i } [1 - \pi(\bs_i)]^{ Y_i }.
 \end{align}
+where
+\begin{align}
+  \pi(\bs_i) = \exp \left\{ -\sum_{ l = 1 }^{L} A_l \left( \frac{ w_{l}(\bs_i) }{ z(\bs_i) } \right)^{ 1/\alpha} \right\}.
+\end{align}
+
+The model parameters and random effects are updated using a combination of Metropolis Hastings (MH) and Hamiltonian Monte Carlo (HMC) update steps.
+To overcome challenges with evaluating the positive stable density, we follow \citet{Reich2012} and incorporate the auxiliary variable technique of \citet{Stephenson2009}.
+
 
 \section{Simulation study}\label{s:sim}
 
@@ -180,7 +189,7 @@ In each case, we fit the model using Bayesian methods with proper, but fairly un
 \subsection{Cross validation}\label{s:modelselect}
 For each dataset, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
 Because our goal is to predict a the occurrence of an event, we use Brier scores to compare the models \citep{Gneiting2007}.
-The Brier score for predicting an occurrence at site $\bs$ is given by $\{I[Y(\bs)=1] - P[Y(bs)=1]\}^2$ where $I[y(\bs) = 1]$ is an indicator function indicating that an event occurred at site $\bs$, and $P[Y(\bs) = 1]$ is obtained by taking the median of the posterior distribution.
+The Brier score for predicting an occurrence at site $\bs$ is given by $\{I[Y(\bs)=1] - P[Y(\bs)=1]\}^2$ where $I[Y(\bs) = 1]$ is an indicator function indicating that an event occurred at site $\bs$, and $P[Y(\bs) = 1]$ is obtained by taking the median of the posterior distribution.
 We average the Brier scores over all test sites, and a lower score indicates a better fit.
 
 \subsection{Results}
@@ -205,8 +214,9 @@ Table \ref{tbl:simresults} gives the Brier score relative to the Brier score for
   \end{tabular}
 \end{table}
 
-Figures \ref{fig:post-med-2} and \ref{fig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively.
+Figures \ref{fig:post-med-2} and \ref{fig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively of a simulated dataset.
 As you can see on the figures, the both the spatial probit and logistic models oversmooth $P(Y = 1)$, whereas the spatial GEV method is able to capture small pockets of spatial dependence.
+Plots for the medians of settings 1 and 4 look similar, so they are not included here.
 
 \begin{figure}
   % this figure comes from markdown/sim-hmc/predict-maps.R
@@ -225,7 +235,18 @@ As you can see on the figures, the both the spatial probit and logistic models o
 \section{Data analysis}\label{s:analysis}
 For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
 The data are publicly available from {\tt http://ebird.org}.
-We use data from 2002, and focus specifically on cattle egrets and vesper sparrows.
+We use data from 2002, and focus on 10 different species.
+Figure \ref{fig:data2002} shows the sighting data for cattle egrets and vesper sparrows
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.47\linewidth]{plots/cattle_egret.png}
+  \includegraphics[width=0.47\linewidth]{plots/vesper_sparrow.png}
+  \caption{Reported sighting for Cattle egret (left) and Vesper sparrow (right) in 2002}
+  \label{fig:data2002}
+\end{figure}
+
+\begin{}
 
 \section{Conclusions}\label{s:con}
 
