@@ -185,6 +185,17 @@ In each case, we fit the model using Bayesian methods with proper, but fairly un
 
 
 \subsection{Spatial logistic and probit methods}
+Because logistic and probit methods represent two of the more common spatial techniques for binary data, we chose to compare our method to them.
+One way these methods differ from our proposed method is that they assume the underlying process is Gaussian.
+In this case, we assume that $Z(\bs)$ follows a Gaussian process with mean $\bX(s)^T \bbeta$ and exponential covariance function.
+The marginal distributions are given by
+\begin{align}
+  P(Y = 1) = \left\{ \begin{array}{ll}
+    \frac{\exp[\bX^T \bbeta + \bW \balpha]}{1 + \exp[\bX^T \bbeta + \bW \balpha]}, \qquad &\text{logistic}\\
+    \phi(\bX^T \bbeta + \bW \balpha), \qquad &\text{probit}
+  \end{array}\right.
+\end{align}
+where \hl{need additional information here about $\bW, \balpha$}
 
 \subsection{Cross validation}\label{s:modelselect}
 For each dataset, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
@@ -244,9 +255,7 @@ Figure \ref{fig:data2002} shows the sighting data for cattle egrets and vesper s
   \includegraphics[width=0.47\linewidth]{plots/vesper_sparrow.png}
   \caption{Reported sighting for Cattle egret (left) and Vesper sparrow (right) in 2002}
   \label{fig:data2002}
-\end{figure}
-
-\begin{}
+\end{figure}b
 
 \section{Conclusions}\label{s:con}
 
