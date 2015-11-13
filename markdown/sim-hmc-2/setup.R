@@ -20,7 +20,7 @@ source("../../code/R/spatial_probit.R", chdir = TRUE)
 set.seed(7483)  # site
 ns      <- c(1000, 2000, 2000, 1000)
 nsettings <- 4
-nhotspots <- c(5, 5, 3, 3)
+nhotspots <- c(6, 6, 3, 3)
 
 knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
 knots   <- as.matrix(knots) 
@@ -44,20 +44,20 @@ for (setting in 1:nsettings) {
   simdata[[setting]]$y <- matrix(data = NA, nrow = ns[setting], ncol = nsets)
   simdata[[setting]]$s <- cbind(runif(ns[setting]), runif(ns[setting]))
   simdata[[setting]]$x <- matrix(1, ns[setting], 1)
-  # simdata[[setting]]$hotspots <- array(NA, dim = c(nhotspots[setting], 2, nsets))
+  simdata[[setting]]$hotspots <- vector(mode = "list", length = nsets)
   for (i in 1:nsets) {
     k  <- rpois(1, nhotspots[setting]) + 1
     c1 <- runif(k)
     c2 <- runif(k)
     
-    hot <- rep(FALSE, n)
+    hot <- rep(FALSE, ns[setting])
     for (j in 1:k) {
       d   <- sqrt((simdata[[setting]]$s[, 1] - c1[j])^2 + 
                     (simdata[[setting]]$s[, 2] - c2[j])^2) 
       hot <- ifelse(d < r, TRUE, hot)
     }
     simdata[[setting]]$y[, i] <- rbinom(ns[setting], 1, ifelse(hot, p, q))
-    simdata[[setting]]$hotspots[, , i] <- cbind(c1, c2)
+    simdata[[setting]]$hotspots[[i]] <- cbind(c1, c2)
     
     if (i %% 20 == 0) {
       print(paste("  Dataset ", i, " finished", sep = ""))
@@ -106,5 +106,4 @@ mean(simdata[[2]]$y)
 mean(simdata[[3]]$y)
 mean(simdata[[4]]$y)
 
-save(simdata, knots, knots.h, rho.t, prob.t, 
-     file = "simdata.RData")
+save(simdata, knots, knots.h, rho.t, prob.t, file = "simdata.RData")
