@@ -20,7 +20,7 @@ source("../../code/R/spatial_probit.R", chdir = TRUE)
 set.seed(7483)  # site
 ns      <- c(1000, 2000, 2000, 1000)
 nsettings <- 4
-nhotspots <- c(6, 6, 3, 3)
+nhotspots <- c(7, 7, 3, 3)
 
 knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
 knots   <- as.matrix(knots) 
@@ -33,7 +33,7 @@ rho.t   <- 0.05
 xi.t    <- 0
 prob.t  <- c(0.05, 0.05, 0.025, 0.025)
 
-p <- 0.95  # P(Y=1|hot spot)
+p <- 0.65  # P(Y=1|hot spot)
 q <- 0.01  # P(Y=1|background)
 r <- 0.05  # Hot spot radius
 
@@ -74,7 +74,7 @@ points(simdata[[1]]$s[which(simdata[[1]]$y[, 8] != 1), ], pch = 21,
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[1]]$s[which(simdata[[1]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[1]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+points(simdata[[1]]$hotspots[[8]], pch = 21, col = "black", bg = "black")
 
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
      main = "Setting 2: 5%, ns = 2000")
@@ -82,7 +82,7 @@ points(simdata[[2]]$s[which(simdata[[2]]$y[, 8] != 1), ], pch = 21,
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[2]]$s[which(simdata[[2]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[2]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+points(simdata[[2]]$hotspots[[8]], pch = 21, col = "black", bg = "black")
 
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
      main = "Setting 3: 2.5%, ns = 2000")
@@ -90,7 +90,7 @@ points(simdata[[3]]$s[which(simdata[[3]]$y[, 8] != 1), ], pch = 21,
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[3]]$s[which(simdata[[3]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[3]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+points(simdata[[3]]$hotspots[[8]], pch = 21, col = "black", bg = "black")
 
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
      main = "Setting 4: 2.5%, ns = 1000")
@@ -98,7 +98,7 @@ points(simdata[[4]]$s[which(simdata[[4]]$y[, 8] != 1), ], pch = 21,
        col = "dodgerblue4", bg = "dodgerblue1")
 points(simdata[[4]]$s[which(simdata[[4]]$y[, 8] == 1), ], pch = 21, 
        col = "firebrick4", bg = "firebrick1")
-points(simdata[[4]]$hotspots[, , 8], pch = 21, col = "black", bg = "black")
+points(simdata[[4]]$hotspots[[8]], pch = 21, col = "black", bg = "black")
 
 
 mean(simdata[[1]]$y)
