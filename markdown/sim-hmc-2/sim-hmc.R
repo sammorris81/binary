@@ -102,8 +102,8 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev)
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
-  system(upload.cmd)
+#   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+#   system(upload.cmd)
   
   # spatial probit
   cat("  Start probit \n")
@@ -126,8 +126,8 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro)
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
-  system(upload.cmd)
+#   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+#   system(upload.cmd)
   
   # spatial logit
   cat("  Start logit \n")
@@ -150,8 +150,8 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro, bs.log)
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
-  system(upload.cmd)
+#   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+#   system(upload.cmd)
   
   cat("Finished: Set", i, "\n")
   save(fit.gev, post.prob.gev, bs.gev,
