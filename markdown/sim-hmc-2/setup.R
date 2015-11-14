@@ -20,9 +20,20 @@ source("../../code/R/spatial_probit.R", chdir = TRUE)
 set.seed(7483)  # site
 ns      <- c(1000, 2000, 2000, 1000)
 nsettings <- 4
-nhotspots <- c(7, 7, 3, 3)
+# # setting trial 1
+# nhotspots <- c(7, 7, 3, 3)
+# knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
+# p <- 0.65  # P(Y=1|hot spot)
+# q <- 0.01  # P(Y=1|background)
+# r <- 0.05  # Hot spot radius
 
-knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
+# setting trial 2
+nhotspots <- c(5, 5, 2, 2)
+knots   <- expand.grid(seq(0, 1, length=13), seq(0, 1, length=13))
+p <- 0.400  # P(Y=1|hot spot)
+q <- 0.005  # P(Y=1|background)
+r <- 0.083  # Hot spot radius
+
 knots   <- as.matrix(knots) 
 knots.h <- abs(knots[1, 1] - knots[2, 1])
 
@@ -32,10 +43,6 @@ alpha.t <- 0.3
 rho.t   <- 0.05
 xi.t    <- 0
 prob.t  <- c(0.05, 0.05, 0.025, 0.025)
-
-p <- 0.65  # P(Y=1|hot spot)
-q <- 0.01  # P(Y=1|background)
-r <- 0.05  # Hot spot radius
 
 nsets <- 100
 set.seed(3282)  # data
@@ -66,7 +73,7 @@ for (setting in 1:nsettings) {
   print(paste("Setting ", setting, " finished", sep = ""))
 }
 
-quartz(width = 10, height = 7)
+# quartz(width = 10, height = 7)
 par(mfrow = c(2, 2))
 plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
      main = "Setting 1: 5%, ns = 1000")
