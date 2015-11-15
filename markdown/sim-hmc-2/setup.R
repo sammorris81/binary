@@ -27,12 +27,19 @@ nsettings <- 4
 # q <- 0.01  # P(Y=1|background)
 # r <- 0.05  # Hot spot radius
 
-# setting trial 2
-nhotspots <- c(5, 5, 2, 2)
+# # setting trial 2
+# nhotspots <- c(5, 5, 2, 2)
+# knots   <- expand.grid(seq(0, 1, length=13), seq(0, 1, length=13))
+# p <- 0.400  # P(Y=1|hot spot)
+# q <- 0.005  # P(Y=1|background)
+# r <- 0.083  # Hot spot radius
+
+# # setting trial 3
+nhotspots <- c(9, 9, 3, 3)
 knots   <- expand.grid(seq(0, 1, length=13), seq(0, 1, length=13))
-p <- 0.400  # P(Y=1|hot spot)
-q <- 0.005  # P(Y=1|background)
-r <- 0.083  # Hot spot radius
+p <- 0.60  # P(Y=1|hot spot)
+q <- 0.01  # P(Y=1|background)
+r <- 0.05  # Hot spot radius
 
 knots   <- as.matrix(knots) 
 knots.h <- abs(knots[1, 1] - knots[2, 1])
@@ -114,3 +121,22 @@ mean(simdata[[3]]$y)
 mean(simdata[[4]]$y)
 
 save(simdata, knots, knots.h, rho.t, prob.t, file = "simdata.RData")
+
+# # setting trial 1
+# nhotspots <- c(7, 7, 3, 3)
+# knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
+# p <- 0.65  # P(Y=1|hot spot)
+# q <- 0.01  # P(Y=1|background)
+# r <- 0.05  # Hot spot radius
+
+# # setting trial 2
+# nhotspots <- c(5, 5, 2, 2)
+# knots   <- expand.grid(seq(0, 1, length=13), seq(0, 1, length=13))
+# p <- 0.400  # P(Y=1|hot spot)
+# q <- 0.005  # P(Y=1|background)
+# r <- 0.083  # Hot spot radius
+#            [,1]       [,2]       [,3]
+# [1,] 0.04271395 0.04176198 0.05185699
+# [2,] 0.03768898 0.03636931 0.04623243
+# [3,] 0.02084860 0.02051132 0.02567701
+# [4,] 0.02336052 0.02343898 0.02848417
