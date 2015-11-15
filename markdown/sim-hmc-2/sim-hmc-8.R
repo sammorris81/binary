@@ -68,97 +68,99 @@ for (i in sets) {
   tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
   y.i.o <- matrix(y.o[, i], ntrain, 1)
   y.i.p <- matrix(y.p[, i], ntest, 1)
+  
+  knots.o  <- rbind(knots, s.o[y.i.o == 1, ])
   cat("Starting: Set", i, "\n")
-
+  
   cat("  Start gev \n")
-
+  
   # spatial GEV
   cat("    Start mcmc fit \n")
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
-
-  fit.gev <- spatial_GEV(y = y.i.o, s = s.o, x = X.o, knots = knots,
+  
+  fit.gev <- spatial_GEV(y = y.i.o, s = s.o, x = X.o, knots = knots.o, 
                          beta.init = log(-log(1 - mean(y.o))),
                          beta.mn = 0, beta.sd = 10,
-                         beta.eps = 0.1, beta.attempts = 50,
-                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
-                         xi.attempts = 50, xi.fix = TRUE,
-                         a.init = 10, a.eps = 0.2, a.attempts = 50,
-                         a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2,
-                         b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50,
+                         beta.eps = 0.1, beta.attempts = 50, 
+                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
+                         xi.attempts = 50, xi.fix = TRUE, 
+                         a.init = 10, a.eps = 0.2, a.attempts = 50, 
+                         a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
+                         b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
-                         rho.init = 0.1, logrho.mn = -2, logrho.sd = 1,
-                         rho.eps = 0.1, rho.attempts = 50, threads = 1,
-                         iters = iters, burn = burn,
+                         rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
+                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
+                         iters = iters, burn = burn, 
                          update = update, thin = 1, thresh = 0)
-
+  
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                              s.pred = s.p, knots = knots,
+                              s.pred = s.p, knots = knots.o,
                               start = 1, end = iters - burn, update = update)
   timings[1] <- fit.gev$minutes
-
+  
   bs.gev <- BrierScore(post.prob.gev, y.i.p)
   print(bs.gev * 100)
-
+  
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev)
   write.table(bs, file = tblname)
   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
-
+  
   # spatial probit
   cat("  Start probit \n")
-
+  
   cat("    Start mcmc fit \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots,
+  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots.o, 
                        iters = iters, burn = burn, update = update)
-
+  
   cat("    Start mcmc predict \n")
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.p, knots = knots,
+                               s.pred = s.p, knots = knots.o,
                                start = 1, end = iters - burn, update = update)
   timings[2] <- fit.probit$minutes
-
+  
   bs.pro <- BrierScore(post.prob.pro, y.i.p)
   print(bs.pro * 100)
-
+  
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro)
   write.table(bs, file = tblname)
   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
-
+  
   # spatial logit
   cat("  Start logit \n")
   cat("    Start mcmc fit \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1,
-                             a = 1, b = 1, knots = knots,
+  fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
+                             a = 1, b = 1, knots = knots.o, 
                              iters = iters, burn = burn, update = update)
-
+  
   cat("    Start mcmc predict \n")
-  post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p,
-                                knots = knots, start = 1, end = iters - burn,
+  post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
+                                knots = knots.o, start = 1, end = iters - burn, 
                                 update = update)
   timings[3] <- fit.logit$minutes
-
+  
   bs.log <- BrierScore(post.prob.log, y.i.p)
   print(bs.log * 100)
-
+  
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro, bs.log)
   write.table(bs, file = tblname)
   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
-
+  
   cat("Finished: Set", i, "\n")
   save(fit.gev, post.prob.gev, bs.gev,
-       fit.probit, post.prob.pro, bs.pro,
+       fit.probit, post.prob.pro, bs.pro, 
        fit.logit, post.prob.log, bs.log,
-       y.i.p, y.i.o, s, timings,
+       y.i.p, y.i.o, knots.o, s, timings,
        file = filename)
 }

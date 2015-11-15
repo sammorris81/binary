@@ -66,6 +66,8 @@ for (i in sets) {
   tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
   y.i.o <- matrix(y.o[, i], ntrain, 1)
   y.i.p <- matrix(y.p[, i], ntest, 1)
+  
+  knots.o  <- rbind(knots, s.o[y.i.o == 1, ])
   cat("Starting: Set", i, "\n")
   
   cat("  Start gev \n")
@@ -75,7 +77,7 @@ for (i in sets) {
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
   
-  fit.gev <- spatial_GEV(y = y.i.o, s = s.o, x = X.o, knots = knots, 
+  fit.gev <- spatial_GEV(y = y.i.o, s = s.o, x = X.o, knots = knots.o, 
                          beta.init = log(-log(1 - mean(y.o))),
                          beta.mn = 0, beta.sd = 10,
                          beta.eps = 0.1, beta.attempts = 50, 
@@ -92,7 +94,7 @@ for (i in sets) {
   
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                              s.pred = s.p, knots = knots,
+                              s.pred = s.p, knots = knots.o,
                               start = 1, end = iters - burn, update = update)
   timings[1] <- fit.gev$minutes
   
@@ -102,8 +104,8 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev)
   write.table(bs, file = tblname)
-#   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
-#   system(upload.cmd)
+  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+  system(upload.cmd)
   
   # spatial probit
   cat("  Start probit \n")
@@ -111,12 +113,12 @@ for (i in sets) {
   cat("    Start mcmc fit \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots, 
+  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots.o, 
                        iters = iters, burn = burn, update = update)
   
   cat("    Start mcmc predict \n")
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.p, knots = knots,
+                               s.pred = s.p, knots = knots.o,
                                start = 1, end = iters - burn, update = update)
   timings[2] <- fit.probit$minutes
   
@@ -126,8 +128,8 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro)
   write.table(bs, file = tblname)
-#   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
-#   system(upload.cmd)
+  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+  system(upload.cmd)
   
   # spatial logit
   cat("  Start logit \n")
@@ -135,12 +137,12 @@ for (i in sets) {
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
-                             a = 1, b = 1, knots = knots, 
+                             a = 1, b = 1, knots = knots.o, 
                              iters = iters, burn = burn, update = update)
   
   cat("    Start mcmc predict \n")
   post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
-                                knots = knots, start = 1, end = iters - burn, 
+                                knots = knots.o, start = 1, end = iters - burn, 
                                 update = update)
   timings[3] <- fit.logit$minutes
   
@@ -150,13 +152,13 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro, bs.log)
   write.table(bs, file = tblname)
-#   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
-#   system(upload.cmd)
+  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+  system(upload.cmd)
   
   cat("Finished: Set", i, "\n")
   save(fit.gev, post.prob.gev, bs.gev,
        fit.probit, post.prob.pro, bs.pro, 
        fit.logit, post.prob.log, bs.log,
-       y.i.p, y.i.o, s, timings,
+       y.i.p, y.i.o, knots.o, s, timings,
        file = filename)
 }
