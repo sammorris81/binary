@@ -3,7 +3,7 @@ rm(list=ls())
 options(warn=2)
 library(fields)
 library(evd)
-# library(spBayes)
+library(spBayes)
 library(fields)
 library(SpatialTools)
 # library(microbenchmark)  # comment out for beowulf
