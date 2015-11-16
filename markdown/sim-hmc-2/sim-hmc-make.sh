@@ -56,7 +56,7 @@ do
   sed "23 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
   sed "24 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
   rm "$MCMC.tmp"
-  sleep 60
-  bwsubmit r "$MCMC"
+#   sleep 60
+#   bwsubmit r "$MCMC"
   ((GROUP++))
 done
