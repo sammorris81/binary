@@ -61,6 +61,20 @@ diag(d.o) <- 0
 ####################################################################
 iters <- 20000; burn <- 10000; update <- 1000; thin <- 1
 # iters <- 100; burn <- 50; update <- 10; thin <- 1
+n.report     <- 10
+batch.length <- 100
+n.batch      <- floor(iters / batch.length)
+verbose      <- TRUE
+tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
+starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
+priors       <- list("beta.norm" = list(0, 100),
+                     "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
+cov.model <- "exponential"
+timings   <- rep(NA, 3)
+# with so many knots, adaptive is time prohibitive
+amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
+                  "accept.rate" = 0.35)
+
 timings <- rep(NA, 3)
 
 for (i in sets) {
@@ -133,20 +147,45 @@ for (i in sets) {
   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
   
+  #   # spatial logit
+  #   cat("  Start logit \n")
+  #   cat("    Start mcmc fit \n")
+  #   mcmc.seed <- mcmc.seed + 1
+  #   set.seed(mcmc.seed)
+  #   fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
+  #                              a = 1, b = 1, knots = knots.o, 
+  #                              iters = iters, burn = burn, update = update)
+  #   
+  #   cat("    Start mcmc predict \n")
+  #   post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
+  #                                 knots = knots.o, start = 1, end = iters - burn, 
+  #                                 update = update)
+  #   timings[3] <- fit.logit$minutes
+  #   
+  #   bs.log <- BrierScore(post.prob.log, y.i.p)
+  #   print(bs.log * 100)
+  
   # spatial logit
-  cat("  Start logit \n")
-  cat("    Start mcmc fit \n")
+  print("  start logit")
+  print("    start mcmc fit")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
-                             a = 1, b = 1, knots = knots.o, 
-                             iters = iters, burn = burn, update = update)
+  tic       <- proc.time()[3]
+  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
+                     coords = s.o, knots = knots.o, starting = starting,
+                     tuning = tuning, priors = priors,
+                     cov.model = cov.model, n.samples = iters,
+                     verbose = verbose, n.report = n.report, amcmc = amcmc)
   
-  cat("    Start mcmc predict \n")
-  post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
-                                knots = knots.o, start = 1, end = iters - burn, 
-                                update = update)
-  timings[3] <- fit.logit$minutes
+  print("    start mcmc predict")
+  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+                         pred.covars = X.p, start = burn + 1,
+                         end = iters, thin = 1, verbose = TRUE,
+                         n.report = 500)
+  
+  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+  toc        <- proc.time()[3]
+  timings[3] <- toc - tic
   
   bs.log <- BrierScore(post.prob.log, y.i.p)
   print(bs.log * 100)
