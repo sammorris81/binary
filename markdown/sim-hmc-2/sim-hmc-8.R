@@ -22,8 +22,8 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 # setMKLthreads(1)
-sets <- c(36:40)
-setting <- 4
+sets <- c(46:50)
+setting <- 3 
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
