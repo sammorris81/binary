@@ -22,7 +22,7 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 # setMKLthreads(1)
-sets <- c(46:50)
+sets <- c(96:100)
 setting <- 3 
 
 # extract the relevant setting from simdata
