@@ -39,6 +39,9 @@ setting.2 <- which(rowSums(is.na(results[[2]])) == 3)
 setting.3 <- which(rowSums(is.na(results[[3]])) == 3)
 setting.4 <- which(rowSums(is.na(results[[4]])) == 3)
 
+round(results.combined[, 1] / results.combined[, 3], 4)
+round(results.combined[, 2] / results.combined[, 3], 4)
+
 # # look at a few iteration plots
 # set <- 1
 # setting <- 1
