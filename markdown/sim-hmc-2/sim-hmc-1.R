@@ -35,7 +35,12 @@ ns        <- dim(y)[1]
 nt        <- 1
 nsets     <- dim(y)[2]
 nsettings <- dim(y)[3]
-nknots    <- nrow(knots)
+
+# decide how to assign knots. knot.split is a vector that determines the 
+# preferred breakdown for the percentages of knots that should appear at 
+# sites where Y = 1 respectively.
+nknots    <- 400
+knot.split <- 0.5 
 
 # some precalculated values for quicker pairwise evaluation
 dw2     <- rdist(s, knots)
@@ -77,30 +82,35 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
 
 timings <- rep(NA, 3)
 
-tic.1 <- proc.time()[3]
-knots.1 <- cover.design(R = s[y[, i] == 0, ], nd = 500, nruns = 1)
-toc.1 <- proc.time()[3]
-
-tic.2 <- proc.time()[3]
-knots.2 <- cover.design(R = s[y[, i] == 0, ], nd = 500, nruns = 1, 
-                        nn = FALSE, num.nn = 0)
-toc.2 <- proc.time()[3]
-
 for (i in sets) {
-  # select the knots to use
-  knots.0 <- cover.design(R = s[y[, i] == 0, ], nd = 500, nruns = 1)
-  knots.1 <- cover.design(R = s[y[, i] == 1, ], nd = 50, nn = FALSE, 
-                          num.nn = 0, nruns = 1)
-  knots <- rbind(knots.0$design, knots.1$design)
-  # there is a bug in cover.design when you have set nn = FALSE. So, to avoid 
-  # the warning, setting number of nearest neighbors to 0 for knots where y = 1.
-  
   filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
   tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
   y.i.o <- matrix(y.o[, i], ntrain, 1)
   y.i.p <- matrix(y.p[, i], ntest, 1)
   
-  knots.o  <- rbind(knots, s.o[y.i.o == 1, ])
+  #### Knot setup
+  # There is a bug in cover.design when you have set nn = FALSE. So, to avoid 
+  # the warning, setting number of nearest neighbors to 0 and turning off 
+  # nearest neighbors. This will take a bit longer, but ultimately comes back 
+  # with a similar design
+  ####
+  set.seed(i)
+  if (sum(y.i.o) < nknots * knot.split) {
+    knots.1 <- s.o[y.i.o == 1, ]
+    nknots.remain <- nknots - nrow(knots.1)
+  } else {
+    nknots.1 <- floor(nknots * nknots.split)
+    knots.1 <- cover.design(R = s.o[y.i.o == 0, ], nd = nknots.1, 
+                            nn = FALSE, num.nn = 0, nruns = 1)$design
+    nknots.remain <- nknots - nrow(knots.1)
+  }
+  
+  knots.0 <- cover.design(R = s.o[y.i.o == 0, ], nd = nknots.remain, 
+                          nn = FALSE, num.nn = 0, nruns = 1)
+  
+  knots.o <- rbind(knots.0$design, knots.1)
+  
+  # knots.o  <- rbind(knots, s.o[y.i.o == 1, ])
   cat("Starting: Set", i, "\n")
   
   cat("  Start gev \n")
