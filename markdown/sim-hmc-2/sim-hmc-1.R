@@ -77,10 +77,23 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
 
 timings <- rep(NA, 3)
 
+tic.1 <- proc.time()[3]
+knots.1 <- cover.design(R = s[y[, i] == 0, ], nd = 500, nruns = 1)
+toc.1 <- proc.time()[3]
+
+tic.2 <- proc.time()[3]
+knots.2 <- cover.design(R = s[y[, i] == 0, ], nd = 500, nruns = 1, 
+                        nn = FALSE, num.nn = 0)
+toc.2 <- proc.time()[3]
+
 for (i in sets) {
   # select the knots to use
-  knots.0 <- cover.design(R = s[y[, i] == 0, ], nd = 10, nruns = 1)
-  knots.1 <- cover.design(R = s[y[, i] == 1, ], nd = 50, num.nn = 45, nruns = 1)
+  knots.0 <- cover.design(R = s[y[, i] == 0, ], nd = 500, nruns = 1)
+  knots.1 <- cover.design(R = s[y[, i] == 1, ], nd = 50, nn = FALSE, 
+                          num.nn = 0, nruns = 1)
+  knots <- rbind(knots.0$design, knots.1$design)
+  # there is a bug in cover.design when you have set nn = FALSE. So, to avoid 
+  # the warning, setting number of nearest neighbors to 0 for knots where y = 1.
   
   filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
   tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
