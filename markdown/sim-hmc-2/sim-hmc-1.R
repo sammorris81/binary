@@ -78,6 +78,10 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
 timings <- rep(NA, 3)
 
 for (i in sets) {
+  # select the knots to use
+  knots.0 <- cover.design(R = s[y[, i] == 0, ], nd = 10, nruns = 1)
+  knots.1 <- cover.design(R = s[y[, i] == 1, ], nd = 50, num.nn = 45, nruns = 1)
+  
   filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
   tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
   y.i.o <- matrix(y.o[, i], ntrain, 1)
@@ -146,24 +150,6 @@ for (i in sets) {
   write.table(bs, file = tblname)
   upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
-  
-#   # spatial logit
-#   cat("  Start logit \n")
-#   cat("    Start mcmc fit \n")
-#   mcmc.seed <- mcmc.seed + 1
-#   set.seed(mcmc.seed)
-#   fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
-#                              a = 1, b = 1, knots = knots.o, 
-#                              iters = iters, burn = burn, update = update)
-#   
-#   cat("    Start mcmc predict \n")
-#   post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
-#                                 knots = knots.o, start = 1, end = iters - burn, 
-#                                 update = update)
-#   timings[3] <- fit.logit$minutes
-#   
-#   bs.log <- BrierScore(post.prob.log, y.i.p)
-#   print(bs.log * 100)
   
   # spatial logit
   print("  start logit")
