@@ -40,7 +40,7 @@ nsettings <- dim(y)[3]
 # preferred breakdown for the max percentage of knots that should appear at 
 # sites where Y = 1. 
 nknots    <- 300
-keep.0    <- 0.10
+keep.0    <- 0.20
 
 # some precalculated values for quicker pairwise evaluation
 dw2     <- rdist(s, knots)
