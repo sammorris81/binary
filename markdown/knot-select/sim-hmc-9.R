@@ -83,8 +83,8 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
 timings <- rep(NA, 3)
 
 for (i in sets) {
-  filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
-  tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
+  filename <- paste("sim-results/", setting, "-", i, "-3.RData", sep = "")
+  tblname  <- paste("sim-tables/", setting, "-", i, "-3.txt", sep ="")
   y.i.o <- matrix(y.o[, i], ntrain, 1)
   y.i.p <- matrix(y.p[, i], ntest, 1)
   
