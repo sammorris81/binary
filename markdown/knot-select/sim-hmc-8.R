@@ -21,7 +21,7 @@ source("../../code/R/spatial_probit.R", chdir = TRUE)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
-setMKLthreads(1)
+# setMKLthreads(1)
 sets <- c(1:5)
 setting <- 4
 
