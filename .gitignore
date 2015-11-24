@@ -40,7 +40,8 @@ extended-covariates.csv
 *.rdx
 
 *.rdb
-
+markdown/knot-select/sim-tables/*.*
+markdown/knot-select/sim-results/*.*
 markdown/sim-hmc-2/sim-tables/*.*
 markdown/sim-hmc-2/sim-tables-bak/*.*
 markdown/sim-hmc/sim-tables/*.txt
