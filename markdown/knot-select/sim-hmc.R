@@ -21,9 +21,7 @@ source("../../code/R/spatial_probit.R", chdir = TRUE)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
-setMKLthreads(1)
-sets <- c(1:5)
-setting <- 4
+
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
@@ -35,6 +33,7 @@ ns        <- dim(y)[1]
 nt        <- 1
 nsets     <- dim(y)[2]
 nsettings <- dim(y)[3]
+nknots    <- nrow(knots)
 
 # decide how to assign knots. knot.split is a vector that determines the 
 # preferred breakdown for the max percentage of knots that should appear at 
@@ -94,9 +93,11 @@ for (i in sets) {
   # with a similar design
   ####
   set.seed(i)
-  knots.o <- cover.design(R = s.o, nd = nknots, nruns = 1)$design
+  nknots <- floor(sum(y.i.o == 0) * keep.0)
+  knots.0 <- cover.design(R = s.o[y.i.o == 0, ], nd = nknots)
   
-  # knots.o  <- rbind(knots, s.o[y.i.o == 1, ])
+  knots.o <- rbind(knots.0$design, s.o[y.i.o == 1, ])
+  
   cat("Starting: Set", i, "\n")
   
   cat("  Start gev \n")
@@ -133,7 +134,7 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev)
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/knot-select/sim-tables", sep = "")
+  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
   
   # spatial probit
@@ -157,8 +158,26 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro)
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/knot-select/sim-tables", sep = "")
+  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
+  
+  #   # spatial logit
+  #   cat("  Start logit \n")
+  #   cat("    Start mcmc fit \n")
+  #   mcmc.seed <- mcmc.seed + 1
+  #   set.seed(mcmc.seed)
+  #   fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
+  #                              a = 1, b = 1, knots = knots.o, 
+  #                              iters = iters, burn = burn, update = update)
+  #   
+  #   cat("    Start mcmc predict \n")
+  #   post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
+  #                                 knots = knots.o, start = 1, end = iters - burn, 
+  #                                 update = update)
+  #   timings[3] <- fit.logit$minutes
+  #   
+  #   bs.log <- BrierScore(post.prob.log, y.i.p)
+  #   print(bs.log * 100)
   
   # spatial logit
   print("  start logit")
@@ -188,7 +207,7 @@ for (i in sets) {
   # copy table to tables folder on beowulf
   bs <- rbind(bs.gev, bs.pro, bs.log)
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/knot-select/sim-tables", sep = "")
+  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
   system(upload.cmd)
   
   cat("Finished: Set", i, "\n")
@@ -198,5 +217,3 @@ for (i in sets) {
        y.i.p, y.i.o, knots.o, s, timings,
        file = filename)
 }
-
-save(sets)

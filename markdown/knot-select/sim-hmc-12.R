@@ -40,6 +40,7 @@ nsettings <- dim(y)[3]
 # preferred breakdown for the max percentage of knots that should appear at 
 # sites where Y = 1. 
 nknots    <- 300
+keep.0    <- 0.10
 
 # some precalculated values for quicker pairwise evaluation
 dw2     <- rdist(s, knots)
@@ -94,9 +95,11 @@ for (i in sets) {
   # with a similar design
   ####
   set.seed(i)
-  knots.o <- cover.design(R = s.o, nd = nknots, nruns = 1)$design
+  nknots <- floor(sum(y.i.o == 0) * keep.0)
+  knots.0 <- cover.design(R = s.o[y.i.o == 0, ], nd = nknots)
   
-  # knots.o  <- rbind(knots, s.o[y.i.o == 1, ])
+  knots.o <- rbind(knots.0$design, s.o[y.i.o == 1, ])
+  
   cat("Starting: Set", i, "\n")
   
   cat("  Start gev \n")
@@ -198,5 +201,3 @@ for (i in sets) {
        y.i.p, y.i.o, knots.o, s, timings,
        file = filename)
 }
-
-save(sets)
