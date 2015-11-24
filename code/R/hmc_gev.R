@@ -81,20 +81,20 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
 
     q = q + epsilon * p
     if (any(q == Inf | q == -Inf)) {
-      print(paste("Proposed variable is infinity for", this.param, "Automatically rejecting."))
+      
       if (this.param == "a_alpha") {
         infinite = c(FALSE, FALSE)
         if(any(q[1:(length(q) - 1)] == Inf | q[1:(length(q) - 1)] == -Inf)) {
-          # print("inf for a in spot")
-          # print(which(q[1:(length(q) - 1)] == Inf | q[1:(length(q) - 1)] == -Inf))
+          print("Proposed variable is Inf for a, automatically reject")
           infinite[1] <- TRUE
         }
         if (tail(q, 1) == Inf | tail(q, 1) == -Inf) {
-          # print("inf for alpha")
+          int("Proposed variable is Inf for alpha, automatically reject")
           infinite[2] <- TRUE
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
+        print(paste("Proposed variable is Inf for", this.param, ", automatically reject"))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
       
@@ -108,25 +108,38 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                                        a = a, b = b, alpha = alpha, rho = rho,
                                        calc = calc, others = others)
     if (any(is.nan(p))) {
-      # print(paste("NaN in p for", this.param, "automatically rejecting"))
       if (this.param == "a_alpha") {
-        infinite = c(FALSE, FALSE)
+        infinite <- c(FALSE, FALSE)
         if (any(is.nan(p[1:(length(p) - 1)]))) {
-          # print("nan for a in spot")
+          print("Momentum variable is NaN for a, automatically reject")
           # print(which(is.nan(p[1:(length(p) - 1)])))
           infinite[1] <- TRUE
         }
         if (tail(is.nan(p), 1)) {
-          # print("nan for alpha")
+          print("Momentum variable is NaN for alpha, automatically reject")
           infinite[2] <- TRUE
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
+        print(paste("Momentum variable is NaN for", this.param, ",automatically reject"))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     } else if (any(p == Inf | p == -Inf)) {
-      # print(paste("Momentum variable is infinity for", this.param, "Automatically rejecting."))
-      return(list(q = current_q, accept = FALSE, infinite = TRUE))
+      if (this.param == "a_alpha") {
+        infinite <- c(FALSE, FALSE)
+        if(any(p[1:(length(p) - 1)] == Inf | p[1:(length(p) - 1)] == -Inf)) {
+          print("Momemtum variable is Inf for a, automatically reject")
+          infinite[1] <- TRUE
+        }
+        if (tail(q, 1) == Inf | tail(q, 1) == -Inf) {
+          print("Momemtum variable is Inf for alpha, automatically reject")
+          infinite[2] <- TRUE
+        }
+        return(list(q = current_q, accept = FALSE, infinite = infinite))
+      } else {
+        print(paste("Momentum variable is Inf for", this.param, ", automatically reject"))
+        return(list(q = current_q, accept = FALSE, infinite = TRUE))
+      }
     }
 #     if (any(is.nan(p))) print(i)
 #     if (any(is.nan(q))) print(i)
