@@ -30,15 +30,15 @@ gev.prob  <- 0.05
 
 ### logit settings
 
-log.gamma <- 0.9
+log.gamma <- 0.99  # proportion of variability due to spatial
 log.var   <- 1
-log.rho   <- 0.1
-log.prob  <- 0.05
+log.rho   <- 0.025
+log.prob  <- 0.03
 
 ### hotspot settings. generates around 5% 1s.
 
 nhotspots <- 9
-p <- 0.80  # P(Y=1|hot spot)
+p <- 0.60  # P(Y=1|hot spot)
 q <- 0.01  # P(Y=1|background)
 r <- 0.05  # Hot spot radius
 
@@ -56,24 +56,23 @@ for (setting in 1:nsettings) {
   
   for (set in 1:nsets) {
     ### GEV generation
-    if (setting == 1 | setting == 2) {
-      data <- rRareBinarySpat(x = simdata[[setting]]$x, 
-                              s = simdata[[setting]]$s[, , set], 
-                              knots = simdata[[setting]]$s[, , set], 
-                              beta = 0, xi = gev.xi, alpha = gev.alpha, 
-                              rho = gev.rho, prob.success = gev.prob)
-      
-      simdata[[setting]]$y[, set] <- data$y
-    } 
+#     if (setting == 1 | setting == 2) {
+#       data <- rRareBinarySpat(x = simdata[[setting]]$x, 
+#                               s = simdata[[setting]]$s[, , set], 
+#                               knots = simdata[[setting]]$s[, , set], 
+#                               beta = 0, xi = gev.xi, alpha = gev.alpha, 
+#                               rho = gev.rho, prob.success = gev.prob)
+#       
+#       simdata[[setting]]$y[, set] <- data$y
+#     } 
     
     ### logit generation
     if (setting == 3 | setting == 4) {
-      d <- rdist(simdata[[setting]]$s[, , set])
+      d <- as.matrix(rdist(simdata[[setting]]$s[, , set]))
       diag(d) <- 0
-      Sigma <- diag(0.1, ns[setting]) + 
-               log.gamma * simple.cov.sp(D=d, sp.type="exponential", 
-                                         sp.par=c(1, log.rho), error.var=0, 
-                                         finescale.var=0)
+      Sigma <- simple.cov.sp(D=d, sp.type="exponential", 
+                             sp.par=c(log.var, log.rho), error.var=0, 
+                             finescale.var=0)
       data <- transform$logit(log.prob) + t(chol(Sigma)) %*% rnorm(ns[setting])
       data <- rbinom(n = ns[setting], size = 1, prob = transform$inv.logit(data))
       simdata[[setting]]$y[, set] <- data
@@ -128,7 +127,7 @@ points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch
        col = "firebrick4", bg = "firebrick1")
 
 setting <- 3
-set     <- 1
+set     <- 3
 # plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
 #      main = "Setting 1: 5%, ns = 1000")
 plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
@@ -139,7 +138,7 @@ points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch
        col = "firebrick4", bg = "firebrick1")
 
 setting <- 4
-set     <- 1
+set     <- 3
 # plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
 #      main = "Setting 1: 5%, ns = 1000")
 plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
