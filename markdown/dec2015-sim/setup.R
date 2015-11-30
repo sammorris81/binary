@@ -202,3 +202,35 @@ save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata10.RData")
 # [2,] 0.0377 0.0364 0.0462
 # [3,] 0.0208 0.0205 0.0257
 # [4,] 0.0234 0.0234 0.0285
+
+
+library(fields)
+library(SpatialTools)
+log.var  <- c(1 ,3, 5, 7, 9, 11)
+log.rho  <- 0.025
+log.prob <- c(0.05, 0.03, 0.01, 0.005, 0.005, 0.005)
+ns       <- 1300
+
+s <- cbind(runif(ns), runif(ns))
+d <- as.matrix(rdist(s))
+diag(d) <- 0
+
+par(mfrow = c(3, 2))
+for (i in 1:length(log.var)) {
+  Sigma <- simple.cov.sp(D=d, sp.type="exponential", 
+                         sp.par=c(log.var[i], log.rho), error.var=0,
+                         finescale.var=0)
+  data <- transform$logit(log.prob[i]) + t(chol(Sigma)) %*% rnorm(ns)
+  y <- rbinom(n = ns, size = 1, prob = transform$inv.logit(data))
+  
+  plot(s[which(y != 1), ], pch = 21,
+       col = "dodgerblue4", bg = "dodgerblue1", cex = 1.5,
+       xlab = "", ylab = "",
+       main = bquote(paste("Logit - 5%, ns = ", .(ns), " , ", 
+                           sigma^2, "=", .(log.var[i]),  
+                           ", Rareness = ", .(round(100 * mean(y), 2)), "%", 
+                           sep = "")))
+  
+  points(s[which(y == 1), ], pch = 21, cex = 1.5,
+         col = "firebrick4", bg = "firebrick1")
+}
