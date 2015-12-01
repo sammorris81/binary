@@ -24,21 +24,20 @@ nsettings <- length(ns)  # storing y in a list
 ### gev settings
 
 gev.alpha <- 0.3
-gev.rho   <- 0.05
+gev.rho   <- 0.025
 gev.xi    <- 0
 gev.prob  <- 0.05
 
 ### logit settings
 
-log.gamma <- 0.99  # proportion of variability due to spatial
-log.var   <- 1
-log.rho   <- 0.025
-log.prob  <- 0.03
+log.var   <- 7
+log.rho   <- 0.10
+log.prob  <- 0.008
 
 ### hotspot settings. generates around 5% 1s.
 
 nhotspots <- 9
-p <- 0.60  # P(Y=1|hot spot)
+p <- 0.70  # P(Y=1|hot spot)
 q <- 0.01  # P(Y=1|background)
 r <- 0.05  # Hot spot radius
 
@@ -56,15 +55,15 @@ for (setting in 1:nsettings) {
   
   for (set in 1:nsets) {
     ### GEV generation
-#     if (setting == 1 | setting == 2) {
-#       data <- rRareBinarySpat(x = simdata[[setting]]$x, 
-#                               s = simdata[[setting]]$s[, , set], 
-#                               knots = simdata[[setting]]$s[, , set], 
-#                               beta = 0, xi = gev.xi, alpha = gev.alpha, 
-#                               rho = gev.rho, prob.success = gev.prob)
-#       
-#       simdata[[setting]]$y[, set] <- data$y
-#     } 
+    if (setting == 1 | setting == 2) {
+      data <- rRareBinarySpat(x = simdata[[setting]]$x, 
+                              s = simdata[[setting]]$s[, , set], 
+                              knots = simdata[[setting]]$s[, , set], 
+                              beta = 0, xi = gev.xi, alpha = gev.alpha, 
+                              rho = gev.rho, prob.success = gev.prob)
+      
+      simdata[[setting]]$y[, set] <- data$y
+    } 
     
     ### logit generation
     if (setting == 3 | setting == 4) {
@@ -101,81 +100,30 @@ for (setting in 1:nsettings) {
   print(paste("Setting ", setting, " finished", sep = ""))
 }
 
-# quartz(width = 10, height = 7)
-par(mfrow = c(3, 2))
+dev.new(width = 12, height = 9)
+par(mfrow = c(3, 4))
+settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
 
-setting <- 1
-set     <- 1
-# plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-#      main = "Setting 1: 5%, ns = 1000")
-plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
-     col = "dodgerblue4", bg = "dodgerblue1", 
-     xlab = "", ylab = "", 
-     main = paste("Setting ", setting, ": GEV - 10%, ns = ", ns[setting], sep = ""))
-points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch = 21, 
-       col = "firebrick4", bg = "firebrick1")
+for (setting in 1:length(settings)) {
+  for (set in 1:2) {    
+    plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], 
+         pch = 21, cex = 1, col = "dodgerblue4", bg = "dodgerblue1", 
+         xlab = "", ylab = "", 
+         main = paste(settings[setting], ": ", 
+                      round(100 * mean(simdata[[setting]]$y[, set]), 2), 
+                      "%, ns = ", ns[setting], sep = ""))
+    points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], 
+           pch = 21, cex = 1, col = "firebrick4", bg = "firebrick1")
+  }
+}
+dev.print(device = pdf, file = "five.pdf")
+dev.off()
 
-setting <- 2
-set     <- 1
-# plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-#      main = "Setting 1: 5%, ns = 1000")
-plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
-     col = "dodgerblue4", bg = "dodgerblue1", 
-     xlab = "", ylab = "", 
-     main = paste("Setting ", setting, ": GEV - 10%, ns = ", ns[setting], sep = ""))
-points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch = 21, 
-       col = "firebrick4", bg = "firebrick1")
+for (i in 1:6) {
+  print(mean(simdata[[i]]$y))
+}
 
-setting <- 3
-set     <- 3
-# plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-#      main = "Setting 1: 5%, ns = 1000")
-plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
-     col = "dodgerblue4", bg = "dodgerblue1", 
-     xlab = "", ylab = "", 
-     main = paste("Setting ", setting, ": Logit - 10%, ns = ", ns[setting], sep = ""))
-points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch = 21, 
-       col = "firebrick4", bg = "firebrick1")
-
-setting <- 4
-set     <- 3
-# plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-#      main = "Setting 1: 5%, ns = 1000")
-plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
-     col = "dodgerblue4", bg = "dodgerblue1", 
-     xlab = "", ylab = "", 
-     main = paste("Setting ", setting, ": Logit - 10%, ns = ", ns[setting], sep = ""))
-points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch = 21, 
-       col = "firebrick4", bg = "firebrick1")
-
-setting <- 5
-set     <- 1
-# plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-#      main = "Setting 1: 5%, ns = 1000")
-plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
-     col = "dodgerblue4", bg = "dodgerblue1", 
-     xlab = "", ylab = "", 
-     main = paste("Setting ", setting, ": Hotspot - 10%, ns = ", ns[setting], sep = ""))
-points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch = 21, 
-       col = "firebrick4", bg = "firebrick1")
-
-setting <- 6
-set     <- 1
-# plot(knots, ylim = c(0, 1), xlim = c(0, 1), xlab = "", ylab = "", 
-#      main = "Setting 1: 5%, ns = 1000")
-plot(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] != 1), , set], pch = 21, 
-     col = "dodgerblue4", bg = "dodgerblue1", 
-     xlab = "", ylab = "", 
-     main = paste("Setting ", setting, ": Hotspot - 10%, ns = ", ns[setting], sep = ""))
-points(simdata[[setting]]$s[which(simdata[[setting]]$y[, set] == 1), , set], pch = 21, 
-       col = "firebrick4", bg = "firebrick1")
-
-mean(simdata[[1]]$y)
-mean(simdata[[2]]$y)
-mean(simdata[[3]]$y)
-mean(simdata[[4]]$y)
-
-save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata10.RData")
+save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata5.RData")
 
 # # setting trial 1
 # nhotspots <- c(5, 5, 3, 3)
@@ -204,33 +152,33 @@ save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata10.RData")
 # [4,] 0.0234 0.0234 0.0285
 
 
-library(fields)
-library(SpatialTools)
-log.var  <- c(1 ,3, 5, 7, 9, 11)
-log.rho  <- 0.025
-log.prob <- c(0.05, 0.03, 0.01, 0.005, 0.005, 0.005)
-ns       <- 1300
-
-s <- cbind(runif(ns), runif(ns))
-d <- as.matrix(rdist(s))
-diag(d) <- 0
-
-par(mfrow = c(3, 2))
-for (i in 1:length(log.var)) {
-  Sigma <- simple.cov.sp(D=d, sp.type="exponential", 
-                         sp.par=c(log.var[i], log.rho), error.var=0,
-                         finescale.var=0)
-  data <- transform$logit(log.prob[i]) + t(chol(Sigma)) %*% rnorm(ns)
-  y <- rbinom(n = ns, size = 1, prob = transform$inv.logit(data))
-  
-  plot(s[which(y != 1), ], pch = 21,
-       col = "dodgerblue4", bg = "dodgerblue1", cex = 1.5,
-       xlab = "", ylab = "",
-       main = bquote(paste("Logit - 5%, ns = ", .(ns), " , ", 
-                           sigma^2, "=", .(log.var[i]),  
-                           ", Rareness = ", .(round(100 * mean(y), 2)), "%", 
-                           sep = "")))
-  
-  points(s[which(y == 1), ], pch = 21, cex = 1.5,
-         col = "firebrick4", bg = "firebrick1")
-}
+# library(fields)
+# library(SpatialTools)
+# log.var  <- c(1 ,3, 5, 7, 9, 11)
+# log.rho  <- 0.025
+# log.prob <- c(0.05, 0.03, 0.01, 0.005, 0.005, 0.005)
+# ns       <- 1300
+# 
+# s <- cbind(runif(ns), runif(ns))
+# d <- as.matrix(rdist(s))
+# diag(d) <- 0
+# 
+# par(mfrow = c(3, 2))
+# for (i in 1:length(log.var)) {
+#   Sigma <- simple.cov.sp(D=d, sp.type="exponential", 
+#                          sp.par=c(log.var[i], log.rho), error.var=0,
+#                          finescale.var=0)
+#   data <- transform$logit(log.prob[i]) + t(chol(Sigma)) %*% rnorm(ns)
+#   y <- rbinom(n = ns, size = 1, prob = transform$inv.logit(data))
+#   
+#   plot(s[which(y != 1), ], pch = 21,
+#        col = "dodgerblue4", bg = "dodgerblue1", cex = 1.5,
+#        xlab = "", ylab = "",
+#        main = bquote(paste("Logit - 5%, ns = ", .(ns), " , ", 
+#                            sigma^2, "=", .(log.var[i]),  
+#                            ", Rareness = ", .(round(100 * mean(y), 2)), "%", 
+#                            sep = "")))
+#   
+#   points(s[which(y == 1), ], pch = 21, cex = 1.5,
+#          col = "firebrick4", bg = "firebrick1")
+# }
