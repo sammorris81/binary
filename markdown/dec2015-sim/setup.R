@@ -123,7 +123,7 @@ for (i in 1:6) {
   print(mean(simdata[[i]]$y))
 }
 
-save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata5.RData")
+save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata.RData")
 
 # # setting trial 1
 # nhotspots <- c(5, 5, 3, 3)
