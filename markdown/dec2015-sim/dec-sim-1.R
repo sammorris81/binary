@@ -118,8 +118,6 @@ for (i in sets) {
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
   
-  cat("begin gev")
-  
   fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots.i.o, 
                          beta.init = log(-log(1 - mean(y.i.o))),
                          beta.mn = 0, beta.sd = 10,
