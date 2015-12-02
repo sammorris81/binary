@@ -22,7 +22,9 @@ source("../../code/R/spatial_probit.R", chdir = TRUE)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
-
+# setMKLthreads(1)
+setting <- 4
+sets <- 11:20
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
@@ -68,6 +70,8 @@ timings   <- rep(NA, 3)
 # with so many knots, adaptive is time prohibitive
 amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
                   "accept.rate" = 0.35)
+
+upload.pre <- "samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/dec2015-sim/sim-tables"
 
 timings <- rep(NA, 3)
 
@@ -131,15 +135,13 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         #iters = iters, burn = burn, 
-                         #update = update, thin = 1, thresh = 0)
-                         iters = 100, burn = 10, update = 10)
+                         iters = iters, burn = burn, 
+                         update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                               s.pred = s.i.p, knots = knots.i.o,
-                              # start = 1, end = iters - burn, update = update)
-                              start = 1, end = 90, update = 10)
+                              start = 1, end = iters - burn, update = update)
   timings[1] <- fit.gev$minutes
   
   bs.gev <- BrierScore(post.prob.gev, y.i.p)
@@ -151,8 +153,10 @@ for (i in sets) {
   
   # copy table to tables folder on beowulf
   bs <- rbind(c(bs.gev, auc.gev))
+  rownames(bs) <- "gev"
+  colnames(bs) <- c("bs", "auc")
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
   system(upload.cmd)
   
   # spatial probit
@@ -161,43 +165,28 @@ for (i in sets) {
   cat("    Start mcmc fit \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.o, knots = knots.o, 
+  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots.i.o, 
                        iters = iters, burn = burn, update = update)
   
   cat("    Start mcmc predict \n")
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.p, knots = knots.o,
+                               s.pred = s.i.p, knots = knots.i.o,
                                start = 1, end = iters - burn, update = update)
   timings[2] <- fit.probit$minutes
   
   bs.pro <- BrierScore(post.prob.pro, y.i.p)
-  post.prob.gev.med <- apply(post.prob.gev, 2, median)
+  post.prob.pro.med <- apply(post.prob.pro, 2, median)
+  roc.pro <- roc(y.i.p ~ post.prob.pro.med)
+  auc.pro <- roc.pro$auc
   
   print(bs.pro * 100)
   
   # copy table to tables folder on beowulf
-  bs <- rbind(bs.gev, bs.pro)
+  bs <- rbind(bs, c(bs.pro, auc.pro))
+  rownames(bs)[2] <- "pro"
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
   system(upload.cmd)
-  
-  #   # spatial logit
-  #   cat("  Start logit \n")
-  #   cat("    Start mcmc fit \n")
-  #   mcmc.seed <- mcmc.seed + 1
-  #   set.seed(mcmc.seed)
-  #   fit.logit <- spatial_logit(Y = y.i.o, s = s.o, eps = 0.1, 
-  #                              a = 1, b = 1, knots = knots.o, 
-  #                              iters = iters, burn = burn, update = update)
-  #   
-  #   cat("    Start mcmc predict \n")
-  #   post.prob.log <- pred.splogit(mcmcoutput = fit.logit, s.pred = s.p, 
-  #                                 knots = knots.o, start = 1, end = iters - burn, 
-  #                                 update = update)
-  #   timings[3] <- fit.logit$minutes
-  #   
-  #   bs.log <- BrierScore(post.prob.log, y.i.p)
-  #   print(bs.log * 100)
   
   # spatial logit
   print("  start logit")
@@ -206,13 +195,13 @@ for (i in sets) {
   set.seed(mcmc.seed)
   tic       <- proc.time()[3]
   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                     coords = s.o, knots = knots.o, starting = starting,
+                     coords = s.i.o, knots = knots.i.o, starting = starting,
                      tuning = tuning, priors = priors,
                      cov.model = cov.model, n.samples = iters,
                      verbose = verbose, n.report = n.report, amcmc = amcmc)
   
   print("    start mcmc predict")
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
                          pred.covars = X.p, start = burn + 1,
                          end = iters, thin = 1, verbose = TRUE,
                          n.report = 500)
@@ -222,18 +211,23 @@ for (i in sets) {
   timings[3] <- toc - tic
   
   bs.log <- BrierScore(post.prob.log, y.i.p)
+  post.prob.log.med <- apply(post.prob.log, 2, median)
+  roc.log <- roc(y.i.p ~ post.prob.log.med)
+  auc.log <- roc.log$auc
+  
   print(bs.log * 100)
   
   # copy table to tables folder on beowulf
-  bs <- rbind(bs.gev, bs.pro, bs.log)
+  bs <- rbind(bs, c(bs.log, auc.log))
+  rownames(bs)[3] <- "log"
   write.table(bs, file = tblname)
-  upload.cmd <- paste("scp ", tblname, " samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/sim-hmc-2/sim-tables", sep = "")
+  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
   system(upload.cmd)
   
   cat("Finished: Set", i, "\n")
-  save(fit.gev, post.prob.gev, bs.gev,
-       fit.probit, post.prob.pro, bs.pro, 
-       fit.logit, post.prob.log, bs.log,
-       y.i.p, y.i.o, knots.o, s, timings,
+  save(fit.gev, post.prob.gev, bs.gev, roc.gev, auc.gev,
+       fit.probit, post.prob.pro, bs.pro, roc.pro, auc.pro,
+       fit.logit, post.prob.log, bs.log, roc.log, auc.log,
+       y.i.p, y.i.o, knots.i.o, s.i.o, s.i.p, timings,
        file = filename)
 }
