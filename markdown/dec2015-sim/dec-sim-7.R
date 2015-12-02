@@ -31,6 +31,11 @@ y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
 x <- simdata[[setting]]$x
 
+# extract info about simulation settings
+ns     <- dim(y)[1]
+nt     <- 1
+nknots <- 500
+
 # testing vs training
 if (setting %in% c(1, 3, 5)) {
   ntrain <- 500
