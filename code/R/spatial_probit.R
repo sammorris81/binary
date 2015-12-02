@@ -1,5 +1,8 @@
-make.B <- function(d, rho){
-  exp(-(d / rho)^2)
+make.B <- function(d, rho) {
+  b <- exp(-(d / rho)^2)
+  b2 <- rowSums(b^2)
+  b <- sweep(b, 1, sqrt(b2), "/")
+  return(b)
 }
 
 # predictions

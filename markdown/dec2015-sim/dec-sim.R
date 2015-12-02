@@ -101,11 +101,10 @@ for (i in sets) {
     knots.i.o <- s.i.o
   } else {
     set.seed(setting * 10 + i)
-    knots.i.o.0 <- cover.design(R = s.i.o[y.i.o == 0, ], nd = floor(nknots * 0.95), 
-                                nruns = 1, nn = FALSE, num.nn = 0)$design
-    knots.i.o.1 <- cover.design(R = s.i.o[y.i.o == 1, ], nd = floor(nknots * 0.05), 
-                                nruns = 1, nn = FALSE, num.nn = 0)$design
-    knots.i.o <- rbind(knots.i.o.0, knots.i.o.1)
+    nd.1 <- min(floor(nknots * 0.05), sum(y.i.o == 1))
+    nd.0 <- nknots - nd.1
+    knots.i.o <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 
+                              num.nn = 0)$design
   }
   cat("Starting: Set", i, "\n")
   
