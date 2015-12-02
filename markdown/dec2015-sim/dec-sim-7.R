@@ -31,11 +31,6 @@ y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
 x <- simdata[[setting]]$x
 
-# extract info about simulation settings
-ns     <- dim(y)[1]
-nt     <- 1
-nknots <- 500
-
 # some precalculated values for quicker pairwise evaluation
 dw2     <- rdist(s, knots)
 d       <- rdist(s)

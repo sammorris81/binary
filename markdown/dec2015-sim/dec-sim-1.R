@@ -36,11 +36,6 @@ ns     <- dim(y)[1]
 nt     <- 1
 nknots <- 500
 
-# some precalculated values for quicker pairwise evaluation
-dw2     <- rdist(s, knots)
-d       <- rdist(s)
-diag(d) <- 0
-
 # testing vs training
 if (setting %in% c(1, 3, 5)) {
   ntrain <- 500
@@ -122,6 +117,8 @@ for (i in sets) {
   cat("    Start mcmc fit \n")
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
+  
+  cat("begin gev")
   
   fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots.i.o, 
                          beta.init = log(-log(1 - mean(y.i.o))),
