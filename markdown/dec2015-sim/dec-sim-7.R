@@ -31,11 +31,6 @@ y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
 x <- simdata[[setting]]$x
 
-# some precalculated values for quicker pairwise evaluation
-dw2     <- rdist(s, knots)
-d       <- rdist(s)
-diag(d) <- 0
-
 # testing vs training
 if (setting %in% c(1, 3, 5)) {
   ntrain <- 500
