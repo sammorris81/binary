@@ -101,8 +101,6 @@ for (i in sets) {
     knots.i.o <- s.i.o
   } else {
     set.seed(setting * 10 + i)
-    nd.1 <- min(floor(nknots * 0.05), sum(y.i.o == 1))
-    nd.0 <- nknots - nd.1
     knots.i.o <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 
                               num.nn = 0)$design
   }
