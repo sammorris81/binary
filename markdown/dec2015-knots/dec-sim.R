@@ -68,6 +68,8 @@ rownames(timings) <- c("gev", "probit", "logit")
 colnames(timings) <- c("knots 1", "knots 2", "knots 3")
 
 for (i in sets) {
+  set.seed(setting * 10 + i)
+  
   # get the sites where we will be predicting
   pred.0 <- sample(which(y[, i] == 0), size = ntest.0)
   pred.1 <- sample(which(y[, i] == 1), size = ntest.1)
@@ -105,7 +107,6 @@ for (i in sets) {
   # nearest neighbors. This will take a bit longer, but ultimately comes back 
   # with a similar design
   ####
-  set.seed(setting * 10 + i)
   knots.1 <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
                                    y = seq(0, 1, length = 21)))
   knots.2 <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 

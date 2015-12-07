@@ -69,6 +69,8 @@ rownames(timings) <- c("gev", "probit", "logit")
 colnames(timings) <- c("knots 1", "knots 2", "knots 3")
 
 for (i in sets) {
+  set.seed(setting * 10 + i)
+  
   # get the sites where we will be predicting
   pred.0 <- sample(which(y[, i] == 0), size = ntest.0)
   pred.1 <- sample(which(y[, i] == 1), size = ntest.1)
@@ -106,7 +108,6 @@ for (i in sets) {
   # nearest neighbors. This will take a bit longer, but ultimately comes back 
   # with a similar design
   ####
-  set.seed(setting * 10 + i)
   knots.1 <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
                                    y = seq(0, 1, length = 21)))
   knots.2 <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 
@@ -143,7 +144,7 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
+                         iters = iters, burn = burn, iterplot = iterplot,
                          update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
@@ -184,7 +185,7 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
+                         iters = iters, burn = burn, iterplot = iterplot,
                          update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
@@ -225,7 +226,7 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
+                         iters = iters, burn = burn, iterplot = iterplot,
                          update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")

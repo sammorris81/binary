@@ -149,6 +149,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
     
   tic <- proc.time()[3]
   for (iter in 1:iters) {
+    
     beta$att <- beta$att + 1
     MHout <- updateBeta(data = data, beta = beta, xi = xi, alpha = alpha, 
                         calc = calc, others = others)
