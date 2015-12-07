@@ -258,6 +258,11 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
     grad[, t] <- a$cur[, t] * colSums(wz.star.t)
   }
   
+  checkpoint <- 1
+  if (any(is.nan(grad))) {
+    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+  }
+  
   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
   
 #   if (any(is.nan(grad))) {
@@ -272,6 +277,12 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
 #     theta.trouble.a.grad <<- theta
 #     lc.trouble.a.grad <<- lc
 #   }
+  
+  checkpoint <- checkpoint + 1
+  if (any(is.nan(grad))) {
+    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+  }
+  
   # whole function is written as gradient of log likelihood
   return(-grad)
 }
@@ -437,8 +448,18 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
     diff.t[is.nan(diff.t)] <- 0  # gradient should be zero when weight is 0
     grad <- grad + sum(diff.t %*% a$cur)
   }
+
+  checkpoint <- 1
+  if (is.nan(grad)) {
+    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+  }
   
   grad <- grad / alpha.sq
+  
+  checkpoint <- checkpoint + 1
+  if (is.nan(grad)) {
+    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+  }
   
   grad <- grad + sum(1 / alpha + 1 / alpha1m - la / alpha1m.sq + 
                        pb * capb / (alpha1m * sapb) +
@@ -452,7 +473,17 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
           (pb * capb / (-alpha1m * sapb) - log(sapb / spb) / alpha1m.sq) * 
           sin(-a1mpb) / ((sapb / spb)^(-1 / alpha1m) * sapb))
   
+  checkpoint <- checkpoint + 1
+  if (is.nan(grad)) {
+    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+  }
+  
   grad <- grad * alpha * alpha1m  # Jacobian
+  
+  checkpoint <- checkpoint + 1
+  if (is.nan(grad)) {
+    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+  }
   
   return(-grad)
 }
