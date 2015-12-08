@@ -436,7 +436,8 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   spb  <- sin(pb)
   capb <- cos(apb)
   sapb <- sin(apb)
-  a.aa1m <- a$cur^(-alpha / alpha1m)
+  # a.aa1m <- a$cur^(-alpha / alpha1m)
+  a.aa1m <- exp(-alpha * la / alpha1m)
   
   # likelihood
   # very concise way to express this. Likely as fast as we can get it
@@ -455,6 +456,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   if (is.nan(grad)) {
     print(alpha)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
+    return(grad)
   }
   
   grad <- grad / alpha.sq
@@ -463,7 +465,42 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   if (is.nan(grad)) {
     print(alpha)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
+    return(grad)
   }
+  
+#   part1 <- sum(1 / alpha + 1 / alpha1m - la / alpha1m.sq + 
+#                  pb * capb / (alpha1m * sapb) +
+#                  log(sapb) / alpha1m.sq - log(spb) / alpha1m.sq - 
+#                  pb * cos(a1mpb) / sin(a1mpb) - pb * capb / sapb)
+#   part2 <- pb * a.aa1m * capb * sin(-a1mpb) / 
+#                  ((sapb/spb)^(-1 / alpha1m) * sapb^2) - 
+#                  pb * a.aa1m * cos(-a1mpb) / ((sapb / spb)^(-1 / alpha1m) * sapb) - 
+#                  a.aa1m * (-1 / alpha1m - alpha / alpha1m.sq) * la * sin(-a1mpb) / 
+#                  ((sapb / spb)^(-1 / alpha1m) * sapb) + a.aa1m * 
+#                  (pb * capb / (-alpha1m * sapb) - log(sapb / spb) / alpha1m.sq) * 
+#                  sin(-a1mpb) / ((sapb / spb)^(-1 / alpha1m) * sapb)
+#   
+#   part2a <- (sapb/spb)^(-1 / alpha1m)
+#   part2b <- log(sapb / spb)
+#   
+#   if (is.nan(part1)) {
+#     print("part 1")
+#   }
+#   if (any(is.nan(part2))) {
+#     print("part 2")
+#     print(which(is.nan(part2)))
+#     print(paste("pb", pb[which(is.nan(part2))]))
+#     print(paste("a.aa1m", a.aa1m[which(is.nan(part2))]))
+#     print(paste("capb", capb[which(is.nan(part2))]))
+#     print(paste("a", a$cur[which(is.nan(part2))]))
+#     print(paste("b", b$cur[which(is.nan(part2))]))
+#   }
+#   if (any(is.nan(part2a))) {
+#     print("part 2a")
+#   }
+#   if (any(is.nan(part2b))) {
+#     print("part 2b")
+#   }
   
   grad <- grad + sum(1 / alpha + 1 / alpha1m - la / alpha1m.sq + 
                        pb * capb / (alpha1m * sapb) +
@@ -481,6 +518,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   if (is.nan(grad)) {
     print(alpha)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
+    return(grad)
   }
   
   grad <- grad * alpha * alpha1m  # Jacobian
@@ -489,6 +527,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   if (is.nan(grad)) {
     print(alpha)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
+    return(grad)
   }
   
   return(-grad)
@@ -523,6 +562,19 @@ neg_log_post_grad_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   a$cur       <- exp(q.a)
   alpha$cur   <- transform$inv.logit(q.alpha)
+  
+  if (any(a$cur == Inf)) {
+    print("Infinity in a")
+    print(a$cur[which(a$cur == Inf)])
+    print(q.a[which(a$cur == Inf)])
+  }
+  
+  if (any (a$cur == 0)) {
+    print("0 in a")
+    print(which(a$cur == 0))
+    print(a$cur[which(a$cur == 0)])
+    print(q.a[which(a$cur == 0)])
+  }
   
   # a and alpha only impact a.star, aw, and theta
   calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)

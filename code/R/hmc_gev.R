@@ -1,4 +1,4 @@
-# This is slighty modified.  I added the "others" input and 
+# This is slighty modified.  I added the "others" input and
 #  changed the format of the output
 #
 # SIMPLE IMPLEMENTATION OF HAMILTONIAN MONTE CARLO.
@@ -40,79 +40,88 @@
 # ------------------------------------------------------------------
 
 
-gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10, 
+gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                 data, beta, xi, a, b, alpha, rho, calc, others, this.param)
 {
-  dist = numeric(L+1)
-  
+  dist = numeric(L + 1)
+
   if (this.param == "a_alpha") {
     infinite <- c(FALSE, FALSE)
   } else {
     infinite <- FALSE
   }
-  
+
   q = current_q
   p = rnorm(length(q), 0, 1)  # independent standard normal variates
   current_p = p
 
   # Make a half step for momentum at the beginning
 
-  p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi, a = a, 
+  p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi, a = a,
                            b = b, alpha = alpha, rho = rho, calc = calc,
                            others = others) / 2
 
   # Alternate full steps for position and momentum
 
   for (i in 1:L)
-  { 
+  {
     # Make a full step for the position
-    # if (any(is.nan(p))) {
-#       p.trouble.hmc <<- p
-#       q.trouble.hmc <<- q
-#       beta.trouble.hmc <<- beta
-#       xi.trouble.hmc <<- xi
-#       a.trouble.hmc <<- a
-#       b.trouble.hmc <<- b
-#       alpha.trouble.hmc <<- alpha
-#       rho.trouble.hmc <<- rho
-#       calc.trouble.hmc <<- calc
-#       stop("p is NaN in HMC")
-    # }
 
     q = q + epsilon * p
     if (any(q == Inf | q == -Inf)) {
-      
+
       if (this.param == "a_alpha") {
         infinite = c(FALSE, FALSE)
         if(any(q[1:(length(q) - 1)] == Inf | q[1:(length(q) - 1)] == -Inf)) {
-          print("Proposed variable is Inf for a, automatically reject")
+          print("Proposal is Inf or -Inf for log(a), automatically reject")
           infinite[1] <- TRUE
         }
         if (tail(q, 1) == Inf | tail(q, 1) == -Inf) {
-          int("Proposed variable is Inf for alpha, automatically reject")
+          int("Proposal is Inf or -Inf for logit(alpha), automatically reject")
           infinite[2] <- TRUE
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("Proposed variable is Inf for", this.param, ", automatically reject"))
+        print(paste("Proposal variable is Inf for", this.param,
+                    ", automatically reject"))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
-      
     }
-    
-    dist[i+1] = sqrt(sum((q - current_q)^2))
+    if (this.param == "a_alpha") {
+      if (any(exp(q[1:(length(q) - 1)]) == 0)) {
+        print("Proposal is 0 for a")
+        infinite[1] <- TRUE
+      }
+      if (any(exp(q[1:(length(q) - 1)]) == Inf)) {
+        print("Proposal is Inf for a")
+        infinite[1] <- TRUE
+      }
+      if (transform$inv.logit(tail(q, 1)) == 0) {
+        print("Proposal is 0 for alpha")
+        infinite[2] <- TRUE
+      }
+      if (transform$inv.logit(tail(q, 1)) == Inf) {
+        print("Proposal is Inf for alpha")
+        infinite[2] <- TRUE
+      }
+      if (any(infinite)) {
+        return(list(q = current_q, accept = FALSE, infinite = infinite))
+      }
+    }
+
+    dist[i + 1] = sqrt(sum((q - current_q)^2))
 
     # Make a full step for the momentum, except at end of trajectory
 
-    if (i!=L) p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi,
-                                       a = a, b = b, alpha = alpha, rho = rho,
-                                       calc = calc, others = others)
+    if (i != L) p = p - epsilon * grad_U(q = q, data = data, beta = beta,
+                                         xi = xi, a = a, b = b, alpha = alpha,
+                                         rho = rho, calc = calc,
+                                         others = others)
     if (any(is.nan(p))) {
       if (this.param == "a_alpha") {
         infinite <- c(FALSE, FALSE)
         if (any(is.nan(p[1:(length(p) - 1)]))) {
           print("Momentum variable is NaN for a, automatically reject")
-          # print(which(is.nan(p[1:(length(p) - 1)])))
           infinite[1] <- TRUE
         }
         if (tail(is.nan(p), 1)) {
@@ -121,7 +130,8 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("Momentum variable is NaN for", this.param, ",automatically reject"))
+        print(paste("Momentum variable is NaN for", this.param,
+                    ",automatically reject"))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     } else if (any(p == Inf | p == -Inf)) {
@@ -137,17 +147,16 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("Momentum variable is Inf for", this.param, ", automatically reject"))
+        print(paste("Momentum variable is Inf for", this.param,
+                    ", automatically reject"))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     }
-#     if (any(is.nan(p))) print(i)
-#     if (any(is.nan(q))) print(i)
   }
 
   # Make a half step for momentum at the end.
 
-  p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi, a = a, 
+  p = p - epsilon * grad_U(q = q, data = data, beta = beta, xi = xi, a = a,
                            b = b, alpha = alpha, rho = rho, calc = calc,
                            other = others) / 2
 
@@ -156,14 +165,14 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
   p = -p
 
   # Evaluate potential & kinetic energies at start & end of trajectory
-  
-  current_U = U(current_q, data = data, beta = beta, xi = xi, a = a, b = b, 
+
+  current_U = U(current_q, data = data, beta = beta, xi = xi, a = a, b = b,
                 alpha = alpha, rho = rho, calc = calc, others = others)
   current_K = sum(current_p^2) / 2
-  proposed_U = U(q, data = data, beta = beta, xi = xi, a = a, b = b, 
+  proposed_U = U(q, data = data, beta = beta, xi = xi, a = a, b = b,
                  alpha = alpha, rho = rho, calc = calc, others = others)
   proposed_K = sum(p^2) / 2
-  
+
 #   if (any(is.nan(current_U))) {
 #     print("The value of the log likelihood is NaN at the current values")
 #     print(paste("Parameter: ", this.param, "=", current_q))
@@ -189,7 +198,7 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
 #     print(paste("Parameter: ", this.param))
 #     print(paste("epsilon is: ", epsilon))
 #   }
-  
+
   R <- current_U - proposed_U + current_K - proposed_K
   # print(paste("R is ", R))
 

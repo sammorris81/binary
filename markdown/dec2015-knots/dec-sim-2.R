@@ -127,6 +127,7 @@ for (i in sets) {
   
   #### spatial GEV
   cat("  Start gev \n")
+  source("../../code/R/spatial_gev.R", chdir = TRUE)
   
   ## Knot setup 1
   cat("    Start mcmc fit - Knots 1 \n")

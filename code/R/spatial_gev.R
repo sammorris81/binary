@@ -320,7 +320,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
     storage.rho[iter]    <- rho$cur
     storage.prob[iter, , ] <- 1 - exp(-calc$theta)
     
-    if (iter %% update == 0 | iter %in% c(621, 622, 623, 624, 625, 626, 627, 628, 629)) {
+    if (iter %% update == 0) {
       cat("      Iter", iter, "of", iters, "\n")
       if (iterplot) {
         start <- max(iter - 5000, 1)
