@@ -57,6 +57,6 @@ do
   sed "24 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
   rm "$MCMC.tmp"
 #   sleep 60
-#   bwsubmit r "$MCMC"
+  bwsubmit r "$MCMC"
   ((GROUP++))
 done
