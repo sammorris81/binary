@@ -54,9 +54,9 @@ do
   echo "OUTPUT: $OUTPUT"
   echo "INCLUDE: $INCLUDE"
   cp "$1" "$MCMC"
-  sed "23 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
-  sed "24 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC.tmp2"
-  sed "25 a\knot.design <- $KNOTS" "$MCMC.tmp2" > "$MCMC"
+  sed "24 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
+  sed "25 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC.tmp2"
+  sed "26 a\knot.design <- $KNOTS" "$MCMC.tmp2" > "$MCMC"
   rm "$MCMC.tmp" "$MCMC.tmp2"
 #   sleep 60
 #   bwsubmit r "$MCMC"
