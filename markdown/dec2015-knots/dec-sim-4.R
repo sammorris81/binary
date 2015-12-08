@@ -24,7 +24,8 @@ load("./simdata.RData")
 # data setting and sets to include - written by bash script
 setMKLthreads(1)
 setting <- 1
-sets    <- 6:10 
+sets    <- 6:10
+knot.design <- 1
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
@@ -65,11 +66,22 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
 
 upload.pre <- "samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/dec2015-knots/sim-tables"
 
-timings <- matrix(NA, 3, 3)
-rownames(timings) <- c("gev", "probit", "logit")
-colnames(timings) <- c("knots 1", "knots 2", "knots 3")
-
 for (i in sets) {
+  # storage for some of the results
+  bs <- matrix(NA, 9, 2)  # place to store brier scores and auc
+  rownames(bs) <- c("gev-1", "gev-2", "gev-3", 
+                    "probit-1", "probit-2", "probit-3",
+                    "logit-1", "logit-2", "logit-3")
+  colnames(bs) <- c("bs", "auc")
+  bs.gev  <- bs.pro  <- bs.log  <- rep(NA, 3)
+  auc.gev <- auc.pro <- auc.log <- rep(NA, 3)
+  roc.gev <- roc.pro <- roc.log <- vector(mode = "list", length = 3)
+  
+  timings <- matrix(NA, 3, 3)
+  rownames(timings) <- c("gev", "probit", "logit")
+  colnames(timings) <- c("knots 1", "knots 2", "knots 3")
+  
+  # start the simulation
   set.seed(setting * 10 + i)
   
   # get the sites where we will be predicting
@@ -88,22 +100,17 @@ for (i in sets) {
   ntrain.0 <- sum(y.i.o == 0) - ntest.0
   ntrain.1 <- sum(y.i.o == 1) - ntest.1
   
-  filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
-  tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
-  
-  bs <- matrix(NA, 9, 2)  # place to store brier scores and auc
-  rownames(bs) <- c("gev-1", "gev-2", "gev-3", 
-                    "probit-1", "probit-2", "probit-3",
-                    "logit-1", "logit-2", "logit-3")
-  colnames(bs) <- c("bs", "auc")
-  bs.gev  <- bs.pro  <- bs.log  <- rep(NA, 3)
-  auc.gev <- auc.pro <- auc.log <- rep(NA, 3)
-  roc.gev <- roc.pro <- roc.log <- vector(mode = "list", length = 3)
+  filename <- paste("sim-results/", setting, "-", i, "-", knot.design, ".RData", 
+                    sep = "")
+  tblname  <- paste("sim-tables/", setting, "-", i, "-", knot.design, ".txt", 
+                    sep ="")
   
   #### Knot setup
-  # for ns.o = 500, using all sites
-  # 
-  # for ns.o = 1000, using a space filling design with 500 knots
+  # knot design 1: 21 x 21 grid
+  # knot design 2: SRS of 441 sites
+  # knot design 3: stratified sample of 441 sites where the breakdown matches
+  #                % of sites with 1s and 0s from the training set
+  #
   # There is a bug in cover.design when you have set nn = FALSE. So, to avoid 
   # the warning, setting number of nearest neighbors to 0 and turning off 
   # nearest neighbors. This will take a bit longer, but ultimately comes back 
@@ -113,7 +120,7 @@ for (i in sets) {
                                    y = seq(0, 1, length = 21)))
   knots.2 <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 
                           num.nn = 0)$design
-  # stratified sample
+  
   phat.o   <- mean(y.i.o)  # what proportion of the sites in training are 1s
   nknots.1 <- floor(phat.o * nknots)
   nknots.0 <- floor((1 - phat.o) * nknots)
@@ -123,17 +130,24 @@ for (i in sets) {
                             nn = FALSE, num.nn = 0)$design
   knots.3 <- rbind(knots.3.0, knots.3.1)
   
+  if (knot.design == 1) {
+    knots <- knots.1
+  } else if (knot.design == 2) {
+    knots <- knots.2
+  } else {
+    knots <- knots.3
+  }
+  
   cat("Starting: Set", i, "\n")
   
   #### spatial GEV
   cat("  Start gev \n")
   
-  ## Knot setup 1
-  cat("    Start mcmc fit - Knots 1 \n")
+  cat("    Start mcmc fit - Knots", knot.design, " \n")
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
   
-  fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots.1, 
+  fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots, 
                          beta.init = log(-log(1 - mean(y.i.o))),
                          beta.mn = 0, beta.sd = 10,
                          beta.eps = 0.1, beta.attempts = 50, 
@@ -150,101 +164,20 @@ for (i in sets) {
   
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                              s.pred = s.i.p, knots = knots.1,
+                              s.pred = s.i.p, knots = knots,
                               start = 1, end = iters - burn, update = update)
-  timings[1, 1] <- fit.gev$minutes
+  timings[1, knot.design] <- fit.gev$minutes
   
-  bs.gev[1] <- BrierScore(post.prob.gev, y.i.p)
+  bs.gev[knot.design] <- BrierScore(post.prob.gev, y.i.p)
   post.prob.gev.med <- apply(post.prob.gev, 2, median)
-  roc.gev[[1]] <- roc(y.i.p ~ post.prob.gev.med)
-  auc.gev[1] <- roc.gev[[1]]$auc
-  
-  print(bs.gev[1] * 100)
-  
-  # copy table to tables folder on beowulf
-  bs[1, ] <- c(bs.gev[1], auc.gev[1])
-  write.table(bs, file = tblname)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
-  
-  ## Knot setup 2
-  cat("    Start mcmc fit - Knots 2 \n")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  
-  fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots.2, 
-                         beta.init = log(-log(1 - mean(y.i.o))),
-                         beta.mn = 0, beta.sd = 10,
-                         beta.eps = 0.1, beta.attempts = 50, 
-                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                         xi.attempts = 50, xi.fix = TRUE, 
-                         a.init = 10, a.eps = 0.2, a.attempts = 50, 
-                         a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
-                         b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
-                         a.alpha.joint = TRUE, alpha.eps = 0.0001,
-                         rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
-                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
-                         update = update, thin = 1, thresh = 0)
-  
-  cat("    Start mcmc predict \n")
-  post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                              s.pred = s.i.p, knots = knots.2,
-                              start = 1, end = iters - burn, update = update)
-  timings[1, 2] <- fit.gev$minutes
-  
-  bs.gev[2] <- BrierScore(post.prob.gev, y.i.p)
-  post.prob.gev.med <- apply(post.prob.gev, 2, median)
-  roc.gev[[2]] <- roc(y.i.p ~ post.prob.gev.med)
-  auc.gev[2] <- roc.gev[[2]]$auc
+  roc.gev[[knot.design]] <- roc(y.i.p ~ post.prob.gev.med)
+  auc.gev[knot.design] <- roc.gev[[knot.design]]$auc
   
   print(bs.gev * 100)
   
   # copy table to tables folder on beowulf
-  bs[2, ] <- c(bs.gev[2], auc.gev[2])
-  write.table(bs, file = tblname)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
-  
-  ## Knot setup 3
-  cat("    Start mcmc fit - Knots 3 \n")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  
-  fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots.3, 
-                         beta.init = log(-log(1 - mean(y.i.o))),
-                         beta.mn = 0, beta.sd = 10,
-                         beta.eps = 0.1, beta.attempts = 50, 
-                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                         xi.attempts = 50, xi.fix = TRUE, 
-                         a.init = 10, a.eps = 0.2, a.attempts = 50, 
-                         a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
-                         b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
-                         a.alpha.joint = TRUE, alpha.eps = 0.0001,
-                         rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
-                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
-                         update = update, thin = 1, thresh = 0)
-  
-  cat("    Start mcmc predict \n")
-  post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                              s.pred = s.i.p, knots = knots.3,
-                              start = 1, end = iters - burn, update = update)
-  timings[1, 3] <- fit.gev$minutes
-  
-  bs.gev[3] <- BrierScore(post.prob.gev, y.i.p)
-  post.prob.gev.med <- apply(post.prob.gev, 2, median)
-  roc.gev[[3]] <- roc(y.i.p ~ post.prob.gev.med)
-  auc.gev[3] <- roc.gev[[3]]$auc
-  
-  print(bs.gev * 100)
-  
-  # copy table to tables folder on beowulf
-  bs[3, ] <- c(bs.gev[3], auc.gev[3])
+  bs.row <- knot.design
+  bs[bs.row, ] <- c(bs.gev[knot.design], auc.gev[knot.design])
   write.table(bs, file = tblname)
   if (do.upload) {
     upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
@@ -254,84 +187,28 @@ for (i in sets) {
   ###### spatial probit
   cat("  Start probit \n")
   
-  ## Knot setup 1
-  cat("    Start mcmc fit - Knots 1 \n")
+  cat("    Start mcmc fit - Knots", knot.design, " \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots.1, 
+  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots, 
                        iters = iters, burn = burn, update = update)
   
   cat("    Start mcmc predict \n")
   post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.i.p, knots = knots.1,
+                               s.pred = s.i.p, knots = knots,
                                start = 1, end = iters - burn, update = update)
-  timings[2, 1] <- fit.probit$minutes
+  timings[2, knot.design] <- fit.probit$minutes
   
-  bs.pro[1] <- BrierScore(post.prob.pro, y.i.p)
+  bs.pro[knot.design] <- BrierScore(post.prob.pro, y.i.p)
   post.prob.pro.med <- apply(post.prob.pro, 2, median)
-  roc.pro[[1]] <- roc(y.i.p ~ post.prob.pro.med)
-  auc.pro[1] <- roc.pro[[1]]$auc
+  roc.pro[[knot.design]] <- roc(y.i.p ~ post.prob.pro.med)
+  auc.pro[knot.design] <- roc.pro[[knot.design]]$auc
   
   print(bs.pro * 100)
   
   # copy table to tables folder on beowulf
-  bs[4, ] <- c(bs.pro[1], auc.pro[1])
-  write.table(bs, file = tblname)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
-  
-  ## Knot setup 2
-  cat("    Start mcmc fit - Knots 2 \n")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots.2, 
-                       iters = iters, burn = burn, update = update)
-  
-  cat("    Start mcmc predict \n")
-  post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.i.p, knots = knots.2,
-                               start = 1, end = iters - burn, update = update)
-  timings[2, 2] <- fit.probit$minutes
-  
-  bs.pro[2] <- BrierScore(post.prob.pro, y.i.p)
-  post.prob.pro.med <- apply(post.prob.pro, 2, median)
-  roc.pro[[2]] <- roc(y.i.p ~ post.prob.pro.med)
-  auc.pro[2] <- roc.pro[[2]]$auc
-  
-  print(bs.pro * 100)
-  
-  # copy table to tables folder on beowulf
-  bs[5, ] <- c(bs.pro[2], auc.pro[2])
-  write.table(bs, file = tblname)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
-  
-  ## Knot setup 3
-  cat("    Start mcmc fit - Knots 3 \n")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots.3, 
-                       iters = iters, burn = burn, update = update)
-  
-  cat("    Start mcmc predict \n")
-  post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                               s.pred = s.i.p, knots = knots.3,
-                               start = 1, end = iters - burn, update = update)
-  timings[2, 3] <- fit.probit$minutes
-  
-  bs.pro[3] <- BrierScore(post.prob.pro, y.i.p)
-  post.prob.pro.med <- apply(post.prob.pro, 2, median)
-  roc.pro[[3]] <- roc(y.i.p ~ post.prob.pro.med)
-  auc.pro[3] <- roc.pro[[3]]$auc
-  
-  print(bs.pro * 100)
-  
-  # copy table to tables folder on beowulf
-  bs[6, ] <- c(bs.pro[3], auc.pro[3])
+  bs.row <- bs.row + 3
+  bs[bs.row, ] <- c(bs.pro[knot.design], auc.pro[knot.design])
   write.table(bs, file = tblname)
   if (do.upload) {
     upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
@@ -341,13 +218,12 @@ for (i in sets) {
   ####### spatial logit
   cat("  start logit \n")
   
-  ## Knot setup 1
-  cat("    Start mcmc fit - Knots 1 \n")
+  cat("    Start mcmc fit - Knots", knot.design, " \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   tic       <- proc.time()[3]
   fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                     coords = s.i.o, knots = knots.1, starting = starting,
+                     coords = s.i.o, knots = knots, starting = starting,
                      tuning = tuning, priors = priors,
                      cov.model = cov.model, n.samples = iters,
                      verbose = verbose, n.report = n.report, amcmc = amcmc)
@@ -361,91 +237,18 @@ for (i in sets) {
   
   post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
   
-  timings[3, 1] <- toc - tic
+  timings[3, knot.design] <- toc - tic
   
-  bs.log[1] <- BrierScore(post.prob.log, y.i.p)
+  bs.log[knot.design] <- BrierScore(post.prob.log, y.i.p)
   post.prob.log.med <- apply(post.prob.log, 2, median)
-  roc.log[[1]] <- roc(y.i.p ~ post.prob.log.med)
-  auc.log[1] <- roc.log[[1]]$auc
+  roc.log[[knot.design]] <- roc(y.i.p ~ post.prob.log.med)
+  auc.log[knot.design] <- roc.log[[knot.design]]$auc
   
   print(bs.log * 100)
   
   # copy table to tables folder on beowulf
-  bs[7, ] <- c(bs.log[1], auc.log[1])
-  write.table(bs, file = tblname)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
-  
-  ## Knot setup 2
-  cat("    Start mcmc fit - Knots 2 \n")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  tic       <- proc.time()[3]
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                     coords = s.i.o, knots = knots.2, starting = starting,
-                     tuning = tuning, priors = priors,
-                     cov.model = cov.model, n.samples = iters,
-                     verbose = verbose, n.report = n.report, amcmc = amcmc)
-  toc        <- proc.time()[3]
-  
-  print("    start mcmc predict")
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
-                         pred.covars = X.p, start = burn + 1,
-                         end = iters, thin = 1, verbose = TRUE,
-                         n.report = 500)
-  
-  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-  
-  timings[3, 2] <- toc - tic
-  
-  bs.log[2] <- BrierScore(post.prob.log, y.i.p)
-  post.prob.log.med <- apply(post.prob.log, 2, median)
-  roc.log[[2]] <- roc(y.i.p ~ post.prob.log.med)
-  auc.log[2] <- roc.log[[2]]$auc
-  
-  print(bs.log * 100)
-  
-  # copy table to tables folder on beowulf
-  bs[8, ] <- c(bs.log[2], auc.log[2])
-  write.table(bs, file = tblname)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
-  
-  ## Knot setup 3
-  cat("    Start mcmc fit - Knots 3 \n")
-  mcmc.seed <- mcmc.seed + 1
-  set.seed(mcmc.seed)
-  tic       <- proc.time()[3]
-  fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                     coords = s.i.o, knots = knots.3, starting = starting,
-                     tuning = tuning, priors = priors,
-                     cov.model = cov.model, n.samples = iters,
-                     verbose = verbose, n.report = n.report, amcmc = amcmc)
-  toc        <- proc.time()[3]
-  
-  print("    start mcmc predict")
-  yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
-                         pred.covars = X.p, start = burn + 1,
-                         end = iters, thin = 1, verbose = TRUE,
-                         n.report = 500)
-  
-  post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-  
-  timings[3, 3] <- toc - tic
-  
-  bs.log[3] <- BrierScore(post.prob.log, y.i.p)
-  post.prob.log.med <- apply(post.prob.log, 2, median)
-  roc.log[[3]] <- roc(y.i.p ~ post.prob.log.med)
-  auc.log[3] <- roc.log[[3]]$auc
-  
-  print(bs.log * 100)
-  
-  # copy table to tables folder on beowulf
-  bs[9, ] <- c(bs.log[3], auc.log[3])
+  bs.row <- bs.row + 3
+  bs[bs.row, ] <- c(bs.log[knot.design], auc.log[knot.design])
   write.table(bs, file = tblname)
   if (do.upload) {
     upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
@@ -453,10 +256,10 @@ for (i in sets) {
   }
   
   cat("Finished: Set", i, "\n")
-  save(bs.gev, roc.gev, auc.gev,
-       bs.pro, roc.pro, auc.pro,
-       bs.log, roc.log, auc.log,
-       y.i.p, y.i.o, knots.1, knots.2, knots.3, 
+  save(fit.gev, bs.gev, roc.gev, auc.gev,
+       fit.pro, bs.pro, roc.pro, auc.pro,
+       fit.log, bs.log, roc.log, auc.log,
+       y.i.p, y.i.o, knot.design, knots,  
        s.i.o, s.i.p, timings,
        file = filename)
 }
