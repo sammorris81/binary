@@ -260,7 +260,8 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   checkpoint <- 1
   if (any(is.nan(grad))) {
-    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+    print(a$cur[which(is.nan(grad)), ])
+    print(paste("nan at a checkpoint ", checkpoint, sep = ""))
   }
   
   grad <- grad - alpha$cur / alpha1m * (1 - exp(lc) * a$cur^(-alpha$cur / alpha1m))
@@ -280,7 +281,8 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   checkpoint <- checkpoint + 1
   if (any(is.nan(grad))) {
-    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+    print(a$cur[which(is.nan(grad)), ])
+    print(paste("nan at a checkpoint ", checkpoint, sep = ""))
   }
   
   # whole function is written as gradient of log likelihood
@@ -451,14 +453,16 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
 
   checkpoint <- 1
   if (is.nan(grad)) {
-    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+    print(alpha)
+    print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
   }
   
   grad <- grad / alpha.sq
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
-    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+    print(alpha)
+    print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
   }
   
   grad <- grad + sum(1 / alpha + 1 / alpha1m - la / alpha1m.sq + 
@@ -475,14 +479,16 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
-    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+    print(alpha)
+    print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
   }
   
   grad <- grad * alpha * alpha1m  # Jacobian
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
-    print(paste("nan at checkpoint ", checkpoint, sep = ""))
+    print(alpha)
+    print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
   }
   
   return(-grad)

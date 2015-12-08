@@ -320,18 +320,21 @@ spatial_GEV <- function(y, s, x, knots = NULL,
     storage.rho[iter]    <- rho$cur
     storage.prob[iter, , ] <- 1 - exp(-calc$theta)
     
-    if (iter %% update == 0) {
+    if (iter %% update == 0 | iter %in% c(621, 622, 623, 624, 625, 626, 627, 628, 629)) {
       cat("      Iter", iter, "of", iters, "\n")
       if (iterplot) {
         start <- max(iter - 5000, 1)
         end   <- iter
         par(mfrow=c(4, 5))
-        plot.idx <- seq(1, 18, by = 2)
+        plot.idx <- seq(1, 16, by = 2)
         for (idx in plot.idx){
           plot(log(storage.a[start:end, idx, 1]), type = "l", 
                main = paste("a", idx), 
                xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
         }
+        plot(log(storage.a[start:end, 81, 1]), type = "l",
+             main = paste("a", idx),
+             xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
         plot.idx <- seq(1, 16, by = 2)
         for (idx in plot.idx){
           plot(storage.b[start:end, idx, 1], type = "l", 

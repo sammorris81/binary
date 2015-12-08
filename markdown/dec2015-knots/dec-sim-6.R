@@ -144,8 +144,8 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, iterplot = iterplot,
-                         update = update, thin = 1, thresh = 0)
+                         iters = iters, burn = burn, iterplot = TRUE,
+                         update = 100, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
@@ -185,7 +185,7 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, iterplot = iterplot,
+                         iters = iters, burn = burn, iterplot = TRUE,
                          update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
@@ -226,7 +226,7 @@ for (i in sets) {
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, iterplot = iterplot,
+                         iters = iters, burn = burn, iterplot = TRUE,
                          update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
