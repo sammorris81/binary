@@ -59,6 +59,6 @@ do
   sed "26 a\knot.design <- $KNOTS" "$MCMC.tmp2" > "$MCMC"
   rm "$MCMC.tmp" "$MCMC.tmp2"
 #   sleep 60
-#   bwsubmit r "$MCMC"
+  bwsubmit r "$MCMC"
   ((GROUP++))
 done
