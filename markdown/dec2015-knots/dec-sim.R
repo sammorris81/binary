@@ -23,7 +23,6 @@ load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
 
-
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
