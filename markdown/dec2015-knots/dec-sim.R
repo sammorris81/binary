@@ -253,8 +253,8 @@ for (i in sets) {
   
   cat("Finished: Set", i, "\n")
   save(fit.gev, bs.gev, roc.gev, auc.gev,
-       fit.pro, bs.pro, roc.pro, auc.pro,
-       fit.log, bs.log, roc.log, auc.log,
+       fit.probit, bs.pro, roc.pro, auc.pro,
+       fit.logit, bs.log, roc.log, auc.log,
        y.i.p, y.i.o, knot.design, knots,  
        s.i.o, s.i.p, timings,
        file = filename)
