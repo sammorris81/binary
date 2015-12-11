@@ -97,6 +97,48 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   return(results)
 }
 
+# update the alpha term for theta.star
+updateAlpha <- function(data, a, b, alpha, calc, others) {
+  nt     <- ncol(data$y)
+  nknots <- nrow(a$cur)
+  
+  cur.alpha   <- alpha$cur
+  cur.alpha1m <- 1 - alpha$cur
+  lc          <- logc(b = b$cur, alpha = cur.alpha)
+  
+  cur.lly <- logLikeY(y = data$y, theta = calc$theta)
+  cur.llps <- sum(log(cur.alpha) - log(cur.alpha1m) - 
+                    1 / cur.alpha1m * log(a$cur) + lc - 
+                    exp(lc) * a$cur^(-cur.alpha / cur.alpha1m))
+  
+  can.alpha   <- pnorm(rnorm(1, qnorm(cur.alpha), alpha$eps))
+  can.alpha1m <- 1 - can.alpha
+  can.w.star  <- getWStarIDs(alpha = can.alpha, w = calc$w, IDs =others$IDs)
+  can.aw      <- getAW(a = a$cur, w.star = can.w.star)
+  can.theta   <- getTheta(alpha = can.alpha, z = calc$z, aw = can.aw)
+  lc          <- logc(b = b$cur, alpha = can.alpha)
+  
+  can.lly <- logLikeY(y = data$y, theta = can.theta)
+  can.llps <- sum(log(can.alpha) - log(can.alpha1m) - 
+                    1 / can.alpha1m * log(a$cur) + lc - 
+                    exp(lc) * a$cur^(-can.alpha / can.alpha1m))
+  
+  R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
+    dbeta(can.alpha, alpha$a, alpha$b, log = TRUE) -
+    dbeta(alpha, alpha$a, alpha$b, log = TRUE)
+  
+  if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
+    results <- list(q = can.alpha, accept = TRUE)
+  } else {
+    results <- list(q = cur.alpha, accept = FALSE)
+  }}
+  
+  results <- list(alpha = alpha, theta = theta, a.star = a.star,
+                  cur.lly = cur.lly, cur.llps = cur.llps,
+                  att = att, acc = acc)
+  return(results)
+}
+
 # rewrite to use theta function not theta.star
 pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
                        thin = 1, thresh = 0, update = NULL) {
@@ -427,46 +469,6 @@ updateA <- function(y, theta, a, a.star, alpha, wz, cur.lly, cur.llps,
                   cur.lly = cur.lly, cur.llps = cur.llps)
   return(results)
 }
-
-# update the alpha term for theta.star
-updateAlpha <- function(y, theta, a, a.star, alpha, z, w, wz, alpha.a, alpha.b,
-                        cur.lly, cur.llps, mid.points, bin.width,
-                        acc, att, mh, threads = 1) {
-  nt     <- ncol(y)
-  nknots <- nrow(a)
-
-  att <- att + 1
-
-  alpha.star     <- qnorm(alpha)
-  can.alpha.star <- rnorm(1, alpha.star, mh)
-  can.alpha      <- pnorm(can.alpha.star)
-  can.a.star     <- a^can.alpha
-  can.theta      <- getThetaCPP(wz = wz, a_star = can.a.star, alpha = can.alpha)
-  can.lly        <- logLikeY(y = y, theta = can.theta)
-  can.llps       <- dPS.Rcpp(a = a, alpha = can.alpha,
-                             mid.points = mid.points, bin.width = bin.width,
-                             threads = threads)
-
-  R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
-       dbeta(can.alpha, alpha.a, alpha.b, log = TRUE) -
-       dbeta(alpha, alpha.a, alpha.b, log = TRUE)
-
-  if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
-    alpha    <- can.alpha
-    a.star   <- can.a.star
-    theta    <- can.theta
-    cur.lly  <- can.lly
-    cur.llps <- can.llps
-    acc      <- acc + 1
-  }}
-
-  results <- list(alpha = alpha, theta = theta, a.star = a.star,
-                  cur.lly = cur.lly, cur.llps = cur.llps,
-                  att = att, acc = acc)
-  return(results)
-}
-
-
 
 # # rewrite to use theta function not theta.star
 # pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,

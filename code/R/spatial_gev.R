@@ -1,20 +1,27 @@
 source("./hmc_gev.R")
 source("./aux_gev.R")
 source("./update_gev.R")
+source("./pairwise.R")
 source("./nll_post_gev.R")
 
 spatial_GEV <- function(y, s, x, knots = NULL, 
                         beta.init = NULL, beta.mn = 0, beta.sd = 20, 
                         beta.eps = 0.1, beta.attempts = 50,
+                        beta.target = c(0.25, 0.5),
                         xi.init = NULL, xi.mn = 0, xi.sd = 0.5, 
                         xi.eps = 0.1, xi.attempts = 50, xi.fix = TRUE,
+                        xi.target = c(0.25, 0.5),
                         a.init = 10, a.eps = 0.2, a.attempts = 100, 
-                        a.cutoff = NULL,
+                        a.cutoff = NULL, a.target = c(0.5, 0.8),
                         b.init = 0.5, b.eps = 0.2, b.attempts = 100,
-                        alpha.init = 0.5, alpha.eps = NULL, alpha.attempts = 50,
-                        a.alpha.joint = TRUE,
+                        b.target = c(0.5, 0.8),
+                        alpha.init = 0.5, alpha.eps = NULL, 
+                        alpha.mn = 0.5, alpha.sd = 1 / 12, alpha.attempts = 50,
+                        alpha.target = c(0.5, 0.8),
+                        a.alpha.joint = TRUE, 
                         rho.init = 1, logrho.mn = -2, logrho.sd = 1, 
                         rho.eps = 0.1, rho.attempts = 50,
+                        rho.target = c(0.25, 0.5),
                         threads = 1, iterplot = FALSE, iters = 50000, 
                         burn = 10000, update = 100, thin = 1, thresh = 0) {
 
@@ -94,6 +101,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
   }
   
   alpha <- alpha.init
+  alpha.a <- (1 - alpha.mn) * alpha.mn^2 / alpha.sd^2 - alpha.mn
+  alpha.b <- alpha.a * (1 / alpha.mn - 1)
   
   # get the initial set of weights for the sites and knots
   rho    <- rho.init
@@ -101,20 +110,23 @@ spatial_GEV <- function(y, s, x, knots = NULL,
   # create lists for MCMC parameters
   beta  <- list(cur = beta.init, att = 0, acc = 0, eps = beta.eps, 
                 mn = beta.mn, sd = beta.sd, attempts = beta.attempts,
-                target.l = 0.25, target.u = 0.5)
+                target.l = beta.target[1], target.u = beta.target[2])
   xi    <- list(cur = xi.init, att = 0, acc = 0, eps = xi.eps, 
                 mn = xi.mn, sd = xi.sd, attempts = xi.attempts,
-                target.l = 0.25, target.u = 0.5, fix = xi.fix)
+                target.l = xi.target[1], target.u = xi.target[2], fix = xi.fix)
   a     <- list(cur = a.init, att = 0, acc = 0, eps = a.eps, infinite = 0,
-                attempts = a.attempts, target.l = 0.5, target.u = 0.8)
+                attempts = a.attempts, 
+                target.l = a.target[1], target.u = a.target[2])
   b     <- list(cur = b.init, att = 0, acc = 0, eps = b.eps, infinite = 0,
-                attempts = b.attempts, target.l = 0.5, target.u = 0.8)
+                attempts = b.attempts, 
+                target.l = b.target[1], target.u = b.target[2])
   alpha <- list(cur = alpha.init, att = 0, acc = 0, eps = alpha.eps, 
-                infinite = 0, attempts = alpha.attempts, 
-                target.l = 0.5, target.u = 0.8)
+                a = alpha.a, b = alpha.b, infinite = 0, 
+                attempts = alpha.attempts, 
+                target.l = alpha.target[1], target.u = alpha.target[2])
   rho   <- list(cur = rho.init, att = 0, acc = 0, eps = rho.eps, 
                 mn = logrho.mn, sd = logrho.sd, attempts = rho.attempts,
-                target.l = 0.25, target.u = 0.5)
+                target.l = rho.target[1], target.u = rho.target[2])
   
   # get calculated list
   calc <- list()
@@ -184,7 +196,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       q <- c(as.vector(log(a$cur)), transform$logit(alpha$cur))
       epsilon <- c(rep(a$eps, nkt), alpha$eps)
       HMCout <- gevHMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
-                    epsilon = epsilon, L = 20, 
+                    epsilon = epsilon, L = 10, 
                     data = data, beta = beta, xi = xi, a = a, b = b, 
                     alpha = alpha, rho = rho, calc = calc, others = others, 
                     this.param = "a_alpha")
@@ -206,9 +218,10 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       a$att <- a$att + 1
       q <- log(a$cur)
       HMCout  <- gevHMC(neg_log_post_a, neg_log_post_grad_a, q, 
-                     epsilon = a$eps, L = 20, 
-                     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                     rho = rho, calc = calc, others = others, this.param = "a")
+                        epsilon = a$eps, L = 10, 
+                        data = data, beta = beta, xi = xi, a = a, b = b, 
+                        alpha = alpha, rho = rho, calc = calc, others = others, 
+                        this.param = "a")
       if (HMCout$accept) {
         a$acc <- a$acc + 1
         a$cur <- exp(HMCout$q)
@@ -221,9 +234,10 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       alpha$att <- alpha$att + 1
       q <- transform$logit(alpha$cur)
       HMCout  <- gevHMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
-                     epsilon = alpha$eps, L = 10, 
-                     data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                     rho = rho, calc = calc, others = others, this.param = "alpha")
+                        epsilon = alpha$eps, L = 10, 
+                        data = data, beta = beta, xi = xi, a = a, b = b, 
+                        alpha = alpha, rho = rho, calc = calc, others = others, 
+                        this.param = "alpha")
       if (HMCout$accept) {
         alpha$acc   <- alpha$acc + 1
         alpha$cur   <- transform$inv.logit(HMCout$q)
@@ -232,15 +246,28 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
       }
       alpha$infinite <- alpha$infinite + HMCout$infinite
+
+#       alpha$att <- alpha$att + 1
+#       MHout     <- updateAlpha(data = data, a = a, b = b, alpha = alpha, 
+#                                calc = calc, others = others)
+#       if (MHout$accept) {
+#         alpha$acc   <- alpha$acc + 1
+#         alpha$cur   <- MHout$q  # q here is in (0, 1)
+#         calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
+#         calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+#         calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+#       }
+      
     }
     
     # auxiliary variable
     q <- transform$logit(b$cur)
     b$att <- b$att + 1
     HMCout  <- gevHMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
-                   L = 10, 
-                   data = data, beta = beta, xi = xi, a = a, b = b, alpha = alpha, 
-                   rho = rho, calc = calc, others = others, this.para = "b")
+                      L = 10, 
+                      data = data, beta = beta, xi = xi, a = a, b = b, 
+                      alpha = alpha, rho = rho, calc = calc, others = others, 
+                      this.param = "b")
     if (HMCout$accept) {
       b$acc <- b$acc + 1
       b$cur <- transform$inv.logit(HMCout$q)

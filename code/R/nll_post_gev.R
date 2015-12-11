@@ -144,6 +144,9 @@ neg_log_post_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   # data and log likelihood
   ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
+  # prior
+  ll <- ll + (alpha$a - 1) * log(alpha$cur) + (alpha$b - 1) * log(alpha1m)
+  
   return(-ll)
 }
 
@@ -163,6 +166,8 @@ neg_log_post_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   lc <- logc(b = b$cur, alpha = alpha$cur)
   ll <- sum(-alpha$cur / alpha1m * q.a + lc - exp(lc) * a$cur^(-alpha$cur / alpha1m)) +
     nknots * nt * (log(alpha$cur) - log(alpha1m))
+  
+  ll <- ll + (alpha$a - 1) * log(alpha$cur) + (alpha$b - 1) * log(alpha1m)
   
   # data and log likelihood
   w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
@@ -414,11 +419,11 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   nt     <- ncol(data$y)
   ns     <- nrow(data$y)
   
-  alpha <- transform$inv.logit(q)
+  alpha$cur <- transform$inv.logit(q)
   if (recalc) {
-    w.star <- getWStarIDs(alpha = alpha, w = calc$w, IDs = others$IDs)
+    w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
     aw     <- getAW(a = a$cur, w.star = w.star)
-    theta  <- getTheta(alpha = alpha, z = calc$z, aw = aw)
+    theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = aw)
   } else {
     w.star <- calc$w.star
     aw     <- calc$aw
@@ -426,18 +431,18 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   }
   
   grad <- 0
-  alpha.sq <- alpha * alpha
+  alpha.sq <- alpha$cur * alpha$cur
   la <- log(a$cur)
-  alpha1m <- 1 - alpha
+  alpha1m <- 1 - alpha$cur
   alpha1m.sq <- alpha1m * alpha1m
-  apb <- alpha * pi * b$cur
+  apb <- alpha$cur * pi * b$cur
   pb  <- pi * b$cur
   a1mpb <- alpha1m * pi * b$cur
   spb  <- sin(pb)
   capb <- cos(apb)
   sapb <- sin(apb)
   # a.aa1m <- a$cur^(-alpha / alpha1m)
-  a.aa1m <- exp(-alpha * la / alpha1m)
+  a.aa1m <- exp(-alpha$cur * la / alpha1m)
   
   # likelihood
   # very concise way to express this. Likely as fast as we can get it
@@ -446,7 +451,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   for (t in 1:nt) {
     these <- data$y[, t] == 1
     diff.t <- calc$lw - calc$lz[, t]  # ns x nknots
-    diff.t <- diff.t * exp(diff.t / alpha)
+    diff.t <- diff.t * exp(diff.t / alpha$cur)
     diff.t[these, ] <- -diff.t[these, ] / expm1(theta[these, t])
     diff.t[is.nan(diff.t)] <- 0  # gradient should be zero when weight is 0
     grad <- grad + sum(diff.t %*% a$cur)
@@ -454,7 +459,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
 
   checkpoint <- 1
   if (is.nan(grad)) {
-    print(alpha)
+    print(alpha$cur)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
     return(grad)
   }
@@ -463,7 +468,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
-    print(alpha)
+    print(alpha$cur)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
     return(grad)
   }
@@ -502,30 +507,33 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
 #     print("part 2b")
 #   }
   
-  grad <- grad + sum(1 / alpha + 1 / alpha1m - la / alpha1m.sq + 
+  grad <- grad + sum(1 / alpha$cur + 1 / alpha1m - la / alpha1m.sq + 
                        pb * capb / (alpha1m * sapb) +
                        log(sapb) / alpha1m.sq - log(spb) / alpha1m.sq - 
                        pb * cos(a1mpb) / sin(a1mpb) - pb * capb / sapb) - 
     sum(pb * a.aa1m * capb * sin(-a1mpb) / 
           ((sapb/spb)^(-1 / alpha1m) * sapb^2) - 
           pb * a.aa1m * cos(-a1mpb) / ((sapb / spb)^(-1 / alpha1m) * sapb) - 
-          a.aa1m * (-1 / alpha1m - alpha / alpha1m.sq) * la * sin(-a1mpb) / 
+          a.aa1m * (-1 / alpha1m - alpha$cur / alpha1m.sq) * la * sin(-a1mpb) / 
           ((sapb / spb)^(-1/alpha1m) * sapb) + a.aa1m * 
           (pb * capb / (-alpha1m * sapb) - log(sapb / spb) / alpha1m.sq) * 
           sin(-a1mpb) / ((sapb / spb)^(-1 / alpha1m) * sapb))
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
-    print(alpha)
+    print(alpha$cur)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
     return(grad)
   }
   
-  grad <- grad * alpha * alpha1m  # Jacobian
+  # prior
+  grad <- (alpha$a - 1) / alpha$cur - (alpha$b - 1) / alpha1m
+  
+  grad <- grad * alpha$cur * alpha1m  # Jacobian
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
-    print(alpha)
+    print(alpha$cur)
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
     return(grad)
   }
