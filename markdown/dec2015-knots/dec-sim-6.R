@@ -95,9 +95,6 @@ for (i in sets) {
   y.i.p  <- matrix(y[!obs, i], ntest, 1)
   X.p    <- matrix(x[!obs], ntest, 1)
   s.i.p  <- s[!obs, , i]
-  dw2.o  <- rdist(s.i.o, knots)
-  d.o    <- as.matrix(rdist(s.i.o))
-  diag(d.o) <- 0
   
   ntrain.0 <- sum(y.i.o == 0) - ntest.0
   ntrain.1 <- sum(y.i.o == 1) - ntest.1
@@ -118,56 +115,32 @@ for (i in sets) {
   # nearest neighbors. This will take a bit longer, but ultimately comes back 
   # with a similar design
   ####
-  if (knot.design == 1) {
-    knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
+  knots.1 <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
                                    y = seq(0, 1, length = 21)))
-    knots.h <- knots[2, 1] - knots[1, 1]
-  } else if (knot.design == 2) {
-    knots <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 
+  knots.2 <- cover.design(R = s.i.o, nd = nknots, nruns = 1, nn = FALSE, 
                           num.nn = 0)$design
+  
+  phat.o   <- mean(y.i.o)  # what proportion of the sites in training are 1s
+  nknots.1 <- floor(phat.o * nknots)
+  nknots.0 <- floor((1 - phat.o) * nknots)
+  knots.3.0 <- cover.design(R = s.i.o[y.i.o == 0, ], nd = nknots.0, nruns = 1, 
+                            nn = FALSE, num.nn = 0)$design
+  knots.3.1 <- cover.design(R = s.i.o[y.i.o == 1, ], nd = nknots.1, nruns = 1, 
+                            nn = FALSE, num.nn = 0)$design
+  knots.3 <- rbind(knots.3.0, knots.3.1)
+  
+  if (knot.design == 1) {
+    knots <- knots.1
+  } else if (knot.design == 2) {
+    knots <- knots.2
   } else {
-    phat.o   <- mean(y.i.o)  # what proportion of the sites in training are 1s
-    nknots.1 <- floor(phat.o * nknots)
-    nknots.0 <- floor((1 - phat.o) * nknots)
-    knots.0 <- cover.design(R = s.i.o[y.i.o == 0, ], nd = nknots.0, nruns = 1, 
-                              nn = FALSE, num.nn = 0)$design
-    knots.1 <- cover.design(R = s.i.o[y.i.o == 1, ], nd = nknots.1, nruns = 1, 
-                              nn = FALSE, num.nn = 0)$design
-    
-    knots <- rbind(knots.0, knots.1)
+    knots <- knots.3
   }
-  
-  
   
   cat("Starting: Set", i, "\n")
   
   #### spatial GEV
   cat("  Start gev \n")
-  
-  cat("    Start pairwise fit \n")
-  fit.pcl <- tryCatch(
-    fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                      alpha.init = 0.5, rho.init = knots.h,
-                      xi.fix = TRUE, alpha.fix = FALSE,
-                      rho.fix = FALSE, beta.fix = TRUE,
-                      y = y.i.o, dw2 = dw2.o, d = d.o,
-                      cov = X.o, method = "BFGS",
-                      max.dist = 3 * knots.h,
-                      alpha.min = 0.1, alpha.max = 0.9,
-                      threads = 2),
-    error = function(e) {
-      fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                        alpha.init = 0.5, rho.init = knots.h,
-                        xi.fix = TRUE, alpha.fix = FALSE,
-                        rho.fix = FALSE, beta.fix = TRUE,
-                        y = y.i.o, dw2 = dw2.o, d = d.o,
-                        cov = X.o, method = "Nelder-Mead",
-                        max.dist = 3 * knots.h,
-                        alpha.min = 0.1, alpha.max = 0.9,
-                        threads = 2)
-    }
-  )
-  cat("    Finish pairwise fit \n")
   
   cat("    Start mcmc fit - Knots", knot.design, " \n")
   mcmc.seed <- i * 10
@@ -181,16 +154,12 @@ for (i in sets) {
                          xi.attempts = 50, xi.fix = TRUE, 
                          a.init = 10, a.eps = 0.2, a.attempts = 50, 
                          a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
-                         b.attempts = 50, 
-                         alpha.init = 0.5, alpha.attempts = 50, 
-                         alpha.mn = 0.5, alpha.sd = 0.05,
-                         a.alpha.joint = TRUE, alpha.eps = 0.001,
+                         b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
+                         a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                          iters = iters, burn = burn, 
-                         # update = update, 
-                         update = 10, iterplot = TRUE,
-                         thin = 1, thresh = 0)
+                         update = update, thin = 1, thresh = 0)
   
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
