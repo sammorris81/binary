@@ -15,9 +15,9 @@ if (!exists("ifelsematCPP")) {
 #   sourceCpp(file = "./getTheta.cpp")
 # }
 
-# if (!exists("pairwiseCPP")) {
-#   sourceCpp(file = "./pairwise.cpp")
-# }
+if (!exists("pairwiseCPP")) {
+  sourceCpp(file = "./pairwise.cpp")
+}
 # 
 # source('pairwise.R')
 
