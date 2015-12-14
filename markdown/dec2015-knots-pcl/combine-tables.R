@@ -28,30 +28,29 @@ for (i in 1:length(files)) {
   if (knots == 1) {
     bs.results[[setting]][set, 1]  <- table.set[1, 1]
     auc.results[[setting]][set, 1] <- table.set[1, 2]
-    bs.results[[setting]][set, 4]  <- table.set[4, 1]
-    auc.results[[setting]][set, 4] <- table.set[4, 2]
-    bs.results[[setting]][set, 7]  <- table.set[7, 1]
-    auc.results[[setting]][set, 7] <- table.set[7, 2]
+#     bs.results[[setting]][set, 4]  <- table.set[4, 1]
+#     auc.results[[setting]][set, 4] <- table.set[4, 2]
+#     bs.results[[setting]][set, 7]  <- table.set[7, 1]
+#     auc.results[[setting]][set, 7] <- table.set[7, 2]
   } else if (knots == 2) {
     bs.results[[setting]][set, 2]  <- table.set[2, 1]
     auc.results[[setting]][set, 2] <- table.set[2, 2]
-    bs.results[[setting]][set, 5]  <- table.set[5, 1]
-    auc.results[[setting]][set, 5] <- table.set[5, 2]
-    bs.results[[setting]][set, 8]  <- table.set[8, 1]
-    auc.results[[setting]][set, 8] <- table.set[8, 2]
+#     bs.results[[setting]][set, 5]  <- table.set[5, 1]
+#     auc.results[[setting]][set, 5] <- table.set[5, 2]
+#     bs.results[[setting]][set, 8]  <- table.set[8, 1]
+#     auc.results[[setting]][set, 8] <- table.set[8, 2]
   } else {
     bs.results[[setting]][set, 3]  <- table.set[3, 1]
     auc.results[[setting]][set, 3] <- table.set[3, 2]
-    bs.results[[setting]][set, 6]  <- table.set[6, 1]
-    auc.results[[setting]][set, 6] <- table.set[6, 2]
-    bs.results[[setting]][set, 9]  <- table.set[9, 1]
-    auc.results[[setting]][set, 9] <- table.set[9, 2]
+#     bs.results[[setting]][set, 6]  <- table.set[6, 1]
+#     auc.results[[setting]][set, 6] <- table.set[6, 2]
+#     bs.results[[setting]][set, 9]  <- table.set[9, 1]
+#     auc.results[[setting]][set, 9] <- table.set[9, 2]
   }
 }
 
 bs.results.combined  <- matrix(NA, nsettings, nmethods)
 auc.results.combined <- matrix(NA, nsettings, nmethods)
-
 colnames(bs.results.combined)  <- c("gev-1", "gev-2", "gev-3",
                                     "probit-1", "probit-2", "probit-3",
                                     "logit-1", "logit-2", "logit-3")
@@ -60,10 +59,11 @@ colnames(auc.results.combined) <- c("gev-1", "gev-2", "gev-3",
                                     "logit-1", "logit-2", "logit-3")
 rownames(bs.results.combined)  <- c("Setting 1", "Setting 2", "Setting 3")
 rownames(auc.results.combined) <- c("Setting 1", "Setting 2", "Setting 3")
+
 # vector of sets numbers that are complete
 finished.sets <- vector(mode = "list", length = nsettings)
 for (setting in 1:nsettings) {
-  these.sets <- which(rowSums(is.na(bs.results[[setting]])) == 0)
+  these.sets <- which(rowSums(is.na(bs.results[[setting]][, 1:3])) == 0)
   finished.sets[[setting]] <- these.sets
   bs.results.combined[setting, ]  <- apply(bs.results[[setting]][these.sets, ], 
                                            2, mean, na.rm = TRUE)
@@ -92,8 +92,8 @@ for (setting in 1:nsettings) {
   dev.print(device = pdf, paste("plots/auc-", setting, ".pdf", sep = ""))
 }
 
-round(bs.results.combined, 4)
-round(auc.results.combined, 4)
+round(bs.results.combined[, 1:3], 4)
+round(auc.results.combined[, 1:3], 4)
 
 # how many have finished
 colSums(!is.na(bs.results[[1]]))
