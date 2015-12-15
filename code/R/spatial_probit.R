@@ -176,11 +176,11 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
                  dnorm(log(canbw), logbw.mn, logbw.sd, log=TRUE) -
                  dnorm(log(bw), logbw.mn, logbw.sd, log=TRUE)
 
-        if(log(runif(1))<R){
+        if (!is.na(R)) { if (log(runif(1))<R) {
           bw <- canbw
           B  <- canB
           BA <- canBA
-        }
+        } }
 
       }
 
