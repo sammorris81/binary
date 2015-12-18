@@ -147,6 +147,7 @@ for (i in sets) {
   mcmc.seed <- i * 10
   set.seed(mcmc.seed)
   
+  tic <- proc.time()[3]
   fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots, 
                          beta.init = log(-log(1 - mean(y.i.o))),
                          beta.mn = 0, beta.sd = 10,
@@ -154,13 +155,16 @@ for (i in sets) {
                          xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
                          xi.attempts = 50, xi.fix = TRUE, 
                          a.init = 10, a.eps = 0.2, a.attempts = 50, 
-                         a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
+                         # a.cutoff = 0.1, b.init = 0.5, b.eps = 0.2, 
+                         a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                          b.attempts = 50, alpha.init = 0.5, alpha.attempts = 50, 
                          a.alpha.joint = TRUE, alpha.eps = 0.0001,
                          rho.init = 0.1, logrho.mn = -2, logrho.sd = 1, 
                          rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
+                         # iters = iters, burn = burn, 
+                         iters = 100, burn = 10,
                          update = update, thin = 1, thresh = 0)
+  toc <- proc.time()[3]
   
   cat("    Start mcmc predict \n")
   post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
