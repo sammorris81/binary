@@ -10,7 +10,7 @@ SET=$2
 END=$3
 BY=$4
 SETTING=$5
-KNOTS=$6
+# KNOTS=$6
 GROUP=1
 while [ "$SET" -le "$END" ]
 do
@@ -55,9 +55,9 @@ do
   echo "INCLUDE: $INCLUDE"
   cp "$1" "$MCMC"
   sed "24 a\sets <- $INCLUDE" "$ORIG" > "$MCMC.tmp"
-  sed "25 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC.tmp2"
-  sed "26 a\knot.design <- $KNOTS" "$MCMC.tmp2" > "$MCMC"
-  rm "$MCMC.tmp" "$MCMC.tmp2"
+  sed "25 a\setting <- $SETTING" "$MCMC.tmp" > "$MCMC"
+  # sed "26 a\knot.design <- $KNOTS" "$MCMC.tmp2" > "$MCMC"
+  rm "$MCMC.tmp" # "$MCMC.tmp2"
 #   sleep 60
   bwsubmit r "$MCMC"
   ((GROUP++))

@@ -22,12 +22,15 @@ source("../../../code/R/spatial_probit.R", chdir = TRUE)
 load("./simdata.RData")
 
 # data setting and sets to include - written by bash script
+# setMKLthreads(1)
+setting <- 4
+sets    <- 11:20
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
 x <- simdata[[setting]]$x
-do.upload <- FALSE
+do.upload <- TRUE
 
 # extract info about simulation settings
 ns     <- dim(y)[1]

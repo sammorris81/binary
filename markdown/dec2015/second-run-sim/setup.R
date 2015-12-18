@@ -13,9 +13,9 @@ library(numDeriv)
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 
-source("../../code/R/spatial_gev.R", chdir = TRUE)
-source("../../code/R/spatial_logit.R", chdir = TRUE)
-source("../../code/R/spatial_probit.R", chdir = TRUE)
+source("../../../code/R/spatial_gev.R", chdir = TRUE)
+source("../../../code/R/spatial_logit.R", chdir = TRUE)
+source("../../../code/R/spatial_probit.R", chdir = TRUE)
 
 set.seed(7483)  # site
 ns <- c(650, 1300, 650, 1300, 650, 1300)  # 500 train and 1000 train
@@ -27,6 +27,8 @@ gev.alpha <- 0.3
 gev.rho   <- 0.025
 gev.xi    <- 0
 gev.prob  <- 0.05
+knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
+                               y = seq(0, 1, length = 21)))
 
 ### logit settings
 
@@ -58,7 +60,7 @@ for (setting in 1:nsettings) {
     if (setting == 1 | setting == 2) {
       data <- rRareBinarySpat(x = simdata[[setting]]$x, 
                               s = simdata[[setting]]$s[, , set], 
-                              knots = simdata[[setting]]$s[, , set], 
+                              knots = knots, 
                               beta = 0, xi = gev.xi, alpha = gev.alpha, 
                               rho = gev.rho, prob.success = gev.prob)
       
