@@ -134,7 +134,7 @@ for (i in sets) {
                       threads = 2),
     error = function(e) {
       fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                        alpha.init = 0.5, rho.init = knots.h,
+                        alpha.init = 0.5, rho.init = rho.init.pcl,
                         xi.fix = TRUE, alpha.fix = FALSE,
                         rho.fix = FALSE, beta.fix = TRUE,
                         y = y.i.o, dw2 = dw2.o, d = d.o,
