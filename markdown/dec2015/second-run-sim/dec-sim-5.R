@@ -68,7 +68,7 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
                   "accept.rate" = 0.35)
 
 upload.pre <- "samorris@hpc.stat.ncsu.edu:~/rare-binary/markdown/dec2015/"
-upload.pre <- paste(upload.pre, "second-run-sim/sim-tables", sep = "")
+upload.pre <- paste(upload.pre, "second-run-sim/sim-tables/", sep = "")
 
 for (i in sets) {
   # storage for some of the results
