@@ -3,14 +3,14 @@ rm(list = ls())
 files <- list.files(path = "sim-tables/")
 
 nsettings <- 6
-nsets <- 100
+nsets <- 50
 nmethods <- 3
 bs.results <- auc.results <- vector(length = nsettings, mode = "list")
 for (setting in 1:nsettings) {
   bs.results[[setting]]  <- matrix(NA, nsets, nmethods)
   auc.results[[setting]] <- matrix(NA, nsets, nmethods)
-  rownames(bs.results[[setting]])  <- paste("set", 1:100)
-  rownames(auc.results[[setting]]) <- paste("set", 1:100)
+  rownames(bs.results[[setting]])  <- paste("set", 1:nsets)
+  rownames(auc.results[[setting]]) <- paste("set", 1:nsets)
   colnames(bs.results[[setting]])  <- c("gev", "probit", "logit")
   colnames(auc.results[[setting]]) <- c("gev", "probit", "logit")
 }
@@ -58,6 +58,21 @@ round(bs.results.combined[, 2] / bs.results.combined[, 3], 4)
 round(auc.results.combined[, 1], 4)
 round(auc.results.combined[, 2], 4)
 round(auc.results.combined[, 3], 4)
+
+# Check for differences
+# First do Friedman test (one-way repeated measures)
+#   friedman.test(y ~ trt | block, data)
+# Then follow up with the Wilcoxon, Nemenyi, McDonald-Thompson test
+# pWNMT(x, b, trt, method, n.mc)
+#     x: list of values
+#     b: vector of blocks (only needed if x is a vector)
+#     trt: vector of treatments
+#     method: "Exact", "Monte Carlo" or "Asymptotic"
+
+groups <- rep(1:nmethods, each=50)
+dataset <- rep(1:50, times=nmethods)
+
+
 
 
 # # look at a few iteration plots
