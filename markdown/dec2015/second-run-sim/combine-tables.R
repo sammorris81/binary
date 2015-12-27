@@ -69,10 +69,41 @@ round(auc.results.combined[, 3], 4)
 #     trt: vector of treatments
 #     method: "Exact", "Monte Carlo" or "Asymptotic"
 
-groups <- rep(1:nmethods, each=50)
-dataset <- rep(1:50, times=nmethods)
+library(NSM3)
+set.seed(6727)  #npar
+groups <- as.factor(rep(1:nmethods, each=50))
+dataset <- as.factor(rep(1:50, times=nmethods))
+results.friedman <- matrix(0, nsettings, 2)
+colnames(results.friedman) <- c("bs", "auc")
 
+for (setting in 1:nsettings) {
+  scores <- as.vector(bs.results[[setting]])
+  combine <- data.frame(scores, groups, dataset)
+  results.friedman[setting, 1] <- friedman.test(scores ~ groups | dataset,
+                                                data=combine)$p.value
+  
+  scores <- as.vector(auc.results[[setting]])
+  combine <- data.frame(scores, groups, dataset)
+  results.friedman[setting, 2] <- friedman.test(scores ~ groups | dataset,
+                                                data=combine)$p.value
+}
 
+# posthoc is  Wilcoxon, Nemenyi, McDonald-Thompson test
+bs.results.wnmt  <- matrix(0, choose(nmethods, 2), nsettings)
+auc.results.wnmt <- matrix(0, choose(nmethods, 2), nsettings)
+for (setting in 1:nsettings) {
+  scores <- as.vector(bs.results[[setting]])
+  combine <- data.frame(scores, groups, dataset)
+  bs.results.wnmt[, setting] <- pWNMT(x=combine$scores, b=combine$dataset,
+                                         trt=combine$groups, n.mc=20000)$p.val
+  
+  scores <- as.vector(auc.results[[setting]])
+  combine <- data.frame(scores, groups, dataset)
+  auc.results.wnmt[, setting] <- pWNMT(x=combine$scores, b=combine$dataset,
+                                          trt=combine$groups, n.mc=20000)$p.val
+  
+  print(paste("setting:", setting))
+}
 
 
 # # look at a few iteration plots
