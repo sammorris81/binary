@@ -24,7 +24,7 @@ nsettings <- length(ns)  # storing y in a list
 ### gev settings
 
 gev.alpha <- 0.3
-gev.rho   <- 0.025
+gev.rho   <- 0.025  # why did I do this?
 gev.xi    <- 0
 gev.prob  <- 0.05
 knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 

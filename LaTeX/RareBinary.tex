@@ -111,9 +111,9 @@ The joint likelihood of $Y$ is computationally challenging to obtain.
 Therefore, to incorporate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
 Consider a set of $A_1, \ldots, A_l \iid \text{PS}(\alpha)$ random effects associated with spatial knots $\bv_1, \ldots, \bv_L$.
 The hierarchical model is given by
-\begin{align}
+\begin{align} \label{eq:hiermodel}
   Z(\bs) | A_l, \ldots, A_l &\indep \text{GEV}[\theta(\bs), \alpha \theta(\bs), \alpha] \\
-  A_l &\iid \text{PS}(\alpha)
+  A_l &\iid \text{PS}(\alpha) \nonumber
 \end{align}
 where $\theta(\bs) = \left[\sum_{l = 1}^L A_l w_l (\bs)^{1 / \alpha} \right]^\alpha$.
 
@@ -177,12 +177,30 @@ To overcome challenges with evaluating the positive stable density, we follow \c
 
 \section{Simulation study}\label{s:sim}
 
-For our simulation study, we generate $n_m = 100$ datasets under 4 different settings to explore the impact of rareness of observations, sample size, and knot spacing.
-We consider two degrees of rareness $\pi = 0.01, 0.05$ and two sample sizes $n_s = 1000, 2000$.
-For the different knot spacings, we use knots in $[0, 1] \times [0, 1]$ on a $21 \times 21$ grid and $31 \times 31$ grid.
-For each dataset, we fit the model using three different methods, spatial logistic regression, spatial probit regression, and the proposed spatial GEV method.
-In each case, we fit the model using Bayesian methods with proper, but fairly uninformative priors.
+For our simulation study, we generate $n_m = 50$ datasets under 6 different settings to explore the impact of sample size and misspecification of link function.
+We generate data assuming three possible types of underlying process.
+For each process, we consider two sample sizes $n_s = 650$ and $n_s = 1300$.
 
+The first of these processes is a max-stable process that uses the GEV link described in \ref{eq:hiermodel} with knots on a $21 \times 21$ grid on $[0, 1] \times [0, 1]$.
+For this process, we set $\alpha = 0.3$, $\rho = 0.025$, $\xi = 0$ for idenfiability purposes, and $\beta_0$ is set for each dataset to give $5\%$ rarity.
+We then set $Y(\bs) = I[z(\bs) > 0]$ where $I[\cdot]$ is an indicator function.
+
+For the second process, we generate a latent variable from a spatial Gaussian process with a mean of $\text{logit}(0.05) \approx -2.9444$ and an exponential covariance given by
+\begin{align}
+  \text{cov}(\bs_1, \bs_2) = \tau_\text{Gau}^2 * \exp\left\{- \frac{||\bs_1 - \bs_2||}{\rho_\text{Gau}}\right\}
+\end{align}
+where $\tau_\text{Gau} = 7$ and $\rho_\text{Gau} = 0.10$.
+The mean of the Gaussian process is set to give approximately $5\%$ rarity.
+Finally, we generate $Y(\bs) \ind \text{Bern}[\pi(\bs)]$
+where $\pi(\bs) = \exp\left\{ \frac{z(\bs)}{1 + z(\bs)} \right\}$
+
+For the third process, we generate data using a hotspot method.
+For this process, we first generate hotspots throughout the space, and then set the probability of occurrence to be higher when a site is within a circle of radius $\rho = 0.05$ from a hotspot location.
+More specifically, generate $K \sim \text{Poisson}(9)$ hotspot locations, $\bv^*_1, \ldots, \bv^*_K$, from a uniform distribution over $[0, 1] \times [0, 1]$.
+If $||\bs_i - \bv^*_k|| < 0.05$ for any $k$, then $\pi(\bs_i) = 0.70$ otherwise, $\pi(\bs_i) = 0.01$.
+We then generate $Y(\bs_i) \ind \text{Bern}[\pi(\bs_i)]$.
+
+For each dataset, we fit the model using three different methods, spatial logistic regression, spatial probit regression, and the proposed spatial GEV method.
 
 \subsection{Spatial logistic and probit methods}
 Because logistic and probit methods represent two of the more common spatial techniques for binary data, we chose to compare our method to them.
@@ -195,53 +213,90 @@ The marginal distributions are given by
     \phi(\bX^T \bbeta + \bW \balpha), \qquad &\text{probit}
   \end{array}\right.
 \end{align}
-where \hl{need additional information here about $\bW, \balpha$}
+where $\balpha$ are Gaussian random effects at the knot locations, and the $\bW$ are basis functions to recreate the Gaussian process at all sites.
 
 \subsection{Cross validation}\label{s:modelselect}
-For each dataset, we fit the model using 75\% of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
+For each dataset, we fit the model using 500 of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
 Because our goal is to predict a the occurrence of an event, we use Brier scores to compare the models \citep{Gneiting2007}.
 The Brier score for predicting an occurrence at site $\bs$ is given by $\{I[Y(\bs)=1] - P[Y(\bs)=1]\}^2$ where $I[Y(\bs) = 1]$ is an indicator function indicating that an event occurred at site $\bs$, and $P[Y(\bs) = 1]$ is obtained by taking the median of the posterior distribution.
 We average the Brier scores over all test sites, and a lower score indicates a better fit.
 
+We also consider the receiver operating characteristic (ROC) curve and look at the area under the curve (AUC) for the different methods and settings.
+AUC is commonly used as a metric to determine how well a model can classify data.
+When AUC = 1, the model perfectly classifies all observations in the test set, and when AUC = 0, the model misclassifies all observations in the test set.
+AUC is computed using the \texttt{roc} function in the \texttt{pROC} package of \texttt{R} using the median of the posterior predictive distribution at the testing locations.
+We then average AUCs across all datasets for each method and setting to obtain a single AUC for each combination of method and setting.
+
 \subsection{Results}
-Table \ref{tbl:simresults} gives the Brier score relative to the Brier score for the spatial logistic method calculated as
+Table \ref{tbl:simbsresults} gives the Brier score relative to the Brier score for the spatial logistic method calculated as
 \begin{align}
   \text{BS}_{\text{rel}} = \frac{\text{BS}_{\text{method}}}{\text{BS}_{\text{logistic}}}.
 \end{align}
+Table \ref{tbl:simaucresults} gives the AUC relative to the AUC for the spatial logistic method calculated in similarly to the relative Brier score.
 
 \begin{table}
   \caption{Relative Brier scores for GEV and Probit methods}
-  \label{tbl:simresults}
+  \label{tbl:simbsresults}
   \centering
   \begin{tabular}{r|ll}
     \cline{2-3}
               & GEV    & Probit\\
     \hline
-    Setting 1 & 0.4900 & 0.5474\\
-    Setting 2 & 0.4788 & 0.5648\\
-    Setting 3 & 0.5337 & 0.5985\\
-    Setting 4 & 0.5270 & 0.5929\\
+    Setting 1 & 0.9047 & 0.9754\\
+    Setting 2 & 0.7885 & 0.9804\\
+    Setting 3 & 1.0275 & 1.0018\\
+    Setting 4 & 1.0264 & 1.0089\\
+    Setting 5 & 1.0458 & 0.9963\\
+    Setting 6 & 1.0565 & 0.9945\\
     \hline
   \end{tabular}
 \end{table}
 
-Figures \ref{fig:post-med-2} and \ref{fig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively of a simulated dataset.
-As you can see on the figures, the both the spatial probit and logistic models oversmooth $P(Y = 1)$, whereas the spatial GEV method is able to capture small pockets of spatial dependence.
-Plots for the medians of settings 1 and 4 look similar, so they are not included here.
+\begin{table}
+  \caption{Relative AUC for GEV and Probit methods}
+  \label{tbl:simaucresults}
+  \centering
+  \begin{tabular}{r|lll}
+    \cline{2-4}
+              & GEV    & Probit & Logit\\
+    \hline
+    Setting 1 & 0.8998 & 0.8973 & 0.8897\\
+    Setting 2 & 0.9458 & 0.9399 & 0.9356\\
+    Setting 3 & 0.7288 & 0.7371 & 0.7157\\
+    Setting 4 & 0.7906 & 0.8056 & 0.8115\\
+    Setting 5 & 0.8426 & 0.8458 & 0.8388\\
+    Setting 6 & 0.8756 & 0.8686 & 0.8765\\
+    \hline
+  \end{tabular}
+\end{table}
 
-\begin{figure}
-  % this figure comes from markdown/sim-hmc/predict-maps.R
-  \includegraphics[width=\linewidth]{plots/post-med-2.pdf}
-  \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 2.}
-  \label{fig:post-med-2}
-\end{figure}
+We analyzed the results for this simulation study using a Friedman test at $\alpha = 0.05$ to see if at least one method had a significantly different Brier score or AUC.
+For any setting that yielded a significant p-value, we conducted a Wilcoxon-Nemenyi-McDonald-Thompson test to see which of the methods had different results.
+The full results for the Wilcoxon-Nemenyi-McDonald-Thompson tests are given in Appendix \ref{a:pdiffs}.
+For all settings, we find significant results for the Friedman test comparing the Brier scores for the methods.
+Specifcally, we see a statistically significant reduction in Brier score using the GEV compared to logit for settings 1 and 2 and compared to probit for setting 2.
+However, in the other settings, the logit and probit methods tend to perform better than the GEV method.
 
-\begin{figure}
-  % this figure comes from markdown/sim-hmc/predict-maps.R
-  \includegraphics[width=\linewidth]{plots/post-med-3.pdf}
-  \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 3.}
-  \label{fig:post-med-3}
-\end{figure}
+The results using AUC are much less conclusive with only settings 1 and 4 demonstrating significant differences between the methods at $\alpha = 0.05$.
+As with the Brier scores, the GEV method shows a statistically significant increase in AUC over the logit method for setting 1, and for setting 4, the both the probit and logit methods show a statistically significant improvement in AUC over the GEV method.
+
+% Figures \ref{fig:post-med-2} and \ref{fig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively of a simulated dataset.
+% As you can see on the figures, the both the spatial probit and logistic models oversmooth $P(Y = 1)$, whereas the spatial GEV method is able to capture small pockets of spatial dependence.
+% Plots for the medians of settings 1 and 4 look similar, so they are not included here.
+
+% \begin{figure}
+%   % this figure comes from markdown/sim-hmc/predict-maps.R
+%   \includegraphics[width=\linewidth]{plots/post-med-2.pdf}
+%   \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 2.}
+%   \label{fig:post-med-2}
+% \end{figure}
+
+% \begin{figure}
+%   % this figure comes from markdown/sim-hmc/predict-maps.R
+%   \includegraphics[width=\linewidth]{plots/post-med-3.pdf}
+%   \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 3.}
+%   \label{fig:post-med-3}
+% \end{figure}
 
 \section{Data analysis}\label{s:analysis}
 For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
@@ -318,6 +373,46 @@ Similar expressions can be derived for all $K$, but become cumbersome for large 
   &=\lim_{p \rightarrow 0 } 2 -\sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i) ^{ 1/\alpha } +  w_{ l} (\bs_j)^{ 1/\alpha } \right]^\alpha ( 1 - p)^{ -1 + \sum_{ l = 1 }^{ L } \left[  w_{l}(\bs_i) ^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha } \nonumber \\[0.5em]
   &= 2 -  \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j) ^{ 1/\alpha } \right]^\alpha.
 \end{align}
+
+\appendix
+
+\section{Simulation study pairwise difference results} \label{a:pdiffs}
+The following tables show the methods that have significantly different Brier scores when using a Wilcoxon-Nemenyi-McDonald-Thompson test.
+In each column, different letters signify that the methods have significantly different Brier scores.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Pairwise BS comparisons}
+  \label{tbl:pwbssim}
+  \begin{tabular}{|l|cc|cc|c|ccc|cc|cc|}
+  \cline{2-13}
+  \multicolumn{1}{c}{} & \multicolumn{2}{|c}{Setting 1} & \multicolumn{2}{|c}{Setting 2} & \multicolumn{1}{|c}{Setting 3} & \multicolumn{3}{|c}{Setting 4} & \multicolumn{2}{|c}{Setting 5} & \multicolumn{2}{|c|}{Setting 6}\\
+  \hline
+  Method 1 & A &   & A &   & A &   &   & C &   & B &   & B \\
+  \hline
+  Method 2 & A & B &   & B & A &   & B &   & A &   & A &   \\
+  \hline
+  Method 3 &   & B &   & B & A & A &   &   & A & B & A &   \\
+  \hline
+  \end{tabular}
+\end{table}
+
+% \begin{table}[htbp]
+%   \centering
+%   \caption{Pairwise AUC comparisons}
+%   \label{tbl:pwaucsim}
+%   \begin{tabular}{|l|cc|}
+%   \multicolumn{1}{c}{} & \multicolumn{2}{|c}{Setting 1} \\
+%   \hline
+%   Method 1 & A &   & A &   \\
+%   \hline
+%   Method 2 & A & B & A & B \\
+%   \hline
+%   Method 3 &   & B &   & B \\
+%   \hline
+%   \end{tabular}
+% \end{table}
+
 
 \begin{singlespace}
 \bibliographystyle{rss}

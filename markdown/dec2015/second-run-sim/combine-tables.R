@@ -105,6 +105,10 @@ for (setting in 1:nsettings) {
   print(paste("setting:", setting))
 }
 
+save(bs.results, bs.results.combined, bs.results.wnmt,
+     auc.results, auc.results.combined, auc.results.wnmt,
+     results.friedman,
+     file = "results.RData")
 
 # # look at a few iteration plots
 # set <- 1
