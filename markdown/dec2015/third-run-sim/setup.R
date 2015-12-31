@@ -1,0 +1,255 @@
+#### Exploring a couple of hotspots
+rm(list=ls())
+options(warn=2)
+library(fields)
+library(evd)
+library(spBayes)
+library(fields)
+library(SpatialTools)
+# library(microbenchmark)  # comment out for beowulf
+library(mvtnorm)
+library(Rcpp)
+library(numDeriv)
+Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+Sys.setenv("PKG_LIBS"="-fopenmp")
+
+source("../../../code/R/spatial_gev.R", chdir = TRUE)
+source("../../../code/R/spatial_logit.R", chdir = TRUE)
+source("../../../code/R/spatial_probit.R", chdir = TRUE)
+
+set.seed(7483)  # site
+ns <- c(1650, 2300, 1650, 2300, 1650, 2300)  # 650 train and 1300 train
+nsettings <- length(ns)  # storing y in a list
+
+##############################################
+### gev settings
+##############################################
+gev.alpha <- 0.3
+gev.rho   <- 0.075  # 1.5 x knot spacing
+gev.xi    <- 0
+gev.prob  <- 0.05
+knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
+                               y = seq(0, 1, length = 21)))
+
+##############################################
+### logit settings
+##############################################
+log.var   <- 7
+log.rho   <- 0.075
+log.prob  <- 0.0075
+log.error <- 0  # let the bernoulli r.v. take care of this noise
+
+##############################################
+### hotspot settings. generates around 5% 1s.
+##############################################
+nhotspots <- 3
+p <- 0.85  # P(Y=1|hot spot)
+q <- 0.005  # P(Y=1|background)
+r <- 0.075  # Hot spot radius
+
+# nhotspots <- 3
+# p <- 0.85  # P(Y=1|hot spot)
+# q <- 0.005  # P(Y=1|background)
+# r <- 0.05  # Hot spot radius
+
+##############################################
+### generate the data
+##############################################
+simdata <- vector(mode = "list", length = nsettings)
+
+nsets <- 100
+set.seed(3282)  # data
+
+for (setting in 1:nsettings) {
+  simdata[[setting]]$y <- matrix(data = NA, nrow = ns[setting], ncol = nsets)
+  simdata[[setting]]$s <- array(runif(2 * nsets * ns[setting]), 
+                                dim = c(ns[setting], 2, nsets))
+  simdata[[setting]]$x <- matrix(1, ns[setting], 1)
+  simdata[[setting]]$hotspots <- vector(mode = "list", length = nsets)
+  
+  for (set in 1:nsets) {
+    ### GEV generation
+    if (setting == 1 | setting == 2) {
+      data <- rRareBinarySpat(x = simdata[[setting]]$x, 
+                              s = simdata[[setting]]$s[, , set], 
+                              knots = knots, 
+                              beta = 0, xi = gev.xi, alpha = gev.alpha, 
+                              rho = gev.rho, prob.success = gev.prob)
+      
+      simdata[[setting]]$y[, set] <- data$y
+    } 
+    
+    ### logit generation
+    if (setting == 3 | setting == 4) {
+      d <- as.matrix(rdist(simdata[[setting]]$s[, , set]))
+      diag(d) <- 0
+      Sigma <- simple.cov.sp(D = d, sp.type = "exponential", 
+                             sp.par = c(log.var, log.rho), 
+                             error.var = log.error, finescale.var = 0)
+      data <- transform$logit(log.prob) + t(chol(Sigma)) %*% rnorm(ns[setting])
+      data <- rbinom(n = ns[setting], size = 1, prob = transform$inv.logit(data))
+      simdata[[setting]]$y[, set] <- data
+    }
+    
+    ### hotspot generation
+    if (setting == 5 | setting == 6) {
+      k  <- rpois(1, nhotspots) + 1
+      c1 <- runif(k)
+      c2 <- runif(k)
+      
+      hot <- rep(FALSE, ns[setting])
+      for (j in 1:k) {
+        d   <- sqrt((simdata[[setting]]$s[, 1, set] - c1[j])^2 + 
+                    (simdata[[setting]]$s[, 2, set] - c2[j])^2) 
+        hot <- ifelse(d < r, TRUE, hot)
+      }
+      simdata[[setting]]$y[, set] <- rbinom(ns[setting], 1, ifelse(hot, p, q))
+      simdata[[setting]]$hotspots[[set]] <- cbind(c1, c2)
+    }
+    
+    if (set %% 20 == 0) {
+      print(paste("  Dataset ", set, " finished", sep = ""))
+    }
+  }
+  print(paste("Setting ", setting, " finished", sep = ""))
+}
+
+for (i in 1:6) {
+  print(mean(simdata[[i]]$y))
+}
+
+dev.new(width = 12, height = 9)
+par(mfrow = c(3, 4))
+settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
+
+for (setting in 1:length(settings)) {
+  if (setting %in% c(1, 3, 5)) {
+    end <- 650
+  } else {
+    end <- 1300
+  }
+  
+  sets <- tail(order(colMeans(simdata[[setting]]$y[1:end, ])), 2)
+  for(set in sets) {
+    plot(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] != 1), , set], 
+         pch = 21, cex = 1.5, col = "dodgerblue4", bg = "dodgerblue1", 
+         xlab = "", ylab = "", 
+         main = paste(settings[setting], ": ", 
+                      round(100 * mean(simdata[[setting]]$y[1:end, set]), 2), 
+                      "%, ns = ", ns[setting] - 1000, sep = ""))
+    points(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] == 1), , set], 
+           pch = 21, cex = 1.5, col = "firebrick4", bg = "firebrick1")
+  }
+}
+dev.print(device = pdf, file = "five-high.pdf")
+dev.off()
+
+dev.new(width = 12, height = 9)
+par(mfrow = c(3, 4))
+settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
+
+for (setting in 1:length(settings)) {
+  if (setting %in% c(1, 3, 5)) {
+    end <- 650
+  } else {
+    end <- 1300
+  }
+  
+  sets <- order(colMeans(simdata[[setting]]$y[1:end, ]))[1:2]
+  
+  for (set in sets) {
+    plot(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] != 1), , set], 
+         pch = 21, cex = 1.5, col = "dodgerblue4", bg = "dodgerblue1", 
+         xlab = "", ylab = "", 
+         main = paste(settings[setting], ": ", 
+                      round(100 * mean(simdata[[setting]]$y[1:end, set]), 2), 
+                      "%, ns = ", ns[setting] - 1000, sep = ""))
+    points(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] == 1), , set], 
+           pch = 21, cex = 1.5, col = "firebrick4", bg = "firebrick1")
+  }
+}
+dev.print(device = pdf, file = "five-low.pdf")
+dev.off()
+
+
+
+
+ns <- 1300
+p <- 0.005
+s <- cbind(runif(ns), runif(ns))
+d <- as.matrix(rdist(s))
+diag(d) <- 0
+Sigma <- simple.cov.sp(D=d, sp.type="exponential", 
+                       sp.par=c(7, 0.05), error.var=1, 
+                       finescale.var=0)
+data <- log(p / (1 -p)) + t(chol(Sigma)) %*% rnorm(ns)
+data <- rbinom(n = ns, size = 1, prob = 1 / (1 + exp(-data)))
+
+plot(s[which(data != 1), ], pch = 21, cex = 1.5, 
+     col = "dodgerblue4", bg = "dodgerblue1", xlab = "", ylab = "", 
+     main = paste("P(Y = 1) = ", round(mean(data), 4), sep = ""))
+points(s[which(data == 1), ], pch = 21, cex = 1.5, 
+       col = "firebrick4", bg = "firebrick1")
+
+
+
+
+save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata.RData")
+
+# # setting trial 1
+# nhotspots <- c(5, 5, 3, 3)
+# knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
+# p <- 0.95  # P(Y=1|hot spot)
+# q <- 0.01  # P(Y=1|background)
+# r <- 0.05  # Hot spot radius
+
+# # setting trial 2
+# nhotspots <- c(7, 7, 3, 3)
+# knots   <- expand.grid(seq(0, 1, length=21), seq(0, 1, length=21))
+# p <- 0.65  # P(Y=1|hot spot)
+# q <- 0.01  # P(Y=1|background)
+# r <- 0.05  # Hot spot radius
+
+# # setting trial 3
+# nhotspots <- c(5, 5, 2, 2)
+# knots   <- expand.grid(seq(0, 1, length=13), seq(0, 1, length=13))
+# p <- 0.400  # P(Y=1|hot spot)
+# q <- 0.005  # P(Y=1|background)
+# r <- 0.083  # Hot spot radius
+#        [,1]   [,2]   [,3]
+# [1,] 0.0427 0.0418 0.0519
+# [2,] 0.0377 0.0364 0.0462
+# [3,] 0.0208 0.0205 0.0257
+# [4,] 0.0234 0.0234 0.0285
+
+
+# library(fields)
+# library(SpatialTools)
+# log.var  <- c(1 ,3, 5, 7, 9, 11)
+# log.rho  <- 0.025
+# log.prob <- c(0.05, 0.03, 0.01, 0.005, 0.005, 0.005)
+# ns       <- 1300
+# 
+# s <- cbind(runif(ns), runif(ns))
+# d <- as.matrix(rdist(s))
+# diag(d) <- 0
+# 
+# par(mfrow = c(3, 2))
+# for (i in 1:length(log.var)) {
+#   Sigma <- simple.cov.sp(D=d, sp.type="exponential", 
+#                          sp.par=c(log.var[i], log.rho), error.var=0,
+#                          finescale.var=0)
+#   data <- transform$logit(log.prob[i]) + t(chol(Sigma)) %*% rnorm(ns)
+#   y <- rbinom(n = ns, size = 1, prob = transform$inv.logit(data))
+#   
+#   plot(s[which(y != 1), ], pch = 21,
+#        col = "dodgerblue4", bg = "dodgerblue1", cex = 1.5,
+#        xlab = "", ylab = "",
+#        main = bquote(paste("Logit - 5%, ns = ", .(ns), " , ", 
+#                            sigma^2, "=", .(log.var[i]),  
+#                            ", Rareness = ", .(round(100 * mean(y), 2)), "%", 
+#                            sep = "")))
+#   
+#   points(s[which(y == 1), ], pch = 21, cex = 1.5,
+#          col = "firebrick4", bg = "firebrick1")
+# }
