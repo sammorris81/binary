@@ -142,7 +142,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
       for(ttt in 1:thin){
 
        # LATENT CONTINUOUS VARIABLES:
-
+        
         MMM  <- XB + BA
         lp   <- pnorm(LOW, MMM, 1)
         up   <- pnorm(HIGH, MMM, 1)
@@ -150,6 +150,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         Y    <- qnorm(U, MMM, 1)
 
        # BETA
+        
         VVV  <- chol2inv(chol(tXX + diag(eps, p)))
         MMM  <- crossprod(X, Y - BA)
         beta <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(p)
