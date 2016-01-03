@@ -726,7 +726,7 @@ BrierScore <- function(post.prob, validate) {
   # for (i in 1:iters) {
   #   scores[i] <- mean((validate - post.prob[i, ])^2)
   # }
-  probs <- apply(post.prob, 2, median)
+  probs <- apply(post.prob, 2, mean)
   score <- mean((validate - probs)^2)
 
   return(score)
