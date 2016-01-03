@@ -9,7 +9,7 @@ START=$2
 SET=$2
 END=$3
 BY=$4
-SETTING=$5
+# SETTING=$5
 # KNOTS=$6
 GROUP=1
 while [ "$SET" -le "$END" ]
