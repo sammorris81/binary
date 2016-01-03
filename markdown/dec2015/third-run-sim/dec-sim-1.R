@@ -26,14 +26,17 @@ setting <- 1
 
 if (Sys.info()["nodename"] == "sam-ubuntu") {
   setMKLthreads(1)
+  do.upload <- TRUE
+} else if (Sys.info()["sysname"] == "Darwin") {
+  do.upload <- TRUE
+} else {
+  do.upload <- FALSE
 }
 
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
 x <- simdata[[setting]]$x
-# do.upload <- FALSE
-do.upload <- TRUE
 
 # extract info about simulation settings
 ns     <- dim(y)[1]
