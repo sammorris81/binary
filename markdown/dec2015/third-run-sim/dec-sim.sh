@@ -61,6 +61,6 @@ do
   # cp "$MCMC.tmp" "$MCMC"
   # rm "$MCMC.tmp" # "$MCMC.tmp2"
   # sleep 60
-  # bwsubmit r "$MCMC"
+  bwsubmit r "$MCMC"
   ((GROUP++))
 done
