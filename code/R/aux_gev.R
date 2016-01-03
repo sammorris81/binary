@@ -348,7 +348,8 @@ getThetaStar <- function(w.star, a) {
 
 # generate dependent rare binary data
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
-                            prob.success = 0.05, dw2 = NULL, a = NULL) {
+                            prob.success = 0.05, dw2 = NULL, a = NULL,
+                            thresh = NULL) {
   
   p <- length(beta)
   if (nt == 1) {
@@ -395,7 +396,9 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
 
   # set the threshold for success at whatever value will give us
   # our desired percentage of 1s.
-  thresh <- quantile(h, probs = (1 - prob.success))
+  if (is.null(thresh)) {
+    thresh <- quantile(h, probs = (1 - prob.success))
+  }
 
   y <- ifelse(h > thresh, 1, 0)
 
