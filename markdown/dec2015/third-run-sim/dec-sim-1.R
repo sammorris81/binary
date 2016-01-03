@@ -24,6 +24,10 @@ load("./simdata.RData")
 # data setting and sets to include - written by bash script
 setting <- 1
 
+if (Sys.info()["nodename"] == "sam-ubuntu") {
+  setMKLthreads(1)
+}
+
 # extract the relevant setting from simdata
 y <- simdata[[setting]]$y
 s <- simdata[[setting]]$s
