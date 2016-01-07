@@ -376,6 +376,9 @@ while (sets.remain) {
          file = filename)
   } else {
     cat("Waiting for unlock... \n")
+    if (do.upload) {
+      system("rm ./sim-control/*.*")
+    }
     Sys.sleep(10)  # wait a few seconds and try again
   }
   
