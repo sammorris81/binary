@@ -170,10 +170,10 @@ while (sets.remain) {
     set.seed(setting * 10 + i)
     
     # get the sites where we will be predicting
-#     pred.0 <- sample(which(y[, i] == 0), size = ntest.0)
-#     pred.1 <- sample(which(y[, i] == 1), size = ntest.1)
-#     obs    <- rep(T, ns)
-#     obs[c(pred.0, pred.1)] <- F
+    #     pred.0 <- sample(which(y[, i] == 0), size = ntest.0)
+    #     pred.1 <- sample(which(y[, i] == 1), size = ntest.1)
+    #     obs    <- rep(T, ns)
+    #     obs[c(pred.0, pred.1)] <- F
     # observations have already been sorted in setup.R
     obs <- rep(F, ns)
     obs[1:ntrain] <- TRUE
