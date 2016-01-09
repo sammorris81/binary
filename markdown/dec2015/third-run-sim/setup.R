@@ -27,8 +27,10 @@ gev.alpha  <- 0.3
 gev.rho    <- 0.05  # 1.5 x knot spacing
 gev.xi     <- 0
 gev.prob   <- 0.05
+gev.thresh <- -log(-log(1 - gev.prob))  # thresh = -Intercept
 knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
                                y = seq(0, 1, length = 21)))
+
 
 ################################################################################
 ### logit settings
@@ -38,10 +40,11 @@ knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21),
 ###   from set to set. The average rareness was around 5%, but we ended up with 
 ###   some sets that had 1% rareness and some with 16%.
 ################################################################################
-log.var   <- 10
-log.rho   <- 0.05
-log.prob  <- 0.03  # used to set the intercept for the xbeta
-log.error <- 0  # let the bernoulli r.v. take care of this noise
+log.var    <- 10
+log.rho    <- 0.05
+log.prob   <- 0.05  # used to set the intercept for the xbeta
+log.thresh <- transform$logit(log.prob)
+log.error  <- 0  # let the bernoulli r.v. take care of this noise
 
 ################################################################################
 ### hotspot settings. generates around 5% 1s.
@@ -54,11 +57,11 @@ log.error <- 0  # let the bernoulli r.v. take care of this noise
 ###   average of around 5% rareness, but have some sets with around 2% rareness
 ###   and other sets with around 18% rareness. 
 ################################################################################
-nhotspots <- 3
-p <- 0.85   # P(Y=1|hot spot)
-q <- 0.005  # P(Y=1|background)
-# r <- 0.075  # Hot spot radius
-hot.prob <- 0.045
+nhotspots <- 2
+p <- 0.95   # P(Y=1|hot spot)
+q <- 0.001  # P(Y=1|background)
+r <- 0.08  # Hot spot radius
+# hot.prob <- 0.045
 
 # nhotspots <- 3
 # p <- 0.85   # P(Y=1|hot spot)
@@ -87,9 +90,9 @@ for (setting in 1:nsettings) {
     if (setting == 1 | setting == 2) {
       data <- rRareBinarySpat(x = simdata[[setting]]$x, 
                               s = simdata[[setting]]$s[, , set], 
-                              knots = knots, 
-                              beta = 0, xi = gev.xi, alpha = gev.alpha, 
-                              rho = gev.rho, prob.success = gev.prob)
+                              knots = knots, beta = 0, xi = gev.xi, 
+                              alpha = gev.alpha, rho = gev.rho, 
+                              prob.success = gev.prob, thresh = gev.thresh)
       
       simdata[[setting]]$y[, set]    <- data$y
       simdata[[setting]]$thresh[set] <- data$thresh
@@ -104,12 +107,12 @@ for (setting in 1:nsettings) {
                              error.var = log.error, finescale.var = 0)
       
       data <- transform$logit(log.prob) + t(chol(Sigma)) %*% rnorm(ns[setting])
-      thresh <- quantile(data, probs = (1 - log.prob))
-      data <- data - thresh
+      # thresh <- quantile(data, probs = (1 - log.prob))
+      data <- log.thresh + data
       data <- rbinom(n = ns[setting], size = 1, prob = transform$inv.logit(data))
       
       simdata[[setting]]$y[, set]    <- data
-      simdata[[setting]]$thresh[set] <- thresh
+      simdata[[setting]]$thresh[set] <- log.thresh
     }
     
     ### hotspot generation
@@ -122,7 +125,7 @@ for (setting in 1:nsettings) {
       #   1. Look at the distance to the closes knot for all sites
       #   2. Set the hotspot radius to the quantile of the minimum distances 
       #      that corresponds to the desired rareness / P(Y = 1|in hotspot)
-      r <- quantile(apply(d, 1, min), probs = hot.prob / p)
+      # r <- quantile(apply(d, 1, min), probs = hot.prob / p)
       
       hot <- rowSums(d <= r) > 0
 
