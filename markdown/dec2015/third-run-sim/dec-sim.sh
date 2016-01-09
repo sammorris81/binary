@@ -9,7 +9,7 @@ START=$2
 SET=$2
 END=$3
 BY=$4
-SETTING=$5
+# SETTING=$5
 # KNOTS=$6
 GROUP=1
 while [ "$SET" -le "$END" ]
@@ -49,6 +49,7 @@ do
     fi
     SET=$((SET + BY))
   fi
+  # MCMC="$OUT-$SETTING-$INCLUDE-bw$EXT"
   MCMC="$OUT-$INCLUDE-bw$EXT"
   OUTPUT="$OUT$GROUP$RDATA"
   echo "OUTPUT: $OUTPUT"
