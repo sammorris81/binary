@@ -21,8 +21,8 @@ for (i in 1:nrow(birds)) {
 
 quartz(width = 10, height = 7)
 us_map <- map("state")
-map("state", 
-    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE), 
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
 title(main = "Cattle egret sightings in 2002", cex.main = 2)
 points(s[!cattle_egret, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
@@ -30,21 +30,21 @@ points(s[cattle_egret, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 quartz.save(file = "../../../LaTeX/plots/cattle_egret.png", type = "png")
 dev.off()
 
-map("state", 
-    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE), 
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
 points(s[!common_nighthawk, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[common_nighthawk, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
-map("state", 
-    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE), 
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
 points(s[!western_bluebird, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[western_bluebird, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
 quartz(width = 10, height = 7)
-map("state", 
-    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE), 
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
 title(main = "Vesper sparrow sightings in 2002", cex.main = 2)
 points(s[!vesper_sparrow, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
@@ -84,22 +84,22 @@ s_sub <- s[these, ]
 # remove weird point off the coast
 long <- s_sub[, 1]
 lat  <- s_sub[, 2]
-exclude <- which(s_sub[, 1] > -72 & s_sub[, 1] < -70 & 
+exclude <- which(s_sub[, 1] > -72 & s_sub[, 1] < -70 &
                  s_sub[, 2] > 37 & s_sub[, 2] < 39, arr.ind = TRUE)
 s_sub <- s_sub[-exclude, ]
 these <- these[-exclude]
 
-exclude <- which(s_sub[, 1] > -72 & s_sub[, 1] < -71 & 
+exclude <- which(s_sub[, 1] > -72 & s_sub[, 1] < -71 &
                  s_sub[, 2] > 34.5 & s_sub[, 2] < 35.5, arr.ind = TRUE)
 s_sub <- s_sub[-exclude, ]
 these <- these[-exclude]
 
-exclude <- which(s_sub[, 1] > -74 & s_sub[, 1] < -73 & 
+exclude <- which(s_sub[, 1] > -74 & s_sub[, 1] < -73 &
                  s_sub[, 2] > 38 & s_sub[, 2] < 39, arr.ind = TRUE)
 s_sub <- s_sub[-exclude, ]
 these <- these[-exclude]
 
-exclude <- which(s_sub[, 1] > -73 & s_sub[, 1] < -72 & 
+exclude <- which(s_sub[, 1] > -73 & s_sub[, 1] < -72 &
                    s_sub[, 2] > 39 & s_sub[, 2] < 40, arr.ind = TRUE)
 s_sub <- s_sub[-exclude, ]
 these <- these[-exclude]
@@ -108,7 +108,7 @@ cattle_egret_sub <- cattle_egret[these]
 # map("state", xlim = range(s[, 1]), ylim = range(c(s[, 2], 25.1, 49.4)))
 # title(main = "Cattle Egret sighting")
 quartz(width = 10, height = 7)
-plot(s_sub, type = 'n', main = "Subsample of 2012 Sightings", 
+plot(s_sub, type = 'n', main = "Subsample of 2012 Sightings",
      axes = FALSE, xlab = "", ylab = "", cex.main = 2)
 points(s_sub[!cattle_egret_sub, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s_sub[cattle_egret_sub, ], pch = 21, col = "firebrick4", bg = "firebrick1")
@@ -116,7 +116,7 @@ quartz.save(file = "../../../LaTeX/plots/cattle_egret.png", type = "png")
 
 sanderling_sub <- sanderling[these]
 # map("state", xlim = range(s[, 1]), ylim = range(c(s[, 2], 25.1, 49.4)))
-plot(s_sub, type = 'n', main = "Subsample of 2012 Sightings", 
+plot(s_sub, type = 'n', main = "Subsample of 2012 Sightings",
      axes = FALSE, xlab = "", ylab = "", cex.main = 2)
 points(s_sub[!sanderling_sub, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s_sub[sanderling_sub, ], pch = 21, col = "firebrick4", bg = "firebrick1")
