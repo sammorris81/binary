@@ -1,6 +1,7 @@
 rm(list=ls())
-source("./hmc_aux.R")
-source("./auxfunctions.R")
+source("./hmc_gev.R")
+source("./nll_post_gev.R")
+source("./aux_gev.R")
 options(warn = 2)
 
 # Test out the functions

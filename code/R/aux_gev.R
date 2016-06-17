@@ -1,5 +1,5 @@
 if (file.exists("../../../usefulR/usefulfunctions.R")) {
-  source("../../../usefulR/usefulfunctions.R")
+  source("../../../usefulR/usefulfunctions.R", chdir = TRUE)
 }
 
 # Rcpp functions
