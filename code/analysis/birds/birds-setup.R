@@ -27,8 +27,8 @@ map("state",
 title(main = "Cattle egret sightings in 2002", cex.main = 2)
 points(s[!cattle_egret, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[cattle_egret, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-quartz.save(file = "../../../LaTeX/plots/cattle_egret.png", type = "png")
-dev.off()
+dev.print(device = png, width = 10, height = 7,
+          file = "../../../LaTeX/plots/cattle_egret.png")
 
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
@@ -42,15 +42,14 @@ map("state",
 points(s[!western_bluebird, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[western_bluebird, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 
-quartz(width = 10, height = 7)
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
 title(main = "Vesper sparrow sightings in 2002", cex.main = 2)
 points(s[!vesper_sparrow, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[vesper_sparrow, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-quartz.save(file = "../../../LaTeX/plots/vesper_sparrow.png", type = "png")
-dev.off()
+dev.print(device = png, width = 10, height = 7,
+          file = "../../../LaTeX/plots/vesper_sparrow.png")
 
 # get the data from the dataset
 # Species: Sanderlings and cattle egrets
@@ -107,12 +106,12 @@ these <- these[-exclude]
 cattle_egret_sub <- cattle_egret[these]
 # map("state", xlim = range(s[, 1]), ylim = range(c(s[, 2], 25.1, 49.4)))
 # title(main = "Cattle Egret sighting")
-quartz(width = 10, height = 7)
 plot(s_sub, type = 'n', main = "Subsample of 2012 Sightings",
      axes = FALSE, xlab = "", ylab = "", cex.main = 2)
 points(s_sub[!cattle_egret_sub, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s_sub[cattle_egret_sub, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-quartz.save(file = "../../../LaTeX/plots/cattle_egret.png", type = "png")
+dev.print(device = png, width = 10, height = 7,
+          file = "../../../LaTeX/plots/cattle_egret.png")
 
 sanderling_sub <- sanderling[these]
 # map("state", xlim = range(s[, 1]), ylim = range(c(s[, 2], 25.1, 49.4)))
@@ -120,5 +119,74 @@ plot(s_sub, type = 'n', main = "Subsample of 2012 Sightings",
      axes = FALSE, xlab = "", ylab = "", cex.main = 2)
 points(s_sub[!sanderling_sub, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s_sub[sanderling_sub, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-quartz.save(file = "../../../LaTeX/plots/sanderling.png", type = "png")
+dev.print(device = png, width = 10, height = 7,
+          file = "../../../LaTeX/plots/sanderling.png")
 
+#### grid up the bird data ####
+library(maps)
+library(maptools)
+library(ggplot2)
+library(fields)
+birds <- read.csv("./birds/2002/checklists.csv")
+s <- cbind(birds$LONGITUDE, birds$LATITUDE)
+cattle_egret     <- birds$Chordeiles_minor != "0"
+common_nighthawk <- birds$Bubulcus_ibis != "0"
+western_bluebird <- birds$Sialia_mexicana != "0"
+vesper_sparrow   <- birds$Pooecetes_gramineus != "0"
+
+# s is the nx2 matrix of lat/longs of the e-birds obs
+# y is the n-vector of e-birds counts
+# sg is the ng x 2 lat/longs of the grid centers
+# Y is the counts in each grid cell
+
+xg    <- seq(-124.75, -66.75, 0.25)
+yg    <- seq( 24.50,  49.00, 0.25)
+
+sg    <- as.matrix(expand.grid(xg, yg))
+inusa <- !is.na(map.where("usa", x = sg[, 1], y = sg[, 2]))
+sg    <- sg[inusa, ]
+ng    <- nrow(s)
+
+d <- rdist(s, sg)
+mind  <- apply(d, 1, min)        # gives shortest distance to grid cell
+cell  <- apply(d, 1, which.min)  # gives which grid cell is the closest
+
+# our analysis is conditional on there being an observation in a cell
+# in the grid vector, we're using
+# 2: no observations in cell
+# 1: observations exist, and species was seen
+# 0: observations exist, but species not seen
+cattle_egret_grid <- rep(2, nrow(sg))
+cattle_egret_grid[unique(cell[!cattle_egret])] <- 0
+cattle_egret_grid[unique(cell[cattle_egret])]  <- 1
+
+common_nighthawk_grid <- rep(2, nrow(sg))
+common_nighthawk_grid[unique(cell[!common_nighthawk])] <- 0
+common_nighthawk_grid[unique(cell[common_nighthawk])]  <- 1
+
+western_bluebird_grid <- rep(2, nrow(sg))
+western_bluebird_grid[unique(cell[!western_bluebird])] <- 0
+western_bluebird_grid[unique(cell[western_bluebird])]  <- 1
+
+vesper_sparrow_grid <- rep(2, nrow(sg))
+vesper_sparrow_grid[unique(cell[!vesper_sparrow])] <- 0
+vesper_sparrow_grid[unique(cell[vesper_sparrow])]  <- 1
+
+quartz(width = 10, height = 7)
+us_map <- map("state")
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = "Actual Cattle egret sightings in 2002", cex.main = 2)
+points(s[!cattle_egret, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[cattle_egret, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+quartz.save(file = "plots/actual_cattle_egret.png", type = "png")
+
+quartz(width = 10, height = 7)
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = "Gridded Cattle egret sightings in 2002", cex.main = 2)
+points(sg[cattle_egret_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(sg[cattle_egret_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+quartz.save(file = "plots/grid_cattle_egret.png", type = "png")
