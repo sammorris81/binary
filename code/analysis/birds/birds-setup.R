@@ -155,7 +155,7 @@ library(ggplot2)
 library(fields)
 birds <- read.csv("./birds/2002/checklists.csv")
 s <- cbind(birds$LONGITUDE, birds$LATITUDE)
-load("gridedUS.RData")
+load("griddedUS.RData")
 
 cattle_egret     <- birds$Chordeiles_minor != "0"
 common_nighthawk <- birds$Bubulcus_ibis != "0"
@@ -190,8 +190,8 @@ map("state",
 title(main = "Actual Cattle egret sightings in 2002", cex.main = 2)
 points(s[!cattle_egret, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[cattle_egret, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-dev.print(device = pdf, width = 10, height = 7, 
-          file = "plots/actual_cattle_egret.pdf")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/actual_cattle_egret.pdf")
 dev.off()
 
 dev.new()
@@ -201,8 +201,8 @@ map("state",
 title(main = "Gridded Cattle egret sightings in 2002", cex.main = 2)
 points(sg[cattle_egret_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(sg[cattle_egret_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-dev.print(device = pdf, width = 10, height = 7, 
-          file = "plots/grid_cattle_egret.pdf")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/grid_cattle_egret.pdf")
 dev.off()
 
 dev.new()
@@ -212,8 +212,8 @@ map("state",
 title(main = "Actual Common nighthawk sightings in 2002", cex.main = 2)
 points(s[!common_nighthawk, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[common_nighthawk, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-dev.print(device = pdf, width = 10, height = 7, 
-          file = "plots/actual_common_nighthawk.pdf")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/actual_common_nighthawk.pdf")
 dev.off()
 
 dev.new()
@@ -223,6 +223,50 @@ map("state",
 title(main = "Gridded Common nighthawk sightings in 2002", cex.main = 2)
 points(sg[common_nighthawk_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(sg[common_nighthawk_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-dev.print(device = pdf, width = 10, height = 7, 
-          file = "plots/grid_common_nighthawk.pdf")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/grid_common_nighthawk.pdf")
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = "Actual Western bluebird sightings in 2002", cex.main = 2)
+points(s[!western_bluebird, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[western_bluebird, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/actual_western_bluebird.pdf")
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = "Gridded Western bluebird sightings in 2002", cex.main = 2)
+points(sg[western_bluebird_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(sg[western_bluebird_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/grid_western_bluebird.pdf")
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = "Actual Vesper sparrow sightings in 2002", cex.main = 2)
+points(s[!vesper_sparrow, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[vesper_sparrow, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/actual_vesper_sparrow.pdf")
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = "Gridded Vesper sparrow sightings in 2002", cex.main = 2)
+points(sg[vesper_sparrow_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(sg[vesper_sparrow_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = "plots/grid_vesper_sparrow.pdf")
 dev.off()
