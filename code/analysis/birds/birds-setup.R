@@ -129,10 +129,6 @@ library(ggplot2)
 library(fields)
 birds <- read.csv("./birds/2002/checklists.csv")
 s <- cbind(birds$LONGITUDE, birds$LATITUDE)
-cattle_egret     <- birds$Chordeiles_minor != "0"
-common_nighthawk <- birds$Bubulcus_ibis != "0"
-western_bluebird <- birds$Sialia_mexicana != "0"
-vesper_sparrow   <- birds$Pooecetes_gramineus != "0"
 
 # s is the nx2 matrix of lat/longs of the e-birds obs
 # y is the n-vector of e-birds counts
@@ -150,7 +146,21 @@ ng    <- nrow(s)
 d <- rdist(s, sg)
 mind  <- apply(d, 1, min)        # gives shortest distance to grid cell
 cell  <- apply(d, 1, which.min)  # gives which grid cell is the closest
+save(mind, cell, sg, xg, yg, file = "gridedUS.RData")
 
+rm(list = ls())
+library(maps)
+library(maptools)
+library(ggplot2)
+library(fields)
+birds <- read.csv("./birds/2002/checklists.csv")
+s <- cbind(birds$LONGITUDE, birds$LATITUDE)
+load("gridedUS.RData")
+
+cattle_egret     <- birds$Chordeiles_minor != "0"
+common_nighthawk <- birds$Bubulcus_ibis != "0"
+western_bluebird <- birds$Sialia_mexicana != "0"
+vesper_sparrow   <- birds$Pooecetes_gramineus != "0"
 # our analysis is conditional on there being an observation in a cell
 # in the grid vector, we're using
 # 2: no observations in cell
@@ -172,21 +182,47 @@ vesper_sparrow_grid <- rep(2, nrow(sg))
 vesper_sparrow_grid[unique(cell[!vesper_sparrow])] <- 0
 vesper_sparrow_grid[unique(cell[vesper_sparrow])]  <- 1
 
-quartz(width = 10, height = 7)
-us_map <- map("state")
+# us_map <- map("state")
+dev.new()
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
 title(main = "Actual Cattle egret sightings in 2002", cex.main = 2)
 points(s[!cattle_egret, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(s[cattle_egret, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-quartz.save(file = "plots/actual_cattle_egret.png", type = "png")
+dev.print(device = pdf, width = 10, height = 7, 
+          file = "plots/actual_cattle_egret.pdf")
+dev.off()
 
-quartz(width = 10, height = 7)
+dev.new()
 map("state",
     xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
 title(main = "Gridded Cattle egret sightings in 2002", cex.main = 2)
 points(sg[cattle_egret_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
 points(sg[cattle_egret_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
-quartz.save(file = "plots/grid_cattle_egret.png", type = "png")
+dev.print(device = pdf, width = 10, height = 7, 
+          file = "plots/grid_cattle_egret.pdf")
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = "Actual Common nighthawk sightings in 2002", cex.main = 2)
+points(s[!common_nighthawk, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[common_nighthawk, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+dev.print(device = pdf, width = 10, height = 7, 
+          file = "plots/actual_common_nighthawk.pdf")
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = "Gridded Common nighthawk sightings in 2002", cex.main = 2)
+points(sg[common_nighthawk_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(sg[common_nighthawk_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+dev.print(device = pdf, width = 10, height = 7, 
+          file = "plots/grid_common_nighthawk.pdf")
+dev.off()
