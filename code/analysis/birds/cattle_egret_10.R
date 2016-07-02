@@ -5,7 +5,7 @@ cv <- 1
 knot.percent <- 10
 results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
                       ".RData", sep = "")
-table.file   <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
+table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
                       ".RData", sep = "")
 source(file = "fitmodel.R")
 
@@ -16,6 +16,6 @@ knot.percent <- 10
 species <- "cattle_egret"
 results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
                       ".RData", sep = "")
-table.file   <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
+table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
                       ".RData", sep = "")
 source(file = "fitmodel.R")
