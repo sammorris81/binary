@@ -148,6 +148,7 @@ mind  <- apply(d, 1, min)        # gives shortest distance to grid cell
 cell  <- apply(d, 1, which.min)  # gives which grid cell is the closest
 save(mind, cell, sg, xg, yg, file = "gridedUS.RData")
 
+#### Look at the gridded data in comparison to actual data
 rm(list = ls())
 library(maps)
 library(maptools)
@@ -182,7 +183,7 @@ vesper_sparrow_grid <- rep(2, nrow(sg))
 vesper_sparrow_grid[unique(cell[!vesper_sparrow])] <- 0
 vesper_sparrow_grid[unique(cell[vesper_sparrow])]  <- 1
 
-# us_map <- map("state")
+us_map <- map("state")
 dev.new()
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
@@ -270,3 +271,201 @@ points(sg[vesper_sparrow_grid == 1, ], pch = 21, col = "firebrick4", bg = "fireb
 map("state", add = TRUE)
 dev.print(device = pdf, file = "plots/vesper_sparrow_grid.pdf")
 dev.off()
+
+# For the knot selection in the simulation study, we opted for a 21 x 21 grid. 
+# Because the ebirds data are not quite as homogeneous as our simulated data, 
+# I'd like to opt for using a space-filling design with knots at 10%, 15% and 
+# 20% of the sites. Because of some concerns with how long this might take to 
+# run (the simulation study took around 5 hours to fit our model at 1300 sites), 
+# I'm leaning toward 2-fold cross-validation where the holdout sample is a 
+# stratified sample from the original dataset matching P(Y = 1). So for example, 
+# if in the actual dataset, we have Y = 1 at 8% of the grid cells, then both the 
+# testing and training will aim for around 8% 1s.
+
+#### set up cross-validation ####
+# we need separate cross-validation sets for each species because we want to 
+# use a stratified sample to make sure that the proportion of 1s in the 
+# testing set is similar to the training set
+
+# first find the count of grid cells that have observations - should be the same
+# for all species
+s <- sg[cattle_egret_grid != 2, ]
+ns <- nrow(s)
+
+#### cattle_egret: 9.92% ####
+cattle_egret <- cattle_egret_grid[cattle_egret_grid != 2]
+
+cv.idx      <- vector(mode = "list", length = 2)
+prop.ones   <- sum(cattle_egret == 1) / ns
+these.ones  <- which(cattle_egret == 1)
+these.zeros <- which(cattle_egret == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(cattle_egret, s, knots.10, knots.15, knots.20, 
+     cv.idx, file = "cattle_egret.RData")
+
+#### common_nighthawk: 7.90% ####
+common_nighthawk <- common_nighthawk_grid[common_nighthawk_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(common_nighthawk == 1) / ns
+these.ones  <- which(common_nighthawk == 1)
+these.zeros <- which(common_nighthawk == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(common_nighthawk, s, knots.10, knots.15, knots.20, 
+     cv.idx, file = "common_nighthawk.RData")
+
+#### western_bluebird: 6.34% ####
+western_bluebird <- western_bluebird_grid[western_bluebird_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(western_bluebird == 1) / ns
+these.ones  <- which(western_bluebird == 1)
+these.zeros <- which(western_bluebird == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(western_bluebird, s, knots.10, knots.15, knots.20, 
+     cv.idx, file = "western_bluebird.RData")
+
+# vesper_sparrow: 10.32%
+vesper_sparrow <- vesper_sparrow_grid[vesper_sparrow_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(vesper_sparrow == 1) / ns
+these.ones  <- which(vesper_sparrow == 1)
+these.zeros <- which(vesper_sparrow == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(vesper_sparrow, s, knots.10, knots.15, knots.20, 
+     cv.idx, file = "vesper_sparrow.RData")
