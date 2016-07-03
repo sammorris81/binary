@@ -259,6 +259,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
 #       }
       
     }
+    alpha$cur <- alpha.init  # trying to do this with a fixed alpha
     
     # auxiliary variable
     q <- transform$logit(b$cur)
