@@ -353,17 +353,17 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       if (iterplot) {
         start <- max(iter - 5000, 1)
         end   <- iter
-        par(mfrow=c(4, 5))
-        plot.idx <- seq(1, 16, by = 2)
+        par(mfrow=c(3, 4))
+        plot.idx <- seq(1, 7, by = 2)
         for (idx in plot.idx){
           plot(log(storage.a[start:end, idx, 1]), type = "l", 
                main = paste("a", idx), 
                xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
         }
-        plot(log(storage.a[start:end, 81, 1]), type = "l",
-             main = paste("a", idx),
-             xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
-        plot.idx <- seq(1, 16, by = 2)
+        # plot(log(storage.a[start:end, 81, 1]), type = "l",
+        #      main = paste("a", idx),
+        #      xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
+        plot.idx <- seq(1, 7, by = 2)
         for (idx in plot.idx){
           plot(storage.b[start:end, idx, 1], type = "l", 
                main = paste("b", idx),
@@ -372,6 +372,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         
         plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),
              xlab = round(beta$acc / beta$att, 2), ylab = round(beta$eps, 4))
+        plot(storage.xi[start:end], type = "l", main = bquote(xi),
+             xlab = round(xi$acc / xi$att, 2), ylab = round(xi$eps, 4))
         plot(storage.alpha[start:end], type = "l", main = bquote(alpha),
              xlab = round(alpha$acc / alpha$att, 2), ylab = round(alpha$eps, 4))
         plot(storage.rho[start:end], type = "l", main = bquote(rho),

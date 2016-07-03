@@ -40,7 +40,7 @@ updateXi <- function(data, xi, alpha, calc, others) {
   
   can.xi <- rnorm(1, xi$cur, xi$eps)
   
-  if (sum(can.xi * (calc$x.beta - others$thresh) > 1) > 0) {
+  if (any(can.xi * (calc$x.beta - others$thresh) > 1)) {
     can.lly <- -Inf
   } else {
     z       <- getZ(xi = can.xi, x.beta = calc$x.beta, thresh = others$thresh)
