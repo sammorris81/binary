@@ -3,16 +3,20 @@ load(paste("./", species, ".RData", sep = ""))
 
 # get the correct y, x, and s
 if (species == "cattle_egret") {
-  y <- cattle_egret[cv.idx[[cv]]]
+  y.o <- cattle_egret[cv.idx[[cv]]]
+  y.p <- cattle_egret[-cv.idx[[cv]]]
   seed.base <- 1000
 } else if (species == "common_nighthawk") {
-  y <- common_nighthawk[cv.idx[[cv]]]
+  y.o <- common_nighthawk[cv.idx[[cv]]]
+  y.p <- common_nighthawk[-cv.idx[[cv]]]
   seed.base <- 2000
 } else if (species == "vesper_sparrow") {
-  y <- vesper_sparrow[cv.idx[[cv]]]
+  y.o <- vesper_sparrow[cv.idx[[cv]]]
+  y.p <- vesper_sparrow[-cv.idx[[cv]]]
   seed.base <- 3000
 } else if (species == "western_bluebird") {
-  y <- western_bluebird[cv.idx[[cv]]]
+  y.o <- western_bluebird[cv.idx[[cv]]]
+  y.p <- western_bluebird[cv.idx[[cv]]]
   seed.base <- 4000
 } else {
   stop("incorrect species selected")
@@ -32,21 +36,33 @@ if (knot.percent == 10) {
 }
 
 # extract info about simulation settings
-ns     <- length(y)
+ns     <- length(y.o)
+npred  <- length(y.p)
 nt     <- 1
 nknots <- nrow(knots)
 
-y.o <- matrix(y, ns, nt)
-s.o <- s[cv.idx[[cv]], ]
+# scale sites so in [0, 1] x [0, 1] (or close)
+s.min <- apply(s, 2, min)
+s.max <- apply(s, 2, max)
+s.range <- c(diff(range(s[, 1])), diff(range(s[, 2])))
+s.scale <- s
+s.scale[, 1] <- (s[, 1] - s.min[1]) / max(s.range)
+s.scale[, 2] <- (s[, 2] - s.min[2]) / max(s.range)
+knots[, 1] <- (knots[, 1] - s.min[1]) / max(s.range)
+knots[, 2] <- (knots[, 2] - s.min[2]) / max(s.range)
+
+y.o <- matrix(y.o, ns, nt)
+s.o <- s.scale[cv.idx[[cv]], ]
 X.o <- matrix(1, nrow(s.o), 1)
-s.p <- s[-cv.idx[[cv]], ]
+y.p <- matrix(y.p, npred, nt)
+s.p <- s.scale[-cv.idx[[cv]], ]
 X.p <- matrix(1, nrow(s.p), 1)
 
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-# iters <- 25000; burn <- 15000; update <- 1000; thin <- 1
-iters <- 100; burn <- 50; update <- 10; thin <- 1
+iters <- 25000; burn <- 15000; update <- 1000; thin <- 1; iterplot <- FALSE
+# iters <- 10000; burn <- 5000; update <- 100; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
@@ -71,11 +87,11 @@ timings <- rep(NA, 3)
 # start the simulation
 set.seed(seed.base + seed.knot + cv * 10)
 
-rho.init.pcl <- 10  
-dw2.o     <- rdist(s.o, knots)
+rho.init.pcl <- 0.05  
+dw2.o     <- rdist(s.o, knots)^2
 d.o       <- as.matrix(rdist(s.o))
 diag(d.o) <- 0
-max.dist  <- quantile(d.o, probs = 0.10)
+max.dist  <- 0.20
 
 #### spatial GEV
 cat("  Start gev \n")
@@ -84,8 +100,8 @@ cat("  Start gev \n")
 # using the the pairwise estimate of alpha as the mean of the prior 
 # distribution along with a standard deviation of 0.05 to allow for some 
 # variability, but hopefully also some better convergence w.r.t. alpha.
-# we set max.dist to the 25th quantile of the distances in order to only 
-# consider pairs of sites that are relatively close to one another.
+# we set max.dist to 0.15 in order to only consider pairs of sites that 
+# are relatively close to one another.
 cat("    Start pairwise fit \n")
 fit.pcl <- tryCatch(
   fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
@@ -100,7 +116,7 @@ fit.pcl <- tryCatch(
   error = function(e) {
     fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
                       alpha.init = 0.5, rho.init = rho.init.pcl,
-                      xi.fix = FALSE, alpha.fix = FALSE,
+                      xi.fix = TRUE, alpha.fix = FALSE,
                       rho.fix = FALSE, beta.fix = TRUE,
                       y = y.o, dw2 = dw2.o, d = d.o,
                       cov = X.o, method = "Nelder-Mead",
@@ -135,8 +151,8 @@ fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        beta.mn = 0, beta.sd = 10,
                        beta.eps = 0.1, beta.attempts = 50, 
                        xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                       xi.attempts = 50, xi.fix = TRUE, 
-                       a.init = 10, a.eps = 0.2, a.attempts = 50, 
+                       xi.attempts = 50, xi.fix = FALSE, 
+                       a.init = 1, a.eps = 0.2, a.attempts = 50, 
                        a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                        b.attempts = 50, 
                        alpha.init = alpha.init, alpha.attempts = 50, 
@@ -145,9 +161,9 @@ fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
                        rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                        iters = iters, burn = burn, 
-                       update = update, 
+                       update = update, iterplot = iterplot,
                        # update = 10, iterplot = TRUE,
-                       thin = 1, thresh = 0)
+                       thin = thin, thresh = 0)
 
 cat("    Start mcmc predict \n")
 post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,

@@ -86,6 +86,8 @@ getZ <- function(xi, x.beta, thresh) {
 
 getW <- function(rho, dw2, a.cutoff) {
   w <- stdW(makeW(dw2 = dw2, rho = rho, a.cutoff = a.cutoff))
+  
+  return(w)
 }
 
 logLikeY <- function(y, theta) {
@@ -839,12 +841,13 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
     results$param.names <- "beta"
 
   } else if (xi.fix & !alpha.fix & !rho.fix & beta.fix) {
-
+    
     results.beta <- optim(par = beta.init, beta.hat, y = y,
                           cov = cov, xi = xi.init, method = "BFGS",
                           hessian = TRUE)
     beta.hat <- results.beta$par
     init.par <- c(alpha.init, rho.init)
+    
     results <- optim(init.par, pairwise.rarebinaryCPP.9, y = y,
                      xi = xi.init, beta = beta.hat,
                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
@@ -856,7 +859,6 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
     results$beta.cov <- solve(results.beta$hessian)
 
   } else if (xi.fix & !alpha.fix & rho.fix & beta.fix) {
-
     results.beta <- optim(par = beta.init, beta.hat, y = y,
                           cov = cov, xi = xi.init, method = "BFGS",
                           hessian = TRUE)
