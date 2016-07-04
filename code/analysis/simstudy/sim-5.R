@@ -216,7 +216,7 @@ while (sets.remain) {
                            a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                            b.attempts = 50, 
                            alpha.init = alpha.init, alpha.attempts = 50, 
-                           alpha.mn = alpha.mn, alpha.sd = 0.05,
+                           alpha.mn = 0.5, alpha.sd = 1 / sqrt(12),
                            a.alpha.joint = FALSE, alpha.eps = 0.01,
                            rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
                            rho.eps = 0.1, rho.attempts = 50, threads = 1, 
