@@ -24,7 +24,7 @@ load("./simdata.RData")
 # data setting and sets to include - written by bash script
 setting <- 1
 
-if (Sys.info()["nodename"] == "sam-ubuntu") {
+if (Sys.info()["nodename"] == "cwl-mth-sam-001") {
   setMKLthreads(1)
   do.upload <- TRUE
 } else if (Sys.info()["sysname"] == "Darwin") {
