@@ -81,8 +81,8 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("Proposal variable is Inf for", this.param,
-                    ", automatically reject"))
+        print(paste("Proposal variable is Inf for ", this.param,
+                    ", automatically reject", sep = ""))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     }
@@ -147,7 +147,7 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
         print(paste("Momentum variable is Inf for", this.param,
-                    ", automatically reject"))
+                    ", automatically reject", sep = ""))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     }
@@ -172,34 +172,7 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
                  alpha = alpha, rho = rho, calc = calc, others = others)
   proposed_K = sum(p^2) / 2
 
-#   if (any(is.nan(current_U))) {
-#     print("The value of the log likelihood is NaN at the current values")
-#     print(paste("Parameter: ", this.param, "=", current_q))
-#     print(paste("epsilon is: ", epsilon))
-#   } else if (any(is.nan(current_K))) {
-#     print("The potential is NaN at at the current values")
-#     print(paste("Parameter: ", this.param))
-#     print(paste("epsilon is: ", epsilon))
-#   } else if (any(is.nan(proposed_U))) {
-#     print("The value of the log likelihood is NaN at the proposed values")
-#     print(paste("Parameter: ", this.param, "=", q))
-#     print(paste("epsilon is: ", epsilon))
-#     q.trouble <<- q
-#     beta.trouble <<- beta
-#     xi.trouble <<- xi
-#     a.trouble <<- a
-#     b.trouble <<- b
-#     alpha.trouble <<- alpha
-#     rho.trouble <<- rho
-#     calc.trouble <<- calc
-#   } else if (any(is.nan(proposed_K))) {
-#     print("The potential is NaN at the proposed values")
-#     print(paste("Parameter: ", this.param))
-#     print(paste("epsilon is: ", epsilon))
-#   }
-
   R <- current_U - proposed_U + current_K - proposed_K
-  # print(paste("R is ", R))
 
   # Accept or reject the state at end of trajectory, returning either
   # the position at the end of the trajectory or the initial position
