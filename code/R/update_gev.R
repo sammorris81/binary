@@ -128,19 +128,18 @@ updateAlpha <- function(data, a, b, alpha, calc, others) {
   
   R <- sum(can.lly - cur.lly) + sum(can.llps - cur.llps) +
     dbeta(can.alpha, alpha$a, alpha$b, log = TRUE) -
-    dbeta(alpha, alpha$a, alpha$b, log = TRUE) + 
+    dbeta(cur.alpha, alpha$a, alpha$b, log = TRUE) + 
     log(can.alpha - 0) + log(1 - can.alpha) - # Jacobian of the prior
-    log(cur.alpha - 0) + log(1 - cur.alpha)
+    log(cur.alpha - 0) - log(1 - cur.alpha)
   
   if (!is.na(exp(R))) { if (runif(1) < exp(R)) {
     results <- list(q = can.alpha, accept = TRUE)
   } else {
     results <- list(q = cur.alpha, accept = FALSE)
-  }}
+  }} else {
+    results <- list(q = cur.alpha, accept = FALSE)
+  }
   
-  results <- list(alpha = alpha, theta = theta, a.star = a.star,
-                  cur.lly = cur.lly, cur.llps = cur.llps,
-                  att = att, acc = acc)
   return(results)
 }
 

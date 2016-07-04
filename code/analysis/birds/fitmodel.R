@@ -61,7 +61,7 @@ X.p <- matrix(1, nrow(s.p), 1)
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 25000; burn <- 15000; update <- 1000; thin <- 1; iterplot <- FALSE
+iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- TRUE
 # iters <- 10000; burn <- 5000; update <- 100; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
@@ -151,8 +151,8 @@ fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        beta.mn = 0, beta.sd = 10,
                        beta.eps = 0.1, beta.attempts = 50, 
                        xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                       xi.attempts = 50, xi.fix = FALSE, 
-                       a.init = 1, a.eps = 0.2, a.attempts = 50, 
+                       xi.attempts = 50, xi.fix = TRUE, 
+                       a.init = 1, a.eps = 0.1, a.attempts = 50, 
                        a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                        b.attempts = 50, 
                        alpha.init = alpha.init, alpha.attempts = 50, 
@@ -172,7 +172,7 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
 timings[1] <- fit.gev$minutes
 
 bs.gev <- BrierScore(post.prob.gev, y.p)
-post.prob.gev.med <- apply(post.prob.gev, 2, median)
+post.prob.gev.med <- apply(post.prob.gev, 2, mean)
 roc.gev <- roc(y.p ~ post.prob.gev.med)
 auc.gev <- roc.gev$auc
 
@@ -182,13 +182,13 @@ fit.gev.2 <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        beta.mn = 0, beta.sd = 10,
                        beta.eps = 0.1, beta.attempts = 50, 
                        xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                       xi.attempts = 50, xi.fix = FALSE, 
-                       a.init = 1, a.eps = 0.2, a.attempts = 50, 
+                       xi.attempts = 50, xi.fix = TRUE, 
+                       a.init = 1, a.eps = 0.1, a.attempts = 50, 
                        a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                        b.attempts = 50, 
                        alpha.init = alpha.init, alpha.attempts = 50, 
                        alpha.mn = alpha.mn, alpha.sd = 0.05,
-                       a.alpha.joint = TRUE, alpha.eps = 0.001,
+                       a.alpha.joint = FALSE, alpha.eps = 0.01,
                        rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
                        rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                        iters = iters, burn = burn, 
@@ -202,10 +202,53 @@ post.prob.gev.2 <- pred.spgev(mcmcoutput = fit.gev.2, x.pred = X.p,
                             start = 1, end = iters - burn, update = update)
 # timings[1] <- fit.gev$minutes
 
-bs.gev.2 <- BrierScore(post.prob.gev, y.p)
-post.prob.gev.med.2 <- apply(post.prob.gev, 2, median)
-roc.gev.2 <- roc(y.p ~ post.prob.gev.med)
-auc.gev.2 <- roc.gev$auc
+bs.gev.2 <- BrierScore(post.prob.gev.2, y.p)
+post.prob.gev.med.2 <- apply(post.prob.gev.2, 2, mean)
+roc.gev.2 <- roc(y.p ~ post.prob.gev.med.2)
+auc.gev.2 <- roc.gev.2$auc
+
+set.seed(mcmc.seed)
+fit.gev.3 <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots, 
+                         beta.init = log(-log(1 - mean(y.o))),
+                         beta.mn = 0, beta.sd = 10,
+                         beta.eps = 0.1, beta.attempts = 50, 
+                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
+                         xi.attempts = 50, xi.fix = TRUE, 
+                         a.init = 1, a.eps = 0.1, a.attempts = 50, 
+                         a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
+                         b.attempts = 50, 
+                         alpha.init = alpha.init, alpha.attempts = 50, 
+                         # alpha.mn = alpha.mn, alpha.sd = 0.05,
+                         alpha.mn = 0.5, alpha.sd = 1 / sqrt(12),
+                         a.alpha.joint = FALSE, alpha.eps = 0.01,
+                         rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
+                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
+                         iters = iters, burn = burn, 
+                         update = update, iterplot = iterplot,
+                         # update = 10, iterplot = TRUE,
+                         thin = thin, thresh = 0)
+
+cat("    Start mcmc predict \n")
+post.prob.gev.3 <- pred.spgev(mcmcoutput = fit.gev.3, x.pred = X.p,
+                              s.pred = s.p, knots = knots,
+                              start = 1, end = iters - burn, update = update)
+# timings[1] <- fit.gev$minutes
+
+bs.gev.3 <- BrierScore(post.prob.gev.3, y.p)
+post.prob.gev.med.3 <- apply(post.prob.gev.3, 2, mean)
+roc.gev.3 <- roc(y.p ~ post.prob.gev.med.3)
+auc.gev.3 <- roc.gev.3$auc
+
+par(mfrow = c(3, 3))
+plot(fit.gev$beta, type = "l", main = bquote(beta))
+plot(fit.gev$alpha, type = "l", main = bquote(alpha))
+plot(fit.gev$rho, type = "l", main = bquote(xi))
+plot(fit.gev.2$beta, type = "l", main = bquote(beta))
+plot(fit.gev.2$alpha, type = "l", main = bquote(alpha))
+plot(fit.gev.2$rho, type = "l", main = bquote(xi))
+plot(fit.gev.3$beta, type = "l", main = bquote(beta))
+plot(fit.gev.3$alpha, type = "l", main = bquote(alpha))
+plot(fit.gev.3$rho, type = "l", main = bquote(xi))
 
 print(bs.gev * 100)
 

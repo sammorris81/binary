@@ -129,8 +129,8 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("Momentum variable is NaN for", this.param,
-                    ",automatically reject"))
+        print(paste("Momentum variable is NaN for ", this.param,
+                    ", automatically reject", sep = ""))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }
     } else if (any(p == Inf | p == -Inf)) {

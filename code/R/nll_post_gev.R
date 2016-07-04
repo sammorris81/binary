@@ -145,7 +145,8 @@ neg_log_post_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   ll <- ll + sum(logLikeY(y = data$y, theta = theta))
   
   # prior
-  ll <- ll + (alpha$a - 1) * log(alpha$cur) + (alpha$b - 1) * log(alpha1m)
+  ll <- ll + (alpha$a - 1) * log(alpha$cur) + (alpha$b - 1) * log(alpha1m) +
+    log(alpha$cur) - log(alpha1m)  # jacobian
   
   return(-ll)
 }
@@ -167,8 +168,8 @@ neg_log_post_a_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   ll <- sum(-alpha$cur / alpha1m * q.a + lc - exp(lc) * a$cur^(-alpha$cur / alpha1m)) +
     nknots * nt * (log(alpha$cur) - log(alpha1m))
   
-  ll <- ll + (alpha$a - 1) * log(alpha$cur) + (alpha$b - 1) * log(alpha1m)
-  
+  ll <- ll + (alpha$a - 1) * log(alpha$cur) + (alpha$b - 1) * log(alpha1m) + 
+    log(alpha$cur) - log(alpha1m)  # jacobian
   # data and log likelihood
   w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
   aw     <- getAW(a = a$cur, w.star = w.star)
@@ -265,7 +266,7 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   checkpoint <- 1
   if (any(is.nan(grad))) {
-    print(a$cur[which(is.nan(grad)), ])
+    # print(a$cur[which(is.nan(grad)), ])
     print(paste("nan at a checkpoint ", checkpoint, sep = ""))
   }
   
@@ -286,7 +287,7 @@ neg_log_post_grad_a <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   
   checkpoint <- checkpoint + 1
   if (any(is.nan(grad))) {
-    print(a$cur[which(is.nan(grad)), ])
+    # print(a$cur[which(is.nan(grad)), ])
     print(paste("nan at a checkpoint ", checkpoint, sep = ""))
   }
   
@@ -456,7 +457,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
     diff.t[is.nan(diff.t)] <- 0  # gradient should be zero when weight is 0
     grad <- grad + sum(diff.t %*% a$cur)
   }
-
+  
   checkpoint <- 1
   if (is.nan(grad)) {
     print(alpha$cur)
@@ -465,7 +466,7 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
   }
   
   grad <- grad / alpha.sq
-  
+
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {
     print(alpha$cur)
@@ -525,11 +526,12 @@ neg_log_post_grad_alpha <- function(q, data, beta, xi, a, b, alpha, rho, calc,
     print(paste("nan at alpha checkpoint ", checkpoint, sep = ""))
     return(grad)
   }
-  
+
   # prior
-  grad <- (alpha$a - 1) / alpha$cur - (alpha$b - 1) / alpha1m
-  
-  grad <- grad * alpha$cur * alpha1m  # Jacobian
+  grad <- grad + (alpha$a - 1) / alpha$cur + (alpha$b - 1) / alpha1m
+
+  grad <- grad * alpha$cur * alpha1m + 1 # Jacobian
+  # grad <- grad - 1 / alpha$cur + 1 / alpha1m
   
   checkpoint <- checkpoint + 1
   if (is.nan(grad)) {

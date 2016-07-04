@@ -17,7 +17,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                         b.target = c(0.5, 0.8),
                         alpha.init = 0.5, alpha.eps = NULL, 
                         alpha.mn = 0.5, alpha.sd = 1 / 12, alpha.attempts = 50,
-                        alpha.target = c(0.5, 0.8),
+                        # alpha.target = c(0.5, 0.8),
+                        alpha.target = c(0.25, 0.5),
                         a.alpha.joint = TRUE, 
                         rho.init = 1, logrho.mn = -2, logrho.sd = 1, 
                         rho.eps = 0.1, rho.attempts = 50,
@@ -229,37 +230,36 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         calc$theta <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
       }
       a$infinite <- a$infinite + HMCout$infinite
-      
+
       # spatial dependence
+      # alpha$att <- alpha$att + 1
+      # q <- transform$logit(alpha$cur)
+      # HMCout  <- gevHMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
+      #                   epsilon = alpha$eps, L = 10, 
+      #                   data = data, beta = beta, xi = xi, a = a, b = b, 
+      #                   alpha = alpha, rho = rho, calc = calc, others = others, 
+      #                   this.param = "alpha")
+      # if (HMCout$accept) {
+      #   alpha$acc   <- alpha$acc + 1
+      #   alpha$cur   <- transform$inv.logit(HMCout$q)
+      #   calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
+      #   calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
+      #   calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
+      # }
+      # alpha$infinite <- alpha$infinite + HMCout$infinite
+      
       alpha$att <- alpha$att + 1
-      q <- transform$logit(alpha$cur)
-      HMCout  <- gevHMC(neg_log_post_alpha, neg_log_post_grad_alpha, q, 
-                        epsilon = alpha$eps, L = 10, 
-                        data = data, beta = beta, xi = xi, a = a, b = b, 
-                        alpha = alpha, rho = rho, calc = calc, others = others, 
-                        this.param = "alpha")
-      if (HMCout$accept) {
+      MHout     <- updateAlpha(data = data, a = a, b = b, alpha = alpha,
+                               calc = calc, others = others)
+      if (MHout$accept) {
         alpha$acc   <- alpha$acc + 1
-        alpha$cur   <- transform$inv.logit(HMCout$q)
+        alpha$cur   <- MHout$q  # q here is in (0, 1)
         calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
         calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
         calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
       }
-      alpha$infinite <- alpha$infinite + HMCout$infinite
-
-#       alpha$att <- alpha$att + 1
-#       MHout     <- updateAlpha(data = data, a = a, b = b, alpha = alpha, 
-#                                calc = calc, others = others)
-#       if (MHout$accept) {
-#         alpha$acc   <- alpha$acc + 1
-#         alpha$cur   <- MHout$q  # q here is in (0, 1)
-#         calc$w.star <- getWStarIDs(alpha = alpha$cur, w = calc$w, IDs = others$IDs)
-#         calc$aw     <- getAW(a = a$cur, w.star = calc$w.star)
-#         calc$theta  <- getTheta(alpha = alpha$cur, z = calc$z, aw = calc$aw)
-#       }
       
     }
-    alpha$cur <- alpha.init  # trying to do this with a fixed alpha
     
     # auxiliary variable
     q <- transform$logit(b$cur)
@@ -351,7 +351,11 @@ spatial_GEV <- function(y, s, x, knots = NULL,
     if (iter %% update == 0) {
       cat("      Iter", iter, "of", iters, "\n")
       if (iterplot) {
-        start <- max(iter - 5000, 1)
+        if (iter < burn) {
+          start <- max(iter - 5000, 1)
+        } else {
+          start <- burn + 1
+        }
         end   <- iter
         par(mfrow=c(3, 4))
         plot.idx <- seq(1, 7, by = 2)
