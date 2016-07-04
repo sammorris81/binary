@@ -1,5 +1,7 @@
 # get the datasets
 load(paste("./", species, ".RData", sep = ""))
+upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
+                    "analysis/", sep = "")
 
 # get the correct y, x, and s
 if (species == "cattle_egret") {
@@ -61,8 +63,8 @@ X.p <- matrix(1, nrow(s.p), 1)
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
+# iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- TRUE
 iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- TRUE
-# iters <- 10000; burn <- 5000; update <- 100; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
@@ -152,12 +154,12 @@ fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        beta.eps = 0.1, beta.attempts = 50, 
                        xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
                        xi.attempts = 50, xi.fix = TRUE, 
-                       a.init = 1, a.eps = 0.2, a.attempts = 50, 
+                       a.init = 1, a.eps = 0.1, a.attempts = 50, 
                        a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                        b.attempts = 50, 
                        alpha.init = alpha.init, alpha.attempts = 50, 
-                       alpha.mn = alpha.mn, alpha.sd = 0.05,
-                       a.alpha.joint = TRUE, alpha.eps = 0.001,
+                       alpha.mn = 0.5, alpha.sd = 0.1,
+                       a.alpha.joint = FALSE, alpha.eps = 0.01,
                        rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
                        rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                        iters = iters, burn = burn, 
@@ -176,85 +178,93 @@ post.prob.gev.med <- apply(post.prob.gev, 2, mean)
 roc.gev <- roc(y.p ~ post.prob.gev.med)
 auc.gev <- roc.gev$auc
 
-set.seed(mcmc.seed)
-fit.gev.2 <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots, 
-                       beta.init = log(-log(1 - mean(y.o))),
-                       beta.mn = 0, beta.sd = 10,
-                       beta.eps = 0.1, beta.attempts = 50, 
-                       xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                       xi.attempts = 50, xi.fix = TRUE, 
-                       a.init = 1, a.eps = 0.1, a.attempts = 50, 
-                       a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
-                       b.attempts = 50, 
-                       alpha.init = alpha.init, alpha.attempts = 50, 
-                       alpha.mn = alpha.mn, alpha.sd = 0.05,
-                       a.alpha.joint = FALSE, alpha.eps = 0.01,
-                       rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
-                       rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                       iters = iters, burn = burn, 
-                       update = update, iterplot = iterplot,
-                       # update = 10, iterplot = TRUE,
-                       thin = thin, thresh = 0)
-
-cat("    Start mcmc predict \n")
-post.prob.gev.2 <- pred.spgev(mcmcoutput = fit.gev.2, x.pred = X.p,
-                            s.pred = s.p, knots = knots,
-                            start = 1, end = iters - burn, update = update)
-# timings[1] <- fit.gev$minutes
-
-bs.gev.2 <- BrierScore(post.prob.gev.2, y.p)
-post.prob.gev.med.2 <- apply(post.prob.gev.2, 2, mean)
-roc.gev.2 <- roc(y.p ~ post.prob.gev.med.2)
-auc.gev.2 <- roc.gev.2$auc
-
-set.seed(mcmc.seed)
-fit.gev.3 <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots, 
-                         beta.init = log(-log(1 - mean(y.o))),
-                         beta.mn = 0, beta.sd = 10,
-                         beta.eps = 0.1, beta.attempts = 50, 
-                         xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                         xi.attempts = 50, xi.fix = TRUE, 
-                         a.init = 1, a.eps = 0.1, a.attempts = 50, 
-                         a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
-                         b.attempts = 50, 
-                         alpha.init = alpha.init, alpha.attempts = 50, 
-                         # alpha.mn = alpha.mn, alpha.sd = 0.05,
-                         alpha.mn = 0.5, alpha.sd = 1 / sqrt(12),
-                         a.alpha.joint = FALSE, alpha.eps = 0.01,
-                         rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
-                         rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                         iters = iters, burn = burn, 
-                         update = update, iterplot = iterplot,
-                         # update = 10, iterplot = TRUE,
-                         thin = thin, thresh = 0)
-
-cat("    Start mcmc predict \n")
-post.prob.gev.3 <- pred.spgev(mcmcoutput = fit.gev.3, x.pred = X.p,
-                              s.pred = s.p, knots = knots,
-                              start = 1, end = iters - burn, update = update)
-# timings[1] <- fit.gev$minutes
-
-bs.gev.3 <- BrierScore(post.prob.gev.3, y.p)
-post.prob.gev.med.3 <- apply(post.prob.gev.3, 2, mean)
-roc.gev.3 <- roc(y.p ~ post.prob.gev.med.3)
-auc.gev.3 <- roc.gev.3$auc
-
-par(mfrow = c(2, 3))
-plot(fit.gev$beta, type = "l", main = bquote(beta))
-plot(fit.gev$alpha, type = "l", main = bquote(alpha))
-plot(fit.gev$rho, type = "l", main = bquote(rho))
-plot(fit.gev.2$beta, type = "l", main = bquote(beta))
-plot(fit.gev.2$alpha, type = "l", main = bquote(alpha))
-plot(fit.gev.2$rho, type = "l", main = bquote(rho))
-plot(fit.gev.3$beta, type = "l", main = bquote(beta))
-plot(fit.gev.3$alpha, type = "l", main = bquote(alpha))
-plot(fit.gev.3$rho, type = "l", main = bquote(rho))
-
 print(bs.gev * 100)
 
+# copy table to tables folder on beowulf
+scores[1, ] <- c(bs.gev, auc.gev)
+write.table(scores, file = tblname)
+if (do.upload) {
+  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+  system(upload.cmd)
+}
 
-upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
-                    "analysis/", sep = "")
+###### spatial probit
+cat("  Start probit \n")
+
+cat("    Start mcmc fit \n")
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots, 
+                     iters = iters, burn = burn, update = update)
+
+cat("    Start mcmc predict \n")
+post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+                             s.pred = s.i.p, knots = knots,
+                             start = 1, end = iters - burn, update = update)
+timings[2] <- fit.probit$minutes
+
+bs.pro <- BrierScore(post.prob.pro, y.i.p)
+post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
+roc.pro <- roc(y.i.p ~ post.prob.pro.mean)
+auc.pro <- roc.pro$auc
+
+print(bs.pro * 100)
+
+# copy table to tables folder on beowulf
+scores[2, ] <- c(bs.pro, auc.pro)
+write.table(scores, file = tblname)
+if (do.upload) {
+  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+  system(upload.cmd)
+}
+
+####### spatial logit
+cat("  start logit \n")
+
+cat("    Start mcmc fit \n")
+mcmc.seed <- mcmc.seed + 1
+set.seed(mcmc.seed)
+tic       <- proc.time()[3]
+fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
+                   coords = s.i.o, knots = knots, starting = starting,
+                   tuning = tuning, priors = priors,
+                   cov.model = cov.model, n.samples = iters,
+                   verbose = verbose, n.report = n.report, amcmc = amcmc)
+toc        <- proc.time()[3]
+
+print("    start mcmc predict")
+yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
+                       pred.covars = X.p, start = burn + 1,
+                       end = iters, thin = 1, verbose = TRUE,
+                       n.report = 500)
+
+post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+
+timings[3] <- toc - tic
+
+bs.log <- BrierScore(post.prob.log, y.i.p)
+post.prob.log.mean <- apply(post.prob.log, 2, mean)
+roc.log <- roc(y.i.p ~ post.prob.log.mean)
+auc.log <- roc.log$auc
+
+print(bs.log * 100)
+
+# copy table to tables folder on beowulf
+scores[3, ] <- c(bs.log, auc.log)
+write.table(scores, file = tblname)
+if (do.upload) {
+  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+  system(upload.cmd)
+}
+
+cat("Finished: Set", i, "\n")
+save(fit.gev, bs.gev, roc.gev, auc.gev,
+     fit.probit, bs.pro, roc.pro, auc.pro,
+     fit.logit, bs.log, roc.log, auc.log,
+     y.i.p, y.i.o, knots,  
+     s.i.o, s.i.p, timings,
+     file = filename)
+
 if (do.upload) {
   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
