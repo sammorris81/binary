@@ -14,7 +14,7 @@ library(pROC)
 source("../../../code/R/spatial_gev.R", chdir = TRUE)
 source("../../../code/R/spatial_logit.R", chdir = TRUE)
 source("../../../code/R/spatial_probit.R", chdir = TRUE)
-source("./parsim.R")
+
 if (Sys.info()["nodename"] == "cwl-mth-sam-001") {
   Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
   Sys.setenv("PKG_LIBS"="-fopenmp")
