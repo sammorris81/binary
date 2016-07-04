@@ -213,14 +213,12 @@ dev.print(device = pdf, file = "five-low.pdf")
 dev.off()
 
 save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata.RData")
-system(paste("scp ./simdata.RData samorris@hpc.stat.ncsu.edu:~/repos-git/",
-             "rare-binary/markdown/dec2015/third-run-sim/", sep = ""))
 
 # for processing over many machines at once
 sets.remain <- matrix(TRUE, nsets, nsettings)
 write.table(x = sets.remain, file = "./sim-control/sets-remain.txt")
 system(paste("scp ./sim-control/sets-remain.txt samorris@hpc.stat.ncsu.edu:~/",
-             "repos-git/rare-binary/markdown/dec2015/third-run-sim/sim-control/",
+             "repos-git/rare-binary/code/analysis/simstudy/sim-control/",
              sep = ""))
 
 # ns <- 1300
