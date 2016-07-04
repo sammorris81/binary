@@ -31,8 +31,8 @@ ntest.0 <- ntest - ntest.1
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-# iters <- 25000; burn <- 15000; update <- 1000; thin <- 1
-iters <- 100; burn <- 50; update <- 10; thin <- 1
+iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot = TRUE
+# iters <- 100; burn <- 50; update <- 10; thin <- 1
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
@@ -216,12 +216,12 @@ while (sets.remain) {
                            a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                            b.attempts = 50, 
                            alpha.init = alpha.init, alpha.attempts = 50, 
-                           alpha.mn = 0.5, alpha.sd = 1 / sqrt(12),
+                           alpha.mn = 0.5, alpha.sd = 0.1,
                            a.alpha.joint = FALSE, alpha.eps = 0.01,
                            rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
                            rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                            iters = iters, burn = burn, 
-                           update = update, 
+                           update = update, iterplot = iterplot,
                            # update = 10, iterplot = TRUE,
                            thin = 1, thresh = 0)
     
@@ -232,8 +232,8 @@ while (sets.remain) {
     timings[1] <- fit.gev$minutes
     
     bs.gev <- BrierScore(post.prob.gev, y.i.p)
-    post.prob.gev.med <- apply(post.prob.gev, 2, median)
-    roc.gev <- roc(y.i.p ~ post.prob.gev.med)
+    post.prob.gev.mean <- apply(post.prob.gev, 2, mean)
+    roc.gev <- roc(y.i.p ~ post.prob.gev.mean)
     auc.gev <- roc.gev$auc
     
     print(bs.gev * 100)
@@ -262,8 +262,8 @@ while (sets.remain) {
     timings[2] <- fit.probit$minutes
     
     bs.pro <- BrierScore(post.prob.pro, y.i.p)
-    post.prob.pro.med <- apply(post.prob.pro, 2, median)
-    roc.pro <- roc(y.i.p ~ post.prob.pro.med)
+    post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
+    roc.pro <- roc(y.i.p ~ post.prob.pro.mean)
     auc.pro <- roc.pro$auc
     
     print(bs.pro * 100)
@@ -301,8 +301,8 @@ while (sets.remain) {
     timings[3] <- toc - tic
     
     bs.log <- BrierScore(post.prob.log, y.i.p)
-    post.prob.log.med <- apply(post.prob.log, 2, median)
-    roc.log <- roc(y.i.p ~ post.prob.log.med)
+    post.prob.log.mean <- apply(post.prob.log, 2, mean)
+    roc.log <- roc(y.i.p ~ post.prob.log.mean)
     auc.log <- roc.log$auc
     
     print(bs.log * 100)
