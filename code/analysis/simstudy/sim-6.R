@@ -31,8 +31,8 @@ ntest.0 <- ntest - ntest.1
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-# iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- FALSE
-iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- TRUE
+iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- FALSE
+# iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
