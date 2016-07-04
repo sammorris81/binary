@@ -239,16 +239,16 @@ post.prob.gev.med.3 <- apply(post.prob.gev.3, 2, mean)
 roc.gev.3 <- roc(y.p ~ post.prob.gev.med.3)
 auc.gev.3 <- roc.gev.3$auc
 
-par(mfrow = c(3, 3))
+par(mfrow = c(2, 3))
 plot(fit.gev$beta, type = "l", main = bquote(beta))
 plot(fit.gev$alpha, type = "l", main = bquote(alpha))
-plot(fit.gev$rho, type = "l", main = bquote(xi))
+plot(fit.gev$rho, type = "l", main = bquote(rho))
 plot(fit.gev.2$beta, type = "l", main = bquote(beta))
 plot(fit.gev.2$alpha, type = "l", main = bquote(alpha))
-plot(fit.gev.2$rho, type = "l", main = bquote(xi))
+plot(fit.gev.2$rho, type = "l", main = bquote(rho))
 plot(fit.gev.3$beta, type = "l", main = bquote(beta))
 plot(fit.gev.3$alpha, type = "l", main = bquote(alpha))
-plot(fit.gev.3$rho, type = "l", main = bquote(xi))
+plot(fit.gev.3$rho, type = "l", main = bquote(rho))
 
 print(bs.gev * 100)
 
