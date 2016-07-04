@@ -197,7 +197,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       q <- c(as.vector(log(a$cur)), transform$logit(alpha$cur))
       epsilon <- c(rep(a$eps, nkt), alpha$eps)
       HMCout <- gevHMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
-                    epsilon = epsilon, L = 10, 
+                    epsilon = epsilon, L = 3, 
                     data = data, beta = beta, xi = xi, a = a, b = b, 
                     alpha = alpha, rho = rho, calc = calc, others = others, 
                     this.param = "a_alpha")
@@ -219,7 +219,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       a$att <- a$att + 1
       q <- log(a$cur)
       HMCout  <- gevHMC(neg_log_post_a, neg_log_post_grad_a, q, 
-                        epsilon = a$eps, L = 10, 
+                        epsilon = a$eps, L = 3, 
                         data = data, beta = beta, xi = xi, a = a, b = b, 
                         alpha = alpha, rho = rho, calc = calc, others = others, 
                         this.param = "a")
@@ -265,8 +265,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
     q <- transform$logit(b$cur)
     b$att <- b$att + 1
     HMCout  <- gevHMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
-                      L = 10, 
-                      data = data, beta = beta, xi = xi, a = a, b = b, 
+                      L = 3, data = data, beta = beta, xi = xi, a = a, b = b, 
                       alpha = alpha, rho = rho, calc = calc, others = others, 
                       this.param = "b")
     if (HMCout$accept) {
