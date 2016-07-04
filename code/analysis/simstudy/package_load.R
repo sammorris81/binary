@@ -26,8 +26,8 @@ if (Sys.info()["nodename"] == "cwl-mth-sam-001") {
   do.upload <- FALSE
 }
 
-upload.pre <- "samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code"
-upload.pre <- paste(upload.pre, "analysis/simstudy/sim-tables/", sep = "")
+upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code",
+                    "analysis/simstudy/sim-tables/", sep = "")
 
 # the directory in the sim study that controls what sets are left
 if (do.upload) {
@@ -38,15 +38,15 @@ if (do.upload) {
 }
 
 # we need this for locking while other scripts are selecting their set
-lock.command <- "touch ~/repos-git/rare-binary/code/analysis/simstudy/"
-lock.command <- paste(lock.command, "sim-control/lock.txt", sep = "")
+lock.command <- paste("touch ~/repos-git/rare-binary/code/analysis/simstudy/",
+                      "sim-control/lock.txt", sep = "")
 if (do.upload) {
   lock.command.ssh <- paste("ssh samorris@hpc.stat.ncsu.edu '", lock.command, 
                             "'", sep = "")
 }
 
-unlock.command <- "rm ~/repos-git/rare-binary/code/analysis/simstudy/"
-unlock.command <- paste(unlock.command, "sim-control/lock.txt", sep = "")
+unlock.command <- paste("rm ~/repos-git/rare-binary/code/analysis/simstudy/", 
+                        "sim-control/lock.txt", sep = "")
 if (do.upload) {
   unlock.command.ssh <- paste("ssh samorris@hpc.stat.ncsu.edu '", 
                               unlock.command, "'", sep = "")
