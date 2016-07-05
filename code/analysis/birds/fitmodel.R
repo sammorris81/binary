@@ -185,7 +185,7 @@ print(bs.gev * 100)
 scores[1, ] <- c(bs.gev, auc.gev)
 write.table(scores, file = tblname)
 if (do.upload) {
-  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+  upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
 }
 
@@ -195,18 +195,18 @@ cat("  Start probit \n")
 cat("    Start mcmc fit \n")
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
-fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots, 
+fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots, 
                      iters = iters, burn = burn, update = update)
 
 cat("    Start mcmc predict \n")
 post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                             s.pred = s.i.p, knots = knots,
+                             s.pred = s.p, knots = knots,
                              start = 1, end = iters - burn, update = update)
 timings[2] <- fit.probit$minutes
 
-bs.pro <- BrierScore(post.prob.pro, y.i.p)
+bs.pro <- BrierScore(post.prob.pro, y.p)
 post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
-roc.pro <- roc(y.i.p ~ post.prob.pro.mean)
+roc.pro <- roc(y.p ~ post.prob.pro.mean)
 auc.pro <- roc.pro$auc
 
 print(bs.pro * 100)
@@ -215,9 +215,10 @@ print(bs.pro * 100)
 scores[2, ] <- c(bs.pro, auc.pro)
 write.table(scores, file = tblname)
 if (do.upload) {
-  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+  upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
 }
+
 
 ####### spatial logit
 cat("  start logit \n")
@@ -226,15 +227,15 @@ cat("    Start mcmc fit \n")
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
 tic       <- proc.time()[3]
-fit.logit <- spGLM(formula = y.i.o ~ 1, family = "binomial",
-                   coords = s.i.o, knots = knots, starting = starting,
+fit.logit <- spGLM(formula = y.o ~ 1, family = "binomial",
+                   coords = s.o, knots = knots, starting = starting,
                    tuning = tuning, priors = priors,
                    cov.model = cov.model, n.samples = iters,
                    verbose = verbose, n.report = n.report, amcmc = amcmc)
 toc        <- proc.time()[3]
 
 print("    start mcmc predict")
-yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
+yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
                        pred.covars = X.p, start = burn + 1,
                        end = iters, thin = 1, verbose = TRUE,
                        n.report = 500)
@@ -243,9 +244,9 @@ post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
 
 timings[3] <- toc - tic
 
-bs.log <- BrierScore(post.prob.log, y.i.p)
+bs.log <- BrierScore(post.prob.log, y.p)
 post.prob.log.mean <- apply(post.prob.log, 2, mean)
-roc.log <- roc(y.i.p ~ post.prob.log.mean)
+roc.log <- roc(y.p ~ post.prob.log.mean)
 auc.log <- roc.log$auc
 
 print(bs.log * 100)
@@ -254,7 +255,7 @@ print(bs.log * 100)
 scores[3, ] <- c(bs.log, auc.log)
 write.table(scores, file = tblname)
 if (do.upload) {
-  upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+  upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
 }
 
@@ -262,12 +263,6 @@ cat("Finished: Set", i, "\n")
 save(fit.gev, bs.gev, roc.gev, auc.gev,
      fit.probit, bs.pro, roc.pro, auc.pro,
      fit.logit, bs.log, roc.log, auc.log,
-     y.i.p, y.i.o, knots,  
-     s.i.o, s.i.p, timings,
-     file = filename)
-
-if (do.upload) {
-  upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-  system(upload.cmd)
-}
-save(blah, results.file)
+     y.p, y.o, knots,  
+     s.o, s.p, timings,
+     file = results.file)
