@@ -89,7 +89,7 @@ timings <- rep(NA, 3)
 # start the simulation
 set.seed(seed.base + seed.knot + cv * 10)
 
-rho.init.pcl <- 0.05  
+rho.init.pcl <- 0.05
 dw2.o     <- rdist(s.o, knots)^2
 d.o       <- as.matrix(rdist(s.o))
 diag(d.o) <- 0
@@ -98,11 +98,11 @@ max.dist  <- 0.20
 #### spatial GEV
 cat("  Start gev \n")
 
-# using pairwise estimates as starting points for rho, alpha, and beta. also 
-# using the the pairwise estimate of alpha as the mean of the prior 
-# distribution along with a standard deviation of 0.05 to allow for some 
+# using pairwise estimates as starting points for rho, alpha, and beta. also
+# using the the pairwise estimate of alpha as the mean of the prior
+# distribution along with a standard deviation of 0.05 to allow for some
 # variability, but hopefully also some better convergence w.r.t. alpha.
-# we set max.dist to 0.15 in order to only consider pairs of sites that 
+# we set max.dist to 0.15 in order to only consider pairs of sites that
 # are relatively close to one another.
 cat("    Start pairwise fit \n")
 fit.pcl <- tryCatch(
@@ -112,7 +112,7 @@ fit.pcl <- tryCatch(
                     rho.fix = FALSE, beta.fix = TRUE,
                     y = y.o, dw2 = dw2.o, d = d.o,
                     cov = X.o, method = "BFGS",
-                    max.dist = max.dist,  
+                    max.dist = max.dist,
                     alpha.min = 0.1, alpha.max = 0.9,
                     threads = 2),
   error = function(e) {
@@ -136,11 +136,11 @@ set.seed(mcmc.seed)
 
 alpha.mn <- fit.pcl$par[1]
 
-# for numerical stability with the current set of starting values for the a 
-# terms. if alpha is too small, the algorithm has a very hard time getting 
+# for numerical stability with the current set of starting values for the a
+# terms. if alpha is too small, the algorithm has a very hard time getting
 # started.
 if (alpha.mn < 0.3) {
-  alpha.init <- 0.3  
+  alpha.init <- 0.3
 } else {
   alpha.init <- alpha.mn
 }
@@ -148,22 +148,22 @@ if (alpha.mn < 0.3) {
 rho.init <- fit.pcl$par[2]
 beta.init <- fit.pcl$beta
 
-fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots, 
+fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        beta.init = log(-log(1 - mean(y.o))),
                        beta.mn = 0, beta.sd = 10,
-                       beta.eps = 0.1, beta.attempts = 50, 
-                       xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
-                       xi.attempts = 50, xi.fix = TRUE, 
-                       a.init = 1, a.eps = 0.05, a.attempts = 50, 
-                       a.cutoff = 0.2, a.steps = 5, 
-                       b.init = 0.5, b.eps = 0.2, 
+                       beta.eps = 0.1, beta.attempts = 50,
+                       xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
+                       xi.attempts = 50, xi.fix = TRUE,
+                       a.init = 1, a.eps = 0.05, a.attempts = 50,
+                       a.cutoff = 0.2, a.steps = 5,
+                       b.init = 0.5, b.eps = 0.2,
                        b.attempts = 50, b.steps = 5,
-                       alpha.init = alpha.init, alpha.attempts = 50, 
+                       alpha.init = alpha.init, alpha.attempts = 50,
                        alpha.mn = 0.5, alpha.sd = 0.1,
                        a.alpha.joint = FALSE, alpha.eps = 0.01,
-                       rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
-                       rho.eps = 0.1, rho.attempts = 50, threads = 1, 
-                       iters = iters, burn = burn, 
+                       rho.init = rho.init, logrho.mn = -2, logrho.sd = 1,
+                       rho.eps = 0.1, rho.attempts = 50, threads = 1,
+                       iters = iters, burn = burn,
                        update = update, iterplot = iterplot,
                        # update = 10, iterplot = TRUE,
                        thin = thin, thresh = 0)
@@ -183,7 +183,7 @@ print(bs.gev * 100)
 
 # copy table to tables folder on beowulf
 scores[1, ] <- c(bs.gev, auc.gev)
-write.table(scores, file = tblname)
+write.table(scores, file = table.file)
 if (do.upload) {
   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
@@ -195,7 +195,7 @@ cat("  Start probit \n")
 cat("    Start mcmc fit \n")
 mcmc.seed <- mcmc.seed + 1
 set.seed(mcmc.seed)
-fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots, 
+fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
                      iters = iters, burn = burn, update = update)
 
 cat("    Start mcmc predict \n")
@@ -213,7 +213,7 @@ print(bs.pro * 100)
 
 # copy table to tables folder on beowulf
 scores[2, ] <- c(bs.pro, auc.pro)
-write.table(scores, file = tblname)
+write.table(scores, file = table.file)
 if (do.upload) {
   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
@@ -253,7 +253,7 @@ print(bs.log * 100)
 
 # copy table to tables folder on beowulf
 scores[3, ] <- c(bs.log, auc.log)
-write.table(scores, file = tblname)
+write.table(scores, file = table.file)
 if (do.upload) {
   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
   system(upload.cmd)
@@ -263,6 +263,6 @@ cat("Finished: Set", i, "\n")
 save(fit.gev, bs.gev, roc.gev, auc.gev,
      fit.probit, bs.pro, roc.pro, auc.pro,
      fit.logit, bs.log, roc.log, auc.log,
-     y.p, y.o, knots,  
+     y.p, y.o, knots,
      s.o, s.p, timings,
      file = results.file)
