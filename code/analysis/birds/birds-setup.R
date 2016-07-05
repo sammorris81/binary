@@ -158,10 +158,39 @@ birds <- read.csv("./birds/2002/checklists.csv")
 s <- cbind(birds$LONGITUDE, birds$LATITUDE)
 load("griddedUS.RData")
 
+seen <- birds[, 18:ncol(birds)] != 0
+rate <- apply(seen, 2, sum)
+rate <- rate[rate != 0]
+
+sort(rate[which(rate < 1000 & rate > 500)])  # between about 1.02% and 2.04%
+# Numenius_americanus - 501
+# Columbina_passerina - 512
+# Sialia_currucoides  - 507
+# Anser_albifrons     - 544
+# Chordeiles_minor    - 669
+
+# Somewhere around 1% and 2%
 cattle_egret     <- birds$Chordeiles_minor != "0"
 common_nighthawk <- birds$Bubulcus_ibis != "0"
 western_bluebird <- birds$Sialia_mexicana != "0"
 vesper_sparrow   <- birds$Pooecetes_gramineus != "0"
+longbilled_curlew <- birds$Numenius_americanus != "0"
+common_grounddove <- birds$Columbina_passerina != "0"
+mountain_bluebird <- birds$Sialia_currucoides != "0"
+greater_white_goose <- birds$Anser_albifrons != "0"
+
+sort(rate[which(rate < 2500 & rate > 2000)])
+# Anas_discors  - 2008
+# Vireo_griseus - 2131
+# Accipter_striatus - 2237
+# Spinus_psaltria - 2429
+
+# Somewhere around 5%
+bluewinged_teal <- birds$Anas_discors != "0"
+whiteeyed_vireo <- birds$Vireo_griseus != "0"
+sharpshinned_hawk <- birds$Accipiter_striatus != "0"
+lesser_goldfinch <- birds$Spinus_psaltria != "0"
+
 # our analysis is conditional on there being an observation in a cell
 # in the grid vector, we're using
 # 2: no observations in cell
@@ -183,108 +212,495 @@ vesper_sparrow_grid <- rep(2, nrow(sg))
 vesper_sparrow_grid[unique(cell[!vesper_sparrow])] <- 0
 vesper_sparrow_grid[unique(cell[vesper_sparrow])]  <- 1
 
+bluewinged_teal_grid <- rep(2, nrow(sg))
+bluewinged_teal_grid[unique(cell[!bluewinged_teal])] <- 0
+bluewinged_teal_grid[unique(cell[bluewinged_teal])]  <- 1
+
+whiteeyed_vireo_grid <- rep(2, nrow(sg))
+whiteeyed_vireo_grid[unique(cell[!whiteeyed_vireo])] <- 0
+whiteeyed_vireo_grid[unique(cell[whiteeyed_vireo])]  <- 1
+
+sharpshinned_hawk_grid <- rep(2, nrow(sg))
+sharpshinned_hawk_grid[unique(cell[!sharpshinned_hawk])] <- 0
+sharpshinned_hawk_grid[unique(cell[sharpshinned_hawk])]  <- 1
+
+lesser_goldfinch_grid <- rep(2, nrow(sg))
+lesser_goldfinch_grid[unique(cell[!lesser_goldfinch])] <- 0
+lesser_goldfinch_grid[unique(cell[lesser_goldfinch])]  <- 1
+
+longbilled_curlew_grid <- rep(2, nrow(sg))
+longbilled_curlew_grid[unique(cell[!longbilled_curlew])] <- 0
+longbilled_curlew_grid[unique(cell[longbilled_curlew])]  <- 1
+
+common_grounddove_grid <- rep(2, nrow(sg))
+common_grounddove_grid[unique(cell[!common_grounddove])] <- 0
+common_grounddove_grid[unique(cell[common_grounddove])]  <- 1
+
+mountain_bluebird_grid <- rep(2, nrow(sg))
+mountain_bluebird_grid[unique(cell[!mountain_bluebird])] <- 0
+mountain_bluebird_grid[unique(cell[mountain_bluebird])]  <- 1
+
+greater_white_goose_grid <- rep(2, nrow(sg))
+greater_white_goose_grid[unique(cell[!greater_white_goose])] <- 0
+greater_white_goose_grid[unique(cell[greater_white_goose])]  <- 1
+
 us_map <- map("state")
+
+this.species <- cattle_egret
+this.species.grid <- cattle_egret_grid
+this.species.name <- "Cattle Egret"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/cattle_egret_actual.pdf"
+filename.grid <- "plots/cattle_egret_grid.pdf"
+
 dev.new()
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
-title(main = "Actual Cattle egret sightings in 2002", cex.main = 2)
-points(s[!cattle_egret, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(s[cattle_egret, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/cattle_egret_actual.pdf")
+dev.print(device = pdf, file = filename.act)
 dev.off()
 
 dev.new()
 map("state",
     xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
-title(main = "Gridded Cattle egret sightings in 2002", cex.main = 2)
-points(sg[cattle_egret_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(sg[cattle_egret_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/cattle_egret_grid.pdf")
+dev.print(device = pdf, file = filename.grid)
 dev.off()
+
+this.species <- common_nighthawk
+this.species.grid <- common_nighthawk_grid
+this.species.name <- "Common Nighthawk"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/common_nighthawk_actual.pdf"
+filename.grid <- "plots/common_nighthawk_grid.pdf"
 
 dev.new()
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
-title(main = "Actual Common nighthawk sightings in 2002", cex.main = 2)
-points(s[!common_nighthawk, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(s[common_nighthawk, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/common_nighthawk_actual.pdf")
+dev.print(device = pdf, file = filename.act)
 dev.off()
 
 dev.new()
 map("state",
     xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
-title(main = "Gridded Common nighthawk sightings in 2002", cex.main = 2)
-points(sg[common_nighthawk_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(sg[common_nighthawk_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/common_nighthawk_grid.pdf")
+dev.print(device = pdf, file = filename.grid)
 dev.off()
+
+this.species <- western_bluebird
+this.species.grid <- western_bluebird_grid
+this.species.name <- "Western Bluebird"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/western_bluebird_actual.pdf"
+filename.grid <- "plots/western_bluebird_grid.pdf"
 
 dev.new()
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
-title(main = "Actual Western bluebird sightings in 2002", cex.main = 2)
-points(s[!western_bluebird, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(s[western_bluebird, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/western_bluebird_actual.pdf")
+dev.print(device = pdf, file = filename.act)
 dev.off()
 
 dev.new()
 map("state",
     xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
-title(main = "Gridded Western bluebird sightings in 2002", cex.main = 2)
-points(sg[western_bluebird_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(sg[western_bluebird_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/western_bluebird_grid.pdf")
+dev.print(device = pdf, file = filename.grid)
 dev.off()
+
+this.species <- vesper_sparrow
+this.species.grid <- vesper_sparrow_grid
+this.species.name <- "Vesper Sparrow"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/vesper_sparrow_actual.pdf"
+filename.grid <- "plots/vesper_sparrow_grid.pdf"
 
 dev.new()
 map("state",
     xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
-title(main = "Actual Vesper sparrow sightings in 2002", cex.main = 2)
-points(s[!vesper_sparrow, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(s[vesper_sparrow, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/vesper_sparrow_actual.pdf")
+dev.print(device = pdf, file = filename.act)
 dev.off()
 
 dev.new()
 map("state",
     xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
     ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
-title(main = "Gridded Vesper sparrow sightings in 2002", cex.main = 2)
-points(sg[vesper_sparrow_grid == 0, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
-points(sg[vesper_sparrow_grid == 1, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
 map("state", add = TRUE)
-dev.print(device = pdf, file = "plots/vesper_sparrow_grid.pdf")
+dev.print(device = pdf, file = filename.grid)
 dev.off()
 
-# For the knot selection in the simulation study, we opted for a 21 x 21 grid. 
-# Because the ebirds data are not quite as homogeneous as our simulated data, 
-# I'd like to opt for using a space-filling design with knots at 10%, 15% and 
-# 20% of the sites. Because of some concerns with how long this might take to 
-# run (the simulation study took around 5 hours to fit our model at 1300 sites), 
-# I'm leaning toward 2-fold cross-validation where the holdout sample is a 
-# stratified sample from the original dataset matching P(Y = 1). So for example, 
-# if in the actual dataset, we have Y = 1 at 8% of the grid cells, then both the 
+this.species <- bluewinged_teal
+this.species.grid <- bluewinged_teal_grid
+this.species.name <- "Blue-winged Teal"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/bluewinged_teal_actual.pdf"
+filename.grid <- "plots/bluewinged_teal_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- whiteeyed_vireo
+this.species.grid <- whiteeyed_vireo_grid
+this.species.name <- "White-eyed Vireo"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/whiteeyed_vireo_actual.pdf"
+filename.grid <- "plots/whiteeyed_vireo_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- sharpshinned_hawk
+this.species.grid <- sharpshinned_hawk_grid
+this.species.name <- "Sharp-shinned Hawk"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/sharpshinned_hawk_actual.pdf"
+filename.grid <- "plots/sharpshinned_hawk_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- sharpshinned_hawk
+this.species.grid <- sharpshinned_hawk_grid
+this.species.name <- "Sharp-shinned Hawk"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/sharpshinned_hawk_actual.pdf"
+filename.grid <- "plots/sharpshinned_hawk_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- lesser_goldfinch
+this.species.grid <- lesser_goldfinch_grid
+this.species.name <- "Lesser Goldfinch"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/lesser_goldfinch_actual.pdf"
+filename.grid <- "plots/lesser_goldfinch_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- longbilled_curlew
+this.species.grid <- longbilled_curlew_grid
+this.species.name <- "Long-billed Curlew"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/longbilled_curlew_actual.pdf"
+filename.grid <- "plots/longbilled_curlew_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- common_grounddove
+this.species.grid <- common_grounddove_grid
+this.species.name <- "Common Ground-Dove"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/common_grounddove_actual.pdf"
+filename.grid <- "plots/common_grounddove_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- mountain_bluebird
+this.species.grid <- mountain_bluebird_grid
+this.species.name <- "Mountain Bluebird"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/mountain_bluebird_actual.pdf"
+filename.grid <- "plots/mountain_bluebird_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- greater_white_goose
+this.species.grid <- greater_white_goose_grid
+this.species.name <- "Greater White-fronted Goose"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/greater_white_goose_actual.pdf"
+filename.grid <- "plots/greater_white_goose_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+# For the knot selection in the simulation study, we opted for a 21 x 21 grid.
+# Because the ebirds data are not quite as homogeneous as our simulated data,
+# I'd like to opt for using a space-filling design with knots at 10%, 15% and
+# 20% of the sites. Because of some concerns with how long this might take to
+# run (the simulation study took around 5 hours to fit our model at 1300 sites),
+# I'm leaning toward 2-fold cross-validation where the holdout sample is a
+# stratified sample from the original dataset matching P(Y = 1). So for example,
+# if in the actual dataset, we have Y = 1 at 8% of the grid cells, then both the
 # testing and training will aim for around 8% 1s.
 
 #### set up cross-validation ####
-# we need separate cross-validation sets for each species because we want to 
-# use a stratified sample to make sure that the proportion of 1s in the 
+# we need separate cross-validation sets for each species because we want to
+# use a stratified sample to make sure that the proportion of 1s in the
 # testing set is similar to the training set
 
 # first find the count of grid cells that have observations - should be the same
@@ -306,10 +722,10 @@ set.seed(28)  # cv
 samp.ones   <- sample(these.ones)
 samp.zeros  <- sample(these.zeros)
 ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
-ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
                   floor(length(these.zeros) / 2))
 
-cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
                  sort(samp.zeros[1:ntrain.zeros[1]]))
 cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
 
@@ -335,7 +751,7 @@ for (i in 1:2) {
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(cattle_egret, s, knots.10, knots.15, knots.20, 
+save(cattle_egret, s, knots.10, knots.15, knots.20,
      cv.idx, file = "cattle_egret.RData")
 
 #### common_nighthawk: 7.90% ####
@@ -351,10 +767,10 @@ set.seed(28)  # cv
 samp.ones   <- sample(these.ones)
 samp.zeros  <- sample(these.zeros)
 ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
-ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
                   floor(length(these.zeros) / 2))
 
-cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
                  sort(samp.zeros[1:ntrain.zeros[1]]))
 cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
 
@@ -379,7 +795,7 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(common_nighthawk, s, knots.10, knots.15, knots.20, 
+save(common_nighthawk, s, knots.10, knots.15, knots.20,
      cv.idx, file = "common_nighthawk.RData")
 
 #### western_bluebird: 6.34% ####
@@ -395,10 +811,10 @@ set.seed(28)  # cv
 samp.ones   <- sample(these.ones)
 samp.zeros  <- sample(these.zeros)
 ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
-ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
                   floor(length(these.zeros) / 2))
 
-cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
                  sort(samp.zeros[1:ntrain.zeros[1]]))
 cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
 
@@ -423,10 +839,10 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(western_bluebird, s, knots.10, knots.15, knots.20, 
+save(western_bluebird, s, knots.10, knots.15, knots.20,
      cv.idx, file = "western_bluebird.RData")
 
-# vesper_sparrow: 10.32%
+#### vesper_sparrow: 10.32% ####
 vesper_sparrow <- vesper_sparrow_grid[vesper_sparrow_grid != 2]
 cv.idx  <- vector(mode = "list", length = 2)
 prop.ones <- sum(vesper_sparrow == 1) / ns
@@ -439,10 +855,10 @@ set.seed(28)  # cv
 samp.ones   <- sample(these.ones)
 samp.zeros  <- sample(these.zeros)
 ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
-ntrain.zeros <- c(ceiling(length(these.zeros) / 2), 
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
                   floor(length(these.zeros) / 2))
 
-cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]), 
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
                  sort(samp.zeros[1:ntrain.zeros[1]]))
 cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
 
@@ -467,5 +883,357 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(vesper_sparrow, s, knots.10, knots.15, knots.20, 
+save(vesper_sparrow, s, knots.10, knots.15, knots.20,
      cv.idx, file = "vesper_sparrow.RData")
+
+#### Long-billed Curlew ####
+longbilled_curlew <- longbilled_curlew_grid[longbilled_curlew_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(longbilled_curlew == 1) / ns
+these.ones  <- which(longbilled_curlew == 1)
+these.zeros <- which(longbilled_curlew == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(longbilled_curlew, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "longbilled_curlew.RData")
+
+#### Common Ground Dove ####
+common_grounddove <- common_grounddove_grid[common_grounddove_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(common_grounddove == 1) / ns
+these.ones  <- which(common_grounddove == 1)
+these.zeros <- which(common_grounddove == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(common_grounddove, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "common_grounddove.RData")
+
+#### Mountain bluebird ####
+mountain_bluebird <- mountain_bluebird_grid[mountain_bluebird_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(mountain_bluebird == 1) / ns
+these.ones  <- which(mountain_bluebird == 1)
+these.zeros <- which(mountain_bluebird == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(mountain_bluebird, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "mountain_bluebird.RData")
+
+#### Greater White-fronted Goose ####
+greater_white_goose <- greater_white_goose_grid[greater_white_goose_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(greater_white_goose == 1) / ns
+these.ones  <- which(greater_white_goose == 1)
+these.zeros <- which(greater_white_goose == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(greater_white_goose, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "greater_white_goose.RData")
+
+#### Blue-winged Teal ####
+bluewinged_teal <- bluewinged_teal_grid[bluewinged_teal_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(bluewinged_teal == 1) / ns
+these.ones  <- which(bluewinged_teal == 1)
+these.zeros <- which(bluewinged_teal == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(bluewinged_teal, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "bluewinged_teal.RData")
+
+#### White-eyed Vireo ####
+whiteeyed_vireo <- whiteeyed_vireo_grid[whiteeyed_vireo_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(whiteeyed_vireo == 1) / ns
+these.ones  <- which(whiteeyed_vireo == 1)
+these.zeros <- which(whiteeyed_vireo == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(whiteeyed_vireo, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "whiteeyed_vireo.RData")
+
+#### Sharp-shinned Hawk ####
+sharpshinned_hawk <- sharpshinned_hawk_grid[sharpshinned_hawk_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(sharpshinned_hawk == 1) / ns
+these.ones  <- which(sharpshinned_hawk == 1)
+these.zeros <- which(sharpshinned_hawk == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(sharpshinned_hawk, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "sharpshinned_hawk.RData")
+
+#### Lesser Goldfinch ####
+lesser_goldfinch <- lesser_goldfinch_grid[lesser_goldfinch_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(lesser_goldfinch == 1) / ns
+these.ones  <- which(lesser_goldfinch == 1)
+these.zeros <- which(lesser_goldfinch == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+save(lesser_goldfinch, s, knots.10, knots.15, knots.20,
+     cv.idx, file = "lesser_goldfinch.RData")

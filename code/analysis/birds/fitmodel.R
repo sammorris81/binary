@@ -24,6 +24,38 @@ if (species == "cattle_egret") {
   y.o <- western_bluebird[cv.idx[[cv]]]
   y.p <- western_bluebird[-cv.idx[[cv]]]
   seed.base <- 4000
+} else if (species == "longbilled_curlew") {
+  y.o <- longbilled_curlew[cv.idx[[cv]]]
+  y.p <- longbilled_curlew[-cv.idx[[cv]]]
+  seed.base <- 5000
+} else if (species == "common_grounddove") {
+  y.o <- common_grounddove[cv.idx[[cv]]]
+  y.p <- common_grounddove[-cv.idx[[cv]]]
+  seed.base <- 6000
+} else if (species == "mountain_bluebird") {
+  y.o <- mountain_bluebird[cv.idx[[cv]]]
+  y.p <- mountain_bluebird[-cv.idx[[cv]]]
+  seed.base <- 7000
+} else if (species == "greater_white_goose") {
+  y.o <- greater_white_goose[cv.idx[[cv]]]
+  y.p <- greater_white_goose[-cv.idx[[cv]]]
+  seed.base <- 8000
+} else if (species == "bluewinged_teal") {
+  y.o <- bluewinged_teal[cv.idx[[cv]]]
+  y.p <- bluewinged_teal[-cv.idx[[cv]]]
+  seed.base <- 9000
+} else if (species == "whiteeyed_vireo") {
+  y.o <- whiteeyed_vireo[cv.idx[[cv]]]
+  y.p <- whiteeyed_vireo[-cv.idx[[cv]]]
+  seed.base <- 10000
+} else if (species == "sharpshinned_hawk") {
+  y.o <- sharpshinned_hawk[cv.idx[[cv]]]
+  y.p <- sharpshinned_hawk[-cv.idx[[cv]]]
+  seed.base <- 11000
+} else if (species == "lesser_goldfinch") {
+  y.o <- lesser_goldfinch[cv.idx[[cv]]]
+  y.p <- lesser_goldfinch[-cv.idx[[cv]]]
+  seed.base <- 12000
 } else {
   stop("incorrect species selected")
 }
