@@ -13,8 +13,9 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                         xi.target = c(0.25, 0.5),
                         a.init = 10, a.eps = 0.2, a.attempts = 100, 
                         a.cutoff = NULL, a.target = c(0.5, 0.8),
+                        a.steps = 3,
                         b.init = 0.5, b.eps = 0.2, b.attempts = 100,
-                        b.target = c(0.5, 0.8),
+                        b.target = c(0.5, 0.8), b.steps = 3,
                         alpha.init = 0.5, alpha.eps = NULL, 
                         alpha.mn = 0.5, alpha.sd = 1 / 12, alpha.attempts = 50,
                         # alpha.target = c(0.5, 0.8),
@@ -197,7 +198,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       q <- c(as.vector(log(a$cur)), transform$logit(alpha$cur))
       epsilon <- c(rep(a$eps, nkt), alpha$eps)
       HMCout <- gevHMC(neg_log_post_a_alpha, neg_log_post_grad_a_alpha, q, 
-                    epsilon = epsilon, L = 3, 
+                    epsilon = epsilon, L = a.steps, 
                     data = data, beta = beta, xi = xi, a = a, b = b, 
                     alpha = alpha, rho = rho, calc = calc, others = others, 
                     this.param = "a_alpha")
@@ -219,7 +220,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       a$att <- a$att + 1
       q <- log(a$cur)
       HMCout  <- gevHMC(neg_log_post_a, neg_log_post_grad_a, q, 
-                        epsilon = a$eps, L = 3, 
+                        epsilon = a$eps, L = a.steps, 
                         data = data, beta = beta, xi = xi, a = a, b = b, 
                         alpha = alpha, rho = rho, calc = calc, others = others, 
                         this.param = "a")
@@ -265,7 +266,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
     q <- transform$logit(b$cur)
     b$att <- b$att + 1
     HMCout  <- gevHMC(neg_log_post_b, neg_log_post_grad_b, q, epsilon = b$eps, 
-                      L = 3, data = data, beta = beta, xi = xi, a = a, b = b, 
+                      L = b.steps, data = data, beta = beta, xi = xi, a = a, b = b, 
                       alpha = alpha, rho = rho, calc = calc, others = others, 
                       this.param = "b")
     if (HMCout$accept) {

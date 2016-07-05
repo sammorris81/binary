@@ -63,8 +63,8 @@ X.p <- matrix(1, nrow(s.p), 1)
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
+iters <- 30000; burn <- 25000; update <- 500; thin <- 1; iterplot <- FALSE
 # iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- TRUE
-iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
@@ -154,9 +154,10 @@ fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                        beta.eps = 0.1, beta.attempts = 50, 
                        xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01, 
                        xi.attempts = 50, xi.fix = TRUE, 
-                       a.init = 1, a.eps = 0.1, a.attempts = 50, 
-                       a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
-                       b.attempts = 50, 
+                       a.init = 1, a.eps = 0.05, a.attempts = 50, 
+                       a.cutoff = 0.2, a.steps = 5, 
+                       b.init = 0.5, b.eps = 0.2, 
+                       b.attempts = 50, b.steps = 5,
                        alpha.init = alpha.init, alpha.attempts = 50, 
                        alpha.mn = 0.5, alpha.sd = 0.1,
                        a.alpha.joint = FALSE, alpha.eps = 0.01,

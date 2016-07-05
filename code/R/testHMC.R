@@ -2630,6 +2630,8 @@ checkStrict(neg_log_post_grad_alpha)
 checkStrict(updateBeta)
 checkStrict(updateXi)
 checkStrict(updateRho)
+checkStrict(updateAlpha)
 
 # MCMC wrapper
-checkStrict(mcmc.gev.HMC)
+checkStrict(spatial_GEV)
+
