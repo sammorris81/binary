@@ -22,7 +22,7 @@ if (species == "cattle_egret") {
   seed.base <- 3000
 } else if (species == "western_bluebird") {
   y.o <- western_bluebird[cv.idx[[cv]]]
-  y.p <- western_bluebird[cv.idx[[cv]]]
+  y.p <- western_bluebird[-cv.idx[[cv]]]
   seed.base <- 4000
 } else {
   stop("incorrect species selected")
