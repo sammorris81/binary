@@ -10,6 +10,8 @@ library(mvtnorm)
 library(Rcpp)
 library(numDeriv)
 library(pROC)
+library(compiler)
+enableJIT(3)
 
 source("../../../code/R/spatial_gev.R", chdir = TRUE)
 source("../../../code/R/spatial_logit.R", chdir = TRUE)
@@ -41,13 +43,13 @@ if (do.upload) {
 lock.command <- paste("touch ~/repos-git/rare-binary/code/analysis/simstudy/",
                       "sim-control/lock.txt", sep = "")
 if (do.upload) {
-  lock.command.ssh <- paste("ssh samorris@hpc.stat.ncsu.edu '", lock.command, 
+  lock.command.ssh <- paste("ssh samorris@hpc.stat.ncsu.edu '", lock.command,
                             "'", sep = "")
 }
 
-unlock.command <- paste("rm ~/repos-git/rare-binary/code/analysis/simstudy/", 
+unlock.command <- paste("rm ~/repos-git/rare-binary/code/analysis/simstudy/",
                         "sim-control/lock.txt", sep = "")
 if (do.upload) {
-  unlock.command.ssh <- paste("ssh samorris@hpc.stat.ncsu.edu '", 
+  unlock.command.ssh <- paste("ssh samorris@hpc.stat.ncsu.edu '",
                               unlock.command, "'", sep = "")
 }
