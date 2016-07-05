@@ -2,6 +2,10 @@
 load(paste("./", species, ".RData", sep = ""))
 upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
                     "analysis/", sep = "")
+results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
+                      ".RData", sep = "")
+table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
+                      ".txt", sep = "")
 
 # get the correct y, x, and s
 if (species == "cattle_egret") {
@@ -259,7 +263,6 @@ if (do.upload) {
   system(upload.cmd)
 }
 
-cat("Finished: Set", i, "\n")
 save(fit.gev, bs.gev, roc.gev, auc.gev,
      fit.probit, bs.pro, roc.pro, auc.pro,
      fit.logit, bs.log, roc.log, auc.log,

@@ -3,19 +3,11 @@ source(file = "./package_load.R", chdir = T)
 species <- "vesper_sparrow"
 cv <- 1
 knot.percent <- 15
-results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
-                      ".RData", sep = "")
-table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
-                      ".RData", sep = "")
-source(file = "fitmodel.R")
+source(file = "./fitmodel.R")
 
 rm(list = ls())
 source(file = "./package_load.R", chdir = T)
+species <- "vesper_sparrow"
 cv <- 2
 knot.percent <- 15
-species <- "vesper_sparrow"
-results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
-                      ".RData", sep = "")
-table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
-                      ".RData", sep = "")
-source(file = "fitmodel.R")
+source(file = "./fitmodel.R")
