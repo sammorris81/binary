@@ -1,7 +1,7 @@
 # get the datasets
 load(paste("./", species, ".RData", sep = ""))
 upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
-                    "analysis/", sep = "")
+                    "analysis/birds/cv-tables/", sep = "")
 results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
                       ".RData", sep = "")
 table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
