@@ -1,7 +1,12 @@
 make.B <- function(d, rho) {
   b <- exp(-(d / rho)^2)
+  b[b <= 1e-100] <- 0
   b2 <- rowSums(b^2)
   b <- sweep(b, 1, sqrt(b2), "/")
+  if (any(is.nan(b))) {  # nan comes from 0 / 0 which means bw is very small
+    cat("\t Some sites are independent from others due to small bandwidth \n")
+  }
+  b[is.nan(b)] <- 0
   return(b)
 }
 
@@ -142,7 +147,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
       for(ttt in 1:thin){
 
        # LATENT CONTINUOUS VARIABLES:
-        
+
         MMM  <- XB + BA
         lp   <- pnorm(LOW, MMM, 1)
         up   <- pnorm(HIGH, MMM, 1)
@@ -150,7 +155,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         Y    <- qnorm(U, MMM, 1)
 
        # BETA
-        
+
         VVV  <- chol2inv(chol(tXX + diag(eps, p)))
         MMM  <- crossprod(X, Y - BA)
         beta <- VVV %*% MMM + t(chol(VVV)) %*% rnorm(p)
@@ -281,38 +286,38 @@ return(output)}
 # slow <- function(X, taua, m) {
 #   return (t(X) %*% X + taua * diag(m))
 # }
-# 
+#
 # med <- function(X, taua, m) {
 #   return (crossprod(X) + taua * diag(m))
 # }
-# 
+#
 # fast <- function(X, taua, m) {
 #   return (crossprod(X) + diag(taua, m))
 # }
-# 
+#
 # fast1 <- function(X, taua, m) {
 #   return (chol2inv(chol(crossprod(X) + diag(taua, m))))
 # }
-# 
+#
 # fast2 <- function(X, taua, m) {
 #   VVV <- crossprod(X) + diag(taua, m)
 #   return (chol2inv(chol(VVV)))
 # }
-# 
+#
 # slowa <- function(X, res) {
 #   return (t(X) %*% res)
 # }
-# 
+#
 # fasta <- function(X, res) {
 #   return (crossprod(X, res))
 # }
-# 
+#
 # microbenchmark(slow(X = B, taua = 0.25, m = ncol(B)),
 #                med(X = B, taua = 0.25, m = ncol(B)),
 #                fast(X = B, taua = 0.25, m = ncol(B)))
-# 
+#
 # microbenchmark(slowa(X = B, res = res),
 #                fasta(X = B, res = res))
-# 
+#
 # microbenchmark(fast1(X = X, taua = 0.25, m = ncol(X)),
 #                fast2(X = X, taua = 0.25, m = ncol(X)))
