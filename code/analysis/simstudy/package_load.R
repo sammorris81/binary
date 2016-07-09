@@ -28,7 +28,7 @@ if (Sys.info()["nodename"] == "cwl-mth-sam-001") {
   do.upload <- FALSE
 }
 
-upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code",
+upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
                     "analysis/simstudy/sim-tables/", sep = "")
 
 # the directory in the sim study that controls what sets are left
