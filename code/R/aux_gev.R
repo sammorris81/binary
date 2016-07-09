@@ -18,20 +18,20 @@ if (!exists("ifelsematCPP")) {
 if (!exists("pairwiseCPP")) {
   sourceCpp(file = "./pairwise.cpp")
 }
-# 
+#
 # source('pairwise.R')
 
 # calculated values for the MCMC
 # getAW <- function(alpha, a, calc) {
 #   a_star <- a$cur^alpha$cur
-#   return(getawCPP(a_star = a_star, w = calc$w, 
+#   return(getawCPP(a_star = a_star, w = calc$w,
 #                   alpha = alpha$cur))
-# } 
+# }
 
 # getAW2 <- function(alpha, a, calc) {
-#   return(getawCPP2(a = a$cur, w = calc$w, 
+#   return(getawCPP2(a = a$cur, w = calc$w,
 #                   alpha = alpha$cur))
-# } 
+# }
 
 getWStar <- function(alpha, w) {
   return(exp(log(w) / alpha))
@@ -60,7 +60,7 @@ getXBeta <- function(y = NULL, x, beta, ns = NULL, nt = NULL) {
   if (is.null(nt)) {
     nt <- ncol(y)
   }
-  
+
   if (nt == 1) {
     return(x %*% beta)
   } else {
@@ -80,25 +80,25 @@ getZ <- function(xi, x.beta, thresh) {
   } else {
     z <- exp(thresh - x.beta)
   }
-  
+
   return(z)
 }
 
 getW <- function(rho, dw2, a.cutoff) {
   w <- stdW(makeW(dw2 = dw2, rho = rho, a.cutoff = a.cutoff))
-  
+
   return(w)
 }
 
 logLikeY <- function(y, theta) {
   ll.y <- matrix(-Inf, nrow(y), ncol(y))
-  
+
   # numerical stability issue. originally was using
   # (1 - y) * P(Y = 0) + y * P(Y = 1)
   # would return NaN because 0 * -Inf is not a number
   ll.y[y == 0] <- -theta[y == 0]
   ll.y[y == 1]  <- log(1 - exp(-theta[y == 1]))
-  
+
   return(ll.y)
 }
 
@@ -106,17 +106,17 @@ logc <- function(alpha, b) {
   alpha1m <- 1 - alpha
   apb <- alpha * pi * b
   pb  <- pi * b
-  a1mpb <- alpha1m * pi * b 
-  
+  a1mpb <- alpha1m * pi * b
+
   results <- alpha * log(sin(apb)) / alpha1m - log(sin(pb)) / alpha1m +
     log(sin(a1mpb))
-  
+
   return(results)
 }
 
 getIDs <- function(dw2, a.cutoff) {
   nknots <- nrow(dw2)
-  IDs <- sqrt(dw2) <= a.cutoff 
+  IDs <- sqrt(dw2) <= a.cutoff
   return(IDs)
 }
 
@@ -184,14 +184,14 @@ getwzStar <- function(z, w, alpha) {
 #   nknots  <- ncol(w)
 #   ns      <- nrow(w)
 #   nt      <- ncol(z)
-#   
+#
 #   wz <- array(NA, dim=c(ns, nknots, nt))
 #   for (t in 1:nt) {
 #     wz[, , t] <- w / rep(z[, t], nknots)
 #   }
-#   
+#
 #   # wz.star <- getwzstarCPP(z = z, w = w, alpha = alpha)
-#   
+#
 #   return(wz)
 # }
 
@@ -200,9 +200,9 @@ getwzStar <- function(z, w, alpha) {
 #   nt <- dim(wz.star)[3]
 #   nknots <- dim(wz.star)[2]
 #   ns <- dim(wz.star)[1]
-# 
+#
 #   theta <- matrix(NA, nrow = ns, ncol = nt)
-# 
+#
 #   if (is.null(IDs)) {
 #     for (t in 1:nt) {
 #       if (nknots == 1) {
@@ -220,7 +220,7 @@ getwzStar <- function(z, w, alpha) {
 #       }
 #     }
 #   }
-# 
+#
 #   return(theta)
 # }
 
@@ -230,13 +230,13 @@ makeW <- function(dw2, rho, a.cutoff = NULL) {
     a.cutoff <- max(sqrt(dw2))
   }
   w <- exp(-0.5 * dw2 / (rho^2))
-  
+
   # only include sites that are close to the knot
-  # we need to do this in addition to the IDs because the weights over the 
-  # active knots needs to sum to 1. If we don't set the knots beyond the 
-  # cutoff to 0, then when we don't include them later on, the weights will 
+  # we need to do this in addition to the IDs because the weights over the
+  # active knots needs to sum to 1. If we don't set the knots beyond the
+  # cutoff to 0, then when we don't include them later on, the weights will
   # sum to something slightly smaller than 1
-  w[sqrt(dw2) > a.cutoff] <- 0  
+  w[sqrt(dw2) > a.cutoff] <- 0
   return(w)
 }
 
@@ -268,29 +268,29 @@ ld <- function(u, a, alpha, log = TRUE) {
   c    <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
   logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * log(a) +
           log(c) - c * (1 / a^(alpha / (1 - alpha)))
-  
+
   if (!log) {
     logd <- exp(logd)
   }
-  
+
   return(logd)
 }
 
 # ld2 is used in generating positive stable random variables
-# also used when updating A and we include auxiliary variable from 
+# also used when updating A and we include auxiliary variable from
 # Stephenson
 ld2 <- function(u, logs, alpha, shift = 0, log = TRUE) {
-  
+
   logs <- logs - shift / alpha
   s <- exp(logs)
   psi <- pi * u
   c <- (sin(alpha * psi) / sin(psi))^(1 / (1 - alpha))
   c <- c * sin((1 - alpha) * psi) / sin(alpha * psi)
-  
+
   logd <- log(alpha) - log(1 - alpha) - (1 / (1 - alpha)) * logs +
     log(c) - c * (1 / s^(alpha / (1 - alpha))) +
     logs
-  
+
   if (!log) {
     logd <- exp(logd)
   }
@@ -301,9 +301,9 @@ rPS <- function(n, alpha) {
   if (is.list(alpha)) {
     alpha <- alpha$cur
   }
-  
+
   alpha1m <- 1 - alpha
-  
+
   #### PS(alpha) generation as given by Stephenson(2003)
   unif <- runif(n) * pi
   stdexp.ps <- rexp(n, 1)
@@ -352,7 +352,7 @@ getThetaStar <- function(w.star, a) {
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
                             prob.success = 0.05, dw2 = NULL, a = NULL,
                             thresh = NULL) {
-  
+
   p <- length(beta)
   if (nt == 1) {
     ns <- nrow(x)
@@ -365,7 +365,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
 
   y      <- matrix(NA, ns, nt)
   nknots <- nrow(knots)
-  
+
   x.beta <- getXBeta(y = y, x = x, beta = beta)
 
   # get weights
@@ -379,7 +379,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   if (is.null(a)) {
     a <- matrix(rPS(n = nknots * nt, alpha = alpha), nknots, nt)
   }
-  
+
   w.star <- getWStar(alpha = alpha, w = w)
   aw     <- getAW(a = a, w.star = w.star)
   theta  <- (w.star %*% a)^alpha
@@ -387,7 +387,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   # get underlying latent variable
   u <- matrix(rgev(n = ns * nt, 1, alpha, alpha), ns, nt)
   z <- u * theta
-  
+
   # z = u * theta ~ GEV(1, 1, 1)
   # h = x.beta + (z^xi - 1) / xi ~ GEV(x.beta, 1, xi)
   if (xi == 0) {
@@ -531,14 +531,14 @@ rProbitSpat <- function(x, s, knots, beta, rho, sigma.sq, nu = 0.5,
   return(results)
 }
 
-rHotSpotSpat <- function(x, s, xlim = NULL, ylim = NULL, bw, 
-                         nhotspots = 1, 
+rHotSpotSpat <- function(x, s, xlim = NULL, ylim = NULL, bw,
+                         nhotspots = 1,
                          prob.in = 0.99, prob.out = 0.0001) {
   ## Generate data at hotspots
   ## x: covariates
   ## s: sites
   ## xlim: limits in the x direction for the hotspot
-  ## ylim: limits in the y direction for the hotspot 
+  ## ylim: limits in the y direction for the hotspot
   ## bw: size of the hotspots
   ## nhotspots: how many hotspots
   ## prob.in: probability of success near hotspot
@@ -549,21 +549,21 @@ rHotSpotSpat <- function(x, s, xlim = NULL, ylim = NULL, bw,
   if (is.null(ylim)) {
     ylim = range(s[, 2])
   }
-  
+
   if ((length(xlim) != 2) | (length(ylim) != 2)) {
     stop("xlim and ylim must be length 2")
   }
-  
+
   ns <- dim(s)[1]
   y  <- matrix(0, ns, 1)
-  
+
   # generate the hotspots
-  hotspots <- cbind(runif(nhotspots, xlim[1], xlim[2]), 
+  hotspots <- cbind(runif(nhotspots, xlim[1], xlim[2]),
                     runif(nhotspots, ylim[1], ylim[2]))
 
   # figure out how many knots to select
   d  <- rdist(s, hotspots)
-  
+
   for (i in 1:ns) {
     if (any(d[i, ] < bw)) {
       p <- prob.in
@@ -572,7 +572,7 @@ rHotSpotSpat <- function(x, s, xlim = NULL, ylim = NULL, bw,
     }
     y[i, 1] <- rbinom(1, size = 1, prob = p)
   }
-  
+
   results <- list(y = y, hotspots = hotspots)
   return(results)
 }
@@ -583,7 +583,7 @@ epsUpdate <- function(param, lower = 0.8, higher = 1.2) {
   att <- param$att
   eps <- param$eps
   attempts <- param$attempts
-  
+
   acc.rate     <- acc / att
   these.update <- att > attempts
   these.low    <- (acc.rate < param$target.l) & these.update
@@ -720,7 +720,7 @@ dTNorm <- function(y, mn, sd, lower = -Inf, upper = Inf, fudge = 0,
 # Returns:
 #   score(1): Brier score for dataset
 ################################################################
-BrierScore <- function(post.prob, validate) {
+BrierScore <- function(post.prob, validate, summary = mean) {
   # iters <- nrow(post.prob)
   # np    <- ncol(post.prob)
 
@@ -728,7 +728,7 @@ BrierScore <- function(post.prob, validate) {
   # for (i in 1:iters) {
   #   scores[i] <- mean((validate - post.prob[i, ])^2)
   # }
-  probs <- apply(post.prob, 2, mean)
+  probs <- apply(post.prob, 2, summary)
   score <- mean((validate - probs)^2)
 
   return(score)
@@ -743,7 +743,7 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
   if (is.null(max.dist)) {
     max.dist <- max(d)
   }
-  
+
   if (method == "Nelder-Mead") {
     hessian <- FALSE
   }
@@ -841,13 +841,13 @@ fit.rarebinaryCPP <- function(xi.init, alpha.init, rho.init, beta.init,
     results$param.names <- "beta"
 
   } else if (xi.fix & !alpha.fix & !rho.fix & beta.fix) {
-    
+
     results.beta <- optim(par = beta.init, beta.hat, y = y,
                           cov = cov, xi = xi.init, method = "BFGS",
                           hessian = TRUE)
     beta.hat <- results.beta$par
     init.par <- c(alpha.init, rho.init)
-    
+
     results <- optim(init.par, pairwise.rarebinaryCPP.9, y = y,
                      xi = xi.init, beta = beta.hat,
                      dw2 = dw2, d = d, max.dist = max.dist, cov = cov,
