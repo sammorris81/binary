@@ -314,9 +314,12 @@ if (do.upload) {
   system(upload.cmd)
 }
 
-save(fit.gev, bs.gev, roc.gev, auc.gev,
-     fit.probit, bs.pro, roc.pro, auc.pro,
-     fit.logit, bs.log, roc.log, auc.log,
+save(fit.gev, post.prob.gev.med, post.prob.gev.mean, 
+     bs.gev, roc.gev, auc.gev,
+     fit.probit, post.prob.pro.med, post.prob.pro.mean, 
+     bs.pro, roc.pro, auc.pro,
+     fit.logit, post.prob.log.med, post.prob.log.mean, 
+     bs.log, roc.log, auc.log,
      y.p, y.o, knots,
      s.o, s.p, timings,
      file = results.file)
