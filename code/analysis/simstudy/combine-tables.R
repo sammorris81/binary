@@ -1,6 +1,6 @@
 rm(list = ls())
 
-files <- list.files(path = "sim-tables/")
+files <- list.files(path = "sim-tables-med/")
 
 nsettings <- 6
 nsets <- 100
@@ -19,7 +19,7 @@ for (i in 1:length(files)) {
   split     <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
   setting   <- as.numeric(split[1])
   set       <- as.numeric(split[2])
-  table.set <- read.table(paste("sim-tables/", files[i], sep = ""))
+  table.set <- read.table(paste("sim-tables-med/", files[i], sep = ""))
   bs.results[[setting]][set, 1]  <- table.set[1, 1]
   auc.results[[setting]][set, 1] <- table.set[1, 2]
   bs.results[[setting]][set, 2]  <- table.set[2, 1]
