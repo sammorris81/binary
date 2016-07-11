@@ -29,11 +29,11 @@ amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
   for (i in 1:nsets) {
     sets.to.change <- read.table("change_to_median.txt")
     if (sets.to.change[i, setting]) {
-      sets.to.change[i, setting] <- FALSE
-      write.table(x = sets.to.change, file = "change_to_median.txt")
-      cat("Starting setting ", setting, ": set ", i, "\n", sep = "")
       filename <- paste("./sim-results/", setting, "-", i, ".RData", sep = "")
       if (file.exists(filename)) {
+        sets.to.change[i, setting] <- FALSE
+        write.table(x = sets.to.change, file = "change_to_median.txt")
+        cat("Starting setting ", setting, ": set ", i, "\n", sep = "")
         load(filename)
         # extract the relevant setting from simdata
         y <- simdata[[setting]]$y
