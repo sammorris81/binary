@@ -44,23 +44,26 @@ The GEV link function introduces a new shape parameter to the link function that
 The cloglog link is a special case of the GEV link function when the shape parameter is 0.
 % where
 
-\hl{Want to make the case in this paragraph that spatial logistic and probit models are not appropriate because asymptotic dependence is 0.}
 Spatial logistic and probit models are commonly presented using a hierarchical model \hl{citation}.
 In the hierarchical framework, spatial dependence is typically modeled with an underlying latent Gaussian process, and conditioned on this process, observations are independent.
-However, if the latent variable is assumed to follow a GEV marginally, then a Gaussian process may not be appropriate to describe the dependence due to the fact that they do not demonstrate asymptotic dependence regardless of the strength of the dependence in the bulk of the data.
-As an alternative to the Gaussian process, we propose using a latent max-stable process because it allows for asymptotic dependence \hl{citation}.
-Max-stable processes are extremely flexible, but are often challenging to work with because very few finite dimensional representations exist in more than two or three dimensions.
+However, if the latent variable is assumed to follow a GEV marginally, then a Gaussian process may not be appropriate to describe the dependence due to the fact that Gaussian processes do not demonstrate asymptotic dependence regardless of the strength of the dependence in the bulk of the data.
 
+We propose using a latent max-stable process \citep{deHaan1984} because it allows for asymptotic dependence.
+The max-stable process arises as the limit of the location-wise maximum of infinitely many spatial processes.
+Max-stable processes are extremely flexible, but are often challenging to work with in high dimensions \citep{Wadsworth2014,Thibaud2013a}.
+To address this challenge, methods have been proposed that implement composite likelihood techniques for max-stable processes \citep{Padoan2010,Genton2011,Huser2014}.
+As an alternative to these composite approaches, \citet{Reich2012} present a hierarchical model that implements a low-rank representation for a max-stable process.
+Although composite likelihoods have been used to model binary spatial data \citep{Heagerty1998}, we chose to use the low-rank representation of a max-stable process given by \citet{Reich2012}.
 
 \hl{Paragraph outlining the structure of the paper}
 
-\section{Binary regression using the GEV link}\label{s:rarebinary}
+\section{Binary regression using the GEV link}\label{rbs:rarebinary}
 
 Here, we provide a brief review of the the GEV link of \citet{Wang2010}.
 Let $Y_i \in \{0, 1\}, i = 1, \ldots, n$ be a collection of i.i.d. binary responses.
-It is assumed that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = [1 - \xi \bX_i \bbeta]^{1 / \xi}$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ be the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
-So, the marginal probability of an event is given by
-\begin{align} \label{eq:gevlink}
+It is assumed that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = [1 - \xi \bX_i \bbeta]^{1 / \xi}$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ is the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.
+When observations
+\begin{align} \label{rbeq:gevlink}
   \pi_i= 1 - \exp \left( -\frac{ 1 }{ z_i } \right).
 \end{align}
 Although this link was selected by \citeauthor{Wang2010} based on its ability to handle asymmetry, the GEV distribution is one of the primary distributions used for modeling extremes.
@@ -69,75 +72,72 @@ Because extreme events are rare, it is therefore reasonable to use similar metho
 
 \section{Spatial dependence for binary regression}
 
-In many binary regression applications, spatial dependence is handled using a hierarchical model assuming an latent spatial process.
+In many binary regression applications, spatial dependence is handled using a hierarchical model assuming a latent spatial process.
 Let $Y(\bs)$ be the observation at spatial location $\bs$ in a spatial domain of interest $\calD \in \calR^2$.
 We assume $Y(\bs) = I[Z(\bs) > 0]$ where $Z(\bs)$ is a latent spatial process.
 In spatial logistic and probit regression, the latent spatial process is assumed to be a Gaussian process.
 A Gaussian process may not be appropriate when describing dependence in the tails of the distribution because it always exhibits asymptotic independence, except in the case of perfect dependence.
-Because we use extreme values analysis as the foundation for rare binary analysis, we propose useing a max-stable process to model the latent spatial process
+Because we use extreme values analysis as the foundation for rare binary analysis, we propose using a max-stable process to model the latent spatial process
 
-% \subsection{Gaussian process}\label{s:nonrarespatial}
+% \subsection{Gaussian process}\label{rbs:nonrarespatial}
 
 % In this section we present the spatial logistic and probit models.
 
 % In the case that $n$ is large, low-rank predictive process models can be used to ease the computation.
 
-% \subsection{Max-stable process}\label{s:rarebinary}
+% \subsection{Max-stable process}\label{rbs:rarebinary}
 
-A max-stable process has generalized extreme value marginal distributions with location $\bX^T(\bs) \bbeta$, scale $\sigma$, and shape $\xi$.
-For identifiability purposes we fix $\sigma = 1$.
+The proposed max-stable process has generalized extreme value marginal distributions with location $\bX^T(\bs) \bbeta$, scale 1, and shape $\xi$.
+In our model, the scale is fixed due to identifiability concerns.
 Although $\bbeta$ and $\xi$ could be permitted to vary across space, we assume that they are constant across $\calD$.
 
 For a finite collection of locations $\bs_1, \ldots, \bs_n,$ denote the vector of observations $\bY = [Y(\bs_1), \ldots, Y(\bs_n)]^T$.
-The spatial dependence is determined by the joint distribution of $\bZ = [Z(\bs_1),\ldots, Z(\bs_n)]^T$,
-\begin{align}\label{eq:jointCDF}
+The spatial dependence is determined by the joint distribution of $\bZ = [Z(\bs_1),\ldots, Z(\bs_n)]^T$, given by
+\begin{align}\label{rbeq:jointCDF}
   G(\bz) = \mbox{P}[Z(\bs_1) < z(\bs_1), \ldots, Z(\bs_n) < z(\bs_n)] = \exp\left\{-\sum_{l=1}^L\left[\sum_{i=1}^n\left(\frac{w_{l}(\bs_i)}{z(\bs_i)}\right)^{1/\alpha}\right]^{\alpha}\right\},
 \end{align}
-where $w_{l}(\bs_i)$ are a set of $L$ weights that determine the spatial dependence structure, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
+where $G(\cdot)$ is the CDF of a multivariate GEV distribution, $w_{l}(\bs_i)$ are a set of $L$ weights that determine the spatial dependence structure, and $\alpha\in(0,1)$ determines the strength of dependence, with $\alpha$ near zero giving strong dependence and $\alpha=1$ giving joint independence.
 This is a special case of the multivariate GEV distribution with asymmetric Laplace dependence function \citep{Tawn1990}.
-The weights $w_{l}(\bs_i)$ in (\ref{eq:jointCDF}) vary smoothly across space to induce spatial dependence.
+The weights $w_{l}(\bs_i)$ in \eref{rbeq:jointCDF} vary smoothly across space to induce spatial dependence.
 Many weight functions are possible, but the weights must be constrained so that $\sum_{l=1}^L w_{l}(\bs_i)=1$ for all $i=1,\ldots,n$ to preserve the marginal GEV distribution.
 For example, \cite{Reich2012} take the weights to be scaled Gaussian kernels with knots $\bv_l$,
-\begin{align}\label{w}
+\begin{align}\label{rbeq:w}
    w_{l}(\bs_i) = \frac{\exp\left[-0.5\left(||\bs_i-\bv_l||/\rho\right)^2\right]}
-                 {\sum_{j=1}^L\exp\left[-0.5\left(||\bs_i-\bv_j||/\rho\right)^2\right]}.
+                 {\sum_{j=1}^L\exp\left[-0.5\left(||\bs_i-\bv_j||/\rho\right)^2\right]}
 \end{align}
-The kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
+where $||\bs_i - \bv_l||$ is the distance between site $\bs_i$ and knot $\bv_l$, and the kernel bandwidth $\rho>0$ determines the spatial range of the dependence, with large $\rho$ giving long-range dependence and vice versa.
+One nice feature to this representation for the max-stable process is that at a single site $i$, the marginal distribution gives \mbox{$P[Y(\bs_i) = 1] = 1 - \exp\left[ -\displaystyle\frac{ 1 }{ z(\bs_i)} \right]$} which is the same as the marginal distribution given by \citet{Wang2010}.
 
-One nice feature to this representation for the max-stable process is that the lower-dimensional marginal distributions also follow a multivariate extreme value distribution.
-More importantly, at a single site $i$, the marginal distribution gives \mbox{$P[Y(\bs_i) = 1] = 1 - \exp\left[ -\frac{ 1 }{ z(\bs_i)} \right]$} which is the same as the marginal distribution given by \citet{Wang2010}.
-
-The joint likelihood of $Y$ is computationally challenging to obtain.
+The joint likelihood of $\bY$ is computationally challenging to obtain.
 Therefore, to incorporate spatial dependence into the model, we consider the hierarchical max-stable process of \citet{Reich2012}.
-Consider a set of $A_1, \ldots, A_l \iid \text{PS}(\alpha)$ random effects associated with spatial knots $\bv_1, \ldots, \bv_L$.
+Consider a set of $A_1, \ldots, A_L \iid \text{Positive Stable}(\alpha)$ random effects associated with spatial knots $\bv_1, \ldots, \bv_L$.
 The hierarchical model is given by
-\begin{align} \label{eq:hiermodel}
-  Z(\bs) | A_l, \ldots, A_l &\indep \text{GEV}[\theta(\bs), \alpha \theta(\bs), \alpha] \\
+\begin{align} \label{rbeq:hiermodel}
+  \bZ | A_1, \ldots, A_L &\indep \text{GEV}[\theta(\bs), \alpha \theta(\bs), \alpha] \\
   A_l &\iid \text{PS}(\alpha) \nonumber
 \end{align}
 where $\theta(\bs) = \left[\sum_{l = 1}^L A_l w_l (\bs)^{1 / \alpha} \right]^\alpha$.
+Because conditional on the positive stable random effects, the $\bZ$ are independent, the joint likelihood of $\bY$ is now the product of independent Bernoulli random variables.
 
-% \subsubsection{Weight functions}\label{s:weights}
+% \subsubsection{Weight functions}\label{rbs:weights}
 
 
-\section{Joint distribution}\label{s:multivariate}
+\section{Joint distribution}\label{rbs:multivariate}
 
-In section \ref{s:bivariate}, we give an exact expression in the case where there are only two spatial locations which is useful for constructing a pairwise composite likelihood and studying spatial dependence.
-For more than two locations, we are also able to compute the exact likelihood when the number of locations is large but the number of events is small, as might be expected for very rare events (see Appendix \ref{a:likelihoodderivation}).
+In \sref{rbs:bivariate}, we give an exact expression in the case where there are only two spatial locations which is useful for constructing a pairwise composite likelihood and studying spatial dependence.
+For more than two locations, we are also able to compute the exact likelihood when the number of locations is large but the number of events is small, as might be expected for very rare events (see \aref{rba:likelihoodderivation}).
 
-\subsection{Bivariate distribution}\label{s:bivariate}
-Then in a bivariate setting, the probability mass function as a function of $\alpha$ is
-\begin{adjustwidth}{-0.25in}{}
-{\footnotesize
-\begin{align} \label{biv}
+\subsection{Bivariate distribution}\label{rbs:bivariate}
+In a bivariate setting, the probability mass function is
+given by
+\begin{align} \label{rbeq:biv}
   \text{P}[Y(\bs_i), Y(\bs_j)] = \left\{ \begin{array}{ll}
-    \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\} &Y(\bs_i) = 0, Y(\bs_j) = 0\\
-    \frac{ 1 }{z(\bs_i)} - \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\} &Y(\bs_i) = 1, Y(\bs_j) = 0 \\
-    1 - \exp\left\{ - \frac{ 1 }{ z(\bs_i) } \right\} - \exp \left\{ - \frac{ 1 }{z(\bs_j)} \right\} + \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\} &Y(\bs_i) = 1, Y(\bs_j) = 1
-  \end{array} \right.
+    \varphi(\bz) &Y(\bs_i) = 0, Y(\bs_j) = 0\\
+    \exp\left\{ - \displaystyle \frac{ 1 }{ z(\bs_i) } \right\} - \varphi(\bz), &Y(\bs_i) = 1, Y(\bs_j) = 0 \\
+    1 - \exp\left\{ - \displaystyle\frac{ 1 }{ z(\bs_i) } \right\} - \exp \left\{ -\displaystyle \frac{ 1 }{z(\bs_j)} \right\} + \varphi(\bz), &\quad Y(\bs_i) = 1, Y(\bs_j) = 1
+  \end{array} \right
 \end{align}
-}
-\end{adjustwidth}
+where $\varphi(\bz) = \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \displaystyle \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \displaystyle \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\}$.
 
 \section{Quantifying spatial dependence}
 \hl{I still need to incorporate Brian's suggestions here}
@@ -156,10 +156,10 @@ We believe this measure of dependence to be reasonable because,
 \begin{align}
   \lim_{\beta_0 \rightarrow \infty} \kappa(h) = \chi(h) = 2 - \vartheta(\bs_i, \bs_j)
 \end{align}
-where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see Appendix \ref{a:chi}).
+where $\beta_0$ is the intercept from $\bX^T\bbeta$ and $\vartheta (\bs_i, \bs_j) = \sum_{ l = 1 }^{ L } \left[ w_{l}(\bs_i)^{ 1/\alpha } +  w_{ l}(\bs_j)^{ 1/\alpha } \right]^\alpha$ is the pairwise extremal coefficient given by \citet{Reich2012} (see \aref{rba:chi}).
 In the case of complete dependence, $\kappa = 1$, and in the case of complete independence, $\kappa = 0$.
 
-\section{Computation}\label{s:comp}
+\section{Computation}\label{rbs:comp}
 For small $K$ we can evaluate the likelihood directly.
 When $K$ is large, we use MCMC methods with the random effects model to explore the posterior distribution.
 This is possible because the expression for the joint density, conditional on $A_1, \ldots, A_L$, is given by
@@ -175,13 +175,13 @@ The model parameters and random effects are updated using a combination of Metro
 To overcome challenges with evaluating the positive stable density, we follow \citet{Reich2012} and incorporate the auxiliary variable technique of \citet{Stephenson2009}.
 
 
-\section{Simulation study}\label{s:sim}
+\section{Simulation study}\label{rbs:sim}
 
 For our simulation study, we generate $n_m = 50$ datasets under 6 different settings to explore the impact of sample size and misspecification of link function.
 We generate data assuming three possible types of underlying process.
 For each process, we consider two sample sizes $n_s = 650$ and $n_s = 1300$.
 
-The first of these processes is a max-stable process that uses the GEV link described in \ref{eq:hiermodel} with knots on a $21 \times 21$ grid on $[0, 1] \times [0, 1]$.
+The first of these processes is a max-stable process that uses the GEV link described in \eref{rbeq:hiermodel} with knots on a $21 \times 21$ grid on $[0, 1] \times [0, 1]$.
 For this process, we set $\alpha = 0.3$, $\rho = 0.025$, $\xi = 0$ for idenfiability purposes, and $\beta_0$ is set for each dataset to give $5\%$ rarity.
 We then set $Y(\bs) = I[z(\bs) > 0]$ where $I[\cdot]$ is an indicator function.
 
@@ -215,7 +215,7 @@ The marginal distributions are given by
 \end{align}
 where $\balpha$ are Gaussian random effects at the knot locations, and the $\bW$ are basis functions to recreate the Gaussian process at all sites.
 
-\subsection{Cross validation}\label{s:modelselect}
+\subsection{Cross validation}\label{rbs:modelselect}
 For each dataset, we fit the model using 500 of the observations as a training set, and the remaining observations are used as a validation set to assess the model's predictive power.
 Because our goal is to predict a the occurrence of an event, we use Brier scores to compare the models \citep{Gneiting2007}.
 The Brier score for predicting an occurrence at site $\bs$ is given by $\{I[Y(\bs)=1] - P[Y(\bs)=1]\}^2$ where $I[Y(\bs) = 1]$ is an indicator function indicating that an event occurred at site $\bs$, and $P[Y(\bs) = 1]$ is obtained by taking the median of the posterior distribution.
@@ -228,15 +228,15 @@ AUC is computed using the \texttt{roc} function in the \texttt{pROC} package of 
 We then average AUCs across all datasets for each method and setting to obtain a single AUC for each combination of method and setting.
 
 \subsection{Results}
-Table \ref{tbl:simbsresults} gives the Brier score relative to the Brier score for the spatial logistic method calculated as
+Table \tref{rbtbl:simbsresults} gives the Brier score relative to the Brier score for the spatial logistic method calculated as
 \begin{align}
   \text{BS}_{\text{rel}} = \frac{\text{BS}_{\text{method}}}{\text{BS}_{\text{logistic}}}.
 \end{align}
-Table \ref{tbl:simaucresults} gives the AUC relative to the AUC for the spatial logistic method calculated in similarly to the relative Brier score.
+\tref{rbtbl:simaucresults} gives the AUC relative to the AUC for the spatial logistic method calculated in similarly to the relative Brier score.
 
 \begin{table}
   \caption{Relative Brier scores for GEV and Probit methods}
-  \label{tbl:simbsresults}
+  \label{rbtbl:simbsresults}
   \centering
   \begin{tabular}{r|ll}
     \cline{2-3}
@@ -254,7 +254,7 @@ Table \ref{tbl:simaucresults} gives the AUC relative to the AUC for the spatial 
 
 \begin{table}
   \caption{Relative AUC for GEV and Probit methods}
-  \label{tbl:simaucresults}
+  \label{rbtbl:simaucresults}
   \centering
   \begin{tabular}{r|lll}
     \cline{2-4}
@@ -272,7 +272,7 @@ Table \ref{tbl:simaucresults} gives the AUC relative to the AUC for the spatial 
 
 We analyzed the results for this simulation study using a Friedman test at $\alpha = 0.05$ to see if at least one method had a significantly different Brier score or AUC.
 For any setting that yielded a significant p-value, we conducted a Wilcoxon-Nemenyi-McDonald-Thompson test to see which of the methods had different results.
-The full results for the Wilcoxon-Nemenyi-McDonald-Thompson tests are given in Appendix \ref{a:pdiffs}.
+The full results for the Wilcoxon-Nemenyi-McDonald-Thompson tests are given in \aref{rba:pdiffs}.
 For all settings, we find significant results for the Friedman test comparing the Brier scores for the methods.
 Specifcally, we see a statistically significant reduction in Brier score using the GEV compared to logit for settings 1 and 2 and compared to probit for setting 2.
 However, in the other settings, the logit and probit methods tend to perform better than the GEV method.
@@ -280,7 +280,7 @@ However, in the other settings, the logit and probit methods tend to perform bet
 The results using AUC are much less conclusive with only settings 1 and 4 demonstrating significant differences between the methods at $\alpha = 0.05$.
 As with the Brier scores, the GEV method shows a statistically significant increase in AUC over the logit method for setting 1, and for setting 4, the both the probit and logit methods show a statistically significant improvement in AUC over the GEV method.
 
-% Figures \ref{fig:post-med-2} and \ref{fig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively of a simulated dataset.
+% \fref{rbfig:post-med-2} and \fref{rbfig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively of a simulated dataset.
 % As you can see on the figures, the both the spatial probit and logistic models oversmooth $P(Y = 1)$, whereas the spatial GEV method is able to capture small pockets of spatial dependence.
 % Plots for the medians of settings 1 and 4 look similar, so they are not included here.
 
@@ -288,41 +288,41 @@ As with the Brier scores, the GEV method shows a statistically significant incre
 %   % this figure comes from markdown/sim-hmc/predict-maps.R
 %   \includegraphics[width=\linewidth]{plots/post-med-2.pdf}
 %   \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 2.}
-%   \label{fig:post-med-2}
+%   \label{rbfig:post-med-2}
 % \end{figure}
 
 % \begin{figure}
 %   % this figure comes from markdown/sim-hmc/predict-maps.R
 %   \includegraphics[width=\linewidth]{plots/post-med-3.pdf}
 %   \caption{Posterior median $P(Y = 1)$ for spatial GEV, probit, and logistic regression for setting 3.}
-%   \label{fig:post-med-3}
+%   \label{rbfig:post-med-3}
 % \end{figure}
 
-\section{Data analysis}\label{s:analysis}
+\section{Data analysis}\label{rbs:analysis}
 For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
 The data are publicly available from {\tt http://ebird.org}.
 We use data from 2002, and focus on 10 different species.
-Figure \ref{fig:data2002} shows the sighting data for cattle egrets and vesper sparrows
+\fref{rbfig:data2002} shows the sighting data for cattle egrets and vesper sparrows
 
 \begin{figure}
   \centering
   \includegraphics[width=0.47\linewidth]{plots/cattle_egret.png}
   \includegraphics[width=0.47\linewidth]{plots/vesper_sparrow.png}
   \caption{Reported sighting for Cattle egret (left) and Vesper sparrow (right) in 2002}
-  \label{fig:data2002}
-\end{figure}b
+  \label{rbfig:data2002}
+\end{figure}
 
-\section{Conclusions}\label{s:con}
+\section{Conclusions}\label{rbs:con}
 
 \section*{Acknowledgments}
 
 \appendix
 \section{Appendices}
 
-\subsection{Derivation of the likelihood} \label{a:likelihoodderivation}
+\subsection{Derivation of the likelihood} \label{rba:likelihoodderivation}
 We use the hierarchical max-stable spatial model given by \citet{Reich2012}. If at each margin, $Z_i \sim $ GEV$(1,1,1)$, then $Z_i | \theta_i \indep $ GEV$(\theta, \alpha \theta, \alpha)$. We reorder the data such that $Y_1=\ldots=Y_K=1$, and $Y_{K+1} = \ldots = Y_n = 0$. Then the joint likelihood conditional on the random effect $\theta$ is
 
-\begin{align} \label{joint_cond}
+\begin{align} \label{rbeq:joint_cond}
 	P(Y_1=y_1,\ldots,Y_n=y_n) =& \prod_{ i \le K } \left\{ 1 - \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \right \} \prod_{ i > K } \exp \left[ -\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \nonumber \\[0.5em]
 		=& \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] - \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ i = 1}^{K} \exp\left[ -\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \nonumber\\
 		&  + \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ 1 < i < j \le K } \left\{ \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} - \left( \frac{ \theta_j }{ z_j } \right)^{ 1/\alpha } \right] \right \} \nonumber \\[0.5em]
@@ -331,7 +331,7 @@ We use the hierarchical max-stable spatial model given by \citet{Reich2012}. If 
 
 Finally marginalizing over the random effect, we obtain
 
-\begin{align} \label{joint}
+\begin{align} \label{rbeq:joint}
     P(Y_1=y_1,\ldots,Y_n=y_n) =&\int G(\bz | \bA) p( \bA | \alpha) d\bA. \nonumber\\[0.5em]
 			=& \int \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] - \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ i = 1}^{K} \exp\left[ -\left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} \right] \nonumber\\
 		&  + \exp \left[ -\sum_{ i = K+1}^{ n }\left( \frac{ \theta_i }{ z_i } \right)^{1/\alpha} \right] \sum_{ 1 < i < j \le K } \left\{ \exp \left[ - \left( \frac{ \theta_i }{ z_i } \right)^{ 1/\alpha} - \left( \frac{ \theta_j }{ z_j } \right)^{ 1/\alpha } \right] \right \} \nonumber \\[0.5em]
@@ -346,8 +346,8 @@ Consider the first term in the summation,
 	 &=\exp\left\{-\sum_{ l = 1}^L \left[ \sum_{ i = K + 1 }^n \left( \frac{ w_l(\bs_i)}{ z_i} \right)^{1/\alpha} \right]^\alpha \right\}.
 \end{align}
 
-The remaining terms in equation (\ref{joint}) are straightforward to obtain, and after integrating out the random effect, the joint density for $K = 0, 1, 2$ is given by
-\begin{align}\label{pmf}
+The remaining terms in equation \eref{rbeq:joint} are straightforward to obtain, and after integrating out the random effect, the joint density for $K = 0, 1, 2$ is given by
+\begin{align}\label{rbeq:pmf}
   P(Y_1=y_1,\ldots,Y_n=y_n) =  \left\{
     \begin{array}{ll}
       G(\bz) & K=0 \\
@@ -364,8 +364,8 @@ where
 \end{align*}
 Similar expressions can be derived for all $K$, but become cumbersome for large $K$.
 
-\subsection{Derivation of the $\chi$ statistic}\label{a:chi}
-\begin{align} \label{chi}
+\subsection{Derivation of the $\chi$ statistic}\label{rba:chi}
+\begin{align} \label{rbeq:chi}
   \chi &= \lim_{p \rightarrow 0 }\text{P}(Y_i = 1|Y_j = 1)\nonumber \\
    &= \lim_{p \rightarrow \infty }\frac{ p + p - \left( 1 - \exp \left \{ - \sum_{ l = 1 }^{ L } \left[ \left( -\log(1-p) w_{l}(\bs_i) \right)^{ 1/\alpha } + \left( -\log(1 - p) w_{ l}(\bs_j) \right)^{ 1/\alpha } \right]^{\alpha} \right \} \right) }{ p } \nonumber \\[0.5em]
   &= \lim_{p \rightarrow 0 } \frac{ 2p - \left( 1 - \exp \left \{ \log(1-p) \sum_{ l = 1 }^{ L } \left[  w_{l}(\bs_i) ^{ 1/\alpha } +  w_{ l}(\bs_j) ^{ 1/\alpha } \right]^{\alpha} \right \} \right) }{ p } \nonumber \\[0.5em]
@@ -376,14 +376,14 @@ Similar expressions can be derived for all $K$, but become cumbersome for large 
 
 \appendix
 
-\section{Simulation study pairwise difference results} \label{a:pdiffs}
+\section{Simulation study pairwise difference results} \label{rba:pdiffs}
 The following tables show the methods that have significantly different Brier scores when using a Wilcoxon-Nemenyi-McDonald-Thompson test.
 In each column, different letters signify that the methods have significantly different Brier scores.
 
 \begin{table}[htbp]
   \centering
   \caption{Pairwise BS comparisons}
-  \label{tbl:pwbssim}
+  \label{rbtbl:pwbssim}
   \begin{tabular}{|l|cc|cc|c|ccc|cc|cc|}
   \cline{2-13}
   \multicolumn{1}{c}{} & \multicolumn{2}{|c}{Setting 1} & \multicolumn{2}{|c}{Setting 2} & \multicolumn{1}{|c}{Setting 3} & \multicolumn{3}{|c}{Setting 4} & \multicolumn{2}{|c}{Setting 5} & \multicolumn{2}{|c|}{Setting 6}\\
@@ -400,7 +400,7 @@ In each column, different letters signify that the methods have significantly di
 % \begin{table}[htbp]
 %   \centering
 %   \caption{Pairwise AUC comparisons}
-%   \label{tbl:pwaucsim}
+%   \label{rbtbl:pwaucsim}
 %   \begin{tabular}{|l|cc|}
 %   \multicolumn{1}{c}{} & \multicolumn{2}{|c}{Setting 1} \\
 %   \hline
