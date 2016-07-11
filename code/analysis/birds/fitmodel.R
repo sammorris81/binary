@@ -56,6 +56,22 @@ if (species == "cattle_egret") {
   y.o <- lesser_goldfinch[cv.idx[[cv]]]
   y.p <- lesser_goldfinch[-cv.idx[[cv]]]
   seed.base <- 12000
+} else if (species == "snowy_plover") {
+  y.o <- snowy_plover[cv.idx[[cv]]]
+  y.p <- snowy_plover[-cv.idx[[cv]]]
+  seed.base <- 13000
+} else if (species == "longeared_owl") {
+  y.o <- longeared_owl[cv.idx[[cv]]]
+  y.p <- longeared_owl[-cv.idx[[cv]]]
+  seed.base <- 14000
+} else if (species == "piping_plover") {
+  y.o <- piping_plover[cv.idx[[cv]]]
+  y.p <- piping_plover[-cv.idx[[cv]]]
+  seed.base <- 15000
+} else if (species == "hooded_oriole") {
+  y.o <- hooded_oriole[cv.idx[[cv]]]
+  y.p <- hooded_oriole[-cv.idx[[cv]]]
+  seed.base <- 16000
 } else {
   stop("incorrect species selected")
 }
@@ -210,10 +226,11 @@ post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             start = 1, end = iters - burn, update = update)
 timings[1] <- fit.gev$minutes
 
-bs.gev <- BrierScore(post.prob.gev, y.p)
-post.prob.gev.med <- apply(post.prob.gev, 2, mean)
-roc.gev <- roc(y.p ~ post.prob.gev.med)
-auc.gev <- roc.gev$auc
+bs.gev             <- BrierScore(post.prob.gev, y.p, median)
+post.prob.gev.med  <- apply(post.prob.gev, 2, median)
+post.prob.gev.mean <- apply(post.prob.gev, 2, mean)
+roc.gev            <- roc(y.p ~ post.prob.gev.med)
+auc.gev            <- roc.gev$auc
 
 print(bs.gev * 100)
 
@@ -240,10 +257,11 @@ post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                              start = 1, end = iters - burn, update = update)
 timings[2] <- fit.probit$minutes
 
-bs.pro <- BrierScore(post.prob.pro, y.p)
+bs.pro             <- BrierScore(post.prob.pro, y.p, median)
+post.prob.pro.med  <- apply(post.prob.pro, 2, median)
 post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
-roc.pro <- roc(y.p ~ post.prob.pro.mean)
-auc.pro <- roc.pro$auc
+roc.pro            <- roc(y.p ~ post.prob.pro.med)
+auc.pro            <- roc.pro$auc
 
 print(bs.pro * 100)
 
@@ -280,10 +298,11 @@ post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
 
 timings[3] <- toc - tic
 
-bs.log <- BrierScore(post.prob.log, y.p)
+bs.log             <- BrierScore(post.prob.log, y.p, median)
+post.prob.log.med  <- apply(post.prob.log, 2, median)
 post.prob.log.mean <- apply(post.prob.log, 2, mean)
-roc.log <- roc(y.p ~ post.prob.log.mean)
-auc.log <- roc.log$auc
+roc.log            <- roc(y.p ~ post.prob.log.med)
+auc.log            <- roc.log$auc
 
 print(bs.log * 100)
 
