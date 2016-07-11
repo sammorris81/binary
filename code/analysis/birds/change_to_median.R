@@ -139,7 +139,6 @@ cat("    Start mcmc predict \n")
 post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = update)
-timings[1] <- fit.gev$minutes
 
 bs.gev             <- BrierScore(post.prob.gev, y.p, median)
 post.prob.gev.med  <- apply(post.prob.gev, 2, median)
@@ -164,7 +163,6 @@ cat("    Start mcmc predict \n")
 post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                              s.pred = s.p, knots = knots,
                              start = 1, end = iters - burn, update = update)
-timings[2] <- fit.probit$minutes
 
 bs.pro             <- BrierScore(post.prob.pro, y.p, median)
 post.prob.pro.med  <- apply(post.prob.pro, 2, median)
@@ -193,8 +191,6 @@ yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
                        n.report = 500)
 
 post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-
-timings[3] <- toc - tic
 
 bs.log             <- BrierScore(post.prob.log, y.p)
 post.prob.log.med  <- apply(post.prob.log, 2, median)
