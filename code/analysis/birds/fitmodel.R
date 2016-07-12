@@ -76,6 +76,7 @@ if (species == "cattle_egret") {
   stop("incorrect species selected")
 }
 
+# 10, 15, 20, 1, 2, 5: This order because we originally ran only 10, 15, 20
 if (knot.percent == 10) {
   knots <- knots.10[[cv]]
   seed.knot <- 100
@@ -85,6 +86,15 @@ if (knot.percent == 10) {
 } else if (knot.percent == 20) {
   knots <- knots.20[[cv]]
   seed.knot <- 300
+} else if (knot.percent == 1) {
+  knots <- knots.1[[cv]]
+  seed.knot <- 400
+} else if (knot.percent == 2) {
+  knots <- knots.2[[cv]]
+  seed.knot <- 500
+} else if (knot.percent == 5) {
+  knots <- knots.5[[cv]]
+  seed.knot <- 600
 } else {
   stop("only can use knots.percent = 10, 15, or 20")
 }
@@ -314,11 +324,11 @@ if (do.upload) {
   system(upload.cmd)
 }
 
-save(fit.gev, post.prob.gev.med, post.prob.gev.mean, 
+save(fit.gev, post.prob.gev.med, post.prob.gev.mean,
      bs.gev, roc.gev, auc.gev,
-     fit.probit, post.prob.pro.med, post.prob.pro.mean, 
+     fit.probit, post.prob.pro.med, post.prob.pro.mean,
      bs.pro, roc.pro, auc.pro,
-     fit.logit, post.prob.log.med, post.prob.log.mean, 
+     fit.logit, post.prob.log.med, post.prob.log.mean,
      bs.log, roc.log, auc.log,
      y.p, y.o, knots,
      s.o, s.p, timings,
