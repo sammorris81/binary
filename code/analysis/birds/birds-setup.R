@@ -896,6 +896,7 @@ cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
 cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
 
 #### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
 knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
 set.seed(5668)
 
@@ -917,7 +918,26 @@ for (i in 1:2) {
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(cattle_egret, s, knots.10, knots.15, knots.20,
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(cattle_egret, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "cattle_egret.RData")
 
 #### common_nighthawk: 7.90% ####
@@ -961,8 +981,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(common_nighthawk, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "common_nighthawk.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(common_nighthawk, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "common_nighthawk.RData")
 
 #### western_bluebird: 6.34% ####
 western_bluebird <- western_bluebird_grid[western_bluebird_grid != 2]
@@ -1005,8 +1045,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(western_bluebird, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "western_bluebird.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(western_bluebird, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "western_bluebird.RData")
 
 #### vesper_sparrow: 10.32% ####
 vesper_sparrow <- vesper_sparrow_grid[vesper_sparrow_grid != 2]
@@ -1049,7 +1109,27 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(vesper_sparrow, s, knots.10, knots.15, knots.20,
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(vesper_sparrow, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "vesper_sparrow.RData")
 
 #### Long-billed Curlew ####
@@ -1093,8 +1173,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(longbilled_curlew, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "longbilled_curlew.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(longbilled_curlew, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "longbilled_curlew.RData")
 
 #### Common Ground Dove ####
 common_grounddove <- common_grounddove_grid[common_grounddove_grid != 2]
@@ -1137,8 +1237,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(common_grounddove, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "common_grounddove.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(common_grounddove, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "common_grounddove.RData")
 
 #### Mountain bluebird ####
 mountain_bluebird <- mountain_bluebird_grid[mountain_bluebird_grid != 2]
@@ -1181,8 +1301,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(mountain_bluebird, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "mountain_bluebird.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(mountain_bluebird, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "mountain_bluebird.RData")
 
 #### Greater White-fronted Goose ####
 greater_white_goose <- greater_white_goose_grid[greater_white_goose_grid != 2]
@@ -1225,8 +1365,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(greater_white_goose, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "greater_white_goose.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(greater_white_goose, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "greater_white_goose.RData")
 
 #### Blue-winged Teal ####
 bluewinged_teal <- bluewinged_teal_grid[bluewinged_teal_grid != 2]
@@ -1269,8 +1429,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(bluewinged_teal, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "bluewinged_teal.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(bluewinged_teal, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "bluewinged_teal.RData")
 
 #### White-eyed Vireo ####
 whiteeyed_vireo <- whiteeyed_vireo_grid[whiteeyed_vireo_grid != 2]
@@ -1313,8 +1493,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(whiteeyed_vireo, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "whiteeyed_vireo.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(whiteeyed_vireo, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "whiteeyed_vireo.RData")
 
 #### Sharp-shinned Hawk ####
 sharpshinned_hawk <- sharpshinned_hawk_grid[sharpshinned_hawk_grid != 2]
@@ -1357,8 +1557,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(sharpshinned_hawk, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "sharpshinned_hawk.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(sharpshinned_hawk, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "sharpshinned_hawk.RData")
 
 #### Lesser Goldfinch ####
 lesser_goldfinch <- lesser_goldfinch_grid[lesser_goldfinch_grid != 2]
@@ -1401,8 +1621,28 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(lesser_goldfinch, s, knots.10, knots.15, knots.20,
-     cv.idx, file = "lesser_goldfinch.RData")
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(lesser_goldfinch, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+     knots.20, cv.idx, file = "lesser_goldfinch.RData")
 
 #### Snowy plover ####
 snowy_plover <- snowy_plover_grid[snowy_plover_grid != 2]
@@ -1445,7 +1685,27 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(snowy_plover, s, knots.10, knots.15, knots.20,
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(snowy_plover, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "snowy_plover.RData")
 
 #### Long-eared owl ####
@@ -1489,7 +1749,27 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(longeared_owl, s, knots.10, knots.15, knots.20,
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(longeared_owl, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "longeared_owl.RData")
 
 #### Piping plover ####
@@ -1533,7 +1813,27 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(piping_plover, s, knots.10, knots.15, knots.20,
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(piping_plover, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "piping_plover.RData")
 
 #### Hooded oriole ####
@@ -1557,6 +1857,7 @@ cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
 cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
 
 #### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
 knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
 set.seed(5668)
 
@@ -1577,5 +1878,25 @@ for (i in 1:2) {
   nknots <- floor(length(cv.idx[[i]]) * 0.20)
   knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
-save(hooded_oriole, s, knots.10, knots.15, knots.20,
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(hooded_oriole, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "hooded_oriole.RData")
