@@ -4,7 +4,7 @@ upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
                     "analysis/birds/cv-tables/", sep = "")
 results.file <- paste("./cv-results/", species, "-", knot.percent, "-", cv,
                       ".RData", sep = "")
-table.file   <- paste("./cv-tables-med/", species, "-", knot.percent, "-", cv,
+table.file   <- paste("./cv-tables/", species, "-", knot.percent, "-", cv,
                       ".txt", sep = "")
 load(results.file)
 
@@ -136,13 +136,13 @@ max.dist  <- 0.20
 cat("  Start gev \n")
 
 cat("    Start mcmc predict \n")
-post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                            s.pred = s.p, knots = knots,
-                            start = 1, end = iters - burn, update = update)
+# post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
+#                             s.pred = s.p, knots = knots,
+#                             start = 1, end = iters - burn, update = update)
 
-bs.gev             <- BrierScore(post.prob.gev, y.p, median)
-post.prob.gev.med  <- apply(post.prob.gev, 2, median)
-post.prob.gev.mean <- apply(post.prob.gev, 2, mean)
+bs.gev             <- mean((y.p - post.prob.gev.med)^2)
+# post.prob.gev.med  <- apply(post.prob.gev, 2, median)
+# post.prob.gev.mean <- apply(post.prob.gev, 2, mean)
 roc.gev            <- roc(y.p ~ post.prob.gev.med)
 auc.gev            <- roc.gev$auc
 
@@ -160,13 +160,13 @@ if (do.upload) {
 cat("  Start probit \n")
 
 cat("    Start mcmc predict \n")
-post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                             s.pred = s.p, knots = knots,
-                             start = 1, end = iters - burn, update = update)
+# post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+#                              s.pred = s.p, knots = knots,
+#                              start = 1, end = iters - burn, update = update)
 
-bs.pro             <- BrierScore(post.prob.pro, y.p, median)
-post.prob.pro.med  <- apply(post.prob.pro, 2, median)
-post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
+bs.pro             <- mean((y.p - post.prob.pro.med)^2)
+# post.prob.pro.med  <- apply(post.prob.pro, 2, median)
+# post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
 roc.pro            <- roc(y.p ~ post.prob.pro.med)
 auc.pro            <- roc.pro$auc
 
@@ -185,16 +185,16 @@ if (do.upload) {
 cat("  start logit \n")
 
 print("    start mcmc predict")
-yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                       pred.covars = X.p, start = burn + 1,
-                       end = iters, thin = 1, verbose = TRUE,
-                       n.report = 500)
+# yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+#                        pred.covars = X.p, start = burn + 1,
+#                        end = iters, thin = 1, verbose = TRUE,
+#                        n.report = 500)
+#
+# post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
 
-post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
-
-bs.log             <- BrierScore(post.prob.log, y.p)
-post.prob.log.med  <- apply(post.prob.log, 2, median)
-post.prob.log.mean <- apply(post.prob.log, 2, mean)
+bs.log             <- mean((y.p - post.prob.log.med)^2)
+# post.prob.log.med  <- apply(post.prob.log, 2, median)
+# post.prob.log.mean <- apply(post.prob.log, 2, mean)
 roc.log            <- roc(y.p ~ post.prob.log.med)
 auc.log            <- roc.log$auc
 
@@ -208,11 +208,11 @@ if (do.upload) {
   system(upload.cmd)
 }
 
-save(fit.gev, post.prob.gev.med, post.prob.gev.mean, 
+save(fit.gev, post.prob.gev.med, post.prob.gev.mean,
      bs.gev, roc.gev, auc.gev,
-     fit.probit, post.prob.pro.med, post.prob.pro.mean, 
+     fit.probit, post.prob.pro.med, post.prob.pro.mean,
      bs.pro, roc.pro, auc.pro,
-     fit.logit, post.prob.log.med, post.prob.log.mean, 
+     fit.logit, post.prob.log.med, post.prob.log.mean,
      bs.log, roc.log, auc.log,
      y.p, y.o, knots,
      s.o, s.p, timings,
