@@ -9,8 +9,7 @@ species.list <- c("bluewinged_teal", "cattle_egret", "common_grounddove",
                   "lesser_goldfinch", "longbilled_curlew", "longeared_owl",
                   "mountain_bluebird", "piping_plover", "sharpshinned_hawk",
                   "snowy_plover", "vesper_sparrow", "western_bluebird",
-                  "whiteeyed_vireo"
-                  )
+                  "whiteeyed_vireo")
 
 nmethods <- 3
 nsets <- length(knot.percents) * length(cvs)

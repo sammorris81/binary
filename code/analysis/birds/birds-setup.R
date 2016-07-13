@@ -211,68 +211,232 @@ lesser_goldfinch <- birds$Spinus_psaltria != "0"
 # 1: observations exist, and species was seen
 # 0: observations exist, but species not seen
 cattle_egret_grid <- rep(2, nrow(sg))
+cattle_egret_grid_n <- rep(0, nrow(sg))
+cattle_egret_grid_y <- rep(0, nrow(sg))
 cattle_egret_grid[unique(cell[!cattle_egret])] <- 0
 cattle_egret_grid[unique(cell[cattle_egret])]  <- 1
+for (i in 1:length(cattle_egret)) {
+  cattle_egret_grid_n[cell[i]] <- cattle_egret_grid_n[cell[i]] + 1
+  if (cattle_egret[i]) {
+    cattle_egret_grid_y[cell[i]] <- cattle_egret_grid_y[cell[i]] + 1
+  }
+}
+cattle_egret_grid_n <- cattle_egret_grid_n[cattle_egret_grid != 2]
+cattle_egret_grid_y <- cattle_egret_grid_y[cattle_egret_grid != 2]
+# phats <- (cattle_egret_grid_y / cattle_egret_grid_n)[cattle_egret_grid != 2]
+# cattle_egret_grid_n[cattle_egret_grid != 2][3456]
+# cattle_egret_grid_y[cattle_egret_grid != 2][3336]
+# hist(phats)
 
 common_nighthawk_grid <- rep(2, nrow(sg))
+common_nighthawk_grid_n <- rep(2, nrow(sg))
+common_nighthawk_grid_y <- rep(2, nrow(sg))
 common_nighthawk_grid[unique(cell[!common_nighthawk])] <- 0
 common_nighthawk_grid[unique(cell[common_nighthawk])]  <- 1
+for (i in 1:length(common_nighthawk)) {
+  common_nighthawk_grid_n[cell[i]] <- common_nighthawk_n[cell[i]] + 1
+  if (common_nighthawk[i]) {
+    common_nighthawk_grid_y[cell[i]] <- common_nighthawk_grid_y[cell[i]] + 1
+  }
+}
+common_nighthawk_grid_n <- common_nighthawk_grid_n[common_nighthawk_grid != 2]
+common_nighthawk_grid_y <- common_nighthawk_grid_y[common_nighthawk_grid != 2]
 
 western_bluebird_grid <- rep(2, nrow(sg))
+western_bluebird_grid_n <- rep(0, nrow(sg))
+western_bluebird_grid_y <- rep(0, nrow(sg))
 western_bluebird_grid[unique(cell[!western_bluebird])] <- 0
 western_bluebird_grid[unique(cell[western_bluebird])]  <- 1
+for (i in 1:length(western_bluebird)) {
+  western_bluebird_grid_n[cell[i]] <- western_bluebird_grid_n[cell[i]] + 1
+  if (western_bluebird[i]) {
+    western_bluebird_grid_y[cell[i]] <- western_bluebird_grid_y[cell[i]] + 1
+  }
+}
+western_bluebird_grid_n <- western_bluebird_grid_n[western_bluebird_grid != 2]
+western_bluebird_grid_y <- western_bluebird_grid_y[western_bluebird_grid != 2]
 
 vesper_sparrow_grid <- rep(2, nrow(sg))
 vesper_sparrow_grid[unique(cell[!vesper_sparrow])] <- 0
 vesper_sparrow_grid[unique(cell[vesper_sparrow])]  <- 1
+vesper_sparrow_grid_n <- rep(0, nrow(sg))
+vesper_sparrow_grid_y <- rep(0, nrow(sg))
+for (i in 1:length(vesper_sparrow)) {
+  vesper_sparrow_grid_n[cell[i]] <- vesper_sparrow_grid_n[cell[i]] + 1
+  if (vesper_sparrow[i]) {
+    vesper_sparrow_grid_y[cell[i]] <- vesper_sparrow_grid_y[cell[i]] + 1
+  }
+}
+vesper_sparrow_grid_n <- vesper_sparrow_grid_n[vesper_sparrow_grid != 2]
+vesper_sparrow_grid_y <- vesper_sparrow_grid_y[vesper_sparrow_grid != 2]
 
 bluewinged_teal_grid <- rep(2, nrow(sg))
+bluewinged_teal_grid_n <- rep(0, nrow(sg))
+bluewinged_teal_grid_y <- rep(0, nrow(sg))
 bluewinged_teal_grid[unique(cell[!bluewinged_teal])] <- 0
 bluewinged_teal_grid[unique(cell[bluewinged_teal])]  <- 1
+for (i in 1:length(bluewinged_teal)) {
+  bluewinged_teal_grid_n[cell[i]] <- bluewinged_teal_grid_n[cell[i]] + 1
+  if (bluewinged_teal[i]) {
+    bluewinged_teal_grid_y[cell[i]] <- bluewinged_teal_grid_y[cell[i]] + 1
+  }
+}
+bluewinged_teal_grid_n <- bluewinged_teal_grid_n[bluewinged_teal_grid != 2]
+bluewinged_teal_grid_y <- bluewinged_teal_grid_y[bluewinged_teal_grid != 2]
 
 whiteeyed_vireo_grid <- rep(2, nrow(sg))
+whiteeyed_vireo_grid_n <- rep(0, nrow(sg))
+whiteeyed_vireo_grid_y <- rep(0, nrow(sg))
 whiteeyed_vireo_grid[unique(cell[!whiteeyed_vireo])] <- 0
 whiteeyed_vireo_grid[unique(cell[whiteeyed_vireo])]  <- 1
+for (i in 1:length(whiteeyed_vireo)) {
+  whiteeyed_vireo_grid_n[cell[i]] <- whiteeyed_vireo_grid_n[cell[i]] + 1
+  if (whiteeyed_vireo[i]) {
+    whiteeyed_vireo_grid_y[cell[i]] <- whiteeyed_vireo_grid_y[cell[i]] + 1
+  }
+}
+whiteeyed_vireo_grid_n <- whiteeyed_vireo_grid_n[whiteeyed_vireo_grid != 2]
+whiteeyed_vireo_grid_y <- whiteeyed_vireo_grid_y[whiteeyed_vireo_grid != 2]
 
 sharpshinned_hawk_grid <- rep(2, nrow(sg))
+sharpshinned_hawk_grid_n <- rep(0, nrow(sg))
+sharpshinned_hawk_grid_y <- rep(0, nrow(sg))
 sharpshinned_hawk_grid[unique(cell[!sharpshinned_hawk])] <- 0
 sharpshinned_hawk_grid[unique(cell[sharpshinned_hawk])]  <- 1
+for (i in 1:length(sharpshinned_hawk)) {
+  sharpshinned_hawk_grid_n[cell[i]] <- sharpshinned_hawk_grid_n[cell[i]] + 1
+  if (sharpshinned_hawk[i]) {
+    sharpshinned_hawk_grid_y[cell[i]] <- sharpshinned_hawk_grid_y[cell[i]] + 1
+  }
+}
+sharpshinned_hawk_grid_n <- sharpshinned_hawk_grid_n[sharpshinned_hawk_grid != 2]
+sharpshinned_hawk_grid_y <- sharpshinned_hawk_grid_y[sharpshinned_hawk_grid != 2]
 
 lesser_goldfinch_grid <- rep(2, nrow(sg))
+lesser_goldfinch_grid_n <- rep(0, nrow(sg))
+lesser_goldfinch_grid_y <- rep(0, nrow(sg))
 lesser_goldfinch_grid[unique(cell[!lesser_goldfinch])] <- 0
 lesser_goldfinch_grid[unique(cell[lesser_goldfinch])]  <- 1
+for (i in 1:length(lesser_goldfinch)) {
+  lesser_goldfinch_grid_n[cell[i]] <- lesser_goldfinch_grid_n[cell[i]] + 1
+  if (lesser_goldfinch[i]) {
+    lesser_goldfinch_grid_y[cell[i]] <- lesser_goldfinch_grid_y[cell[i]] + 1
+  }
+}
+lesser_goldfinch_grid_n <- lesser_goldfinch_grid_n[lesser_goldfinch_grid != 2]
+lesser_goldfinch_grid_y <- lesser_goldfinch_grid_y[lesser_goldfinch_grid != 2]
 
 longbilled_curlew_grid <- rep(2, nrow(sg))
+longbilled_curlew_grid_n <- rep(0, nrow(sg))
+longbilled_curlew_grid_y <- rep(0, nrow(sg))
 longbilled_curlew_grid[unique(cell[!longbilled_curlew])] <- 0
 longbilled_curlew_grid[unique(cell[longbilled_curlew])]  <- 1
+for (i in 1:length(longbilled_curlew)) {
+  longbilled_curlew_grid_n[cell[i]] <- longbilled_curlew_grid_n[cell[i]] + 1
+  if (longbilled_curlew[i]) {
+    longbilled_curlew_grid_y[cell[i]] <- longbilled_curlew_grid_y[cell[i]] + 1
+  }
+}
+longbilled_curlew_grid_n <- longbilled_curlew_grid_n[longbilled_curlew_grid != 2]
+longbilled_curlew_grid_y <- longbilled_curlew_grid_y[longbilled_curlew_grid != 2]
 
 common_grounddove_grid <- rep(2, nrow(sg))
+common_grounddove_grid_n <- rep(0, nrow(sg))
+common_grounddove_grid_y <- rep(0, nrow(sg))
 common_grounddove_grid[unique(cell[!common_grounddove])] <- 0
 common_grounddove_grid[unique(cell[common_grounddove])]  <- 1
+for (i in 1:length(common_grounddove)) {
+  common_grounddove_grid_n[cell[i]] <- common_grounddove_grid_n[cell[i]] + 1
+  if (common_grounddove[i]) {
+    common_grounddove_grid_y[cell[i]] <- common_grounddove_grid_y[cell[i]] + 1
+  }
+}
+common_grounddove_grid_n <- common_grounddove_grid_n[common_grounddove_grid != 2]
+common_grounddove_grid_y <- common_grounddove_grid_y[common_grounddove_grid != 2]
 
 mountain_bluebird_grid <- rep(2, nrow(sg))
+mountain_bluebird_grid_n <- rep(0, nrow(sg))
+mountain_bluebird_grid_y <- rep(0, nrow(sg))
 mountain_bluebird_grid[unique(cell[!mountain_bluebird])] <- 0
 mountain_bluebird_grid[unique(cell[mountain_bluebird])]  <- 1
+for (i in 1:length(mountain_bluebird)) {
+  mountain_bluebird_grid_n[cell[i]] <- mountain_bluebird_grid_n[cell[i]] + 1
+  if (mountain_bluebird[i]) {
+    mountain_bluebird_grid_y[cell[i]] <- mountain_bluebird_grid_y[cell[i]] + 1
+  }
+}
+mountain_bluebird_grid_n <- mountain_bluebird_grid_n[mountain_bluebird_grid != 2]
+mountain_bluebird_grid_y <- mountain_bluebird_grid_y[mountain_bluebird_grid != 2]
 
 greater_white_goose_grid <- rep(2, nrow(sg))
+greater_white_goose_grid_n <- rep(0, nrow(sg))
+greater_white_goose_grid_y <- rep(0, nrow(sg))
 greater_white_goose_grid[unique(cell[!greater_white_goose])] <- 0
 greater_white_goose_grid[unique(cell[greater_white_goose])]  <- 1
+for (i in 1:length(greater_white_goose)) {
+  greater_white_goose_grid_n[cell[i]] <- greater_white_goose_grid_n[cell[i]] + 1
+  if (greater_white_goose[i]) {
+    greater_white_goose_grid_y[cell[i]] <- greater_white_goose_grid_y[cell[i]] + 1
+  }
+}
+greater_white_goose_grid_n <- greater_white_goose_grid_n[greater_white_goose_grid != 2]
+greater_white_goose_grid_y <- greater_white_goose_grid_y[greater_white_goose_grid != 2]
 
 snowy_plover_grid <- rep(2, nrow(sg))
+snowy_plover_grid_n <- rep(0, nrow(sg))
+snowy_plover_grid_y <- rep(0, nrow(sg))
 snowy_plover_grid[unique(cell[!snowy_plover])] <- 0
 snowy_plover_grid[unique(cell[snowy_plover])]  <- 1
+for (i in 1:length(snowy_plover)) {
+  snowy_plover_grid_n[cell[i]] <- snowy_plover_grid_n[cell[i]] + 1
+  if (snowy_plover[i]) {
+    snowy_plover_grid_y[cell[i]] <- snowy_plover_grid_y[cell[i]] + 1
+  }
+}
+snowy_plover_grid_n <- snowy_plover_grid_n[snowy_plover_grid != 2]
+snowy_plover_grid_y <- snowy_plover_grid_y[snowy_plover_grid != 2]
 
 longeared_owl_grid <- rep(2, nrow(sg))
+longeared_owl_grid_n <- rep(0, nrow(sg))
+longeared_owl_grid_y <- rep(0, nrow(sg))
 longeared_owl_grid[unique(cell[!longeared_owl])] <- 0
 longeared_owl_grid[unique(cell[longeared_owl])]  <- 1
+for (i in 1:length(longeared_owl)) {
+  longeared_owl_grid_n[cell[i]] <- longeared_owl_grid_n[cell[i]] + 1
+  if (longeared_owl[i]) {
+    longeared_owl_grid_y[cell[i]] <- longeared_owl_grid_y[cell[i]] + 1
+  }
+}
+longeared_owl_grid_n <- longeared_owl_grid_n[longeared_owl_grid != 2]
+longeared_owl_grid_y <- longeared_owl_grid_y[longeared_owl_grid != 2]
 
 piping_plover_grid <- rep(2, nrow(sg))
+piping_plover_grid_n <- rep(0, nrow(sg))
+piping_plover_grid_y <- rep(0, nrow(sg))
 piping_plover_grid[unique(cell[!piping_plover])] <- 0
 piping_plover_grid[unique(cell[piping_plover])]  <- 1
+for (i in 1:length(piping_plover)) {
+  piping_plover_grid_n[cell[i]] <- piping_plover_grid_n[cell[i]] + 1
+  if (piping_plover[i]) {
+    piping_plover_grid_y[cell[i]] <- piping_plover_grid_y[cell[i]] + 1
+  }
+}
+piping_plover_grid_n <- piping_plover_grid_n[piping_plover_grid != 2]
+piping_plover_grid_y <- piping_plover_grid_y[piping_plover_grid != 2]
 
 hooded_oriole_grid <- rep(2, nrow(sg))
+hooded_oriole_grid_n <- rep(0, nrow(sg))
+hooded_oriole_grid_y <- rep(0, nrow(sg))
 hooded_oriole_grid[unique(cell[!hooded_oriole])] <- 0
 hooded_oriole_grid[unique(cell[hooded_oriole])]  <- 1
+for (i in 1:length(hooded_oriole)) {
+  hooded_oriole_grid_n[cell[i]] <- hooded_oriole_grid_n[cell[i]] + 1
+  if (hooded_oriole[i]) {
+    hooded_oriole_grid_y[cell[i]] <- hooded_oriole_grid_y[cell[i]] + 1
+  }
+}
+hooded_oriole_grid_n <- hooded_oriole_grid_n[hooded_oriole_grid != 2]
+hooded_oriole_grid_y <- hooded_oriole_grid_y[hooded_oriole_grid != 2]
 
 us_map <- map("state")
 
@@ -937,7 +1101,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(cattle_egret, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+save(cattle_egret, cattle_egret_grid_n, cattle_egret_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "cattle_egret.RData")
 
 #### common_nighthawk: 7.90% ####
@@ -1001,7 +1166,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(common_nighthawk, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(common_nighthawk, common_nighthawk_grid_n, common_nighthawk_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "common_nighthawk.RData")
 
 #### western_bluebird: 6.34% ####
@@ -1065,7 +1231,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(western_bluebird, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(western_bluebird, western_bluebird_grid_n, western_bluebird_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "western_bluebird.RData")
 
 #### vesper_sparrow: 10.32% ####
@@ -1129,7 +1296,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(vesper_sparrow, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+save(vesper_sparrow, vesper_sparrow_grid_n, vesper_sparrow_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "vesper_sparrow.RData")
 
 #### Long-billed Curlew ####
@@ -1193,7 +1361,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(longbilled_curlew, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(longbilled_curlew, longbilled_curlew_grid_n, longbilled_curlew_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "longbilled_curlew.RData")
 
 #### Common Ground Dove ####
@@ -1257,7 +1426,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(common_grounddove, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(common_grounddove, common_grounddove_grid_n, common_grounddove_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "common_grounddove.RData")
 
 #### Mountain bluebird ####
@@ -1321,7 +1491,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(mountain_bluebird, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(mountain_bluebird, mountain_bluebird_grid_n, mountain_bluebird_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "mountain_bluebird.RData")
 
 #### Greater White-fronted Goose ####
@@ -1385,7 +1556,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(greater_white_goose, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(greater_white_goose, greater_white_goose_grid_n, greater_white_goose_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "greater_white_goose.RData")
 
 #### Blue-winged Teal ####
@@ -1449,7 +1621,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(bluewinged_teal, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(bluewinged_teal, bluewinged_teal_grid_n, bluewinged_teal_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "bluewinged_teal.RData")
 
 #### White-eyed Vireo ####
@@ -1513,7 +1686,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(whiteeyed_vireo, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(whiteeyed_vireo, whiteeyed_vireo_grid_n, whiteeyed_vireo_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "whiteeyed_vireo.RData")
 
 #### Sharp-shinned Hawk ####
@@ -1577,7 +1751,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(sharpshinned_hawk, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(sharpshinned_hawk, sharpshinned_hawk_grid_n, sharpshinned_hawk_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "sharpshinned_hawk.RData")
 
 #### Lesser Goldfinch ####
@@ -1641,7 +1816,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(lesser_goldfinch, s, knots.1, knots.2, knots.5, knots.10, knots.15,
+save(lesser_goldfinch, lesser_goldfinch_grid_n, lesser_goldfinch_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15,
      knots.20, cv.idx, file = "lesser_goldfinch.RData")
 
 #### Snowy plover ####
@@ -1705,7 +1881,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(snowy_plover, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+save(snowy_plover, snowy_plover_grid_n, snowy_plover_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "snowy_plover.RData")
 
 #### Long-eared owl ####
@@ -1769,7 +1946,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(longeared_owl, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+save(longeared_owl, longeared_owl_grid_n, longeared_owl_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "longeared_owl.RData")
 
 #### Piping plover ####
@@ -1833,7 +2011,8 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(piping_plover, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+save(piping_plover, piping_plover_grid_n, piping_plover_grid_y, 
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "piping_plover.RData")
 
 #### Hooded oriole ####
@@ -1898,5 +2077,6 @@ for (i in 1:2) {
   knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
 }
 
-save(hooded_oriole, s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+save(hooded_oriole, hooded_oriole_grid_n, hooded_oriole_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "hooded_oriole.RData")

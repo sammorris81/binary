@@ -1,0 +1,2 @@
+fitmodel was original run doing cross-validation
+fitmodel_ss is using subsampling to try to recreate the original observation map

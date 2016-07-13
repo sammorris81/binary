@@ -190,10 +190,26 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
     x.beta  <- getXBeta(x = x.pred, beta = beta[i, ], ns = np, nt = nt)
     z       <- getZ(xi = xi[i], x.beta = x.beta, thresh = thresh)
     w       <- getW(rho = rho[i], dw2 = dw2p, a.cutoff = a.cutoff)
+    # there are certain circumstances when a place where we want to predict
+    # is too far away from all the knot locations, so the kernel functions 
+    # are 0 at all sites. when this happens w = 0 / sum(0) = nan, so setting 
+    # w = 0 when we get NaN from getW.
+    w[is.nan(w)] <- 0
     w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs.p)
     aw      <- getAW(a = a[i, , ], w.star = w.star)
     theta   <- getTheta(alpha = alpha.i, z = z, aw = aw)
     prob.success[i, ] <- 1 - exp(-theta)
+    # if (any(is.nan(prob.success))) {
+    #   this.z      <<- z
+    #   this.w      <<- w
+    #   this.w.star <<- w.star
+    #   this.aw     <<- aw
+    #   this.theta  <<- theta
+    #   this.dw2p   <<- dw2p
+    #   this.rho    <<- rho[i]
+    #   this.a.cutoff <<- a.cutoff
+    #   stop()
+    # }
     
     # if z is nan, it means that x.beta is such a large number there is
     # basically 0 probability that z < 0
