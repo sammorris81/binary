@@ -103,7 +103,7 @@ for (set in 1:nsets) {
     ####################################################################
     #### Start MCMC setup: Most of this is used for the spBayes package
     ####################################################################
-    iters <- 20000; burn <- 15000; update <- 500; thin <- 1; iterplot <- FALSE
+    iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
     # iters <- 15000; burn <- 10000; update <- 500; thin <- 1; iterplot <- TRUE
     n.report     <- 10
     batch.length <- 100
