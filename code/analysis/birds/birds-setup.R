@@ -164,10 +164,21 @@ rate <- rate[rate != 0]
 
 
 sort(rate[which(rate < 200 & rate > 50)])
-# Asio_otus - 91 - longeared_owl
-# Charadrius_nivosus - 191
-snowy_plover <- birds$Charadrius_nivosus != "0"
+# Asio_otus - 91 (long-eared owl)
+# Charadrius_nivosus - 191 (snowy plover)
+# Cyanthus_latirostris - 90 (broad-billed hummingbird)
+# Calcarius_lapponicus - 107 (lapland longspur)
+# Anas_penelope - 97 (Eurasian wigeon)
+# Agelaius_tricolor - 95 (Tricolored blackbird)
+# Aegolius_acadicus - 90 (Northern saw-whet owl)
+
 longeared_owl <- birds$Asio_otus != "0"
+snowy_plover <- birds$Charadrius_nivosus != "0"
+broadbill_hummingbird <- birds$Cynanthus_latirostris != "0"
+lapland_longspur <- birds$Calcarius_lapponicus != "0"
+eurasian_wigeon <- birds$Anas_penelope != "0"
+tricolored_blackbird <- birds$Agelaius_tricolor != "0"
+northern_sawwhet_owl <- birds$Aegolius_acadicus != "0"
 
 sort(rate[which(rate < 400 & rate > 250)])
 # Charadrius_melodus - 201 (Piping plover)
@@ -437,6 +448,76 @@ for (i in 1:length(hooded_oriole)) {
 }
 hooded_oriole_grid_n <- hooded_oriole_grid_n[hooded_oriole_grid != 2]
 hooded_oriole_grid_y <- hooded_oriole_grid_y[hooded_oriole_grid != 2]
+
+broadbill_hummingbird_grid <- rep(2, nrow(sg))
+broadbill_hummingbird_grid_n <- rep(0, nrow(sg))
+broadbill_hummingbird_grid_y <- rep(0, nrow(sg))
+broadbill_hummingbird_grid[unique(cell[!broadbill_hummingbird])] <- 0
+broadbill_hummingbird_grid[unique(cell[broadbill_hummingbird])]  <- 1
+for (i in 1:length(broadbill_hummingbird)) {
+  broadbill_hummingbird_grid_n[cell[i]] <- broadbill_hummingbird_grid_n[cell[i]] + 1
+  if (broadbill_hummingbird[i]) {
+    broadbill_hummingbird_grid_y[cell[i]] <- broadbill_hummingbird_grid_y[cell[i]] + 1
+  }
+}
+broadbill_hummingbird_grid_n <- broadbill_hummingbird_grid_n[broadbill_hummingbird_grid != 2]
+broadbill_hummingbird_grid_y <- broadbill_hummingbird_grid_y[broadbill_hummingbird_grid != 2]
+
+lapland_longspur_grid <- rep(2, nrow(sg))
+lapland_longspur_grid_n <- rep(0, nrow(sg))
+lapland_longspur_grid_y <- rep(0, nrow(sg))
+lapland_longspur_grid[unique(cell[!lapland_longspur])] <- 0
+lapland_longspur_grid[unique(cell[lapland_longspur])]  <- 1
+for (i in 1:length(lapland_longspur)) {
+  lapland_longspur_grid_n[cell[i]] <- lapland_longspur_grid_n[cell[i]] + 1
+  if (lapland_longspur[i]) {
+    lapland_longspur_grid_y[cell[i]] <- lapland_longspur_grid_y[cell[i]] + 1
+  }
+}
+lapland_longspur_grid_n <- lapland_longspur_grid_n[lapland_longspur_grid != 2]
+lapland_longspur_grid_y <- lapland_longspur_grid_y[lapland_longspur_grid != 2]
+
+eurasian_wigeon_grid <- rep(2, nrow(sg))
+eurasian_wigeon_grid_n <- rep(0, nrow(sg))
+eurasian_wigeon_grid_y <- rep(0, nrow(sg))
+eurasian_wigeon_grid[unique(cell[!eurasian_wigeon])] <- 0
+eurasian_wigeon_grid[unique(cell[eurasian_wigeon])]  <- 1
+for (i in 1:length(eurasian_wigeon)) {
+  eurasian_wigeon_grid_n[cell[i]] <- eurasian_wigeon_grid_n[cell[i]] + 1
+  if (eurasian_wigeon[i]) {
+    eurasian_wigeon_grid_y[cell[i]] <- eurasian_wigeon_grid_y[cell[i]] + 1
+  }
+}
+eurasian_wigeon_grid_n <- eurasian_wigeon_grid_n[eurasian_wigeon_grid != 2]
+eurasian_wigeon_grid_y <- eurasian_wigeon_grid_y[eurasian_wigeon_grid != 2]
+
+tricolored_blackbird_grid <- rep(2, nrow(sg))
+tricolored_blackbird_grid_n <- rep(0, nrow(sg))
+tricolored_blackbird_grid_y <- rep(0, nrow(sg))
+tricolored_blackbird_grid[unique(cell[!tricolored_blackbird])] <- 0
+tricolored_blackbird_grid[unique(cell[tricolored_blackbird])]  <- 1
+for (i in 1:length(tricolored_blackbird)) {
+  tricolored_blackbird_grid_n[cell[i]] <- tricolored_blackbird_grid_n[cell[i]] + 1
+  if (tricolored_blackbird[i]) {
+    tricolored_blackbird_grid_y[cell[i]] <- tricolored_blackbird_grid_y[cell[i]] + 1
+  }
+}
+tricolored_blackbird_grid_n <- tricolored_blackbird_grid_n[tricolored_blackbird_grid != 2]
+tricolored_blackbird_grid_y <- tricolored_blackbird_grid_y[tricolored_blackbird_grid != 2]
+
+northern_sawwhet_owl_grid <- rep(2, nrow(sg))
+northern_sawwhet_owl_grid_n <- rep(0, nrow(sg))
+northern_sawwhet_owl_grid_y <- rep(0, nrow(sg))
+northern_sawwhet_owl_grid[unique(cell[!northern_sawwhet_owl])] <- 0
+northern_sawwhet_owl_grid[unique(cell[northern_sawwhet_owl])]  <- 1
+for (i in 1:length(northern_sawwhet_owl)) {
+  northern_sawwhet_owl_grid_n[cell[i]] <- northern_sawwhet_owl_grid_n[cell[i]] + 1
+  if (northern_sawwhet_owl[i]) {
+    northern_sawwhet_owl_grid_y[cell[i]] <- northern_sawwhet_owl_grid_y[cell[i]] + 1
+  }
+}
+northern_sawwhet_owl_grid_n <- northern_sawwhet_owl_grid_n[northern_sawwhet_owl_grid != 2]
+northern_sawwhet_owl_grid_y <- northern_sawwhet_owl_grid_y[northern_sawwhet_owl_grid != 2]
 
 us_map <- map("state")
 
@@ -991,6 +1072,176 @@ this.title.main.act <- paste("Actual", this.species.name, "sightings")
 this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
 filename.act <- "plots/hooded_oriole_actual.pdf"
 filename.grid <- "plots/hooded_oriole_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- broadbill_hummingbird
+this.species.grid <- broadbill_hummingbird_grid
+this.species.name <- "Broad-billed Hummingbird"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/broadbill_hummingbird_actual.pdf"
+filename.grid <- "plots/broadbill_hummingbird_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- lapland_longspur
+this.species.grid <- lapland_longspur_grid
+this.species.name <- "Lapland Longspur"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/lapland_longspur_actual.pdf"
+filename.grid <- "plots/lapland_longspur_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- eurasian_wigeon
+this.species.grid <- eurasian_wigeon_grid
+this.species.name <- "Eurasian Wigeon"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/eurasian_wigeon_actual.pdf"
+filename.grid <- "plots/eurasian_wigeon_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- tricolored_blackbird
+this.species.grid <- tricolored_blackbird_grid
+this.species.name <- "Tricolored blackbird"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/tricolored_blackbird_actual.pdf"
+filename.grid <- "plots/tricolored_blackbird_grid.pdf"
+
+dev.new()
+map("state",
+    xlim = range(c(s[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(s[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.act, cex.main = 2,
+      sub = paste(round(mean(this.species) * 100, 2), "%", sep = ""))
+points(s[!this.species, ], pch = 21, col = "dodgerblue4", bg = "dodgerblue1")
+points(s[this.species, ], pch = 21, col = "firebrick4", bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.act)
+dev.off()
+
+dev.new()
+map("state",
+    xlim = range(c(sg[, 1], us_map$x), na.rm = TRUE),
+    ylim = range(c(sg[, 2], us_map$y), na.rm = TRUE))
+title(main = this.title.main.grid, cex.main = 2,
+      sub = paste(round(mean(this.species.grid == 1) * 100, 2), "%", sep = ""))
+points(sg[this.species.grid == 0, ], pch = 21, col = "dodgerblue4",
+       bg = "dodgerblue1")
+points(sg[this.species.grid == 1, ], pch = 21, col = "firebrick4",
+       bg = "firebrick1")
+map("state", add = TRUE)
+dev.print(device = pdf, file = filename.grid)
+dev.off()
+
+this.species <- northern_sawwhet_owl
+this.species.grid <- northern_sawwhet_owl_grid
+this.species.name <- "Northern Saw-whet Owl"
+this.title.main.act <- paste("Actual", this.species.name, "sightings")
+this.title.main.grid <- paste("Gridded", this.species.name, "sightings")
+filename.act <- "plots/northern_sawwhet_owl_actual.pdf"
+filename.grid <- "plots/northern_sawwhet_owl_grid.pdf"
 
 dev.new()
 map("state",
@@ -2080,3 +2331,333 @@ for (i in 1:2) {
 save(hooded_oriole, hooded_oriole_grid_n, hooded_oriole_grid_y,
      s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
      cv.idx, file = "hooded_oriole.RData")
+
+#### Broadbilled Hummingbird ####
+broadbill_hummingbird <- broadbill_hummingbird_grid[broadbill_hummingbird_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(broadbill_hummingbird == 1) / ns
+these.ones  <- which(broadbill_hummingbird == 1)
+these.zeros <- which(broadbill_hummingbird == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(broadbill_hummingbird, broadbill_hummingbird_grid_n, broadbill_hummingbird_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+     cv.idx, file = "broadbill_hummingbird.RData")
+
+#### Lapland longspur ####
+lapland_longspur <- lapland_longspur_grid[lapland_longspur_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(lapland_longspur == 1) / ns
+these.ones  <- which(lapland_longspur == 1)
+these.zeros <- which(lapland_longspur == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(lapland_longspur, lapland_longspur_grid_n, lapland_longspur_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+     cv.idx, file = "lapland_longspur.RData")
+
+#### Eurasian Wigeon ####
+eurasian_wigeon <- eurasian_wigeon_grid[eurasian_wigeon_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(eurasian_wigeon == 1) / ns
+these.ones  <- which(eurasian_wigeon == 1)
+these.zeros <- which(eurasian_wigeon == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(eurasian_wigeon, eurasian_wigeon_grid_n, eurasian_wigeon_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+     cv.idx, file = "eurasian_wigeon.RData")
+
+#### Tricolored Blackbird ####
+tricolored_blackbird <- tricolored_blackbird_grid[tricolored_blackbird_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(tricolored_blackbird == 1) / ns
+these.ones  <- which(tricolored_blackbird == 1)
+these.zeros <- which(tricolored_blackbird == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(tricolored_blackbird, tricolored_blackbird_grid_n, tricolored_blackbird_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+     cv.idx, file = "tricolored_blackbird.RData")
+
+#### Northern Saw-whet Owl ####
+northern_sawwhet_owl <- northern_sawwhet_owl_grid[northern_sawwhet_owl_grid != 2]
+cv.idx  <- vector(mode = "list", length = 2)
+prop.ones <- sum(northern_sawwhet_owl == 1) / ns
+these.ones  <- which(northern_sawwhet_owl == 1)
+these.zeros <- which(northern_sawwhet_owl == 0)
+
+#### Stratified cross-validation ####
+# Making sure P(Y = 1) is similar for test and train
+set.seed(28)  # cv
+samp.ones   <- sample(these.ones)
+samp.zeros  <- sample(these.zeros)
+ntrain.ones <- c(ceiling(length(these.ones) / 2), floor(length(these.ones) / 2))
+ntrain.zeros <- c(ceiling(length(these.zeros) / 2),
+                  floor(length(these.zeros) / 2))
+
+cv.idx[[1]] <- c(sort(samp.ones[1:ntrain.ones[1]]),
+                 sort(samp.zeros[1:ntrain.zeros[1]]))
+cv.idx[[2]] <- (1:ns)[-cv.idx[[1]]]
+
+#### Generate the knot locations
+knots.1 <- knots.2 <- knots.5 <- vector(mode = "list", length = 2)
+knots.10 <- knots.15 <- knots.20 <- vector(mode = "list", length = 2)
+set.seed(5668)
+
+# Knots at 10% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.10)
+  knots.10[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 15% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.15)
+  knots.15[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 20% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.20)
+  knots.20[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# 1, 2, and 5 are after 10, 15, 20 because original cv only had 10, 15, 20 in it
+# Knots at 1% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.01)
+  knots.1[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 2% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.02)
+  knots.2[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+# Knots at 5% of the sites
+for (i in 1:2) {
+  nknots <- floor(length(cv.idx[[i]]) * 0.05)
+  knots.5[[i]] <- cover.design(R = s[cv.idx[[i]], ], nd = nknots)$design
+}
+
+save(northern_sawwhet_owl, northern_sawwhet_owl_grid_n, northern_sawwhet_owl_grid_y,
+     s, knots.1, knots.2, knots.5, knots.10, knots.15, knots.20,
+     cv.idx, file = "northern_sawwhet_owl.RData")
