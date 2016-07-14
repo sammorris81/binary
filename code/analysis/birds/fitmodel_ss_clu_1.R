@@ -17,21 +17,24 @@ for (set in 1:nsets) {
     
     # get the datasets
     load(paste("./", species, ".RData", sep = ""))
-    upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/code/",
-                        "analysis/birds/cv-tables/", sep = "")
-    results.file <- paste("./cv-results/", species, "-", n, "-", set,
-                          ".RData", sep = "")
+    upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",
+                        "code/analysis/birds/cv-tables-samp/", sep = "")
+    
     if (cluster) {
-      table.file   <- paste("./cv-tables/", species, "-", n, "-", set,
-                            "clu.txt", sep = "")
+      samp.type <- "clu"
     } else {
-      table.file   <- paste("./cv-tables/", species, "-", n, "-", set,
-                            "srs.txt", sep = "")
+      samp.type <- "srs"
     }
+    table.file   <- paste("./cv-tables-samp/", species, "-", samp.type, "-", n, 
+                          "-", set, ".txt", sep = "")
+    results.file <- paste("./cv-results/", species, "-", samp.type, "-", n, "-", 
+                          set, ".RData", sep = "")
+    sample.file  <- paste("./cv-sample/", species, "-", samp.type, "-", n, "-", 
+                          set, ".txt", sep = "")
     
     # cattle_egret
     
-    ns <- c(50, 100, 200)
+    ns <- c(100, 200)
     d  <- rdist(s)
     
     # get the correct y, x, and s
@@ -39,25 +42,36 @@ for (set in 1:nsets) {
     seed.base <- which(species.list == species) * 1000
     seed.n    <- which(ns == n) * 100
     
-    set.seed(777 + set)  # srs
-    these.train <- sort(sample(length(y), n))
-    y.o <- y[these.train]
-    
-    these.cluster <- y.o == 1
-    these.cluster.ids <- these.train[these.cluster]
-    for (i in 1:length(these.cluster.ids)) {
-      # for rook neighbors, d == 0.25
-      these.train <- c(these.train, which(d[these.cluster.ids[i], ] == 0.25))
+    set.seed(726753 + set)  # sample
+    nobs <- 0
+    while(nobs < 3) {  
+      # keep repeating the sampling until there are at least 3 observations
+      these.train <- sort(sample(length(y), n))
+      y.o <- y[these.train]
+      these.cluster <- y.o == 1
+      these.cluster.ids <- these.train[these.cluster]
+      for (i in 1:length(these.cluster.ids)) {
+        # for rook neighbors, d == 0.25
+        these.train <- c(these.train, which(d[these.cluster.ids[i], ] == 0.25))
+      }
+      these.train <- sort(unique(these.train))
+      y.o <- y[these.train]
+      nobs <- sum(y.o)
     }
-    these.train <- sort(unique(these.train))
     
     if (!cluster) {
-      nsamp <- length(these.train)
-      these.train <- sort(sample(length(y), nsamp))
+      nobs <- 0
+      while (nobs < 3) {
+        nsamp <- length(these.train)
+        these.train <- sort(sample(length(y), nsamp))
+        y.o <- y[these.train]
+        nobs <- sum(y.o)
+      }
     }
     
-    y.o <- y[these.train]
+    # y.o <- y[these.train]
     y.p <- y[-these.train]
+    write.table(y.o, file = sample.file)
     
     # extract info about simulation settings
     ns     <- length(y.o)
@@ -210,10 +224,10 @@ for (set in 1:nsets) {
     # copy table to tables folder on beowulf
     scores[1, ] <- c(bs.gev, auc.gev)
     write.table(scores, file = table.file)
-    # if (do.upload) {
-    #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-    #   system(upload.cmd)
-    # }
+    if (do.upload) {
+      upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+      system(upload.cmd)
+    }
     
     ###### spatial probit
     cat("  Start probit \n")
@@ -241,10 +255,10 @@ for (set in 1:nsets) {
     # copy table to tables folder on beowulf
     scores[2, ] <- c(bs.pro, auc.pro)
     write.table(scores, file = table.file)
-    # if (do.upload) {
-    #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-    #   system(upload.cmd)
-    # }
+    if (do.upload) {
+      upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+      system(upload.cmd)
+    }
     
     
     ####### spatial logit
@@ -282,10 +296,9 @@ for (set in 1:nsets) {
     # copy table to tables folder on beowulf
     scores[3, ] <- c(bs.log, auc.log)
     write.table(scores, file = table.file)
-    # if (do.upload) {
-    #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-    #   system(upload.cmd)
-    # }
+    if (do.upload) {
+      upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+      system(upload.cmd)
+    }
   }
 }
-
