@@ -1,6 +1,6 @@
 source(file = "./package_load.R", chdir = T)
-these.species <- 10:12
-cluster <- FALSE
+these.species <- 13:15
+cluster <- TRUE
 n <- 100
 nsets <- 25
 

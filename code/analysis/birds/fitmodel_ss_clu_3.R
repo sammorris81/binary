@@ -1,5 +1,5 @@
 source(file = "./package_load.R", chdir = T)
-these.species <- 9:12
+these.species <- 7:9
 cluster <- TRUE
 n <- 100
 nsets <- 25
@@ -8,8 +8,7 @@ species.list <- c("bluewinged_teal", "cattle_egret", "common_grounddove",
                   "common_nighthawk", "greater_white_goose", "hooded_oriole",
                   "lesser_goldfinch", "longbilled_curlew", "longeared_owl",
                   "mountain_bluebird", "piping_plover", "sharpshinned_hawk",
-                  "snowy_plover", "vesper_sparrow", "western_bluebird",
-                  "whiteeyed_vireo")
+                  "vesper_sparrow", "western_bluebird", "whiteeyed_vireo")
 
 for (set in 1:nsets) {
   for (species in species.list[these.species]) {
@@ -302,6 +301,12 @@ for (set in 1:nsets) {
     if (do.upload) {
       upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
       system(upload.cmd)
+    }
+    
+    if ((set - 1) %% 5 == 0) {
+      save(fit.gev, fit.probit, fit.logit, 
+           post.prob.gev, post.prob.pro, post.prob.log, 
+           y.o, y.p, s.o, s.p, file = results.file)
     }
   }
 }
