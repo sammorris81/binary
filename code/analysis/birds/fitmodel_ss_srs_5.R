@@ -12,7 +12,7 @@ species.list <- c("bluewinged_teal", "cattle_egret", "common_grounddove",
 
 for (set in 1:nsets) {
   for (species in species.list[these.species]) {
-    print(paste("Start set", set, sep = ""))
+    print(paste("Start set ", set, sep = ""))
     
     # get the datasets
     load(paste("./", species, ".RData", sep = ""))
