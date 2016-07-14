@@ -71,7 +71,6 @@ for (set in 1:nsets) {
     
     # y.o <- y[these.train]
     y.p <- y[-these.train]
-    write.table(y.o, file = sample.file)
     
     # extract info about simulation settings
     ns     <- length(y.o)
@@ -96,6 +95,10 @@ for (set in 1:nsets) {
     s.p <- s.scale[-these.train, ]
     X.p <- matrix(1, nrow(s.p), 1)
     knots <- s.o
+    
+    this.save <- cbind(y.o, s.o)
+    colnames(this.save) <- c("y", "s1", "s2")
+    write.table(this.save, file = sample.file)
     
     ####################################################################
     #### Start MCMC setup: Most of this is used for the spBayes package
