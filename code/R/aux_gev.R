@@ -229,14 +229,16 @@ makeW <- function(dw2, rho, a.cutoff = NULL) {
   if (is.null(a.cutoff)) {
     a.cutoff <- max(sqrt(dw2))
   }
-  w <- exp(-0.5 * dw2 / (rho^2))
-
+  # w <- exp(-0.5 * dw2 / (rho^2))
+  w <- matrix(0, nrow(dw2), ncol(dw2))
+  w[sqrt(dw2) <= a.cutoff] <- exp(-0.5 * dw2[sqrt(dw2) <= a.cutoff] / (rho^2))
+  
   # only include sites that are close to the knot
   # we need to do this in addition to the IDs because the weights over the
   # active knots needs to sum to 1. If we don't set the knots beyond the
   # cutoff to 0, then when we don't include them later on, the weights will
   # sum to something slightly smaller than 1
-  w[sqrt(dw2) > a.cutoff] <- 0
+  # w[sqrt(dw2) > a.cutoff] <- 0
   return(w)
 }
 
