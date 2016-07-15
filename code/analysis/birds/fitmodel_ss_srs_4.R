@@ -2,7 +2,7 @@ source(file = "./package_load.R", chdir = T)
 these.species <- 10:12
 cluster <- FALSE
 n <- 100
-nsets <- 25
+nsets <- 50
 
 species.list <- c("broadbill_hummingbird", "cattle_egret", "common_grounddove",
                   "eurasian_wigeon", "greater_white_goose", "hooded_oriole", 
@@ -10,7 +10,7 @@ species.list <- c("broadbill_hummingbird", "cattle_egret", "common_grounddove",
                   "mountain_bluebird", "northern_sawwhet_owl", "piping_plover", 
                   "snowy_plover", "tricolored_blackbird", "vesper_sparrow")
 
-for (set in 1:nsets) {
+for (set in 26:nsets) {
   for (species in species.list[these.species]) {
     print(paste("Start set ", set, sep = ""))
     

@@ -4,11 +4,11 @@ prefix <- "cv-tables-samp/"
 files <- list.files(path = prefix)
 ns <- c(100, 200)
 samp.types <- c("clu", "srs")
-species.list <- c("bluewinged_teal", "cattle_egret", "common_grounddove",
-                  "common_nighthawk", "greater_white_goose", "hooded_oriole",
-                  "lesser_goldfinch", "longbilled_curlew", "longeared_owl",
-                  "mountain_bluebird", "piping_plover", "sharpshinned_hawk",
-                  "vesper_sparrow", "western_bluebird", "whiteeyed_vireo")
+species.list <- c("broadbill_hummingbird", "cattle_egret", "common_grounddove",
+                  "eurasian_wigeon", "greater_white_goose", "hooded_oriole", 
+                  "lapland_longspur", "longbilled_curlew", "longeared_owl",
+                  "mountain_bluebird", "northern_sawwhet_owl", "piping_plover", 
+                  "snowy_plover", "tricolored_blackbird", "vesper_sparrow")
 
 nmethods <- 3
 nsets <- 25
