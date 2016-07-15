@@ -152,7 +152,7 @@ for (set in 1:nsets) {
                          xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
                          xi.attempts = 50, xi.fix = TRUE,
                          a.init = 1, a.eps = 0.05, a.attempts = 50,
-                         a.cutoff = 0.3, a.steps = 3,
+                         a.cutoff = 0.2, a.steps = 3,
                          b.init = 0.5, b.eps = 0.2,
                          b.attempts = 50, b.steps = 3,
                          alpha.init = alpha.init, alpha.attempts = 50,
