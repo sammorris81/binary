@@ -10,10 +10,10 @@ for (set in 1:nsets) {
   
   if (cluster) {
     samp.type <- "clu"
-    these.train <- clu.lst.Y1[[set]]
+    these.train <- clu.lst.Y2[[set]]
   } else {
     samp.type <- "srs"
-    these.train <- clu.lst.Y1[[set]]
+    these.train <- srs.lst.Y2[[set]]
   }
   
   upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",

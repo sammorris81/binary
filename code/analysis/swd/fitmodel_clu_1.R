@@ -13,7 +13,7 @@ for (set in 1:nsets) {
     these.train <- clu.lst.Y1[[set]]
   } else {
     samp.type <- "srs"
-    these.train <- clu.lst.Y1[[set]]
+    these.train <- srs.lst.Y1[[set]]
   }
 
   upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",
