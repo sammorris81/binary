@@ -182,7 +182,8 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
   a.cutoff <- mcmcoutput$a.cutoff
   IDs.p <- getIDs(dw2 = dw2p, a.cutoff = a.cutoff)
   
-  prob.success <- matrix(NA, nrow=niters, ncol=np)
+  y.pred <- matrix(NA, nrow=niters, ncol = np)
+  # prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
   
   for (i in 1:length(start:end)) {
@@ -195,28 +196,20 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
     # are 0 at all sites. when this happens w = 0 / sum(0) = nan, so setting 
     # w = 0 when we get NaN from getW.
     w[is.nan(w)] <- 0
+    
     w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs.p)
     aw      <- getAW(a = a[i, , ], w.star = w.star)
     theta   <- getTheta(alpha = alpha.i, z = z, aw = aw)
-    prob.success[i, ] <- 1 - exp(-theta)
-    # if (any(is.nan(prob.success))) {
-    #   this.z      <<- z
-    #   this.w      <<- w
-    #   this.w.star <<- w.star
-    #   this.aw     <<- aw
-    #   this.theta  <<- theta
-    #   this.dw2p   <<- dw2p
-    #   this.rho    <<- rho[i]
-    #   this.a.cutoff <<- a.cutoff
-    #   stop()
-    # }
+    prob.success <- 1 - exp(-theta)
     
     # if z is nan, it means that x.beta is such a large number there is
     # basically 0 probability that z < 0
     if (any(is.nan(z))) {
       these <- which(is.nan(z))
-      prob.success[i, these] <- 1
+      prob.success[these] <- 1
     }
+    
+    y.pred[i, ] <- rbinom(n = np, size = 1, prob = prob.success)
     
     if (!is.null(update)) {
       if (i %% update == 0) {
@@ -225,7 +218,7 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
     }
   }
   
-  return(prob.success)
+  return(y.pred)
   
 }
 

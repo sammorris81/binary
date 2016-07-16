@@ -716,13 +716,13 @@ dTNorm <- function(y, mn, sd, lower = -Inf, upper = Inf, fudge = 0,
 
 ################################################################
 # Arguments:
-#   post.prob(iters, yp): posterior probability of exceeding
+#   y.pred(iters, yp): predicted y
 #   validate(np): validation data
 #
 # Returns:
 #   score(1): Brier score for dataset
 ################################################################
-BrierScore <- function(post.prob, validate, summary = mean) {
+BrierScore <- function(y.pred, validate, summary = mean) {
   # iters <- nrow(post.prob)
   # np    <- ncol(post.prob)
 
@@ -730,7 +730,7 @@ BrierScore <- function(post.prob, validate, summary = mean) {
   # for (i in 1:iters) {
   #   scores[i] <- mean((validate - post.prob[i, ])^2)
   # }
-  probs <- apply(post.prob, 2, summary)
+  probs <- apply(y.pred, 2, summary)
   score <- mean((validate - probs)^2)
 
   return(score)

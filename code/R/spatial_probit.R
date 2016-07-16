@@ -19,10 +19,10 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   }
 
   # bookkeeping
-  np    <- nrow(s.pred)
-  iters <- end - start + 1
-  dp    <- as.matrix(rdist(s.pred, knots))
-  prob.success <- matrix(NA, nrow=iters, ncol=np)
+  np     <- nrow(s.pred)
+  iters  <- end - start + 1
+  dp     <- as.matrix(rdist(s.pred, knots))
+  y.pred <- matrix(NA, nrow=iters, ncol=np)
 
   beta <- mcmcoutput$beta[start:end, , drop = F]
   bw   <- mcmcoutput$bw[start:end]
@@ -31,8 +31,9 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   for (i in 1:iters) {
     # beta and bandwidth come directly from output
     z.pred <- X.pred %*% beta[i, ] + make.B(dp, bw[i]) %*% alpha[i, ]
-    prob.success[i, ] <- pnorm(z.pred)
-
+    prob.success <- pnorm(z.pred)
+    y.pred[i, ]  <- rbinom(n = np, size = 1, prob = prob.success)
+    
     if (!is.null(update)) {
       if (i %% update == 0) {
         cat("\t Iter", i, "\n")
@@ -40,7 +41,7 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
     }
   }
 
-  return(prob.success)
+  return(y.pred)
 }
 
 dic.spprob <- function(mcmcoutput, Y, X, s, knots,
