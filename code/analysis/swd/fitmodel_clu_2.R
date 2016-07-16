@@ -1,8 +1,9 @@
 source(file = "./package_load.R", chdir = T)
-cluster <- FALSE
+cluster <- TRUE
 n <- 100
 nsets <- 50
-y <- Y1
+y <- Y2
+which.y <- 2
 
 for (set in 1:nsets) {
   print(paste("Start set ", set, sep = ""))
@@ -14,16 +15,16 @@ for (set in 1:nsets) {
     samp.type <- "srs"
     these.train <- clu.lst.Y1[[set]]
   }
-  
+
   upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",
                       "code/analysis/swd/ss-tables/", sep = "")
   
-  table.file   <- paste("./ss-tables/", samp.type, "-", n, "-", set, 
-                        ".txt", sep = "")
-  results.file <- paste("./ss-results/", samp.type, "-", n, "-", set, 
-                        ".RData", sep = "")
-  sample.file  <- paste("./ss-sample/", samp.type, "-", n, "-", set, 
-                        ".txt", sep = "")
+  table.file   <- paste("./ss-tables/", samp.type, "-", which.y, "-", n, "-", 
+                        set, ".txt", sep = "")
+  results.file <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-", 
+                        set, ".RData", sep = "")
+  sample.file  <- paste("./ss-sample/", samp.type, "-", which.y, "-", n, "-", 
+                        set, ".txt", sep = "")
   
   y.o <- y[these.train]
   y.p <- y[-these.train]

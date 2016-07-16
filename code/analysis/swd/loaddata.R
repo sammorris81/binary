@@ -39,7 +39,7 @@ Y2 <- ifelse(Y2 > 0, 1, 0)  # 0.54% - e_count
 #### look to make sure that locations are assigned correctly ####
 s1 <- seq(0, 1, length = 200)
 s2 <- seq(0, 1, length = 200)
-s <- expand.grid(s1, s2)
+s <- as.matrix(expand.grid(s1, s2))
 par(mfrow = c(1, 2))
 quilt.plot(x = s[, 1], y = s[, 2], z = as.vector(Y1), nx = 200, ny = 200)
 image.plot(Y1)
