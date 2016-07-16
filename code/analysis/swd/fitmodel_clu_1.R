@@ -175,10 +175,10 @@ for (set in 1:nsets) {
                               start = 1, end = iters - burn, update = update)
   timings[1] <- fit.gev$minutes
   
-  bs.gev             <- BrierScore(post.prob.gev, y.p, mean)
+  bs.gev             <- BrierScore(post.prob.gev, y.p, median)
   post.prob.gev.med  <- apply(post.prob.gev, 2, median)
   post.prob.gev.mean <- apply(post.prob.gev, 2, mean)
-  roc.gev            <- roc(y.p ~ post.prob.gev.mean)
+  roc.gev            <- roc(y.p ~ post.prob.gev.med)
   auc.gev            <- roc.gev$auc
   
   print(bs.gev * 100)
@@ -207,10 +207,10 @@ for (set in 1:nsets) {
                                start = 1, end = iters - burn, update = update)
   timings[2] <- fit.probit$minutes
   
-  bs.pro             <- BrierScore(post.prob.pro, y.p, mean)
+  bs.pro             <- BrierScore(post.prob.pro, y.p, median)
   post.prob.pro.med  <- apply(post.prob.pro, 2, median)
   post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
-  roc.pro            <- roc(y.p ~ post.prob.pro.mean)
+  roc.pro            <- roc(y.p ~ post.prob.pro.med)
   auc.pro            <- roc.pro$auc
   
   print(bs.pro * 100)
@@ -248,10 +248,10 @@ for (set in 1:nsets) {
   
   timings[3] <- toc - tic
   
-  bs.log             <- BrierScore(post.prob.log, y.p, mean)
+  bs.log             <- BrierScore(post.prob.log, y.p, median)
   post.prob.log.med  <- apply(post.prob.log, 2, median)
   post.prob.log.mean <- apply(post.prob.log, 2, mean)
-  roc.log            <- roc(y.p ~ post.prob.log.mean)
+  roc.log            <- roc(y.p ~ post.prob.log.med)
   auc.log            <- roc.log$auc
   
   print(bs.log * 100)
