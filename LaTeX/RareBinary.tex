@@ -134,10 +134,10 @@ given by
   \text{P}[Y(\bs_i), Y(\bs_j)] = \left\{ \begin{array}{ll}
     \varphi(\bz) &Y(\bs_i) = 0, Y(\bs_j) = 0\\
     \exp\left\{ - \displaystyle \frac{ 1 }{ z(\bs_i) } \right\} - \varphi(\bz), &Y(\bs_i) = 1, Y(\bs_j) = 0 \\
-    1 - \exp\left\{ - \displaystyle\frac{ 1 }{ z(\bs_i) } \right\} - \exp \left\{ -\displaystyle \frac{ 1 }{z(\bs_j)} \right\} + \varphi(\bz), &\quad Y(\bs_i) = 1, Y(\bs_j) = 1
+    1 - \exp\left\{ - \displaystyle\frac{ 1 }{ z(\bs_i) } \right\} - \exp \left\{ -\displaystyle \frac{ 1 }{z(\bs_j)} \right\} + \varphi(\bz), \quad &Y(\bs_i) = 1, Y(\bs_j) = 1
   \end{array} \right
 \end{align}
-where $\varphi(\bz) = \exp \left\{ - \sum_{ l = 1 }^{ L } \left[ \left( \displaystyle \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \displaystyle \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\}$.
+where $\varphi(\bz) = \exp \left\{ - \displaystyle \sum_{ l = 1 }^{ L } \left[ \left( \displaystyle \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \displaystyle \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\}$.
 
 \section{Quantifying spatial dependence}
 \hl{I still need to incorporate Brian's suggestions here}
