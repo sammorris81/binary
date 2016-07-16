@@ -5,13 +5,13 @@ files <- list.files(path = prefix)
 ns <- c(100, 200)
 samp.types <- c("clu", "srs")
 species.list <- c("broadbill_hummingbird", "cattle_egret", "common_grounddove",
-                  "eurasian_wigeon", "greater_white_goose", "hooded_oriole", 
+                  "eurasian_wigeon", "greater_white_goose", "hooded_oriole",
                   "lapland_longspur", "longbilled_curlew", "longeared_owl",
-                  "mountain_bluebird", "northern_sawwhet_owl", "piping_plover", 
+                  "mountain_bluebird", "northern_sawwhet_owl", "piping_plover",
                   "snowy_plover", "tricolored_blackbird", "vesper_sparrow")
 
 nmethods <- 3
-nsets <- 25
+nsets <- 50
 nfits <- nsets * length(ns) * length(samp.types)
 
 bs.results <- auc.results <- vector(length = length(species.list),
@@ -22,7 +22,7 @@ for (species in species.list) {
   auc.results[[species.idx]] <- matrix(NA, nfits, nmethods)
   these.rownames <- c(paste("clu-100-", 1:nsets, sep = ""),
                       paste("srs-100-", 1:nsets, sep = ""),
-                      paste("clu-200-", 1:nsets, sep = ""), 
+                      paste("clu-200-", 1:nsets, sep = ""),
                       paste("srs-200-", 1:nsets, sep = ""))
   these.colnames <- c("gev", "probit", "logit")
   rownames(bs.results[[species.idx]])  <- these.rownames
@@ -37,7 +37,7 @@ for (i in 1:length(files)) {
   samp.type.idx <- which(samp.types == split[2])
   n.idx         <- which(ns == as.numeric(split[3]))
   set           <- as.numeric(split[4])
-  this.row      <- (n.idx - 1) * 50 + (samp.type.idx - 1) * 25 + set
+  this.row      <- (n.idx - 1) * nsets * 2 + (samp.type.idx - 1) * nsets + set
   table.set     <- read.table(paste(prefix, files[i], sep = ""))
   if (all(!is.na(table.set))) {
     bs.results[[species.idx]][this.row, 1]  <- table.set[1, 1]
@@ -65,22 +65,30 @@ for (species in species.list) {
   colnames(bs.results.combined[[species.idx]])  <- c("gev", "probit", "logit")
   colnames(auc.results.combined[[species.idx]]) <- c("gev", "probit", "logit")
 
-  this.row <- apply(bs.results[[species.idx]][1:25, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(bs.results[[species.idx]][1:nsets, ],
+                    2, mean, na.rm = TRUE)
   bs.results.combined[[species.idx]][1, ] <- this.row
-  this.row <- apply(bs.results[[species.idx]][26:50, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(bs.results[[species.idx]][(nsets + 1):(2 * nsets), ],
+                    2, mean, na.rm = TRUE)
   bs.results.combined[[species.idx]][2, ] <- this.row
-  this.row <- apply(bs.results[[species.idx]][51:75, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(bs.results[[species.idx]][(2 * nsets +1):(3 * nsets), ],
+                    2, mean, na.rm = TRUE)
   bs.results.combined[[species.idx]][3, ] <- this.row
-  this.row <- apply(bs.results[[species.idx]][76:100, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(bs.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
+                    2, mean, na.rm = TRUE)
   bs.results.combined[[species.idx]][4, ] <- this.row
 
-  this.row <- apply(auc.results[[species.idx]][1:25, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(auc.results[[species.idx]][1:nsets, ],
+                    2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][1, ] <- this.row
-  this.row <- apply(auc.results[[species.idx]][26:50, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(auc.results[[species.idx]][(nsets + 1):(2 * nsets), ],
+                    2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][2, ] <- this.row
-  this.row <- apply(auc.results[[species.idx]][51:75, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(auc.results[[species.idx]][(2 * nsets + 1):(3 * nsets), ],
+                    2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][3, ] <- this.row
-  this.row <- apply(auc.results[[species.idx]][76:100, ], 2, mean, na.rm = TRUE)
+  this.row <- apply(auc.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
+                    2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][3, ] <- this.row
 }
 
