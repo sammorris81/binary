@@ -306,40 +306,15 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         xi$eps     <- eps.update$eps
       }
       
-      if (a$infinite > 5) {
-        print("reducing a$eps")
-        a$eps <- a$eps * 0.8
-        a$infinite <- 0
-        a.steps <- a.steps + 1
-      }
       eps.update <- epsUpdate(a)
       a$att      <- eps.update$att
       a$acc      <- eps.update$acc
       a$eps      <- eps.update$eps
       
-      # If the stepsize gets too big, we are likely to run into trouble in the
-      # update because the gradient may be too large in a few of the dimensions.
-      # Based on some preliminary runs, it would appear that when the stepsize 
-      # is much larger than 0.7, then the MCMC tends to run into trouble.
-      if (a$eps > 0.75) {  
-        a$eps <- a$eps * 0.8
-        a.steps <- a.steps + 1
-      }
-      
-      if (b$infinite > 5) {
-        print("reducing b$eps")
-        b$eps <- b$eps * 0.8
-        b$infinite <- 0
-        b.steps <- b.steps + 1
-      }
       eps.update <- epsUpdate(b)
       b$att      <- eps.update$att
       b$acc      <- eps.update$acc
       b$eps      <- eps.update$eps
-      if (b$eps > 0.75) {
-        b$eps   <- b$eps * 0.8
-        b.steps <- b.steps + 1
-      }
       
       if (alpha$infinite > 10) {
         print("reducing alpha$eps")
@@ -355,6 +330,36 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       rho$att    <- eps.update$att
       rho$acc    <- eps.update$acc
       rho$eps    <- eps.update$eps
+    }
+    
+    if (iter < burn * 0.75) {
+      # If the stepsize gets too big, we are likely to run into trouble in the
+      # update because the gradient may be too large in a few of the dimensions.
+      # Based on some preliminary runs, it would appear that when the stepsize 
+      # is much larger than 0.7, then the MCMC tends to run into trouble.
+      # To help improve the acceptance rate, we then add an additional 
+      # Hamiltonian step.
+      if (a$infinite >= 10) {
+        print("reducing a$eps")
+        a$eps <- a$eps * 0.8
+        a$infinite <- 0
+        a.steps <- a.steps + 1
+      }
+      # if (a$eps > 0.75) {  
+      #   a$eps <- a$eps * 0.8
+      #   a.steps <- a.steps + 1
+      # }
+      
+      if (b$infinite >= 10) {
+        print("reducing b$eps")
+        b$eps <- b$eps * 0.8
+        b$infinite <- 0
+        b.steps <- b.steps + 1
+      }
+      # if (b$eps > 0.75) {
+      #   b$eps   <- b$eps * 0.8
+      #   b.steps <- b.steps + 1
+      # }
     }
     
     storage.beta[iter, ] <- beta$cur
@@ -379,7 +384,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         for (idx in plot.idx){
           plot(log(storage.a[start:end, idx, 1]), type = "l", 
                main = paste("a", idx), 
-               xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
+               xlab = paste(round(a$acc / a$att, 2), ",", a.steps),
+               ylab = round(a$eps, 4))
         }
         # plot(log(storage.a[start:end, 81, 1]), type = "l",
         #      main = paste("a", idx),
@@ -388,7 +394,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         for (idx in plot.idx){
           plot(storage.b[start:end, idx, 1], type = "l", 
                main = paste("b", idx),
-               xlab = round(b$acc / b$att, 2), ylab = round(b$eps, 4))
+               xlab = paste(round(b$acc / b$att, 2), ", ", b.steps), 
+               ylab = round(b$eps, 4))
         }
         
         plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),
