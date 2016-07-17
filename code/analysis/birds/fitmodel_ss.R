@@ -175,9 +175,6 @@ for (set in these.sets) {
       a.eps <- 0.05
       b.eps <- 0.1
     }
-    # logrho.mn <- log(fit.pcl$par[2])
-    # alpha.mn <- 0.5
-    # alpha.sd <- 0.2
     logrho.mn <- -3
     logrho.sd <- 0.7
 
