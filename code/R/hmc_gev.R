@@ -146,7 +146,7 @@ gevHMC = function (U, grad_U, current_q, epsilon = 0.01, L = 10,
         }
         return(list(q = current_q, accept = FALSE, infinite = infinite))
       } else {
-        print(paste("Momentum variable is Inf for", this.param,
+        print(paste("Momentum variable is Inf for ", this.param,
                     ", automatically reject", sep = ""))
         return(list(q = current_q, accept = FALSE, infinite = TRUE))
       }

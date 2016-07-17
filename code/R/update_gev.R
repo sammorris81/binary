@@ -111,15 +111,15 @@ updateAlpha <- function(data, a, b, alpha, calc, others) {
                     1 / cur.alpha1m * log(a$cur) + lc - 
                     exp(lc) * a$cur^(-cur.alpha / cur.alpha1m))
   
-  alpha.star  <- transform$logit(cur.alpha)
+  alpha.star     <- transform$logit(cur.alpha)
   can.alpha.star <- rnorm(1, alpha.star, alpha$eps)
-  can.alpha   <- transform$inv.logit(can.alpha.star)
-  # can.alpha   <- pnorm(rnorm(1, qnorm(cur.alpha), alpha$eps))
-  can.alpha1m <- 1 - can.alpha
-  can.w.star  <- getWStarIDs(alpha = can.alpha, w = calc$w, IDs =others$IDs)
-  can.aw      <- getAW(a = a$cur, w.star = can.w.star)
-  can.theta   <- getTheta(alpha = can.alpha, z = calc$z, aw = can.aw)
-  lc          <- logc(b = b$cur, alpha = can.alpha)
+  can.alpha      <- transform$inv.logit(can.alpha.star)
+  # can.alpha    <- pnorm(rnorm(1, qnorm(cur.alpha), alpha$eps))
+  can.alpha1m    <- 1 - can.alpha
+  can.w.star     <- getWStarIDs(alpha = can.alpha, w = calc$w, IDs =others$IDs)
+  can.aw         <- getAW(a = a$cur, w.star = can.w.star)
+  can.theta      <- getTheta(alpha = can.alpha, z = calc$z, aw = can.aw)
+  lc             <- logc(b = b$cur, alpha = can.alpha)
   
   can.lly <- logLikeY(y = data$y, theta = can.theta)
   can.llps <- sum(log(can.alpha) - log(can.alpha1m) - 

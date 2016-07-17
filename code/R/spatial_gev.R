@@ -306,20 +306,22 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         xi$eps     <- eps.update$eps
       }
       
-      if (a$infinite > 10) {
+      if (a$infinite > 5) {
         print("reducing a$eps")
         a$eps <- a$eps * 0.8
         a$infinite <- 0
+        a.steps <- a.steps + 1
       }
       eps.update <- epsUpdate(a)
       a$att      <- eps.update$att
       a$acc      <- eps.update$acc
       a$eps      <- eps.update$eps
       
-      if (b$infinite > 10) {
+      if (b$infinite > 5) {
         print("reducing b$eps")
         b$eps <- b$eps * 0.8
         b$infinite <- 0
+        b.steps <- b.steps + 1
       }
       eps.update <- epsUpdate(b)
       b$att      <- eps.update$att

@@ -162,7 +162,12 @@ for (set in these.sets) {
     set.seed(mcmc.seed)
 
     alpha.mn <- fit.pcl$par[1]
-    logrho.mn <- log(fit.pcl$par[2])
+    alpha.sd <- 0.05
+    # logrho.mn <- log(fit.pcl$par[2])
+    # alpha.mn <- 0.5
+    # alpha.sd <- 0.2
+    logrho.mn <- -3
+    logrho.sd <- 0.7
 
     # for numerical stability with the current set of starting values for the a
     # terms. if alpha is too small, the algorithm has a very hard time getting
@@ -182,20 +187,20 @@ for (set in these.sets) {
                            beta.eps = 0.1, beta.attempts = 50,
                            xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
                            xi.attempts = 50, xi.fix = TRUE,
-                           a.init = 1, a.eps = 0.05, a.attempts = 50,
-                           a.cutoff = 0.2, a.steps = 7,
-                           b.init = 0.5, b.eps = 0.2,
-                           b.attempts = 50, b.steps = 5,
+                           a.init = 1, a.eps = 0.05, a.attempts = 500,
+                           a.cutoff = 0.05, a.steps = 7,
+                           b.init = 0.5, b.eps = 0.05,
+                           b.attempts = 500, b.steps = 5,
                            alpha.init = alpha.init, alpha.attempts = 50,
-                           alpha.mn = alpha.mn, alpha.sd = 0.05,
+                           alpha.mn = alpha.mn, alpha.sd = alpha.sd,
                            a.alpha.joint = FALSE, alpha.eps = 0.01,
                            rho.init = rho.init, logrho.mn = logrho.mn,
-                           logrho.sd = 1,
+                           logrho.sd = logrho.sd,
                            rho.eps = 0.1, rho.attempts = 50, threads = 1,
                            iters = iters, burn = burn,
-                           update = update, iterplot = iterplot,
+                           update = update, # iterplot = iterplot,
                            # update = 10,
-                           # iterplot = TRUE,
+                           iterplot = TRUE,
                            thin = thin, thresh = 0)
 
     cat("    Start mcmc predict \n")
