@@ -19,8 +19,6 @@ for (set in these.sets) {
     sample.file  <- paste("./cv-sample/", species, "-", samp.type, "-", n, "-",
                           set, ".txt", sep = "")
 
-    # cattle_egret
-
     ns <- c(100, 200)
     d  <- rdist(s)
 
@@ -207,9 +205,9 @@ for (set in these.sets) {
                            logrho.sd = logrho.sd,
                            rho.eps = 0.1, rho.attempts = 50, threads = 1,
                            iters = iters, burn = burn,
-                           update = update, # iterplot = iterplot,
+                           update = update, iterplot = iterplot,
                            # update = 10,
-                           iterplot = TRUE,
+                           # iterplot = TRUE,
                            thin = thin, thresh = 0)
 
     cat("    Start mcmc predict \n")
