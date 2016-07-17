@@ -194,7 +194,6 @@ for (set in 1:nsets) {
     upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
     system(upload.cmd)
   }
-  rm(post.prob.gev)
   
   ###### spatial probit
   cat("  Start probit \n")
@@ -225,7 +224,6 @@ for (set in 1:nsets) {
     upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
     system(upload.cmd)
   }
-  rm(post.prob.pro)
   
   ####### spatial logit
   cat("  start logit \n")
@@ -269,7 +267,6 @@ for (set in 1:nsets) {
     upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
     system(upload.cmd)
   }
-  rm(post.prob.log)
   
   if ((set - 1) %% 5 == 0) {
     save(fit.gev, fit.probit, fit.logit, 
