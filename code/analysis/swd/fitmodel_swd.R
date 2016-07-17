@@ -255,7 +255,7 @@ for (set in 1:nsets) {
   
   timings[3] <- toc - tic
   
-  post.prob.log <- apply(post.prob.log, 2, mean)
+  post.prob.log <- apply(y.pred.log, 2, mean)
   bs.log        <- mean((y.p - post.prob.log)^2)
   roc.log       <- roc(y.p ~ post.prob.log)
   auc.log       <- roc.log$auc
