@@ -317,6 +317,15 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       a$acc      <- eps.update$acc
       a$eps      <- eps.update$eps
       
+      # If the stepsize gets too big, we are likely to run into trouble in the
+      # update because the gradient may be too large in a few of the dimensions.
+      # Based on some preliminary runs, it would appear that when the stepsize 
+      # is much larger than 0.7, then the MCMC tends to run into trouble.
+      if (a$eps > 0.75) {  
+        a$eps <- a$eps * 0.8
+        a.steps <- a.steps + 1
+      }
+      
       if (b$infinite > 5) {
         print("reducing b$eps")
         b$eps <- b$eps * 0.8
@@ -327,6 +336,10 @@ spatial_GEV <- function(y, s, x, knots = NULL,
       b$att      <- eps.update$att
       b$acc      <- eps.update$acc
       b$eps      <- eps.update$eps
+      if (b$eps > 0.75) {
+        b$eps   <- b$eps * 0.8
+        b.steps <- b.steps + 1
+      }
       
       if (alpha$infinite > 10) {
         print("reducing alpha$eps")
