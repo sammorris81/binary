@@ -163,6 +163,18 @@ for (set in these.sets) {
 
     alpha.mn <- fit.pcl$par[1]
     alpha.sd <- 0.05
+    # when alpha is close to 0, the PS random effects have a much higher 
+    # variance, and when it's close to 1, then the variance will decrease
+    if (alpha.mn < 0.3) {
+      a.eps <- 0.5
+      b.eps <- 0.1
+    } else if (alpha.mn < 0.85) {
+      a.eps <- 0.1
+      b.eps <- 0.1
+    } else {
+      a.eps <- 0.05
+      b.eps <- 0.1
+    }
     # logrho.mn <- log(fit.pcl$par[2])
     # alpha.mn <- 0.5
     # alpha.sd <- 0.2
@@ -187,9 +199,9 @@ for (set in these.sets) {
                            beta.eps = 0.1, beta.attempts = 50,
                            xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
                            xi.attempts = 50, xi.fix = TRUE,
-                           a.init = 1, a.eps = 0.1, a.attempts = 500,
+                           a.init = 1, a.eps = a.eps, a.attempts = 500,
                            a.cutoff = 0.05, a.steps = 7,
-                           b.init = 0.5, b.eps = 0.2,
+                           b.init = 0.5, b.eps = b.eps,
                            b.attempts = 500, b.steps = 5,
                            alpha.init = alpha.init, alpha.attempts = 50,
                            alpha.mn = alpha.mn, alpha.sd = alpha.sd,
