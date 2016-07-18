@@ -49,8 +49,9 @@ quilt.plot(x = s[, 1], y = s[, 2], z = as.vector(Y2), nx = 200, ny = 200)
 save(Y1, Y2, s, file = "plant_inventory.RData")
 
 # generate the samples ahead of time
+source("../../../../usefulR/usefulfunctions.R", chdir = TRUE)
 nsets <- 200
-n <- 100
+n     <- 100
 
 clu.lst.Y1 <- clu.lst.Y2 <- vector(mode = "list", length = nsets)
 srs.lst.Y1 <- srs.lst.Y2 <- vector(mode = "list", length = nsets)
@@ -153,4 +154,222 @@ for (set in 1:nsets) {
 }
 
 save(Y1, Y2, clu.lst.Y1, clu.lst.Y2, srs.lst.Y1, srs.lst.Y2, s, 
+     file = "plant_inventory.RData")
+
+load("plant_inventory.RData")
+source("../../../../usefulR/usefulfunctions.R", chdir = TRUE)
+clu.lst.Y1.100 <- clu.lst.Y1
+clu.lst.Y2.100 <- clu.lst.Y2
+srs.lst.Y1.100 <- srs.lst.Y1
+srs.lst.Y2.100 <- srs.lst.Y2
+nsets <- 200
+n     <- 250
+
+clu.lst.Y1.250 <- clu.lst.Y2.250 <- vector(mode = "list", length = nsets)
+srs.lst.Y1.250 <- srs.lst.Y2.250 <- vector(mode = "list", length = nsets)
+for (set in 1:nsets) {
+  set.seed(1000 + set)
+  nobs <- 0
+  while(nobs < 3) {  
+    # keep repeating the sampling until there are at least 3 observations
+    these.train <- sort(sample(length(Y1), n))
+    y.o <- Y1[these.train]
+    these.cluster <- y.o == 1
+    these.cluster.ids <- these.train[these.cluster]
+    for (i in 1:length(these.cluster.ids)) {
+      # get the location of the cell where y == 1
+      this.cell <- get.arr.idx(these.cluster.ids[i], nrows = 200)
+      this.row  <- this.cell[1]
+      this.col  <- this.cell[2]
+      
+      # account for the boundary
+      neighbors.row <- c(this.row + 1, this.row - 1)
+      neighbors.col <- c(this.col + 1, this.col - 1)
+      neighbors.row <- neighbors.row[neighbors.row > 0 & neighbors.row < 200]
+      neighbors.col <- neighbors.col[neighbors.col > 0 & neighbors.col < 200]
+      for (j in 1:length(neighbors.row)) {
+        these.train <- c(these.train,
+                         get.idx(row = neighbors.row[j], col = this.col, 
+                                 nrows = 200))
+      }
+      for (j in 1:length(neighbors.col)) {
+        these.train <- c(these.train, 
+                         get.idx(row = this.row, col = neighbors.col[j], 
+                                 nrows = 200))
+      }
+      
+    }
+    these.train <- sort(unique(these.train))
+    y.o <- Y1[these.train]
+    nobs <- sum(y.o)
+  }
+  clu.lst.Y1.250[[set]] <- these.train
+  
+  set.seed(2000 + set)
+  nobs <- 0
+  nsamp <- length(these.train)  # make sure that we get the same sample size
+  while (nobs < 3) {
+    these.train <- sort(sample(length(Y1), nsamp))
+    y.o <- Y1[these.train]
+    nobs <- sum(y.o)
+  }
+  srs.lst.Y1.250[[set]] <- these.train
+}
+
+for (set in 1:nsets) {
+  set.seed(1000 + set)
+  nobs <- 0
+  while(nobs < 3) {  
+    # keep repeating the sampling until there are at least 3 observations
+    these.train <- sort(sample(length(Y2), n))
+    y.o <- Y2[these.train]
+    these.cluster <- y.o == 1
+    these.cluster.ids <- these.train[these.cluster]
+    for (i in 1:length(these.cluster.ids)) {
+      # get the location of the cell where y == 1
+      this.cell <- get.arr.idx(these.cluster.ids[i], nrows = 200)
+      this.row  <- this.cell[1]
+      this.col  <- this.cell[2]
+      
+      # account for the boundary
+      neighbors.row <- c(this.row + 1, this.row - 1)
+      neighbors.col <- c(this.col + 1, this.col - 1)
+      neighbors.row <- neighbors.row[neighbors.row > 0 & neighbors.row < 200]
+      neighbors.col <- neighbors.col[neighbors.col > 0 & neighbors.col < 200]
+      for (j in 1:length(neighbors.row)) {
+        these.train <- c(these.train,
+                         get.idx(row = neighbors.row[j], col = this.col, 
+                                 nrows = 200))
+      }
+      for (j in 1:length(neighbors.col)) {
+        these.train <- c(these.train, 
+                         get.idx(row = this.row, col = neighbors.col[j], 
+                                 nrows = 200))
+      }
+      
+    }
+    these.train <- sort(unique(these.train))
+    y.o <- Y2[these.train]
+    nobs <- sum(y.o)
+  }
+  clu.lst.Y2.250[[set]] <- these.train
+  
+  set.seed(2000 + set)
+  nobs <- 0
+  nsamp <- length(these.train)  # make sure that we get the same sample size
+  while (nobs < 3) {
+    these.train <- sort(sample(length(Y2), nsamp))
+    y.o <- Y2[these.train]
+    nobs <- sum(y.o)
+  }
+  srs.lst.Y2.250[[set]] <- these.train
+}
+
+nsets <- 200
+n     <- 500
+
+clu.lst.Y1.500 <- clu.lst.Y2.500 <- vector(mode = "list", length = nsets)
+srs.lst.Y1.500 <- srs.lst.Y2.500 <- vector(mode = "list", length = nsets)
+for (set in 1:nsets) {
+  set.seed(1000 + set)
+  nobs <- 0
+  while(nobs < 3) {  
+    # keep repeating the sampling until there are at least 3 observations
+    these.train <- sort(sample(length(Y1), n))
+    y.o <- Y1[these.train]
+    these.cluster <- y.o == 1
+    these.cluster.ids <- these.train[these.cluster]
+    for (i in 1:length(these.cluster.ids)) {
+      # get the location of the cell where y == 1
+      this.cell <- get.arr.idx(these.cluster.ids[i], nrows = 200)
+      this.row  <- this.cell[1]
+      this.col  <- this.cell[2]
+      
+      # account for the boundary
+      neighbors.row <- c(this.row + 1, this.row - 1)
+      neighbors.col <- c(this.col + 1, this.col - 1)
+      neighbors.row <- neighbors.row[neighbors.row > 0 & neighbors.row < 200]
+      neighbors.col <- neighbors.col[neighbors.col > 0 & neighbors.col < 200]
+      for (j in 1:length(neighbors.row)) {
+        these.train <- c(these.train,
+                         get.idx(row = neighbors.row[j], col = this.col, 
+                                 nrows = 200))
+      }
+      for (j in 1:length(neighbors.col)) {
+        these.train <- c(these.train, 
+                         get.idx(row = this.row, col = neighbors.col[j], 
+                                 nrows = 200))
+      }
+      
+    }
+    these.train <- sort(unique(these.train))
+    y.o <- Y1[these.train]
+    nobs <- sum(y.o)
+  }
+  clu.lst.Y1.500[[set]] <- these.train
+  
+  set.seed(2000 + set)
+  nobs <- 0
+  nsamp <- length(these.train)  # make sure that we get the same sample size
+  while (nobs < 3) {
+    these.train <- sort(sample(length(Y1), nsamp))
+    y.o <- Y1[these.train]
+    nobs <- sum(y.o)
+  }
+  srs.lst.Y1.500[[set]] <- these.train
+}
+
+for (set in 1:nsets) {
+  set.seed(1000 + set)
+  nobs <- 0
+  while(nobs < 3) {  
+    # keep repeating the sampling until there are at least 3 observations
+    these.train <- sort(sample(length(Y2), n))
+    y.o <- Y2[these.train]
+    these.cluster <- y.o == 1
+    these.cluster.ids <- these.train[these.cluster]
+    for (i in 1:length(these.cluster.ids)) {
+      # get the location of the cell where y == 1
+      this.cell <- get.arr.idx(these.cluster.ids[i], nrows = 200)
+      this.row  <- this.cell[1]
+      this.col  <- this.cell[2]
+      
+      # account for the boundary
+      neighbors.row <- c(this.row + 1, this.row - 1)
+      neighbors.col <- c(this.col + 1, this.col - 1)
+      neighbors.row <- neighbors.row[neighbors.row > 0 & neighbors.row < 200]
+      neighbors.col <- neighbors.col[neighbors.col > 0 & neighbors.col < 200]
+      for (j in 1:length(neighbors.row)) {
+        these.train <- c(these.train,
+                         get.idx(row = neighbors.row[j], col = this.col, 
+                                 nrows = 200))
+      }
+      for (j in 1:length(neighbors.col)) {
+        these.train <- c(these.train, 
+                         get.idx(row = this.row, col = neighbors.col[j], 
+                                 nrows = 200))
+      }
+      
+    }
+    these.train <- sort(unique(these.train))
+    y.o <- Y2[these.train]
+    nobs <- sum(y.o)
+  }
+  clu.lst.Y2.500[[set]] <- these.train
+  
+  set.seed(2000 + set)
+  nobs <- 0
+  nsamp <- length(these.train)  # make sure that we get the same sample size
+  while (nobs < 3) {
+    these.train <- sort(sample(length(Y2), nsamp))
+    y.o <- Y2[these.train]
+    nobs <- sum(y.o)
+  }
+  srs.lst.Y2.500[[set]] <- these.train
+}
+
+save(Y1, Y2, s, 
+     clu.lst.Y1.100, clu.lst.Y2.100, srs.lst.Y1.100, srs.lst.Y2.100, 
+     clu.lst.Y1.250, clu.lst.Y2.250, srs.lst.Y1.250, srs.lst.Y2.250,
+     clu.lst.Y1.500, clu.lst.Y2.500, srs.lst.Y1.500, srs.lst.Y2.500, 
      file = "plant_inventory.RData")

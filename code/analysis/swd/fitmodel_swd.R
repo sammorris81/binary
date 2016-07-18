@@ -1,25 +1,41 @@
-for (set in 1:nsets) {
+if (cluster) {
+  samp.type <- "clu"
+} else {
+  samp.type <- "srs"
+}
+
+if (which.y == 1) {
+  this.Y <- "Y1"
+} else {
+  this.Y <- "Y2"
+}
+
+sample.list <- paste(samp.type, ".lst.", this.Y, ".", n, sep = "")
+
+for (set in these.sets) {
   print(paste("Start set ", set, sep = ""))
   
-  if (cluster) {
-    samp.type <- "clu"
-    if (which.y == 1) {
-      these.train <- clu.lst.Y1[[set]]
-      y <- Y1
-    } else if (which.y == 2) {
-      these.train <- clu.lst.Y2[[set]]
-      y <- Y2
-    }
-  } else {
-    samp.type <- "srs"
-    if (which.y == 1) {
-      these.train <- srs.lst.Y1[[set]]
-      y <- Y1
-    } else if (which.y == 2) {
-      these.train <- srs.lst.Y2[[set]]
-      y <- Y2
-    }
-  }
+  these.train <- get(sample.list)[[set]]
+  y <- get(this.Y)
+  # if (cluster) {
+  #   samp.type <- "clu"
+  #   if (which.y == 1) {
+  #     these.train <- clu.lst.Y1[[set]]
+  #     y <- Y1
+  #   } else if (which.y == 2) {
+  #     these.train <- clu.lst.Y2[[set]]
+  #     y <- Y2
+  #   }
+  # } else {
+  #   samp.type <- "srs"
+  #   if (which.y == 1) {
+  #     these.train <- srs.lst.Y1[[set]]
+  #     y <- Y1
+  #   } else if (which.y == 2) {
+  #     these.train <- srs.lst.Y2[[set]]
+  #     y <- Y2
+  #   }
+  # }
   
   upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",
                       "code/analysis/swd/ss-tables/", sep = "")
@@ -28,6 +44,8 @@ for (set in 1:nsets) {
                         set, ".txt", sep = "")
   results.file <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-", 
                         set, ".RData", sep = "")
+  fit.file     <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-", 
+                        set, "-fit.RData", sep = "")
   sample.file  <- paste("./ss-sample/", samp.type, "-", which.y, "-", n, "-", 
                         set, ".txt", sep = "")
   
@@ -285,9 +303,8 @@ for (set in 1:nsets) {
   if ((set - 1) %% 5 == 0) {
     save(fit.gev, fit.probit, fit.logit, 
          post.prob.gev, post.prob.pro, post.prob.log,
-         y.o, y.p, s.o, s.p, file = results.file)
-  } else {
-    save(post.prob.gev, post.prob.pro, post.prob.log, 
-         y.o, y.p, s.o, s.p, file = results.file)
+         y.o, y.p, s.o, s.p, file = fit.file)
   }
+  save(post.prob.gev, post.prob.pro, post.prob.log, 
+       y.o, y.p, s.o, s.p, file = results.file)
 }
