@@ -2,6 +2,8 @@ rm(list = ls())
 
 library(ggplot2)
 library(gridExtra)
+library(pROC)
+library(ROCR)
 load("plant_inventory.RData")
 source("../../R/plotting.R", chdir = TRUE)
 source("../../../../usefulR/usefulfunctions.R", chdir = TRUE)
@@ -134,15 +136,17 @@ ggsave(paste("plots/post-prob-clu-1-", this.set, ".pdf", sep = ""),
        plot = panel)
 
 # ROC Curve
+pred.gev <- prediction(post.prob.gev, y.p)
+pred.pro <- prediction(post.prob.pro, y.p)
+pred.log <- prediction(post.prob.log, y.p)
+
+plot.roc.prc(pred.gev, pred.pro, pred.log)
+
 roc.gev <- roc(y.p ~ post.prob.gev)
 roc.pro <- roc(y.p ~ post.prob.pro)
 roc.log <- roc(y.p ~ post.prob.log)
 quartz(width = 8, height = 8)
-plot(roc.gev, col = "grey20", main = "Cluster sample: Species 1")
-plot(roc.pro, add = TRUE, col = "firebrick2")
-plot(roc.log, add = TRUE, col = "dodgerblue2")
-legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"), 
-       legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
+
 dev.print(device = pdf, file = paste("plots/roc-clu-1-", this.set, ".pdf", 
                                      sep = ""))
 dev.off()
