@@ -218,6 +218,7 @@ for (set in these.sets) {
   auc.gev       <- roc.gev$auc
   
   print(bs.gev * 100)
+  rm(y.pred.gev)  # to help conserve memory
   
   # copy table to tables folder on beowulf
   scores[1, ] <- c(bs.gev, auc.gev)
@@ -248,6 +249,7 @@ for (set in these.sets) {
   auc.pro       <- roc.pro$auc
   
   print(bs.pro * 100)
+  rm(y.pred.pro)  # to help conserve memory
   
   # copy table to tables folder on beowulf
   scores[2, ] <- c(bs.pro, auc.pro)
@@ -291,6 +293,7 @@ for (set in these.sets) {
   auc.log       <- roc.log$auc
   
   print(bs.log * 100)
+  rm(y.pred.log)
   
   # copy table to tables folder on beowulf
   scores[3, ] <- c(bs.log, auc.log)
