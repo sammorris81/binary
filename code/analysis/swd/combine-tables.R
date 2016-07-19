@@ -92,11 +92,8 @@ for (i in 1:2) {
   auc.results.combined[[species.idx]][3, ] <- this.row
 }
 
-#### look at posterior probability species 1
-species.idx <- 1
-sample.idx <- 1
-n.idx <- 1
-
+#### look at over ROC curves and PRC curves
+#### TODO: Add in BS for Y = 1 and Y = 0
 for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
   for (set.idx in 1:nsets) {
     which.y <- paste("Y", species.idx, sep = "")
@@ -197,7 +194,11 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
           layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
           panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
           ggsave(post.plot.file, plot = panel, width = 13, height = 8)
+          
+          print(paste("Species: ", species.idx, ", Sampling: ", samp.type, 
+                      ", n: ", n, ", Set", set.idx, sep = ""))
         }
+        
       }
     }
   }
