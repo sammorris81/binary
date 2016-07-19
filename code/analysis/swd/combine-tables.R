@@ -4,16 +4,17 @@ library(ggplot2)
 library(gridExtra)
 library(pROC)
 library(ROCR)
+source("./package_load.R")
 load("plant_inventory.RData")
 source("../../R/plotting.R", chdir = TRUE)
 source("../../../../usefulR/usefulfunctions.R", chdir = TRUE)
 prefix <- "ss-tables/"
 files <- list.files(path = prefix)
-ns <- c(100, 200)
+ns <- c(100, 250)
 samp.types <- c("clu", "srs")
 
 nmethods <- 3
-nsets <- 50
+nsets <- 100
 nfits <- nsets * length(ns) * length(samp.types)
 
 bs.results <- auc.results <- vector(length = 2,
@@ -23,8 +24,8 @@ for (i in 1:2) {
   auc.results[[i]] <- matrix(NA, nfits, nmethods)
   these.rownames <- c(paste("clu-100-", 1:nsets, sep = ""),
                       paste("srs-100-", 1:nsets, sep = ""),
-                      paste("clu-200-", 1:nsets, sep = ""),
-                      paste("srs-200-", 1:nsets, sep = ""))
+                      paste("clu-250-", 1:nsets, sep = ""),
+                      paste("srs-250-", 1:nsets, sep = ""))
   these.colnames <- c("gev", "probit", "logit")
   rownames(bs.results[[i]])  <- these.rownames
   rownames(auc.results[[i]]) <- these.rownames
@@ -92,17 +93,23 @@ for (i in 1:2) {
 }
 
 #### look at posterior probability species 1
-this.set <- 5
-load(paste("./ss-results/clu-1-100-", this.set, ".RData", sep = ""))
-plot.prob.gev <- Y1
-plot.prob.gev[-clu.lst.Y1[[this.set]]] <- post.prob.gev
-plot.prob.gev[Y1 == 1] <- 1
+species.idx <- 1  
+sample.idx <- 1
+set.idx <- 1
+n.idx <- 1
 
-plot.prob.pro <- Y1
-plot.prob.pro[-clu.lst.Y1[[this.set]]] <- post.prob.pro
-plot.prob.pro[Y1 == 1] <- 1
+which.y <- paste("Y", species.idx, sep = "")
+samp.type <- samp.types[sample.idx]
+n <- ns[n.idx]
+results.file <- paste("./ss-results/", samp.type, "-", species.idx, "-", n, "-", 
+                      set.idx, ".RData", sep = "")
+ss.list <- paste(samp.type, ".lst.", which.y, sep = "")
+post.plot.file <- paste("./plots/post-prob-", samp.type, "-", species.idx, "-", 
+                        set.idx, ".pdf", sep = "")
 
-obs <- as.vector(as.factor(Y1))
+load(results.file)
+
+obs <- as.vector(as.factor(get(which.y)))
 df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
 main <- "Census of species 1"
 legend.title <- "Species 1"
@@ -132,8 +139,8 @@ p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
 
 layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
 panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
-ggsave(paste("plots/post-prob-clu-1-", this.set, ".pdf", sep = ""), 
-       plot = panel)
+ggsave(post.plot.file, plot = panel)
+
 
 # ROC Curve
 pred.gev <- prediction(post.prob.gev, y.p)
@@ -141,6 +148,22 @@ pred.pro <- prediction(post.prob.pro, y.p)
 pred.log <- prediction(post.prob.log, y.p)
 
 plot.roc.prc(pred.gev, pred.pro, pred.log)
+
+
+roc <- performance(pred.gev, "tpr", "fpr")
+x.plot <- seq(0, 1, 0.001)
+bin.n <- rep(0, length(x.plot))
+bin.sum <- rep(0, length(x.plot))
+for (i in 1:length(roc@x.values[[1]])) {
+  this.bin <- which.min(roc@x.values[[1]][i] > x.plot)
+  bin.n[this.bin] <- bin.n[this.bin] + 1
+  bin.sum[this.bin] <-bin.sum[this.bin] + roc@y.values[[1]][i]
+}
+
+
+
+pred.gev.2 <- prediction(post.prob.gev, y.p)
+roc.2 <- performance(pred.gev.2, "tpr", "fpr")
 
 roc.gev <- roc(y.p ~ post.prob.gev)
 roc.pro <- roc(y.p ~ post.prob.pro)
