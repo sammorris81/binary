@@ -44,7 +44,7 @@ for (set in these.sets) {
                         set, ".txt", sep = "")
   results.file <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-", 
                         set, ".RData", sep = "")
-  fit.file     <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-", 
+  fit.file     <- paste("./ss-fit/", samp.type, "-", which.y, "-", n, "-", 
                         set, "-fit.RData", sep = "")
   sample.file  <- paste("./ss-sample/", samp.type, "-", which.y, "-", n, "-", 
                         set, ".txt", sep = "")
