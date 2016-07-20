@@ -12,8 +12,9 @@ prefix <- "ss-tables/"
 files <- list.files(path = prefix)
 ns <- c(100, 250)
 samp.types <- c("clu", "srs")
+method.types <- c("gev", "pro", "log")
 
-nmethods <- 3
+nmethods <- length(method.types)
 nsets <- 100
 nfits <- nsets * length(ns) * length(samp.types)
 
@@ -31,7 +32,7 @@ for (i in 1:2) {
                       paste("srs-100-", 1:nsets, sep = ""),
                       paste("clu-250-", 1:nsets, sep = ""),
                       paste("srs-250-", 1:nsets, sep = ""))
-  these.colnames <- c("gev", "probit", "logit")
+  these.colnames <- method.types
   rownames(bs.results[[i]])   <- these.rownames
   rownames(auc.results[[i]])  <- these.rownames
   colnames(bs.results[[i]])   <- these.colnames
@@ -67,8 +68,8 @@ for (i in 1:2) {
   these.rownames <- paste(rep(samp.types, 2), "-", rep(ns, each = 2), sep = "")
   rownames(bs.results.combined[[species.idx]])  <- these.rownames
   rownames(auc.results.combined[[species.idx]]) <- these.rownames
-  colnames(bs.results.combined[[species.idx]])  <- c("gev", "probit", "logit")
-  colnames(auc.results.combined[[species.idx]]) <- c("gev", "probit", "logit")
+  colnames(bs.results.combined[[species.idx]])  <- method.types
+  colnames(auc.results.combined[[species.idx]]) <- method.types
 
   this.row <- apply(bs.results[[species.idx]][1:nsets, ],
                     2, mean, na.rm = TRUE)
@@ -175,7 +176,138 @@ for (i in 1:2) {
   bs.results.0.combined[[species.idx]][4, ] <- this.row
 }
 
+# Apparently ROCR can take in a list over all 100 datasets to 
+# come up with an averaged cross-validation curve
+
+for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
+  this.samp    <- samp.types[sample.idx]
+  this.species <- species.idx
+  this.n       <- ns[n.idx]
+  
+  this.gev.pred <- vector(mode = "list", length = nsets)
+  this.pro.pred <- vector(mode = "list", length = nsets)
+  this.log.pred <- vector(mode = "list", length = nsets)
+  this.yp       <- vector(mode = "list", length = nsets)
+  sets.done <- rep(FALSE, nsets)
+  
+  for (set in 1:nsets) {
+    results.file <- paste("./ss-results/", this.samp, "-", this.species, "-",
+                          this.n, "-", set, ".RData", sep = "")
+    if (file.exists(results.file)) {
+      sets.done[set] <- TRUE
+      load(results.file)
+      this.yp[[set]] <- y.p
+      this.gev.pred[[set]] <- post.prob.gev
+      this.pro.pred[[set]] <- post.prob.pro
+      this.log.pred[[set]] <- post.prob.log
+    }
+  }
+  
+  pred.gev.name <- paste("pred.gev.", this.samp, ".",
+                         this.species, ".", this.n, sep = "")
+  pred.pro.name <- paste("pred.pro.", this.samp, ".",
+                         this.species, ".", this.n, sep = "")
+  pred.log.name <- paste("pred.log.", this.samp, ".",
+                         this.species, ".", this.n, sep = "")
+  yp.name   <- paste("yp.", this.samp, ".", this.species, ".", this.n, sep = "")
+  # the syntax here is single bracket to access multiple elements of the list
+  assign(pred.gev.name, this.gev.pred[sets.done])
+  assign(pred.pro.name, this.pro.pred[sets.done])
+  assign(pred.log.name, this.log.pred[sets.done])
+  assign(yp.name, this.yp[sets.done])
+  print(paste(this.samp, this.species, this.n))
+}}}
+
 #### look at over ROC curves and PRC curves
+pred.gev <- prediction(pred.gev.clu.1.100, yp.clu.1.100)
+pred.pro <- prediction(pred.pro.clu.1.100, yp.clu.1.100)
+pred.log <- prediction(pred.log.clu.1.100, yp.clu.1.100)
+quartz(width = 16, height = 8)
+main <- "Species 1, Cluster sample, n = 100"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-clu-1-100-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-clu-1-100-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
+pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
+pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
+quartz(width = 16, height = 8)
+main <- "Species 2, Cluster sample, n = 100"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-clu-2-100-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-clu-2-100-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.srs.1.100, yp.srs.1.100)
+pred.pro <- prediction(pred.pro.srs.1.100, yp.srs.1.100)
+pred.log <- prediction(pred.log.srs.1.100, yp.srs.1.100)
+quartz(width = 16, height = 8)
+main <- "Species 1, Simple random sample, n = 100"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-srs-1-100-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-srs-1-100-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.srs.2.100, yp.srs.2.100)
+pred.pro <- prediction(pred.pro.srs.2.100, yp.srs.2.100)
+pred.log <- prediction(pred.log.srs.2.100, yp.srs.2.100)
+quartz(width = 16, height = 8)
+main <- "Species 2, Simple random sample, n = 100"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-srs-2-100-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-srs-2-100-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.clu.1.250, yp.clu.1.250)
+pred.pro <- prediction(pred.pro.clu.1.250, yp.clu.1.250)
+pred.log <- prediction(pred.log.clu.1.250, yp.clu.1.250)
+quartz(width = 16, height = 8)
+main <- "Species 1, Cluster sample, n = 250"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-clu-1-250-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-clu-1-250-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
+pred.pro <- prediction(pred.pro.clu.2.250, yp.clu.2.250)
+pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
+quartz(width = 16, height = 8)
+main <- "Species 2, Cluster sample, n = 250"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-clu-2-250-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-clu-2-250-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.srs.1.250, yp.srs.1.250)
+pred.pro <- prediction(pred.pro.srs.1.250, yp.srs.1.250)
+pred.log <- prediction(pred.log.srs.1.250, yp.srs.1.250)
+quartz(width = 16, height = 8)
+main <- "Species 1, Simple random sample, n = 250"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-srs-1-250-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-srs-1-250-vert.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.srs.2.250, yp.srs.2.250)
+pred.pro <- prediction(pred.pro.srs.2.250, yp.srs.2.250)
+pred.log <- prediction(pred.log.srs.2.250, yp.srs.2.250)
+quartz(width = 16, height = 8)
+main <- "Species 2, Simple random sample, n = 250"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-srs-2-250-thresh.pdf")
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
+dev.print(device = pdf, "./plots/perf-srs-2-250-vert.pdf")
+dev.off()
+
+
 for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
   for (set.idx in 1:nsets) {
     which.y <- paste("Y", species.idx, sep = "")
@@ -320,249 +452,3 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
   p <- p + theme_bw()
   ggsave(prc.plot.file, plot = p, width = 8, height = 8)
 }}}
-
-
-
-
-# ROC Curve
-
-
-plot.roc.prc(pred.gev, pred.pro, pred.log)
-
-
-roc <- performance(pred.gev, "tpr", "fpr")
-x.plot <- seq(0, 1, 0.001)
-bin.n <- rep(0, length(x.plot))
-bin.sum <- rep(0, length(x.plot))
-for (i in 1:length(roc@x.values[[1]])) {
-  this.bin <- which.min(roc@x.values[[1]][i] > x.plot)
-  bin.n[this.bin] <- bin.n[this.bin] + 1
-  bin.sum[this.bin] <-bin.sum[this.bin] + roc@y.values[[1]][i]
-}
-
-
-pred.gev.2 <- prediction(post.prob.gev, y.p)
-roc.2 <- performance(pred.gev.2, "tpr", "fpr")
-
-roc.gev <- roc(y.p ~ post.prob.gev)
-roc.pro <- roc(y.p ~ post.prob.pro)
-roc.log <- roc(y.p ~ post.prob.log)
-quartz(width = 8, height = 8)
-
-dev.print(device = pdf, file = paste("plots/roc-clu-1-", this.set, ".pdf",
-                                     sep = ""))
-dev.off()
-
-
-#### MSE for predicting Y
-# lower is better for each of these
-mean((y.p[y.p == 1] - post.prob.gev[y.p == 1])^2)  # 0.5764
-mean((y.p[y.p == 1] - post.prob.pro[y.p == 1])^2)  # 0.6281
-mean((y.p[y.p == 1] - post.prob.log[y.p == 1])^2)  # 0.9010
-
-mean((y.p[y.p == 0] - post.prob.gev[y.p == 0])^2)  # 0.0113
-mean((y.p[y.p == 0] - post.prob.pro[y.p == 0])^2)  # 0.0084
-mean((y.p[y.p == 0] - post.prob.log[y.p == 0])^2)  # 0.0003
-
-#### look at posterior probability species 2
-this.set <- 7
-load(paste("./ss-results/clu-2-100-", this.set, ".RData", sep = ""))
-plot.prob.gev <- Y2
-plot.prob.gev[-clu.lst.Y2[[this.set]]] <- post.prob.gev
-plot.prob.gev[Y2 == 1] <- 1
-
-plot.prob.pro <- Y2
-plot.prob.pro[-clu.lst.Y2[[this.set]]] <- post.prob.pro
-plot.prob.pro[Y2 == 1] <- 1
-
-obs <- as.vector(as.factor(Y2))
-df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
-main <- "Actual species map"
-legend.title <- "Species 2"
-p1 <- plot.species(df = df, main = main, legend.title = legend.title)
-
-zlim         <- range(c(post.prob.gev, post.prob.pro, post.prob.log))
-post.s       <- rbind(s.p, s.o)
-legend.title <- "P(Y = 1)"
-
-post.prob <- c(post.prob.gev, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "GEV"
-p2 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-post.prob <- c(post.prob.pro, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "Probit"
-p3 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-post.prob <- c(post.prob.log, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "Logit"
-p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
-panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
-ggsave(paste("plots/post-prob-2-", this.set, ".pdf", sep = ""), plot = panel)
-
-# ROC Curve
-roc.gev <- roc(y.p ~ post.prob.gev)
-roc.pro <- roc(y.p ~ post.prob.pro)
-roc.log <- roc(y.p ~ post.prob.log)
-quartz(width = 8, height = 8)
-plot(roc.gev, col = "grey20", main = "Cluster sample: Species 2")
-plot(roc.pro, add = TRUE, col = "firebrick2")
-plot(roc.log, add = TRUE, col = "dodgerblue2")
-legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
-       legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
-dev.print(device = pdf, file = paste("plots/roc-clu-2-", this.set, ".pdf",
-                                     sep = ""))
-dev.off()
-
-#### MSE for predicting Y
-# lower is better for each of these
-mean((y.p[y.p == 1] - post.prob.gev[y.p == 1])^2)  # 0.9120
-mean((y.p[y.p == 1] - post.prob.pro[y.p == 1])^2)  # 0.9222
-mean((y.p[y.p == 1] - post.prob.log[y.p == 1])^2)  # 0.9712
-
-mean((y.p[y.p == 0] - post.prob.gev[y.p == 0])^2)  # 0.0010
-mean((y.p[y.p == 0] - post.prob.pro[y.p == 0])^2)  # 0.0013
-mean((y.p[y.p == 0] - post.prob.log[y.p == 0])^2)  # 0.0002
-
-#### look at posterior probability species 1
-this.set <- 2
-load(paste("./ss-results/srs-1-100-", this.set, ".RData", sep = ""))
-plot.prob.gev <- Y1
-plot.prob.gev[-clu.lst.Y1[[this.set]]] <- post.prob.gev
-plot.prob.gev[Y1 == 1] <- 1
-
-plot.prob.pro <- Y1
-plot.prob.pro[-clu.lst.Y1[[this.set]]] <- post.prob.pro
-plot.prob.pro[Y1 == 1] <- 1
-
-obs <- as.vector(as.factor(Y1))
-df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
-main <- "Actual species map"
-legend.title <- "Species 1"
-p1 <- plot.species(df = df, main = main, legend.title = legend.title)
-
-zlim <- range(c(post.prob.gev, post.prob.pro, post.prob.log))
-post.s       <- rbind(s.p, s.o)
-legend.title <- "P(Y = 1)"
-
-post.prob <- c(post.prob.gev, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "GEV"
-p2 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-post.prob <- c(post.prob.pro, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "Probit"
-p3 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-post.prob <- c(post.prob.log, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "Logit"
-p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
-panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
-ggsave(paste("plots/post-prob-srs-1-", this.set, ".pdf", sep = ""),
-       plot = panel)
-
-# ROC Curve
-roc.gev <- roc(y.p ~ post.prob.gev)
-roc.pro <- roc(y.p ~ post.prob.pro)
-roc.log <- roc(y.p ~ post.prob.log)
-quartz(width = 8, height = 8)
-plot(roc.gev, col = "grey20", main = "Simple random sample: Species 1")
-plot(roc.pro, add = TRUE, col = "firebrick2")
-plot(roc.log, add = TRUE, col = "dodgerblue2")
-legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
-       legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
-dev.print(device = pdf, file = paste("plots/roc-srs-1-", this.set, ".pdf",
-                                     sep = ""))
-dev.off()
-
-#### MSE for predicting Y
-# lower is better for each of these
-mean((y.p[y.p == 1] - post.prob.gev[y.p == 1])^2)  # 0.0586
-mean((y.p[y.p == 1] - post.prob.pro[y.p == 1])^2)  # 0.9032
-mean((y.p[y.p == 1] - post.prob.log[y.p == 1])^2)  # 0.9787
-
-mean((y.p[y.p == 0] - post.prob.gev[y.p == 0])^2)  # 0.0258
-mean((y.p[y.p == 0] - post.prob.pro[y.p == 0])^2)  # 0.0013
-mean((y.p[y.p == 0] - post.prob.log[y.p == 0])^2)  # 0.0001
-
-#### look at posterior probability species 2
-this.set <- 2
-load(paste("./ss-results/srs-2-100-", this.set, ".RData", sep = ""))
-plot.prob.gev <- Y2
-plot.prob.gev[-srs.lst.Y2[[this.set]]] <- post.prob.gev
-plot.prob.gev[Y1 == 1] <- 1
-
-plot.prob.pro <- Y2
-plot.prob.pro[-srs.lst.Y2[[this.set]]] <- post.prob.pro
-plot.prob.pro[Y2 == 1] <- 1
-
-obs <- as.vector(as.factor(Y2))
-df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
-main <- "Actual species map"
-legend.title <- "Species 2"
-p1 <- plot.species(df = df, main = main, legend.title = legend.title)
-
-zlim <- range(c(post.prob.gev, post.prob.pro, post.prob.log))
-post.s       <- rbind(s.p, s.o)
-legend.title <- "P(Y = 1)"
-
-post.prob <- c(post.prob.gev, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "GEV"
-p2 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-post.prob <- c(post.prob.pro, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "Probit"
-p3 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-post.prob <- c(post.prob.log, rep(NA, length = nrow(s.o)))
-df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-main <- "Logit"
-p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                        legend.title = legend.title)
-
-layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
-panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
-ggsave(paste("plots/post-prob-srs-2-", this.set, ".pdf", sep = ""),
-       plot = panel)
-
-# ROC Curve
-roc.gev <- roc(y.p ~ post.prob.gev)
-roc.pro <- roc(y.p ~ post.prob.pro)
-roc.log <- roc(y.p ~ post.prob.log)
-quartz(width = 8, height = 8)
-plot(roc.gev, col = "grey20", main = "Simple random sample: Species 2")
-plot(roc.pro, add = TRUE, col = "firebrick2")
-plot(roc.log, add = TRUE, col = "dodgerblue2")
-legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
-       legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
-dev.print(device = pdf, file = paste("plots/roc-srs-2-", this.set, ".pdf",
-                                     sep = ""))
-dev.off()
-
-#### MSE for predicting Y
-# lower is better for each of these
-mean((y.p[y.p == 1] - post.prob.gev[y.p == 1])^2)  # 0.0586
-mean((y.p[y.p == 1] - post.prob.pro[y.p == 1])^2)  # 0.9032
-mean((y.p[y.p == 1] - post.prob.log[y.p == 1])^2)  # 0.9787
-
-mean((y.p[y.p == 0] - post.prob.gev[y.p == 0])^2)  # 0.0258
-mean((y.p[y.p == 0] - post.prob.pro[y.p == 0])^2)  # 0.0013
-mean((y.p[y.p == 0] - post.prob.log[y.p == 0])^2)  # 0.0001

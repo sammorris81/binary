@@ -46,7 +46,8 @@ plot.species <- function(df, main, legend.title = NULL) {
   return(p)
 }
 
-plot.roc.prc <- function(pred.gev, pred.pro, pred.log) {
+plot.roc.prc <- function(pred.gev, pred.pro, pred.log, avg = "threshold", 
+                         main = NULL) {
   roc.gev  <- performance(pred.gev, "tpr", "fpr")
   roc.pro  <- performance(pred.pro, "tpr", "fpr")
   roc.log  <- performance(pred.log, "tpr", "fpr")
@@ -54,28 +55,19 @@ plot.roc.prc <- function(pred.gev, pred.pro, pred.log) {
   prc.pro  <- performance(pred.pro, "prec", "rec")
   prc.log  <- performance(pred.log, "prec", "rec")
   
+  roc.main <- paste("ROC Curve: ", main, sep = "")
+  prc.main <- paste("Precision Recall Curve: ", main, sep = "")
+  
   par(mfrow = c(1, 2))
-  plot(roc.gev@x.values[[1]], roc.gev@y.values[[1]], 
-       xlim = c(0, 1), ylim = c(0, 1),
-       type = "l", col = "grey20", 
-       main = "ROC Curve", lwd = 2, 
-       ylab = "True positive rate", xlab = "False positive rate")
-  lines(roc.pro@x.values[[1]], roc.pro@y.values[[1]],
-        col = "firebrick2", lwd = 2)
-  lines(roc.log@x.values[[1]], roc.log@y.values[[1]],
-        col = "dodgerblue2", lwd = 2)
+  plot(roc.gev, avg = avg, col = "grey20", lwd = 2, main = roc.main)
+  plot(roc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
+  plot(roc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
   legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"), 
          legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
 
-  plot(prc.gev@x.values[[1]], prc.gev@y.values[[1]],
-       xlim = c(0, 1), ylim = c(0, 1),
-       type = "l", col = "grey20", 
-       main = "Precision Recall Curve", lwd = 2, 
-       ylab = "Precision", xlab = "Recall")
-  lines(roc.pro@x.values[[1]], roc.pro@y.values[[1]],
-        col = "firebrick2", lwd = 2)
-  lines(roc.log@x.values[[1]], roc.log@y.values[[1]],
-        col = "dodgerblue2", lwd = 2)
+  plot(prc.gev, avg = avg, col = "grey20", lwd = 2, main = prc.main)
+  plot(prc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
+  plot(prc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
   # legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"), 
   #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
 }
