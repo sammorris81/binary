@@ -31,6 +31,8 @@ for (i in 1:nsets) {
   sets.to.change <- read.table(sets.to.change.file)
   if (sets.to.change[i, setting]) {
     filename <- paste("./sim-results/", setting, "-", i, ".RData", sep = "")
+    partial.filename <- paste("./sim-results-part/", setting, "-", i, ".RData",
+                              sep = "")
     if (file.exists(filename)) {
       sets.to.change[i, setting] <- FALSE
       write.table(x = sets.to.change, file = sets.to.change.file)
@@ -162,10 +164,12 @@ for (i in 1:nsets) {
       save(fit.gev, post.prob.gev, 
            fit.probit, post.prob.pro, 
            fit.logit, post.prob.log, 
-           y.i.p, y.i.o,  s.i.o, s.i.p, knots,   
-           scores, timings,
-           file = filename)
+           y.i.p, y.i.o, s.i.o, s.i.p, knots,   
+           scores, timings, file = filename)
       
+      save(post.prob.gev, post.prob.pro, post.prob.log, 
+           y.i.p, y.i.o,  s.i.o, s.i.p, knots,   
+           scores, timings, file = partial.filename)
     }
   }
 }  
