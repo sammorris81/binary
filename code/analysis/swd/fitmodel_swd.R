@@ -50,8 +50,11 @@ for (set in these.sets) {
                         set, ".txt", sep = "")
   
   y.o <- y[these.train]
+  
+  # slightly coarser grid for checking predictions
   s.pred <- as.matrix(expand.grid(seq(0, 1, length = 100), 
                                   seq(0, 1, length = 100)))
+  
   y.p <- y[-these.train]
   
   # extract info about simulation settings
@@ -72,11 +75,14 @@ for (set in these.sets) {
   # knots[, 1] <- (knots[, 1] - s.min[1]) / max(s.range)
   # knots[, 2] <- (knots[, 2] - s.min[2]) / max(s.range)
   
+  
+  
+  
   y.o <- matrix(y.o, ns, nt)
   s.o <- s.scale[these.train, ]
   X.o <- matrix(1, nrow(s.o), 1)
   y.p <- matrix(y.p, npred, nt)
-  s.p <- s.scale[-these.train, ]
+  s.p <- s.pred.scale
   X.p <- matrix(1, nrow(s.p), 1)
   knots <- s.o
   # knots <- as.matrix(expand.grid(seq(0, 1, length = 11), seq(0, 1, length = 11)))
