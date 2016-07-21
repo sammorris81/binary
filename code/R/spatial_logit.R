@@ -186,18 +186,18 @@ spatial_logit <- function(Y, s, knots = NULL, X = NULL,
 #         curp   <- canp
 #       }}   
 #     }
-    beta.mh$att <- beta.mh$att + 1
-    others <- list(Y = Y, X = X, Wa = Wa, beta.mn = rep(0, p), 
-                   beta.sd = 1 / sqrt(eps))
-    HMCout <- logitHMC(neg_log_post_beta.logit, neg_log_post_grad_beta.logit, 
-                       beta, epsilon = beta.mh$eps, L = 10, others)
-    if (HMCout$accept) {
-      beta.mh$acc <- beta.mh$acc + 1
-      beta <- HMCout$q
-      Xb   <- X %*% beta
-      curp <- make.prob(Xb + Wa)
-      curll <- sum(dbinom(Y, 1, curp, log = TRUE))
-    }
+    # beta.mh$att <- beta.mh$att + 1
+    # others <- list(Y = Y, X = X, Wa = Wa, beta.mn = rep(0, p), 
+    #                beta.sd = 1 / sqrt(eps))
+    # HMCout <- logitHMC(neg_log_post_beta.logit, neg_log_post_grad_beta.logit, 
+    #                    beta, epsilon = beta.mh$eps, L = 10, others)
+    # if (HMCout$accept) {
+    #   beta.mh$acc <- beta.mh$acc + 1
+    #   beta <- HMCout$q
+    #   Xb   <- X %*% beta
+    #   curp <- make.prob(Xb + Wa)
+    #   curll <- sum(dbinom(Y, 1, curp, log = TRUE))
+    # }
     
     # Update alpha (HMC)
     Q       <- as.spam(diag(M) - rho * ADJ)

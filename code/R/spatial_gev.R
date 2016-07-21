@@ -22,6 +22,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                         alpha.target = c(0.25, 0.5),
                         a.alpha.joint = TRUE, alpha.fix = FALSE,
                         rho.init = 1, logrho.mn = -2, logrho.sd = 1, 
+                        rho.lower = 0, rho.upper = 1,
                         rho.eps = 0.1, rho.attempts = 50,
                         rho.target = c(0.25, 0.5),
                         threads = 1, iterplot = FALSE, iters = 50000, 
@@ -49,6 +50,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
   
   # create data list
   data  <- list(y = y, x = x, s = s, knots = knots)
+  plot.ys <- sample(which(y == 1), 4)
+  plot.ys <- c(plot.ys, sample(which(y == 0), 4))
   
   # list for miscellaneous things we want to store
   # distance squared
@@ -128,6 +131,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                 target.l = alpha.target[1], target.u = alpha.target[2])
   rho   <- list(cur = rho.init, att = 0, acc = 0, eps = rho.eps, 
                 mn = logrho.mn, sd = logrho.sd, attempts = rho.attempts,
+                lower = rho.lower, upper = rho.upper,
                 target.l = rho.target[1], target.u = rho.target[2])
   
   # get calculated list
@@ -380,22 +384,26 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         }
         end   <- iter
         par(mfrow=c(3, 4))
-        plot.idx <- seq(1, 7, by = 2)
-        for (idx in plot.idx){
-          plot(log(storage.a[start:end, idx, 1]), type = "l", 
-               main = paste("a", idx), 
-               xlab = paste(round(a$acc / a$att, 2), ",", a.steps),
-               ylab = round(a$eps, 4))
-        }
-        # plot(log(storage.a[start:end, 81, 1]), type = "l",
-        #      main = paste("a", idx),
-        #      xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
-        plot.idx <- seq(1, 7, by = 2)
-        for (idx in plot.idx){
-          plot(storage.b[start:end, idx, 1], type = "l", 
-               main = paste("b", idx),
-               xlab = paste(round(b$acc / b$att, 2), ", ", b.steps), 
-               ylab = round(b$eps, 4))
+        # plot.idx <- seq(1, 7, by = 2)
+        # for (idx in plot.idx){
+        #   plot(log(storage.a[start:end, idx, 1]), type = "l", 
+        #        main = paste("a", idx), 
+        #        xlab = paste(round(a$acc / a$att, 2), ",", a.steps),
+        #        ylab = round(a$eps, 4))
+        # }
+        # # plot(log(storage.a[start:end, 81, 1]), type = "l",
+        # #      main = paste("a", idx),
+        # #      xlab = round(a$acc / a$att, 2), ylab = round(a$eps, 4))
+        # plot.idx <- seq(1, 7, by = 2)
+        # for (idx in plot.idx){
+        #   plot(storage.b[start:end, idx, 1], type = "l", 
+        #        main = paste("b", idx),
+        #        xlab = paste(round(b$acc / b$att, 2), ", ", b.steps), 
+        #        ylab = round(b$eps, 4))
+        # }
+        for (i in 1:length(plot.ys)) {
+          plot(storage.prob[start:end, plot.ys[i], 1], type = "l",
+               main = paste("P(Y", plot.ys[i], " = 1)"))
         }
         
         plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),

@@ -92,8 +92,10 @@ dic.spprob <- function(mcmcoutput, Y, X, s, knots,
 
 # predictions
 probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
-                   logbw.mn=-1, logbw.sd=2, eps=0.01, a=0.1, b=0.1,
-                   iters=5000, burn=1000, thin=1, update=2, iterplot=FALSE){
+                   logbw.mn=-1, logbw.sd=2, bw.lower = NULL, bw.upper = NULL,
+                   eps=0.01, a=0.1, b=0.1,
+                   iters=5000, burn=1000, thin=1, update=2, 
+                   keep.burn = FALSE, iterplot=FALSE){
 
     par(mfrow=c(1, 1))
     tick <- proc.time()[3]
@@ -109,16 +111,24 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
       np  <- nrow(sp)
       dp  <- rdist(sp,knots)
     }
-
+    
+    plot.ys <- sample(which(Y == 1), size = 3)
+    plot.ys <- c(plot.ys, sample(which(Y == 0), size = 3))
+    
     LOW  <- ifelse(Y == 1, 0, -Inf)
     HIGH <- ifelse(Y == 1, Inf, 0)
     Y    <- ifelse(Y == 1, 2, -2)
 
    #initial values
-
+    if (is.null(bw.lower)) {
+      bw.lower <- 1e-6
+    }
+    if(is.null(bw.upper)) {
+      bw.upper <- max(d)
+    }
     beta  <- rep(0, p)
     alpha <- rep(0, m)
-    bw    <- exp(logbw.mn)
+    bw    <- (bw.upper - bw.lower) / 2
     taua  <- 1
 
     B     <- make.B(d, bw)
@@ -131,13 +141,15 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
     FIT  <- 0
 
     # trying to keep memory usage low, so only samples saving post burnin
-    keep.bw             <- rep(0, iters - burn)
-    keep.beta           <- matrix(0, iters - burn, p)
-    keep.taua           <- rep(0, iters - burn)
-    keep.alpha          <- matrix(0, iters - burn, m)
+    keep.bw     <- rep(0, iters)
+    keep.beta   <- matrix(0, iters, p)
+    keep.taua   <- rep(0, iters)
+    keep.alpha  <- matrix(0, iters, m)
+    prob.y      <- matrix(0, iters, n)
     colnames(keep.beta) <- colnames(X)
 
    # Preprocessing
+    att.bw <- acc.bw <- MH.bw <- 0.1
 
     tXX    <- t(X) %*% X
 
@@ -174,37 +186,79 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         taua <- rgamma(1, m / 2 + a, sum((alpha^2)) / 2 + b)
 
        # BW
-
-        canbw <- exp(rnorm(1, log(bw), 0.1))
+        att.bw <- att.bw + 1
+        bw.star <- transform$logit(bw, lower = bw.lower, upper = bw.upper)
+        canbw.star <- rnorm(1, bw.star, MH.bw)
+        canbw <- transform$inv.logit(canbw.star, lower = bw.lower, 
+                                     upper = bw.upper)
+        # canbw <- exp(rnorm(1, log(bw), 0.1))
         canB  <- make.B(d, canbw)
         canBA <- canB %*% alpha
         R     <- sum(dnorm(Y, canBA + XB, 1, log=TRUE)) -
                  sum(dnorm(Y, BA + XB, 1, log=TRUE)) +
-                 dnorm(log(canbw), logbw.mn, logbw.sd, log=TRUE) -
-                 dnorm(log(bw), logbw.mn, logbw.sd, log=TRUE)
+                 log(canbw - bw.lower) + log(bw.upper - canbw) - # Jacobian
+                 log(bw - bw.lower) - log(bw.upper - bw)
+                 # dnorm(log(canbw), logbw.mn, logbw.sd, log=TRUE) -
+                 # dnorm(log(bw), logbw.mn, logbw.sd, log=TRUE)
 
         if (!is.na(R)) { if (log(runif(1))<R) {
+          acc.bw <- acc.bw + 1
           bw <- canbw
           B  <- canB
           BA <- canBA
         } }
 
       }
-
-
-      #Plot current iteration
-      if (iterplot) {
-        if(proc.time()[3] - t_last_plot > update | iter == iters){
-          plot(s, pch=19,
-               col=ifelse(Y > 0, 2, 1),
-               cex=2 * pnorm(XB + BA),
-               main=paste(iter, "of", iters))
-          t_last_plot <- proc.time()[3]
-        }
+      
+      if (iter < burn / 2) {
+        this.update <- mhUpdate(acc = acc.bw, att = att.bw, MH = MH.bw,
+                                nattempts = 200)
+        att.bw <- this.update$att
+        acc.bw <- this.update$acc
+        MH.bw  <- this.update$MH
       }
 
       # Keep track of stuff:
-
+      keep.bw[iter] <- bw
+      keep.beta[iter, ] <- beta
+      keep.taua[iter]   <- taua
+      keep.alpha[iter, ]  <- alpha
+      prob.y[iter, ] <- pnorm(XB + BA)
+        
+      #Plot current iteration
+      if (iter %% update == 0) {
+        cat("      Iter", iter, "of", iters, "\n")
+        
+        if (iter < burn) {
+          start <- max(0, iter - 5000) 
+        } else {
+          start <- burn + 1
+        }
+        
+        if (iterplot) {
+        par(mfrow = c(2, 3))
+        plot(keep.beta[start:iter, 1], type = "l", main = "beta")
+        plot(keep.taua[start:iter], type = "l", main = "taua")
+        plot(keep.bw[start:iter], type = "l", main = "bw",
+             xlab = paste("acc.rate = ", round(acc.bw / att.bw, 3), sep = ""),
+             ylab = paste("MH = ", round(MH.bw, 3)))
+        
+        
+        for (i in 1:length(plot.ys)) {
+          plot(prob.y[start:iter, plot.ys[i]], type = "l", 
+               main = paste("P(Y", i, " = 1)"))
+        }
+        # if(proc.time()[3] - t_last_plot > update | iter == iters){
+        #   plot(s, pch=19,
+        #        col=ifelse(Y > 0, 2, 1),
+        #        cex=2 * pnorm(XB + BA),
+        #        main=paste(iter, "of", iters))
+        #   t_last_plot <- proc.time()[3]
+        # }
+        }
+      }
+      
+      
       if(iter > burn){
         nnn <- iters - burn
         FIT <- FIT + pnorm(XB + BA) / nnn
@@ -214,24 +268,28 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
           PRED <- PRED + pnorm(MMM) / nnn
         }
 
-        keep.bw[iter - burn]      <- bw
-        keep.beta[iter - burn, ]  <- beta
-        keep.taua[iter - burn]    <- taua
-        keep.alpha[iter - burn, ] <- alpha
+        # keep.bw[iter - burn]      <- bw
+        # keep.beta[iter - burn, ]  <- beta
+        # keep.taua[iter - burn]    <- taua
+        # keep.alpha[iter - burn, ] <- alpha
       }
 
-      if (iter %% update == 0) {
-        cat("      Iter", iter, "of", iters, "\n")
-      }
+
     }
-
+    
+    if (!keep.burn) {
+      return.iters <- (burn + 1):iters
+    } else {
+      return.iters <- 1:iters
+    }
+    
     tock   <- proc.time()[3]
     output <- list(fitted=FIT,
                    pred=PRED,
-                   beta=keep.beta,
-                   bw=keep.bw,
-                   taua=keep.taua,
-                   alpha=keep.alpha,
+                   beta=keep.beta[return.iters, , drop = FALSE],
+                   bw=keep.bw[return.iters],
+                   taua=keep.taua[return.iters],
+                   alpha=keep.alpha[return.iters, , drop = FALSE],
                    minutes=(tock - tick)/60)
 
 return(output)}
