@@ -12,7 +12,7 @@ make.B <- function(d, rho) {
 
 # predictions
 pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
-                        start = 1, end = NULL, update = NULL) {
+                        start = 1, thin = 1, end = NULL, update = NULL) {
 
   if (is.null(end)) {
     end <- nrow(mcmcoutput$beta)
@@ -22,17 +22,19 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   np     <- nrow(s.pred)
   iters  <- end - start + 1
   dp     <- as.matrix(rdist(s.pred, knots))
-  y.pred <- matrix(NA, nrow=iters, ncol=np)
+  y.pred <- matrix(NA, nrow = floor(iters / thin), ncol=np)
 
   beta <- mcmcoutput$beta[start:end, , drop = F]
   bw   <- mcmcoutput$bw[start:end]
   alpha <- mcmcoutput$alpha[start:end, , drop = F]
 
   for (i in 1:iters) {
-    # beta and bandwidth come directly from output
-    z.pred <- X.pred %*% beta[i, ] + make.B(dp, bw[i]) %*% alpha[i, ]
-    prob.success <- pnorm(z.pred)
-    y.pred[i, ]  <- rbinom(n = np, size = 1, prob = prob.success)
+    if (i %% thin == 0) {
+      # beta and bandwidth come directly from output
+      z.pred <- X.pred %*% beta[i, ] + make.B(dp, bw[i]) %*% alpha[i, ]
+      prob.success <- pnorm(z.pred)
+      y.pred[(i / thin), ]  <- rbinom(n = np, size = 1, prob = prob.success)
+    }
     
     if (!is.null(update)) {
       if (i %% update == 0) {
@@ -236,7 +238,7 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         }
         
         if (iterplot) {
-        par(mfrow = c(2, 3))
+        par(mfrow = c(3, 3))
         plot(keep.beta[start:iter, 1], type = "l", main = "beta")
         plot(keep.taua[start:iter], type = "l", main = "taua")
         plot(keep.bw[start:iter], type = "l", main = "bw",

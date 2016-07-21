@@ -69,23 +69,18 @@ for (set in these.sets) {
   s.scale <- s
   s.scale[, 1] <- (s[, 1] - s.min[1]) / max(s.range)
   s.scale[, 2] <- (s[, 2] - s.min[2]) / max(s.range)
-  s.pred.scale <- s.pred
-  s.pred.scale[, 1] <- (s.pred[, 1] - s.min[1]) / max(s.range)
-  s.pred.scale[, 2] <- (s.pred[, 2] - s.min[2]) / max(s.range)
   # knots[, 1] <- (knots[, 1] - s.min[1]) / max(s.range)
   # knots[, 2] <- (knots[, 2] - s.min[2]) / max(s.range)
-  
-  
-  
   
   y.o <- matrix(y.o, ns, nt)
   s.o <- s.scale[these.train, ]
   X.o <- matrix(1, nrow(s.o), 1)
   y.p <- matrix(y.p, npred, nt)
-  s.p <- s.pred.scale
+  s.p <- s.scale[-these.train, ]
   X.p <- matrix(1, nrow(s.p), 1)
-  knots <- s.o
-  # knots <- as.matrix(expand.grid(seq(0, 1, length = 11), seq(0, 1, length = 11)))
+  # knots <- s.o
+  knots <- as.matrix(expand.grid(seq(0.05, 0.95, length = 15), 
+                                 seq(0.05, 0.95, length = 15)))
   nknots <- nrow(knots)
   
   this.save <- cbind(y.o, s.o)
@@ -126,7 +121,7 @@ for (set in these.sets) {
   d.o       <- as.matrix(rdist(s.o))
   diag(d.o) <- 0
   max.dist  <- 1
-  rho.lower <- 1e-6
+  rho.lower <- 0.1
   rho.upper <- 1
   
   #### spatial GEV
@@ -194,7 +189,7 @@ for (set in these.sets) {
     alpha.init <- alpha.mn
   }
   
-  rho.init <- max(fit.pcl$par[2], rho.lower)
+  rho.init <- max(fit.pcl$par[2], rho.lower + 0.05)
   beta.init <- fit.pcl$beta
   
   fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
@@ -204,7 +199,7 @@ for (set in these.sets) {
                          xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
                          xi.attempts = 500, xi.fix = TRUE,
                          a.init = 1, a.eps = a.eps, a.attempts = 50,
-                         a.cutoff = 0.2, a.steps = 7,
+                         a.cutoff = 1, a.steps = 7,
                          b.init = 0.5, b.eps = b.eps,
                          b.attempts = 500, b.steps = 5,
                          alpha.init = alpha.init, alpha.attempts = 50,
@@ -224,7 +219,8 @@ for (set in these.sets) {
   cat("    Start mcmc predict \n")
   y.pred.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                            s.pred = s.p, knots = knots,
-                           start = 1, end = iters - burn, update = update)
+                           start = 1, end = iters - burn, update = update, 
+                           thin = 10)
   timings[1] <- fit.gev$minutes
   
   post.prob.gev <- apply(y.pred.gev, 2, mean)
@@ -256,7 +252,7 @@ for (set in these.sets) {
   
   cat("    Start mcmc predict \n")
   y.pred.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                            s.pred = s.p, knots = knots,
+                            s.pred = s.p, knots = knots, thin = 10,
                             start = 1, end = iters - burn, update = update)
   timings[2] <- fit.probit$minutes
 

@@ -187,35 +187,37 @@ pred.spgev <- function(mcmcoutput, s.pred, x.pred, knots, start = 1, end = NULL,
   a.cutoff <- mcmcoutput$a.cutoff
   IDs.p <- getIDs(dw2 = dw2p, a.cutoff = a.cutoff)
   
-  y.pred <- matrix(NA, nrow=niters, ncol = np)
+  y.pred <- matrix(NA, nrow=(niters / thin), ncol = np)
   # prob.success <- matrix(NA, nrow=niters, ncol=np)
   x.beta <- matrix(NA, np, nt)
   
   for (i in 1:length(start:end)) {
-    alpha.i <- alpha[i]
-    x.beta  <- getXBeta(x = x.pred, beta = beta[i, ], ns = np, nt = nt)
-    z       <- getZ(xi = xi[i], x.beta = x.beta, thresh = thresh)
-    w       <- getW(rho = rho[i], dw2 = dw2p, a.cutoff = a.cutoff)
-    # there are certain circumstances when a place where we want to predict
-    # is too far away from all the knot locations, so the kernel functions 
-    # are 0 at all sites. when this happens w = 0 / sum(0) = nan, so setting 
-    # w = 0 when we get NaN from getW.
-    w[is.nan(w)] <- 0
-    
-    w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs.p)
-    aw      <- getAW(a = a[i, , ], w.star = w.star)
-    theta   <- getTheta(alpha = alpha.i, z = z, aw = aw)
-    prob.success <- 1 - exp(-theta)
-    
-    # if z is nan, it means that x.beta is such a large number there is
-    # basically 0 probability that z < 0
-    if (any(is.nan(z))) {
-      these <- which(is.nan(z))
-      prob.success[these] <- 1
+    if (i %% thin == 0) {
+      alpha.i <- alpha[i]
+      x.beta  <- getXBeta(x = x.pred, beta = beta[i, ], ns = np, nt = nt)
+      z       <- getZ(xi = xi[i], x.beta = x.beta, thresh = thresh)
+      w       <- getW(rho = rho[i], dw2 = dw2p, a.cutoff = a.cutoff)
+      # there are certain circumstances when a place where we want to predict
+      # is too far away from all the knot locations, so the kernel functions 
+      # are 0 at all sites. when this happens w = 0 / sum(0) = nan, so setting 
+      # w = 0 when we get NaN from getW.
+      w[is.nan(w)] <- 0
+      
+      w.star  <- getWStarIDs(alpha = alpha.i, w = w, IDs = IDs.p)
+      aw      <- getAW(a = a[i, , ], w.star = w.star)
+      theta   <- getTheta(alpha = alpha.i, z = z, aw = aw)
+      prob.success <- 1 - exp(-theta)
+      
+      # if z is nan, it means that x.beta is such a large number there is
+      # basically 0 probability that z < 0
+      if (any(is.nan(z))) {
+        these <- which(is.nan(z))
+        prob.success[these] <- 1
+      }
+      
+      y.pred[(i / thin), ] <- rbinom(n = np, size = 1, prob = prob.success)
+      
     }
-    
-    y.pred[i, ] <- rbinom(n = np, size = 1, prob = prob.success)
-    
     if (!is.null(update)) {
       if (i %% update == 0) {
         cat("\t Iter", i, "\n")
