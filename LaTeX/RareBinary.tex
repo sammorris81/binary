@@ -59,7 +59,7 @@ Although composite likelihoods have been used to model binary spatial data \cite
 
 \hl{Paragraph outlining the structure of the paper}
 
-\section{Spatial dependence for binary regression} \label{rbs:spatdep}
+\section{Spatial dependence for binary regression} \label{rbs:maxstab}
 Following \citet{Wang2010}, we propose using the link function based on the GEV distribution (see \aref{rba:rarebinary}).
 Because the link function is related to the GEV distribution function, we propose to model spatial dependence using a max-stable process \citep{deHaan1984} instead of a Gaussian process.
 Let $Y(\bs)$ be the observation at spatial location $\bs$ in a spatial domain of interest $\calD \in \calR^2$.
@@ -267,11 +267,11 @@ We analyzed the results for this simulation study using a Friedman test at $\alp
 For any setting that yielded a significant p-value, we conducted a Wilcoxon-Nemenyi-McDonald-Thompson test to see which of the methods had different results.
 The full results for the Wilcoxon-Nemenyi-McDonald-Thompson tests are given in \aref{rba:pdiffs}.
 For all settings, we find significant results for the Friedman test comparing the Brier scores for the methods.
-Specifcally, we see a statistically significant reduction in Brier score using the GEV compared to logit for settings 1 and 2 and compared to probit for setting 2.
+Specifcally, we see a statistically significant reduction in Brier score using the GEV compared to logit for settings one and two and compared to probit for setting two.
 However, in the other settings, the logit and probit methods tend to perform better than the GEV method.
 
-The results using AUC are much less conclusive with only settings 1 and 4 demonstrating significant differences between the methods at $\alpha = 0.05$.
-As with the Brier scores, the GEV method shows a statistically significant increase in AUC over the logit method for setting 1, and for setting 4, the both the probit and logit methods show a statistically significant improvement in AUC over the GEV method.
+The results using AUC are much less conclusive with only settings one and four demonstrating significant differences between the methods at $\alpha = 0.05$.
+As with the Brier scores, the GEV method shows a statistically significant increase in AUC over the logit method for setting one, and for setting four, the both the probit and logit methods show a statistically significant improvement in AUC over the GEV method.
 
 % \fref{rbfig:post-med-2} and \fref{rbfig:post-med-3} show the posterior median of $P(Y =1)$ for settings 2 and 3 respectively of a simulated dataset.
 % As you can see on the figures, the both the spatial probit and logistic models oversmooth $P(Y = 1)$, whereas the spatial GEV method is able to capture small pockets of spatial dependence.
@@ -294,18 +294,33 @@ As with the Brier scores, the GEV method shows a statistically significant incre
 \section{Data analysis}\label{rbs:analysis}
 \hl{Needs updating}
 
-For the data analysis, we consider data from the eBirds dataset, a citizen-based observation network of bird sitings in the United States \citep{Sullivan2009}.
-The data are publicly available from {\tt http://ebird.org}.
-We use data from 2002, and focus on 10 different species.
-\fref{rbfig:data2002} shows the sighting data for cattle egrets and vesper sparrows
-
+We compare our method to the spatial probit and logit for mapping the probability of the occurance of two plant species, \emph{Tamarix ramosissima} and \emph{Hedysarum scoparium}, for a 1-km$^2$ study region of PR China \citet{Smith2012}.
+The Chinese Academy of Forestry conducted a full census of the area, and the true occupancy of the species are plotted in \fref{rbfig:occupancy}.
 \begin{figure}
   \centering
-  \includegraphics[width=0.47\linewidth]{plots/cattle_egret.png}
-  \includegraphics[width=0.47\linewidth]{plots/vesper_sparrow.png}
-  \caption{Reported sighting for Cattle egret (left) and Vesper sparrow (right) in 2002}
-  \label{rbfig:data2002}
+  \includegraphics[width=\linewidth, trim=0 10em 0 10em]{plots/plant-census.pdf}
+  \caption{True occupancy of \emph{Tamarix ramosissima} (left) and \emph{Hedysarum scoparium} (right) from a 1-km$^2$ study region of PR China.}
+  \label{rbfig:occupancy}
 \end{figure}
+The region is split into $5$-m $\times$ $5$-m grid cells.
+\emph{Tamarix ramosissima} can be found in $2.84\%$ of the grid cells, and \emph{Hedysarum scoparium} can be found in $0.54\%$ of the grid cells.
+We subsample the original data using $n = 100$ or $250$ initial locations for two different sampling design.
+The first is a two-stage spatially-adaptive cluster technique (CLU) taken from \citet{Pacifici2016}.
+In this design, if an initial location is occupied, we also include the four rook neighbor (north, east, south, and west) sites in the sample.
+For the second design, we use a simple random sample (SRS) with the same number of sites included in the cluster sample.
+
+For all models, knots are placed at all the grid cells in the sample.
+Additionally, for all models we only include an intercept term $\beta_0$ in the model, and the prior for the intercept is $\beta_0 \sim$ N$(0, 10)$.
+For the spatial GEV model, we first fit a pairwise likelihood to obtain estimates $\hat{\rho}$, and $\hat{\alpha}$ which are used as starting values in the MCMC sampler.
+The bandwidth parameter has prior $\log(\rho) \sim$ N$(-3, 0.7)$, and $\alpha$ has a beta prior with mean $\hat{\alpha}$ and standard deviation $0.05$.
+As with the simulation study, we fix $\xi = 0$ because we do not include any covariates.
+
+For the spatial probit model, the bandwidth parameter has prior $\log(\rho) \sim$ N$(-1, 2)$, and the prior on the variance term for the random effects is IG$(0.1, 0.1)$ where IG$(\cdot)$ is an Inverse Gamma distribution.
+For the spatial logit model, the bandwidth parameter has prior Unif$(0.001, 10)$, the prior on the variance term for the random effects is IG$(1, 1)$.
+Both the spatial probit and logit models assume an exponetial covariance structure.
+
+For all models, we run the MCMC sampler for 25,000 iterations with a burn-in period of 20,000 iterations.
+Convergence is assessed through visual inspection of traceplots.
 
 \section{Conclusions}\label{rbs:con}
 
@@ -313,7 +328,7 @@ We use data from 2002, and focus on 10 different species.
 
 \appendix
 \section{Appendices}
-\subsection{Binary regression using the GEV link}\label{rba:rarebinary}
+\subsection{Binary regression using the GEV link} \label{rba:rarebinary}
 Here, we provide a brief review of the the GEV link of \citet{Wang2010}.
 Let $Y_i \in \{0, 1\}, i = 1, \ldots, n$ be a collection of i.i.d. binary responses.
 It is assumed that $Y_i = I(z_i > 0)$ where $I(\cdot)$ is an indicator function, $z_i = [1 - \xi \bX_i \bbeta]^{1 / \xi}$ is a latent variable following a GEV$(1, 1, 1)$ distribution, $\bX_i$ is the associated $p$-vector of covariates with first element equal to one for the intercept, and $\bbeta$ is a $p$-vector of regression coefficients.

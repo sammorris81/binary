@@ -225,9 +225,7 @@ pred.log <- prediction(pred.log.clu.1.100, yp.clu.1.100)
 quartz(width = 16, height = 8)
 main <- "Species 1, Cluster sample, n = 100"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-1-100-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-clu-1-100-vert.pdf")
+dev.print(device = pdf, "./plots/perf-clu-1-100.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
@@ -236,9 +234,7 @@ pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
 quartz(width = 16, height = 8)
 main <- "Species 2, Cluster sample, n = 100"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-2-100-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-clu-2-100-vert.pdf")
+dev.print(device = pdf, "./plots/perf-clu-2-100.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.srs.1.100, yp.srs.1.100)
@@ -247,9 +243,7 @@ pred.log <- prediction(pred.log.srs.1.100, yp.srs.1.100)
 quartz(width = 16, height = 8)
 main <- "Species 1, Simple random sample, n = 100"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-1-100-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-srs-1-100-vert.pdf")
+dev.print(device = pdf, "./plots/perf-srs-1-100.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.srs.2.100, yp.srs.2.100)
@@ -258,9 +252,7 @@ pred.log <- prediction(pred.log.srs.2.100, yp.srs.2.100)
 quartz(width = 16, height = 8)
 main <- "Species 2, Simple random sample, n = 100"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-2-100-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-srs-2-100-vert.pdf")
+dev.print(device = pdf, "./plots/perf-srs-2-100.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.clu.1.250, yp.clu.1.250)
@@ -269,9 +261,7 @@ pred.log <- prediction(pred.log.clu.1.250, yp.clu.1.250)
 quartz(width = 16, height = 8)
 main <- "Species 1, Cluster sample, n = 250"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-1-250-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-clu-1-250-vert.pdf")
+dev.print(device = pdf, "./plots/perf-clu-1-250.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
@@ -280,9 +270,7 @@ pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
 quartz(width = 16, height = 8)
 main <- "Species 2, Cluster sample, n = 250"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-2-250-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-clu-2-250-vert.pdf")
+dev.print(device = pdf, "./plots/perf-clu-2-250.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.srs.1.250, yp.srs.1.250)
@@ -291,9 +279,7 @@ pred.log <- prediction(pred.log.srs.1.250, yp.srs.1.250)
 quartz(width = 16, height = 8)
 main <- "Species 1, Simple random sample, n = 250"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-1-250-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-srs-1-250-vert.pdf")
+dev.print(device = pdf, "./plots/perf-srs-1-250.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.srs.2.250, yp.srs.2.250)
@@ -302,9 +288,7 @@ pred.log <- prediction(pred.log.srs.2.250, yp.srs.2.250)
 quartz(width = 16, height = 8)
 main <- "Species 2, Simple random sample, n = 250"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-2-250-thresh.pdf")
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main, avg = "vertical")
-dev.print(device = pdf, "./plots/perf-srs-2-250-vert.pdf")
+dev.print(device = pdf, "./plots/perf-srs-2-250.pdf")
 dev.off()
 
 
@@ -318,137 +302,59 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
     ss.list <- paste(samp.type, ".lst.", which.y, sep = "")
     post.plot.file <- paste("./plots/post-prob-", samp.type, "-", species.idx, 
                             "-", n, "-", set.idx, ".pdf", sep = "")
-    roc.plot.file <- paste("./plots/roc-", samp.type, "-", species.idx, 
-                           "-", n, ".pdf", sep = "")
-    prc.plot.file <- paste("./plots/prc-", samp.type, "-", species.idx, 
-                           "-", n, ".pdf", sep = "")
     
-    if (file.exists(results.file)) {
-      load(results.file)
-      
-      # Looping over all the datasets to get all the points for the ROC and PRC
-      # curves. Then running a smoother to come up with a single curve for the 
-      # method, sampling type, and sample size
-      pred.gev <- prediction(post.prob.gev, y.p)
-      pred.pro <- prediction(post.prob.pro, y.p)
-      pred.log <- prediction(post.prob.log, y.p)
-      
-      roc.gev  <- performance(pred.gev, "tpr", "fpr")
-      roc.pro  <- performance(pred.pro, "tpr", "fpr")
-      roc.log  <- performance(pred.log, "tpr", "fpr")
-      prc.gev  <- performance(pred.gev, "prec", "rec")
-      prc.pro  <- performance(pred.pro, "prec", "rec")
-      prc.log  <- performance(pred.log, "prec", "rec")
-      
-      if (set.idx == 1) {
-        roc.x <- roc.gev@x.values[[1]]
-        roc.y <- roc.gev@y.values[[1]]
-        prc.x <- prc.gev@x.values[[1]]
-        prc.y <- prc.gev@y.values[[1]]
+    
+    if (set.idx %% 10 == 0) {
+      if (file.exists(results.file)) {
+        load(results.file)
         
-        roc.x <- c(roc.x, roc.pro@x.values[[1]], roc.log@x.values[[1]])
-        roc.y <- c(roc.y, roc.pro@y.values[[1]], roc.log@y.values[[1]])
-        prc.x <- c(prc.x, prc.pro@x.values[[1]], prc.log@x.values[[1]])
-        prc.y <- c(prc.y, prc.pro@y.values[[1]], prc.log@y.values[[1]])
+        obs <- as.vector(as.factor(get(which.y)))
+        df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
+        main <- paste("Census of species ", species.idx, sep = "")
+        legend.title <- paste("Species ", species.idx, sep = "")
+        p1 <- plot.species(df = df, main = main, legend.title = legend.title)
         
-        roc.method <- c(rep("GEV", length(roc.gev@x.values[[1]])),
-                        rep("Probit", length(roc.pro@x.values[[1]])),
-                        rep("Logit", length(roc.log@x.values[[1]])))
-        prc.method <- c(rep("GEV", length(prc.gev@x.values[[1]])),
-                        rep("Probit", length(prc.pro@x.values[[1]])),
-                        rep("Logit", length(prc.log@x.values[[1]])))
-      } else {
-        roc.x <- c(roc.x, roc.gev@x.values[[1]], 
-                   roc.pro@x.values[[1]], roc.log@x.values[[1]])
-        roc.y <- c(roc.y, roc.gev@y.values[[1]], 
-                   roc.pro@y.values[[1]], roc.log@y.values[[1]])
-        prc.x <- c(prc.x, prc.gev@x.values[[1]], 
-                   prc.pro@x.values[[1]], prc.log@x.values[[1]])
-        prc.y <- c(prc.y, prc.gev@y.values[[1]], 
-                   prc.pro@y.values[[1]], prc.log@y.values[[1]])
+        zlim <- range(c(post.prob.gev, post.prob.pro, post.prob.log))
+        post.s       <- rbind(s.p, s.o)
+        legend.title <- "P(Y = 1)"
         
-        roc.method <- c(roc.method, 
-                        rep("GEV", length(roc.gev@x.values[[1]])),
-                        rep("Probit", length(roc.pro@x.values[[1]])),
-                        rep("Logit", length(roc.log@x.values[[1]])))
-        prc.method <- c(prc.method,
-                        rep("GEV", length(prc.gev@x.values[[1]])),
-                        rep("Probit", length(prc.pro@x.values[[1]])),
-                        rep("Logit", length(prc.log@x.values[[1]])))
-      
-        if (set.idx %% 10 == 0) {
-          obs <- as.vector(as.factor(get(which.y)))
-          df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
-          main <- "Census of species 1"
-          legend.title <- "Species 1"
-          p1 <- plot.species(df = df, main = main, legend.title = legend.title)
-          
-          zlim <- range(c(post.prob.gev, post.prob.pro, post.prob.log))
-          post.s       <- rbind(s.p, s.o)
-          legend.title <- "P(Y = 1)"
-          
-          post.prob <- c(post.prob.gev, rep(NA, length = nrow(s.o)))
-          df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-          main <- "GEV"
-          p2 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                                  legend.title = legend.title)
-          
-          post.prob <- c(post.prob.pro, rep(NA, length = nrow(s.o)))
-          df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-          main <- "Probit"
-          p3 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                                  legend.title = legend.title)
-          
-          post.prob <- c(post.prob.log, rep(NA, length = nrow(s.o)))
-          df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
-          main <- "Logit"
-          p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
-                                  legend.title = legend.title)
-          
-          layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
-          panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
-          ggsave(post.plot.file, plot = panel, width = 13, height = 8)
-          
-          print(paste("Species: ", species.idx, ", Sampling: ", samp.type, 
-                      ", n: ", n, ", Set: ", set.idx, sep = ""))
-        }
+        post.prob <- c(post.prob.gev, rep(NA, length = nrow(s.o)))
+        df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
+        main <- "GEV"
+        p2 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
+                                legend.title = legend.title)
+        
+        post.prob <- c(post.prob.pro, rep(NA, length = nrow(s.o)))
+        df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
+        main <- "Probit"
+        p3 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
+                                legend.title = legend.title)
+        
+        post.prob <- c(post.prob.log, rep(NA, length = nrow(s.o)))
+        df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
+        main <- "Logit"
+        p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
+                                legend.title = legend.title)
+        
+        layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
+        panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
+        ggsave(post.plot.file, plot = panel, width = 10, height = 8)
+        
+        print(paste("Species: ", species.idx, ", Sampling: ", samp.type, 
+                    ", n: ", n, ", Set: ", set.idx, sep = ""))
         
       }
     }
   }
-  
-  df.roc <- data.frame(x = roc.x, y = roc.y, method = roc.method) 
-  df.roc$method <- factor(df.roc$method, levels = c("GEV", "Probit", "Logit"))
-  
-  if (sample.idx == 1) {
-    title.sample <- "Cluster"
-  } else {
-    title.sample <- "Simple Random Sample"
-  }
-
-  title.n <- paste("n = ", n, sep = "")
-  
-  title.roc <- paste("ROC Curve: ", title.sample, " of Species ", species.idx, 
-                     " with ", title.n, sep = "")
-  p <- ggplot(df.roc, aes(x = x, y = y, color = method))
-  p <- p + geom_smooth()
-  p <- p + labs(title = title.roc, x = "False positive rate", 
-                y = "True positive rate", color = "Method")
-  p <- p + theme_bw()
-  ggsave(roc.plot.file, plot = p, width = 8, height = 8)
-  
-  prc.method <- prc.method[!is.nan(prc.y)]
-  prc.x      <- prc.x[!is.nan(prc.y)]
-  prc.y      <- prc.y[!is.nan(prc.y)]
-  df.prc <- data.frame(x = prc.x, y = prc.y, method = prc.method)
-  df.prc$method <- factor(df.prc$method, levels = c("GEV", "Probit", "Logit"))
-  
-  title.prc <- paste("Precision Recall Curve: ", title.sample, " of Species ", 
-                     species.idx, " with ", title.n, sep = "")
-  p <- ggplot(df.prc, aes(x = x, y = y, color = method))
-  p <- p + geom_smooth()
-  p <- p + labs(title = title.prc, x = "Recall",
-                y = "Precision", color = "Method")
-  p <- p + theme_bw()
-  ggsave(prc.plot.file, plot = p, width = 8, height = 8)
 }}}
+
+
+df <- data.frame(Y = as.vector(as.factor(Y1)), s1 = s[, 1], s2 = s[, 2])
+p1 <- plot.species(df = df, main = NULL, legend.title = "Tamarix\nramosissima")
+
+df <- data.frame(Y = as.vector(as.factor(Y2)), s1 = s[, 1], s2 = s[, 2])
+p2 <- plot.species(df = df, main = NULL, legend.title = "Hedysarum\nscoparium")
+
+layout.mtx <- matrix(1:2, nrow = 1, ncol = 2)
+panel <- arrangeGrob(p1, p2, ncol = 2, layout_matrix = layout.mtx)
+ggsave("./plots/plant-census.pdf", plot = panel, width = 16, height = 8)

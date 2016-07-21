@@ -50,6 +50,8 @@ for (set in these.sets) {
                         set, ".txt", sep = "")
   
   y.o <- y[these.train]
+  s.pred <- as.matrix(expand.grid(seq(0, 1, length = 100), 
+                                  seq(0, 1, length = 100)))
   y.p <- y[-these.train]
   
   # extract info about simulation settings
@@ -64,6 +66,9 @@ for (set in these.sets) {
   s.scale <- s
   s.scale[, 1] <- (s[, 1] - s.min[1]) / max(s.range)
   s.scale[, 2] <- (s[, 2] - s.min[2]) / max(s.range)
+  s.pred.scale <- s.pred
+  s.pred.scale[, 1] <- (s.pred[, 1] - s.min[1]) / max(s.range)
+  s.pred.scale[, 2] <- (s.pred[, 2] - s.min[2]) / max(s.range)
   # knots[, 1] <- (knots[, 1] - s.min[1]) / max(s.range)
   # knots[, 2] <- (knots[, 2] - s.min[2]) / max(s.range)
   
@@ -74,6 +79,7 @@ for (set in these.sets) {
   s.p <- s.scale[-these.train, ]
   X.p <- matrix(1, nrow(s.p), 1)
   knots <- s.o
+  # knots <- as.matrix(expand.grid(seq(0, 1, length = 11), seq(0, 1, length = 11)))
   nknots <- nrow(knots)
   
   this.save <- cbind(y.o, s.o)
@@ -92,7 +98,7 @@ for (set in these.sets) {
   tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
   starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
   priors       <- list("beta.norm" = list(0, 100),
-                       "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
+                       "phi.unif" = c(0.5, 1e4), "sigma.sq.ig" = c(0.1, 0.1))
   cov.model <- "exponential"
   timings   <- rep(NA, 3)
   # with so many knots, adaptive is time prohibitive
@@ -114,6 +120,8 @@ for (set in these.sets) {
   d.o       <- as.matrix(rdist(s.o))
   diag(d.o) <- 0
   max.dist  <- 1
+  rho.lower <- 1e-6
+  rho.upper <- 1
   
   #### spatial GEV
   cat("  Start gev \n")
@@ -169,7 +177,7 @@ for (set in these.sets) {
     b.eps <- 0.1
   }
   logrho.mn <- -3
-  logrho.sd <- 0.7
+  logrho.sd <- 1
   
   # for numerical stability with the current set of starting values for the a
   # terms. if alpha is too small, the algorithm has a very hard time getting
@@ -180,7 +188,7 @@ for (set in these.sets) {
     alpha.init <- alpha.mn
   }
   
-  rho.init <- fit.pcl$par[2]
+  rho.init <- max(fit.pcl$par[2], rho.lower)
   beta.init <- fit.pcl$beta
   
   fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
@@ -197,13 +205,14 @@ for (set in these.sets) {
                          alpha.mn = alpha.mn, alpha.sd = alpha.sd,
                          a.alpha.joint = FALSE, alpha.eps = 0.01,
                          rho.init = rho.init, logrho.mn = logrho.mn, 
-                         logrho.sd = logrho.sd,
+                         logrho.sd = logrho.sd, 
+                         rho.lower = rho.lower, rho.upper = rho.upper,
                          rho.eps = 0.1, rho.attempts = 50, threads = 1,
                          iters = iters, burn = burn,
                          update = update, 
-                         iterplot = iterplot,
+                         # iterplot = iterplot,
                          # update = 10, 
-                         # iterplot = TRUE,
+                         iterplot = TRUE,
                          thin = thin, thresh = 0)
   
   cat("    Start mcmc predict \n")
@@ -216,17 +225,17 @@ for (set in these.sets) {
   bs.gev        <- mean((y.p - post.prob.gev)^2)
   roc.gev       <- roc(y.p ~ post.prob.gev)
   auc.gev       <- roc.gev$auc
-  
+
   print(bs.gev * 100)
   rm(y.pred.gev)  # to help conserve memory
-  
+
   # copy table to tables folder on beowulf
   scores[1, ] <- c(bs.gev, auc.gev)
-  write.table(scores, file = table.file)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
+  # write.table(scores, file = table.file)
+  # if (do.upload) {
+  #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+  #   system(upload.cmd)
+  # }
   
   ###### spatial probit
   cat("  Start probit \n")
@@ -235,29 +244,31 @@ for (set in these.sets) {
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
-                       iters = iters, burn = burn, update = update)
+                       bw.lower = rho.lower, bw.upper = rho.upper,
+                       iters = iters, burn = burn, update = update,
+                       iterplot = TRUE)
   
   cat("    Start mcmc predict \n")
   y.pred.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                             s.pred = s.p, knots = knots,
                             start = 1, end = iters - burn, update = update)
   timings[2] <- fit.probit$minutes
-  
+
   post.prob.pro <- apply(y.pred.pro, 2, mean)
   bs.pro        <- mean((y.p - post.prob.pro)^2)
   roc.pro       <- roc(y.p ~ post.prob.pro)
   auc.pro       <- roc.pro$auc
-  
+
   print(bs.pro * 100)
   rm(y.pred.pro)  # to help conserve memory
-  
+
   # copy table to tables folder on beowulf
   scores[2, ] <- c(bs.pro, auc.pro)
-  write.table(scores, file = table.file)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
+  # write.table(scores, file = table.file)
+  # if (do.upload) {
+  #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+  #   system(upload.cmd)
+  # }
   
   ####### spatial logit
   cat("  start logit \n")
@@ -278,30 +289,30 @@ for (set in these.sets) {
                              pred.covars = X.p, start = burn + 1,
                              end = iters, thin = 1, verbose = TRUE,
                              n.report = 500)$p.y.predictive.samples
-  
+
   post.prob.log <- t(post.prob.log)
   y.pred.log <- matrix(
-    rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log), 
+    rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log),
     nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
   rm(post.prob.log)
-  
+
   timings[3] <- toc - tic
-  
+
   post.prob.log <- apply(y.pred.log, 2, mean)
   bs.log        <- mean((y.p - post.prob.log)^2)
   roc.log       <- roc(y.p ~ post.prob.log)
   auc.log       <- roc.log$auc
-  
+
   print(bs.log * 100)
   rm(y.pred.log)
-  
+
   # copy table to tables folder on beowulf
   scores[3, ] <- c(bs.log, auc.log)
-  write.table(scores, file = table.file)
-  if (do.upload) {
-    upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-    system(upload.cmd)
-  }
+  # write.table(scores, file = table.file)
+  # if (do.upload) {
+  #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+  #   system(upload.cmd)
+  # }
   
   if ((set - 1) %% 5 == 0) {
     save(fit.gev, fit.probit, fit.logit, 

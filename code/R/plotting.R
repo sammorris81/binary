@@ -13,11 +13,12 @@ plot.post.heatmap <- function(df, main, zlim, midpoint = NULL,
   p <- p + geom_raster(aes(fill = Y))
   # p <- p + scale_fill_gradient(legend.title, low = "white",
   #                              high = "firebrick4", limits = zlim)
-  p <- p + scale_fill_gradient2(legend.title, low = "dodgerblue4",
-                                mid = "white", high = "firebrick4",
+  p <- p + scale_fill_gradient2(legend.title, low = "skyblue1",
+                                mid = "plum3", high = "firebrick3",
                                 limits = zlim, midpoint = midpoint, 
                                 na.value = "grey7")
   p <- p + labs(x = NULL, y = NULL, title = main)
+  p <- p + coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1))
   p <- p + theme_bw()
   p <- p + theme(axis.ticks = element_blank(), 
                  axis.text = element_blank(), 
@@ -34,19 +35,25 @@ plot.species <- function(df, main, legend.title = NULL) {
   p <- ggplot(df, aes(x = s1, y = s2))
   p <- p + geom_raster(aes(fill = Y))
   p <- p + scale_fill_manual(legend.title, 
-                             values = c("dodgerblue4", "firebrick4"), 
-                             labels = c("Not obs", "Obs"))
+                             values = c("skyblue1", "firebrick3"), 
+                             labels = c("Not observed", "Observed"))
   p <- p + labs(x = NULL, y = NULL, title = main)
+  p <- p + coord_fixed(ratio = 1, xlim = c(0, 1), ylim = c(0, 1))
   p <- p + theme_bw()
   p <- p + theme(axis.ticks = element_blank(), 
                  axis.text = element_blank(), 
                  panel.grid.major = element_blank(), 
                  panel.background = element_blank(), 
-                 panel.border = element_blank())
+                 panel.border = element_blank(),
+                 legend.title = element_text(size = 20, face = "bold.italic", 
+                                             vjust = 1),
+                 legend.text = element_text(size = 16),
+                 legend.key.height = unit(24, 'pt'),
+                 legend.key.width  = unit(24, 'pt'))
   return(p)
 }
 
-plot.roc.prc <- function(pred.gev, pred.pro, pred.log, avg = "threshold", 
+plot.roc.prc <- function(pred.gev, pred.pro, pred.log, avg = "vertical", 
                          main = NULL) {
   roc.gev  <- performance(pred.gev, "tpr", "fpr")
   roc.pro  <- performance(pred.pro, "tpr", "fpr")

@@ -1,48 +1,124 @@
 rm(list = ls())
-
-files <- list.files(path = "sim-tables-med/")
+source("../../R/plotting.R", chdir = TRUE)
+tbl.dir <- "./sim-tables/"
+sum.dir <- "./sim-summary/"
+files <- list.files(path = tbl.dir)
 
 nsettings <- 6
 nsets <- 100
-nmethods <- 3
+method.types <- c("gev", "pro", "log")
+nmethods <- length(method.types)
+
 bs.results <- auc.results <- vector(length = nsettings, mode = "list")
+bs.results.1 <- bs.results.0 <- vector(length = nsettings, mode = "list")
 for (setting in 1:nsettings) {
-  bs.results[[setting]]  <- matrix(NA, nsets, nmethods)
-  auc.results[[setting]] <- matrix(NA, nsets, nmethods)
-  rownames(bs.results[[setting]])  <- paste("set", 1:nsets)
-  rownames(auc.results[[setting]]) <- paste("set", 1:nsets)
-  colnames(bs.results[[setting]])  <- c("gev", "probit", "logit")
-  colnames(auc.results[[setting]]) <- c("gev", "probit", "logit")
+  bs.results[[setting]]   <- matrix(NA, nsets, nmethods)
+  bs.results.1[[setting]] <- matrix(NA, nsets, nmethods)
+  bs.results.0[[setting]] <- matrix(NA, nsets, nmethods)
+  auc.results[[setting]]  <- matrix(NA, nsets, nmethods)
+  rownames(bs.results[[setting]])   <- paste("set", 1:nsets)
+  rownames(bs.results.1[[setting]]) <- paste("set", 1:nsets)
+  rownames(bs.results.1[[setting]]) <- paste("set", 1:nsets)
+  rownames(auc.results[[setting]])  <- paste("set", 1:nsets)
+  colnames(bs.results[[setting]])   <- method.types
+  colnames(bs.results.1[[setting]]) <- method.types
+  colnames(bs.results.0[[setting]]) <- method.types
+  colnames(auc.results[[setting]])  <- method.types
 }
 
 for (i in 1:length(files)) {
   split     <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
   setting   <- as.numeric(split[1])
   set       <- as.numeric(split[2])
-  table.set <- read.table(paste("sim-tables-med/", files[i], sep = ""))
-  bs.results[[setting]][set, 1]  <- table.set[1, 1]
-  auc.results[[setting]][set, 1] <- table.set[1, 2]
-  bs.results[[setting]][set, 2]  <- table.set[2, 1]
-  auc.results[[setting]][set, 2] <- table.set[2, 2]
-  bs.results[[setting]][set, 3]  <- table.set[3, 1]
-  auc.results[[setting]][set, 3] <- table.set[3, 2]
+  table.set <- read.table(paste(tbl.dir, files[i], sep = ""))
+  bs.results[[setting]][set, 1]   <- table.set[1, 1]
+  auc.results[[setting]][set, 1]  <- table.set[1, 2]
+  bs.results.1[[setting]][set, 1] <- table.set[1, 3]
+  bs.results.0[[setting]][set, 1] <- table.set[1, 4]
+  bs.results[[setting]][set, 2]   <- table.set[2, 1]
+  auc.results[[setting]][set, 2]  <- table.set[2, 2]
+  bs.results.1[[setting]][set, 2] <- table.set[2, 3]
+  bs.results.0[[setting]][set, 2] <- table.set[2, 4]
+  bs.results[[setting]][set, 3]   <- table.set[3, 1]
+  auc.results[[setting]][set, 3]  <- table.set[3, 2]
+  bs.results.1[[setting]][set, 3] <- table.set[3, 3]
+  bs.results.0[[setting]][set, 3] <- table.set[3, 4]
 }
 
-bs.results.combined  <- matrix(NA, nsettings, nmethods)
-auc.results.combined <- matrix(NA, nsettings, nmethods)
+bs.results.combined   <- matrix(NA, nsettings, nmethods)
+bs.results.1.combined <- matrix(NA, nsettings, nmethods)
+bs.results.0.combined <- matrix(NA, nsettings, nmethods)
+auc.results.combined  <- matrix(NA, nsettings, nmethods)
 # vector of sets numbers that are complete
 finished.sets <- vector(mode = "list", length = nsettings)
 for (setting in 1:nsettings) {
   these.sets <- which(rowSums(is.na(bs.results[[setting]])) == 0)
   finished.sets[[setting]] <- these.sets
-  bs.results.combined[setting, ]  <- apply(bs.results[[setting]][these.sets, ],
+  bs.results.combined[setting, ]   <- apply(bs.results[[setting]][these.sets, ],
                                            2, mean, na.rm = TRUE)
-  auc.results.combined[setting, ] <- apply(auc.results[[setting]][these.sets, ],
+  bs.results.1.combined[setting, ] <- apply(bs.results.1[[setting]][these.sets, ],
+                                           2, mean, na.rm = TRUE)
+  bs.results.0.combined[setting, ] <- apply(bs.results.0[[setting]][these.sets, ],
+                                            2, mean, na.rm = TRUE)
+  auc.results.combined[setting, ]  <- apply(auc.results[[setting]][these.sets, ],
                                            2, mean, na.rm = TRUE)
 }
 
 for (setting in 1:nsettings) {
   print(length(finished.sets[[setting]]))
+}
+
+files <- list.files(path = sum.dir)
+for (setting.idx in 1:6) {
+  this.setting <- setting.idx
+  
+  this.gev.pred <- vector(mode = "list", length = nsets)
+  this.pro.pred <- vector(mode = "list", length = nsets)
+  this.log.pred <- vector(mode = "list", length = nsets)
+  this.yp       <- vector(mode = "list", length = nsets)
+  sets.done <- rep(FALSE, nsets)
+  
+  for (set in 1:nsets) {
+    results.file <- paste(sum.dir, this.setting, "-", set, ".RData", sep = "")
+    if (file.exists(results.file)) {
+      sets.done[set] <- TRUE
+      load(results.file)
+      this.yp[[set]] <- y.i.p
+      this.gev.pred[[set]] <- post.prob.gev
+      this.pro.pred[[set]] <- post.prob.pro
+      this.log.pred[[set]] <- post.prob.log
+    }
+  }
+  
+  pred.gev.name <- paste("pred.gev.", this.setting, sep = "")
+  pred.pro.name <- paste("pred.pro.", this.setting, sep = "")
+  pred.log.name <- paste("pred.log.", this.setting, sep = "")
+  yp.name       <- paste("yp.", this.setting, sep = "")
+  
+  # the syntax here is single bracket to access multiple elements of the list
+  assign(pred.gev.name, this.gev.pred[sets.done])
+  assign(pred.pro.name, this.pro.pred[sets.done])
+  assign(pred.log.name, this.log.pred[sets.done])
+  assign(yp.name, this.yp[sets.done])
+  print(paste(this.setting))
+}
+
+#### look at over ROC curves and PRC curves
+for (i in 1:nsettings) {
+  this.gev <- paste("pred.gev.", i, sep = "")
+  this.pro <- paste("pred.pro.", i, sep = "")
+  this.log <- paste("pred.log.", i, sep = "")
+  this.yp  <- paste("yp.", i, sep = "")
+  
+  pred.gev <- prediction(get(this.gev), get(this.yp))
+  pred.pro <- prediction(get(this.pro), get(this.yp))
+  pred.log <- prediction(get(this.log), get(this.yp))
+  
+  quartz(width = 16, height = 8)
+  main <- paste("Setting ", i, sep = "")
+  plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+  dev.print(device = pdf, paste("./plots/perf-setting-", i, ".pdf", sep = ""))
+  dev.off()
 }
 
 # how many have finished

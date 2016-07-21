@@ -70,7 +70,10 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
   cur.lly <- logLikeY(y = data$y, theta = calc$theta)
   cur.rho <- rho$cur
   
-  can.rho <- exp(rnorm(1, log(rho$cur), rho$eps))
+  # can.rho <- exp(rnorm(1, log(rho$cur), rho$eps))
+  cur.rho.star <- transform$logit(cur.rho, rho$lower, rho$upper)
+  can.rho.star <- rnorm(1, cur.rho.star, rho$eps)
+  can.rho      <- transform$inv.logit(can.rho.star, rho$lower, rho$upper)
   
   if (can.rho < max(sqrt(others$dw2)) & can.rho > 1e-6) {
     w       <- getW(rho = can.rho, dw2 = others$dw2, a.cutoff = others$a.cutoff)
@@ -80,8 +83,10 @@ updateRho <- function(data, a, alpha, rho, calc, others) {
     can.lly <- logLikeY(y = data$y, theta = theta)
     
     R <- sum(can.lly - cur.lly) +
-      dnorm(log(can.rho), rho$mn, rho$sd, log=TRUE) -
-      dnorm(log(cur.rho), rho$mn, rho$sd, log=TRUE)
+      log(can.rho - rho$lower) + log(rho$upper - can.rho) - # Jacobian
+      log(cur.rho - rho$lower) - log(rho$upper - cur.rho)
+      # dnorm(log(can.rho), rho$mn, rho$sd, log=TRUE) -
+      # dnorm(log(cur.rho), rho$mn, rho$sd, log=TRUE)
   } else {
     R <- -Inf
   }
