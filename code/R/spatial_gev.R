@@ -403,7 +403,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
         # }
         for (i in 1:length(plot.ys)) {
           plot(storage.prob[start:end, plot.ys[i], 1], type = "l",
-               main = paste("P(Y", plot.ys[i], " = 1)"))
+               main = paste("P(Y", plot.ys[i], " = 1)"),
+               ylim = c(0, 1))
         }
         
         plot(storage.beta[start:end], type = "l", main = bquote(beta[0]),

@@ -1,6 +1,6 @@
 make.B <- function(d, rho) {
   b <- exp(-(d / rho)^2)
-  b[b <= 1e-100] <- 0
+  b[b <= 1e-6] <- 0
   b2 <- rowSums(b^2)
   b <- sweep(b, 1, sqrt(b2), "/")
   if (any(is.nan(b))) {  # nan comes from 0 / 0 which means bw is very small
@@ -191,9 +191,9 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         att.bw <- att.bw + 1
         bw.star <- transform$logit(bw, lower = bw.lower, upper = bw.upper)
         canbw.star <- rnorm(1, bw.star, MH.bw)
-        canbw <- transform$inv.logit(canbw.star, lower = bw.lower, 
+        canbw <- transform$inv.logit(canbw.star, lower = bw.lower,
                                      upper = bw.upper)
-        # canbw <- exp(rnorm(1, log(bw), 0.1))
+        # canbw <- exp(rnorm(1, log(bw), MH.bw))
         canB  <- make.B(d, canbw)
         canBA <- canB %*% alpha
         R     <- sum(dnorm(Y, canBA + XB, 1, log=TRUE)) -
@@ -248,7 +248,8 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
         
         for (i in 1:length(plot.ys)) {
           plot(prob.y[start:iter, plot.ys[i]], type = "l", 
-               main = paste("P(Y", i, " = 1)"))
+               main = paste("P(Y", plot.ys[i], " = 1)"),
+               ylim = c(0, 1))
         }
         # if(proc.time()[3] - t_last_plot > update | iter == iters){
         #   plot(s, pch=19,
