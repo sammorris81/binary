@@ -6,8 +6,10 @@ if (cluster) {
 
 if (which.y == 1) {
   this.Y <- "Y1"
+  y.p    <- y.p.1
 } else {
   this.Y <- "Y2"
+  y.p    <- y.p.2
 }
 
 sample.list <- paste(samp.type, ".lst.", this.Y, ".", n, sep = "")
@@ -17,26 +19,7 @@ for (set in these.sets) {
   
   these.train <- get(sample.list)[[set]]
   y <- get(this.Y)
-  # if (cluster) {
-  #   samp.type <- "clu"
-  #   if (which.y == 1) {
-  #     these.train <- clu.lst.Y1[[set]]
-  #     y <- Y1
-  #   } else if (which.y == 2) {
-  #     these.train <- clu.lst.Y2[[set]]
-  #     y <- Y2
-  #   }
-  # } else {
-  #   samp.type <- "srs"
-  #   if (which.y == 1) {
-  #     these.train <- srs.lst.Y1[[set]]
-  #     y <- Y1
-  #   } else if (which.y == 2) {
-  #     these.train <- srs.lst.Y2[[set]]
-  #     y <- Y2
-  #   }
-  # }
-  
+
   upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",
                       "code/analysis/swd/ss-tables/", sep = "")
   
@@ -50,9 +33,6 @@ for (set in these.sets) {
                         set, ".txt", sep = "")
   
   y.o <- y[these.train]
-  y.p <- y[-these.train]
-  # this.yp <- paste("new", this.Y, sep = "")
-  # y.p <- get(this.yp)
   
   # extract info about simulation settings
   ns     <- length(y.o)
@@ -66,24 +46,24 @@ for (set in these.sets) {
   s.scale <- s
   s.scale[, 1] <- (s[, 1] - s.min[1]) / max(s.range)
   s.scale[, 2] <- (s[, 2] - s.min[2]) / max(s.range)
-  # knots[, 1] <- (knots[, 1] - s.min[1]) / max(s.range)
-  # knots[, 2] <- (knots[, 2] - s.min[2]) / max(s.range)
   
   y.o <- matrix(y.o, ns, nt)
   s.o <- s.scale[these.train, ]
   X.o <- matrix(1, nrow(s.o), 1)
   y.p <- matrix(y.p, npred, nt)
   
-  s.p <- s.scale[-these.train, ]
-  # s.p <- new.s
+  s.p[, 1] <- (s.p[, 1] - s.min[1]) / max(s.range)
+  s.p[, 2] <- (s.p[, 2] - s.min[2]) / max(s.range)
   X.p <- matrix(1, nrow(s.p), 1)
-  # knots <- s.o
-  knots <- as.matrix(expand.grid(seq(0.05, 0.95, length = 15),
-                                 seq(0.05, 0.95, length = 15)))
+
+  knot.start <- 1 / 30
+  knot.end   <- 29 / 30
+  knots <- as.matrix(expand.grid(seq(knot.start, knot.end, length = 15),
+                                 seq(knot.start, knot.end, length = 15)))
   knots <- rbind(knots, s.o[y.o == 1, ])
   nknots <- nrow(knots)
   
-  rho.lower <- 0.05
+  rho.lower <- 1 / 30  # 1 / (nknots * 2)
   rho.upper <- 1
   nknots <- nrow(knots)
   
@@ -94,8 +74,8 @@ for (set in these.sets) {
   ####################################################################
   #### Start MCMC setup: Most of this is used for the spBayes package
   ####################################################################
-  iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
-  # iters <- 15000; burn <- 10000; update <- 500; thin <- 1; iterplot <- TRUE
+  # iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
+  iters <- 100; burn <- 80; update <- 20; thin <- 1; iterplot <- TRUE
   n.report     <- 10
   batch.length <- 100
   n.batch      <- floor(iters / batch.length)
@@ -112,8 +92,7 @@ for (set in these.sets) {
                     "accept.rate" = 0.35)
   
   # storage for some of the results
-  # scores <- matrix(NA, 3, 4)  # place to store brier scores and auc
-  # scores <- array(NA, dim = c(3, 4, length(these.sets)))
+  scores <- matrix(NA, 3, 4)  # place to store brier scores and auc
   rownames(scores) <- c("gev", "probit", "logit")
   colnames(scores) <- c("bs", "auc", "bs.1", "bs.0")
   
@@ -137,91 +116,92 @@ for (set in these.sets) {
   # variability, but hopefully also some better convergence w.r.t. alpha.
   # we set max.dist to 0.15 in order to only consider pairs of sites that
   # are relatively close to one another.
-  cat("    Start pairwise fit \n")
-  fit.pcl <- tryCatch(
-    fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                      alpha.init = 0.5, rho.init = rho.init.pcl,
-                      xi.fix = TRUE, alpha.fix = FALSE,
-                      rho.fix = FALSE, beta.fix = TRUE,
-                      y = y.o, dw2 = dw2.o, d = d.o,
-                      cov = X.o, method = "BFGS",
-                      max.dist = max.dist,
-                      alpha.min = 0.1, alpha.max = 0.9,
-                      threads = 2),
-    error = function(e) {
-      fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                        alpha.init = 0.5, rho.init = rho.init.pcl,
-                        xi.fix = TRUE, alpha.fix = FALSE,
-                        rho.fix = FALSE, beta.fix = TRUE,
-                        y = y.o, dw2 = dw2.o, d = d.o,
-                        cov = X.o, method = "Nelder-Mead",
-                        max.dist = max.dist,
-                        alpha.min = 0.1, alpha.max = 0.9,
-                        threads = 2)
-    }
-  )
-  
+  # cat("    Start pairwise fit \n")
+  # fit.pcl <- tryCatch(
+  #   fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
+  #                     alpha.init = 0.5, rho.init = rho.init.pcl,
+  #                     xi.fix = TRUE, alpha.fix = FALSE,
+  #                     rho.fix = FALSE, beta.fix = TRUE,
+  #                     y = y.o, dw2 = dw2.o, d = d.o,
+  #                     cov = X.o, method = "BFGS",
+  #                     max.dist = max.dist,
+  #                     alpha.min = 0.1, alpha.max = 0.9,
+  #                     threads = 2),
+  #   error = function(e) {
+  #     fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
+  #                       alpha.init = 0.5, rho.init = rho.init.pcl,
+  #                       xi.fix = TRUE, alpha.fix = FALSE,
+  #                       rho.fix = FALSE, beta.fix = TRUE,
+  #                       y = y.o, dw2 = dw2.o, d = d.o,
+  #                       cov = X.o, method = "Nelder-Mead",
+  #                       max.dist = max.dist,
+  #                       alpha.min = 0.1, alpha.max = 0.9,
+  #                       threads = 2)
+  #   }
+  # )
+
   cat("    Finish pairwise fit \n")
   
   cat("    Start mcmc fit \n")
   mcmc.seed <- 6262
   set.seed(mcmc.seed)
   
-  alpha.mn <- fit.pcl$par[1]
-  alpha.sd <- 0.05
-  # when alpha is close to 0, the PS random effects have a much higher 
-  # variance, and when it's close to 1, then the variance will decrease
-  if (alpha.mn < 0.3) {
-    a.eps <- 0.5
-    b.eps <- 0.1
-  } else if (alpha.mn < 0.85) {
-    a.eps <- 0.1
-    b.eps <- 0.1
-  } else {
-    a.eps <- 0.05
-    b.eps <- 0.1
-  }
-  logrho.mn <- -3
-  logrho.sd <- 1
+  # alpha.mn <- fit.pcl$par[1]
+  # alpha.sd <- 0.05
+  # # when alpha is close to 0, the PS random effects have a much higher 
+  # # variance, and when it's close to 1, then the variance will decrease
+  # if (alpha.mn < 0.3) {
+  #   a.eps <- 0.5
+  #   b.eps <- 0.1
+  # } else if (alpha.mn < 0.85) {
+  #   a.eps <- 0.1
+  #   b.eps <- 0.1
+  # } else {
+  #   a.eps <- 0.05
+  #   b.eps <- 0.1
+  # }
+  # logrho.mn <- -3
+  # logrho.sd <- 1
   
   # for numerical stability with the current set of starting values for the a
   # terms. if alpha is too small, the algorithm has a very hard time getting
   # started.
-  if (alpha.mn < 0.3) {
-    alpha.init <- 0.3
-  } else {
-    alpha.init <- alpha.mn
-  }
+  # if (alpha.mn < 0.3) {
+  #   alpha.init <- 0.3
+  # } else {
+  #   alpha.init <- alpha.mn
+  # }
   
-  rho.init <- max(fit.pcl$par[2], rho.lower + 0.05)
-  beta.init <- fit.pcl$beta
+  # rho.init <- max(fit.pcl$par[2], rho.lower + 0.05)
+  # beta.init <- fit.pcl$beta
+  
+  rho.init <- (rho.upper - rho.lower) / 2
   
   alpha.mn <- 2 / (2 + 5)
   alpha.sd <- sqrt(2 * 5 / (49 * 8))  # beta(2, 5)
-  alpha.init <- 0.5
-  
+  alpha.init <- 0.3
+
   fit.gev <- spatial_GEV(y = y.o, s = s.o, x = X.o, knots = knots,
                          beta.init = log(-log(1 - mean(y.o))),
                          beta.mn = 0, beta.sd = 10,
                          beta.eps = 0.1, beta.attempts = 50,
                          xi.init = 0, xi.mn = 0, xi.sd = 0.5, xi.eps = 0.01,
                          xi.attempts = 500, xi.fix = TRUE,
-                         a.init = 1, a.eps = a.eps, a.attempts = 50,
+                         a.init = 1, a.eps = 0.5, a.attempts = 50,
                          a.cutoff = 1, a.steps = 7,
-                         b.init = 0.5, b.eps = b.eps,
+                         b.init = 0.5, b.eps = 0.1,
                          b.attempts = 500, b.steps = 5,
                          alpha.init = alpha.init, alpha.attempts = 50,
                          alpha.mn = alpha.mn, alpha.sd = alpha.sd,
                          a.alpha.joint = FALSE, alpha.eps = 0.01,
-                         rho.init = rho.init, logrho.mn = logrho.mn, 
-                         logrho.sd = logrho.sd, 
+                         rho.init = rho.init, 
                          rho.lower = rho.lower, rho.upper = rho.upper,
                          rho.eps = 0.1, rho.attempts = 50, threads = 1,
                          iters = iters, burn = burn,
                          update = update, 
-                         # iterplot = iterplot,
+                         iterplot = iterplot,
                          # update = 10, 
-                         iterplot = TRUE,
+                         # iterplot = TRUE,
                          thin = thin, thresh = 0)
   
   cat("    Start mcmc predict \n")
@@ -237,18 +217,17 @@ for (set in these.sets) {
   bs.0.gev      <- mean((y.p[y.p == 0] - post.prob.gev[y.p == 0])^2)
   roc.gev       <- roc(y.p ~ post.prob.gev)
   auc.gev       <- roc.gev$auc
-  rocs.gev[[set]] <- roc.gev
 
   print(bs.gev * 100)
   rm(y.pred.gev)  # to help conserve memory
 
   # copy table to tables folder on beowulf
-  scores[1, , set] <- c(bs.gev, auc.gev, bs.1.gev, bs.0.gev)
-  # write.table(scores, file = table.file)
-  # if (do.upload) {
-  #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-  #   system(upload.cmd)
-  # }
+  scores[1, ] <- c(bs.gev, auc.gev, bs.1.gev, bs.0.gev)
+  write.table(scores, file = table.file)
+  if (do.upload) {
+    upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+    system(upload.cmd)
+  }
   
   ###### spatial probit
   cat("  Start probit \n")
@@ -275,20 +254,18 @@ for (set in these.sets) {
   bs.0.pro      <- mean((y.p[y.p == 0] - post.prob.pro[y.p == 0])^2)
   roc.pro       <- roc(y.p ~ post.prob.pro)
   auc.pro       <- roc.pro$auc
-  rocs.pro[[set]] <- roc.pro
 
   print(bs.pro * 100)
   rm(y.pred.pro)  # to help conserve memory
 
   # copy table to tables folder on beowulf
-  scores[2, , set] <- c(bs.pro, auc.pro, bs.1.pro, bs.0.pro)
-  # probit 0.02791056 0.5523248: rho.upper = 1
+  scores[2, ] <- c(bs.pro, auc.pro, bs.1.pro, bs.0.pro)
   
-  # write.table(scores, file = table.file)
-  # if (do.upload) {
-  #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-  #   system(upload.cmd)
-  # }
+  write.table(scores, file = table.file)
+  if (do.upload) {
+    upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+    system(upload.cmd)
+  }
   
   ####### spatial logit
   cat("  start logit \n")
@@ -324,24 +301,23 @@ for (set in these.sets) {
   bs.0.log      <- mean((y.p[y.p == 0] - post.prob.log[y.p == 0])^2)
   roc.log       <- roc(y.p ~ post.prob.log)
   auc.log       <- roc.log$auc
-  rocs.log[[set]] <- roc.log
 
   print(bs.log * 100)
   rm(y.pred.log)
 
   # copy table to tables folder on beowscoulf
-  scores[3, , set] <- c(bs.log, auc.log, bs.1.log, bs.0.log)
-  # write.table(scores, file = table.file)
-  # if (do.upload) {
-  #   upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
-  #   system(upload.cmd)
-  # }
+  scores[3, ] <- c(bs.log, auc.log, bs.1.log, bs.0.log)
+  write.table(scores, file = table.file)
+  if (do.upload) {
+    upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
+    system(upload.cmd)
+  }
   
-  # if ((set - 1) %% 5 == 0) {
-  #   save(fit.gev, fit.probit, fit.logit, 
-  #        post.prob.gev, post.prob.pro, post.prob.log,
-  #        y.o, y.p, s.o, s.p, file = fit.file)
-  # }
-  # save(post.prob.gev, post.prob.pro, post.prob.log, 
-  #      y.o, y.p, s.o, s.p, file = results.file)
+  if ((set - 1) %% 5 == 0) {
+    save(fit.gev, fit.probit, fit.logit,
+         post.prob.gev, post.prob.pro, post.prob.log,
+         y.o, y.p, s.o, s.p, file = fit.file)
+  }
+  save(post.prob.gev, post.prob.pro, post.prob.log,
+       y.o, y.p, s.o, s.p, file = results.file)
 }

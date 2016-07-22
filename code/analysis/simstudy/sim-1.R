@@ -15,7 +15,18 @@ x <- simdata[[setting]]$x
 # extract info about simulation settings
 ns     <- dim(y)[1]
 nt     <- 1
-nknots <- 441
+
+#### Knot setup
+# We did a simulation study to look at the impact of knot selection on 
+# the results, and it appears that a grid of knots performs similarly 
+# to randomly selecting sites for knots across all the methods.
+####
+knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
+                               y = seq(0, 1, length = 21)))
+
+rho.lower <- 1 / 40 
+rho.upper <- 1
+nknots <- nrow(knots)
 
 # testing vs training
 if (setting %in% c(1, 3, 5)) {
@@ -31,7 +42,7 @@ ntest.0 <- ntest - ntest.1
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- FALSE
+iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
 # iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
@@ -40,7 +51,8 @@ verbose      <- TRUE
 tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
 starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
 priors       <- list("beta.norm" = list(0, 100),
-                     "phi.unif" = c(0.1, 1e4), "sigma.sq.ig" = c(1, 1))
+                     "phi.unif" = c(1 / rho.upper, 1 / rho.lower), 
+                     "sigma.sq.ig" = c(0.1, 0.1))
 cov.model <- "exponential"
 timings   <- rep(NA, 3)
 # with so many knots, adaptive is time prohibitive
@@ -139,15 +151,6 @@ while (sets.remain) {
     filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
     tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
     
-    #### Knot setup
-    # We did a simulation study to look at the impact of knot selection on 
-    # the results, and it appears that a grid of knots performs similarly 
-    # to randomly selecting sites for knots across all the methods.
-    ####
-    knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
-                                   y = seq(0, 1, length = 21)))
-    
-    rho.init.pcl <- 0.05   
     dw2.o   <- rdist(s.i.o, knots)
     d.o     <- as.matrix(rdist(s.i.o))
     diag(d.o) <- 0
@@ -163,48 +166,54 @@ while (sets.remain) {
     # variability, but hopefully also some better convergence w.r.t. alpha.
     # we set max.dist as 0.15 in order to only consider pairs that are within 
     # a ball of radius 0.15 of one another.
-    cat("    Start pairwise fit \n")
-    fit.pcl <- tryCatch(
-      fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                        alpha.init = 0.5, rho.init = rho.init.pcl,
-                        xi.fix = TRUE, alpha.fix = FALSE,
-                        rho.fix = FALSE, beta.fix = TRUE,
-                        y = y.i.o, dw2 = dw2.o, d = d.o,
-                        cov = X.o, method = "BFGS",
-                        max.dist = 0.20,  
-                        alpha.min = 0.1, alpha.max = 0.9,
-                        threads = 2),
-      error = function(e) {
-        fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
-                          alpha.init = 0.5, rho.init = rho.init.pcl,
-                          xi.fix = TRUE, alpha.fix = FALSE,
-                          rho.fix = FALSE, beta.fix = TRUE,
-                          y = y.i.o, dw2 = dw2.o, d = d.o,
-                          cov = X.o, method = "Nelder-Mead",
-                          max.dist = 0.20,
-                          alpha.min = 0.1, alpha.max = 0.9,
-                          threads = 2)
-      }
-    )
-    cat("    Finish pairwise fit \n")
+    # cat("    Start pairwise fit \n")
+    # fit.pcl <- tryCatch(
+    #   fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
+    #                     alpha.init = 0.5, rho.init = rho.init.pcl,
+    #                     xi.fix = TRUE, alpha.fix = FALSE,
+    #                     rho.fix = FALSE, beta.fix = TRUE,
+    #                     y = y.i.o, dw2 = dw2.o, d = d.o,
+    #                     cov = X.o, method = "BFGS",
+    #                     max.dist = 0.20,  
+    #                     alpha.min = 0.1, alpha.max = 0.9,
+    #                     threads = 2),
+    #   error = function(e) {
+    #     fit.rarebinaryCPP(beta.init = 0, xi.init = 0,
+    #                       alpha.init = 0.5, rho.init = rho.init.pcl,
+    #                       xi.fix = TRUE, alpha.fix = FALSE,
+    #                       rho.fix = FALSE, beta.fix = TRUE,
+    #                       y = y.i.o, dw2 = dw2.o, d = d.o,
+    #                       cov = X.o, method = "Nelder-Mead",
+    #                       max.dist = 0.20,
+    #                       alpha.min = 0.1, alpha.max = 0.9,
+    #                       threads = 2)
+    #   }
+    # )
+    # cat("    Finish pairwise fit \n")
     
     cat("    Start mcmc fit \n")
     mcmc.seed <- i * 10
     set.seed(mcmc.seed)
     
-    alpha.mn <- fit.pcl$par[1]
+    # alpha.mn <- fit.pcl$par[1]
     
     # for numerical stability with the current set of starting values for the a 
     # terms. if alpha is too small, the algorithm has a very hard time getting 
     # started.
-    if (alpha.mn < 0.3) {
-      alpha.init <- 0.3  
-    } else {
-      alpha.init <- alpha.mn
-    }
+    # if (alpha.mn < 0.3) {
+    #   alpha.init <- 0.3  
+    # } else {
+    #   alpha.init <- alpha.mn
+    # }
+    # 
+    # rho.init <- fit.pcl$par[2]
+    # beta.init <- fit.pcl$beta
     
-    rho.init <- fit.pcl$par[2]
-    beta.init <- fit.pcl$beta
+    rho.init <- (rho.upper - rho.lower) / 2
+    
+    alpha.mn <- 2 / (2 + 5)
+    alpha.sd <- sqrt(2 * 5 / (49 * 8))  # beta(2, 5)
+    alpha.init <- 0.3
     
     fit.gev <- spatial_GEV(y = y.i.o, s = s.i.o, x = X.o, knots = knots, 
                            beta.init = log(-log(1 - mean(y.i.o))),
@@ -227,7 +236,7 @@ while (sets.remain) {
     
     cat("    Start mcmc predict \n")
     post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                                s.pred = s.i.p, knots = knots,
+                                s.pred = s.i.p, knots = knots, thin = 10,
                                 start = 1, end = iters - burn, update = update)
     timings[1] <- fit.gev$minutes
     

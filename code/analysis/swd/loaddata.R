@@ -56,11 +56,12 @@ for (i in 1:nrow(s)) {
   newY1[this.cell] <- newY1[this.cell] + Y1[i]
   newY2[this.cell] <- newY2[this.cell] + Y2[i]
 }
-newY1 <- ifelse(newY1 > 0, 1, 0)
-newY2 <- ifelse(newY2 > 0, 1, 0)
-quilt.plot(new.s[, 1], new.s[, 2], newY1, nx = 100, ny = 100)
+y.p.1 <- ifelse(newY1 > 0, 1, 0)
+y.p.2 <- ifelse(newY2 > 0, 1, 0)
+s.p <- new.s
+quilt.plot(new.s[, 1], new.s[, 2], y.p.1, nx = 100, ny = 100)
 
-save(Y1, Y2, s, file = "plant_inventory.RData")
+save(Y1, Y2, s, y.p.1, y.p.2, s.p, file = "plant_inventory.RData")
 
 # generate the samples ahead of time
 source("../../../../usefulR/usefulfunctions.R", chdir = TRUE)
@@ -382,7 +383,7 @@ for (set in 1:nsets) {
   srs.lst.Y2.500[[set]] <- these.train
 }
 
-save(Y1, Y2, s, 
+save(Y1, Y2, s, y.p.1, y.p.2, s.p,
      clu.lst.Y1.100, clu.lst.Y2.100, srs.lst.Y1.100, srs.lst.Y2.100, 
      clu.lst.Y1.250, clu.lst.Y2.250, srs.lst.Y1.250, srs.lst.Y2.250,
      clu.lst.Y1.500, clu.lst.Y2.500, srs.lst.Y1.500, srs.lst.Y2.500, 

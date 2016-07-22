@@ -21,7 +21,7 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                         # alpha.target = c(0.5, 0.8),
                         alpha.target = c(0.25, 0.5),
                         a.alpha.joint = TRUE, alpha.fix = FALSE,
-                        rho.init = 1, logrho.mn = -2, logrho.sd = 1, 
+                        rho.init = 1, # logrho.mn = -2, logrho.sd = 1, 
                         rho.lower = 0, rho.upper = 1,
                         rho.eps = 0.1, rho.attempts = 50,
                         rho.target = c(0.25, 0.5),
@@ -130,7 +130,8 @@ spatial_GEV <- function(y, s, x, knots = NULL,
                 attempts = alpha.attempts, 
                 target.l = alpha.target[1], target.u = alpha.target[2])
   rho   <- list(cur = rho.init, att = 0, acc = 0, eps = rho.eps, 
-                mn = logrho.mn, sd = logrho.sd, attempts = rho.attempts,
+                #mn = logrho.mn, sd = logrho.sd, 
+                attempts = rho.attempts,
                 lower = rho.lower, upper = rho.upper,
                 target.l = rho.target[1], target.u = rho.target[2])
   
