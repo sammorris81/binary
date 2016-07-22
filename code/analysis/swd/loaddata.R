@@ -46,6 +46,20 @@ image.plot(Y1)
 
 quilt.plot(x = s[, 1], y = s[, 2], z = as.vector(Y2), nx = 200, ny = 200)
 
+new.s1 <- seq(0, 1, length = 100)
+new.s2 <- seq(0, 1, length = 100)
+new.s  <- as.matrix(expand.grid(new.s1, new.s2))
+newY1 <- rep(0, nrow(new.s))
+newY2 <- rep(0, nrow(new.s))
+for (i in 1:nrow(s)) {
+  this.cell <- which.min(rdist(s[i, , drop = F], new.s))
+  newY1[this.cell] <- newY1[this.cell] + Y1[i]
+  newY2[this.cell] <- newY2[this.cell] + Y2[i]
+}
+newY1 <- ifelse(newY1 > 0, 1, 0)
+newY2 <- ifelse(newY2 > 0, 1, 0)
+quilt.plot(new.s[, 1], new.s[, 2], newY1, nx = 100, ny = 100)
+
 save(Y1, Y2, s, file = "plant_inventory.RData")
 
 # generate the samples ahead of time
