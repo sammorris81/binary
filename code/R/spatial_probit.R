@@ -114,8 +114,10 @@ probit <- function(Y, X, s, knots, sp=NULL, Xp=NULL,
       dp  <- rdist(sp,knots)
     }
     
-    plot.ys <- sample(which(Y == 1), size = 3)
-    plot.ys <- c(plot.ys, sample(which(Y == 0), size = 3))
+    if (iterplot) {
+      plot.ys <- sample(which(Y == 1), size = 3)
+      plot.ys <- c(plot.ys, sample(which(Y == 0), size = 3))
+    }
     
     LOW  <- ifelse(Y == 1, 0, -Inf)
     HIGH <- ifelse(Y == 1, Inf, 0)

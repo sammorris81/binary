@@ -50,8 +50,10 @@ spatial_GEV <- function(y, s, x, knots = NULL,
   
   # create data list
   data  <- list(y = y, x = x, s = s, knots = knots)
-  plot.ys <- sample(which(y == 1), 4)
-  plot.ys <- c(plot.ys, sample(which(y == 0), 4))
+  if (iterplot) {
+    plot.ys <- sample(which(y == 1), 4)
+    plot.ys <- c(plot.ys, sample(which(y == 0), 4))
+  }
   
   # list for miscellaneous things we want to store
   # distance squared
