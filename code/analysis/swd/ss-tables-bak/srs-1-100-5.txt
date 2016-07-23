@@ -1,4 +1,0 @@
-"bs" "auc"
-"gev" 0.0497401525581425 0.689485843204216
-"probit" NA NA
-"logit" NA NA
