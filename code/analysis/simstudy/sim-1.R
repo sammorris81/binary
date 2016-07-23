@@ -42,8 +42,8 @@ ntest.0 <- ntest - ntest.1
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
-# iters <- 25000; burn <- 15000; update <- 500; thin <- 1; iterplot <- TRUE
+# iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
+iters <- 100; burn <- 80; update <- 20; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
@@ -120,9 +120,9 @@ while (sets.remain) {
     }
     
     # storage for some of the results
-    scores <- matrix(NA, 3, 2)  # place to store brier scores and auc
+    scores <- matrix(NA, 3, 4)  # place to store brier scores and auc
     rownames(scores) <- c("gev", "probit", "logit")
-    colnames(scores) <- c("bs", "auc")
+    colnames(scores) <- c("bs", "auc", "bs.1", "bs.0")
     
     timings <- rep(NA, 3)
     
@@ -148,8 +148,9 @@ while (sets.remain) {
     ntrain.0 <- sum(y.i.o == 0) - ntest.0
     ntrain.1 <- sum(y.i.o == 1) - ntest.1
     
-    filename <- paste("sim-results/", setting, "-", i, ".RData", sep = "")
-    tblname  <- paste("sim-tables/", setting, "-", i, ".txt", sep ="")
+    table.file   <- paste("./sim-tables/", setting, "-", i, ".txt", sep ="")
+    results.file <- paste("./sim-results/", setting, "-", i, ".RData", sep = "")
+    fit.file     <- paste("./sim-fit/", setting, "-", i, "-fit.RData", sep = "")
     
     dw2.o   <- rdist(s.i.o, knots)
     d.o     <- as.matrix(rdist(s.i.o))
@@ -225,9 +226,10 @@ while (sets.remain) {
                            a.cutoff = 0.2, b.init = 0.5, b.eps = 0.2, 
                            b.attempts = 50, 
                            alpha.init = alpha.init, alpha.attempts = 50, 
-                           alpha.mn = 0.5, alpha.sd = 0.1,
+                           alpha.mn = alpha.mn, alpha.sd = alpha.sd,
                            a.alpha.joint = FALSE, alpha.eps = 0.01,
-                           rho.init = rho.init, logrho.mn = -2, logrho.sd = 1, 
+                           rho.init = rho.init, 
+                           rho.lower = rho.lower, rho.upper = rho.upper,
                            rho.eps = 0.1, rho.attempts = 50, threads = 1, 
                            iters = iters, burn = burn, 
                            update = update, iterplot = iterplot,
@@ -235,23 +237,26 @@ while (sets.remain) {
                            thin = 1, thresh = 0)
     
     cat("    Start mcmc predict \n")
-    post.prob.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
-                                s.pred = s.i.p, knots = knots, thin = 10,
-                                start = 1, end = iters - burn, update = update)
+    y.pred.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
+                             s.pred = s.i.p, knots = knots, thin = 10,
+                             start = 1, end = iters - burn, update = update)
     timings[1] <- fit.gev$minutes
     
-    bs.gev <- BrierScore(post.prob.gev, y.i.p)
-    post.prob.gev.mean <- apply(post.prob.gev, 2, mean)
-    roc.gev <- roc(y.i.p ~ post.prob.gev.mean)
-    auc.gev <- roc.gev$auc
+    post.prob.gev <- apply(y.pred.gev, 2, mean)
+    bs.gev        <- mean((y.i.p - post.prob.gev)^2)
+    bs.1.gev      <- mean((y.i.p[y.i.p == 1] - post.prob.gev[y.i.p == 1])^2)
+    bs.0.gev      <- mean((y.i.p[y.i.p == 0] - post.prob.gev[y.i.p == 0])^2)
+    roc.gev       <- roc(y.i.p ~ post.prob.gev)
+    auc.gev       <- roc.gev$auc
     
     print(bs.gev * 100)
+    rm(y.pred.gev)  # to help conserve memory
     
     # copy table to tables folder on beowulf
-    scores[1, ] <- c(bs.gev, auc.gev)
-    write.table(scores, file = tblname)
+    scores[1, ] <- c(bs.gev, auc.gev, bs.1.gev, bs.0.gev)
+    write.table(scores, file = table.file)
     if (do.upload) {
-      upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+      upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
       system(upload.cmd)
     }
     
@@ -262,26 +267,31 @@ while (sets.remain) {
     mcmc.seed <- mcmc.seed + 1
     set.seed(mcmc.seed)
     fit.probit <- probit(Y = y.i.o, X = X.o, s = s.i.o, knots = knots, 
-                         iters = iters, burn = burn, update = update)
+                         bw.lower = rho.lower, bw.upper = rho.upper,
+                         a = 0.1, b = 0.1,
+                         iters = iters, burn = burn, update = update,
+                         iterplot = iterplot)
     
     cat("    Start mcmc predict \n")
-    post.prob.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
-                                 s.pred = s.i.p, knots = knots,
-                                 start = 1, end = iters - burn, update = update)
+    y.pred.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
+                              s.pred = s.i.p, knots = knots, thin = 10,
+                              start = 1, end = iters - burn, update = update)
     timings[2] <- fit.probit$minutes
     
-    bs.pro <- BrierScore(post.prob.pro, y.i.p)
-    post.prob.pro.mean <- apply(post.prob.pro, 2, mean)
-    roc.pro <- roc(y.i.p ~ post.prob.pro.mean)
-    auc.pro <- roc.pro$auc
+    post.prob.pro <- apply(y.pred.pro, 2, mean)
+    bs.pro        <- mean((y.i.p - post.prob.pro)^2)
+    bs.1.pro      <- mean((y.i.p[y.i.p == 1] - post.prob.pro[y.i.p == 1])^2)
+    bs.0.pro      <- mean((y.i.p[y.i.p == 0] - post.prob.pro[y.i.p == 0])^2)
+    roc.pro       <- roc(y.i.p ~ post.prob.pro)
+    auc.pro       <- roc.pro$auc
     
     print(bs.pro * 100)
     
     # copy table to tables folder on beowulf
-    scores[2, ] <- c(bs.pro, auc.pro)
-    write.table(scores, file = tblname)
+    scores[2, ] <- c(bs.pro, auc.pro, bs.1.pro, bs.0.pro)
+    write.table(scores, file = table.file)
     if (do.upload) {
-      upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+      upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
       system(upload.cmd)
     }
     
@@ -300,37 +310,44 @@ while (sets.remain) {
     toc        <- proc.time()[3]
     
     print("    start mcmc predict")
-    yp.sp.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
-                           pred.covars = X.p, start = burn + 1,
-                           end = iters, thin = 1, verbose = TRUE,
-                           n.report = 500)
+    post.prob.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
+                               pred.covars = X.p, start = burn + 1,
+                               end = iters, thin = 10, verbose = TRUE,
+                               n.report = 500)$p.y.predictive.samples
     
-    post.prob.log <- t(yp.sp.log$p.y.predictive.samples)
+    post.prob.log <- t(post.prob.log)
+    y.pred.log <- matrix(
+      rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log),
+      nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
+    rm(post.prob.log)
     
-    timings[3] <- toc - tic
+    timings[3] <- (toc - tic) / 60
     
-    bs.log <- BrierScore(post.prob.log, y.i.p)
-    post.prob.log.mean <- apply(post.prob.log, 2, mean)
-    roc.log <- roc(y.i.p ~ post.prob.log.mean)
-    auc.log <- roc.log$auc
+    post.prob.log <- apply(y.pred.log, 2, mean)
+    bs.log        <- mean((y.i.p - post.prob.log)^2)
+    bs.1.log      <- mean((y.i.p[y.i.p == 1] - post.prob.log[y.i.p == 1])^2)
+    bs.0.log      <- mean((y.i.p[y.i.p == 0] - post.prob.log[y.i.p == 0])^2)
+    roc.log       <- roc(y.i.p ~ post.prob.log)
+    auc.log       <- roc.log$auc
     
     print(bs.log * 100)
+    rm(y.pred.log)
     
     # copy table to tables folder on beowulf
-    scores[3, ] <- c(bs.log, auc.log)
-    write.table(scores, file = tblname)
+    scores[3, ] <- c(bs.log, auc.log, bs.1.log, bs.0.log)
+    write.table(scores, file = table.file)
     if (do.upload) {
-      upload.cmd <- paste("scp ", tblname, " ", upload.pre, sep = "")
+      upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
       system(upload.cmd)
     }
     
     cat("Finished: Set", i, "\n")
-    save(fit.gev, bs.gev, roc.gev, auc.gev,
-         fit.probit, bs.pro, roc.pro, auc.pro,
-         fit.logit, bs.log, roc.log, auc.log,
-         y.i.p, y.i.o, knots,  
-         s.i.o, s.i.p, timings,
-         file = filename)
+    save(fit.gev, fit.probit, fit.logit, 
+         post.prob.gev, post.prob.pro, post.prob.log,
+         y.i.p, y.i.o, s.i.o, s.i.p, knots, timings, file = fit.file)
+    
+    save(post.prob.gev, post.prob.pro, post.prob.log,
+         y.i.o, y.i.p, s.i.o, s.i.p, file = results.file)
   } else {
     cat("Waiting for unlock... \n")
     if (do.upload) {

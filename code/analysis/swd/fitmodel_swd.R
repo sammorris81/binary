@@ -236,11 +236,10 @@ for (set in these.sets) {
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
   fit.probit <- probit(Y = y.o, X = X.o, s = s.o, knots = knots,
-                       logbw.mn = logrho.mn, logbw.sd = logrho.sd,
                        bw.lower = rho.lower, bw.upper = rho.upper,
-                       a = 1, b = 1,
+                       a = 0.1, b = 0.1,
                        iters = iters, burn = burn, update = update,
-                       iterplot = TRUE)
+                       iterplot = iterplot)
   
   cat("    Start mcmc predict \n")
   y.pred.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
@@ -284,7 +283,7 @@ for (set in these.sets) {
   print("    start mcmc predict")
   post.prob.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
                              pred.covars = X.p, start = burn + 1,
-                             end = iters, thin = 1, verbose = TRUE,
+                             end = iters, thin = 10, verbose = TRUE,
                              n.report = 500)$p.y.predictive.samples
 
   post.prob.log <- t(post.prob.log)
@@ -293,7 +292,7 @@ for (set in these.sets) {
     nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
   rm(post.prob.log)
 
-  timings[3] <- toc - tic
+  timings[3] <- (toc - tic) / 60
 
   post.prob.log <- apply(y.pred.log, 2, mean)
   bs.log        <- mean((y.p - post.prob.log)^2)
@@ -316,7 +315,7 @@ for (set in these.sets) {
   if ((set - 1) %% 5 == 0) {
     save(fit.gev, fit.probit, fit.logit,
          post.prob.gev, post.prob.pro, post.prob.log,
-         y.o, y.p, s.o, s.p, file = fit.file)
+         y.o, y.p, s.o, s.p, knots, timings, file = fit.file)
   }
   save(post.prob.gev, post.prob.pro, post.prob.log,
        y.o, y.p, s.o, s.p, file = results.file)
