@@ -21,18 +21,18 @@ nt     <- 1
 # the results, and it appears that a grid of knots performs similarly 
 # to randomly selecting sites for knots across all the methods.
 ####
-knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21), 
-                               y = seq(0, 1, length = 21)))
+knots.grid <- as.matrix(expand.grid(x = seq(1 / 30, 29 / 30, length = 15), 
+                                    y = seq(1 / 30, 29 / 30, length = 15)))
 
-rho.lower <- 1 / 40 
+rho.lower <- 1 / 30 
 rho.upper <- 1
-nknots <- nrow(knots)
+nknots <- nrow(knots.grid)
 
 # testing vs training
 if (setting %in% c(1, 3, 5)) {
-  ntrain <- 650
+  ntrain <- 100
 } else {
-  ntrain <- 1300
+  ntrain <- 250
 }
 
 ntest   <- ns - ntrain
@@ -42,8 +42,8 @@ ntest.0 <- ntest - ntest.1
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
 ####################################################################
-iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
-# iters <- 100; burn <- 80; update <- 20; thin <- 1; iterplot <- TRUE
+# iters <- 25000; burn <- 20000; update <- 500; thin <- 1; iterplot <- FALSE
+iters <- 100; burn <- 20; update <- 50; thin <- 1; iterplot <- TRUE
 n.report     <- 10
 batch.length <- 100
 n.batch      <- floor(iters / batch.length)
@@ -144,6 +144,8 @@ while (sets.remain) {
     y.i.p  <- matrix(y[!obs, i], ntest, 1)
     X.p    <- matrix(x[!obs], ntest, 1)
     s.i.p  <- s[!obs, , i]
+    
+    knots <- rbind(knots.grid, s.i.o[y.i.o == 1, ])
     
     ntrain.0 <- sum(y.i.o == 0) - ntest.0
     ntrain.1 <- sum(y.i.o == 1) - ntest.1
@@ -342,10 +344,10 @@ while (sets.remain) {
     }
     
     cat("Finished: Set", i, "\n")
-    save(fit.gev, fit.probit, fit.logit, 
+    save(fit.gev, fit.probit, fit.logit,
          post.prob.gev, post.prob.pro, post.prob.log,
          y.i.p, y.i.o, s.i.o, s.i.p, knots, timings, file = fit.file)
-    
+
     save(post.prob.gev, post.prob.pro, post.prob.log,
          y.i.o, y.i.p, s.i.o, s.i.p, file = results.file)
   } else {

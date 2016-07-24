@@ -232,7 +232,7 @@ makeW <- function(dw2, rho, a.cutoff = NULL) {
   # w <- exp(-0.5 * dw2 / (rho^2))
   w <- matrix(0, nrow(dw2), ncol(dw2))
   w[sqrt(dw2) <= a.cutoff] <- exp(-0.5 * dw2[sqrt(dw2) <= a.cutoff] / (rho^2))
-  
+
   # only include sites that are close to the knot
   # we need to do this in addition to the IDs because the weights over the
   # active knots needs to sum to 1. If we don't set the knots beyond the
@@ -393,7 +393,7 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   # z = u * theta ~ GEV(1, 1, 1)
   # h = x.beta + (z^xi - 1) / xi ~ GEV(x.beta, 1, xi)
   if (xi == 0) {
-    h <- x.beta + log(z)
+    h <- x.beta + log(z)  # loc + log(z) * 1 for xi = 0
   } else {
     h <- x.beta + (z^xi - 1) / xi
   }

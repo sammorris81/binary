@@ -1,13 +1,21 @@
 rm(list = ls())
 source("../../R/plotting.R", chdir = TRUE)
+load("simdata.RData")
 tbl.dir <- "./sim-tables/"
-sum.dir <- "./sim-summary/"
+res.dir <- "./sim-results/"
 files <- list.files(path = tbl.dir)
+library(ROCR)
 
 nsettings <- 6
 nsets <- 100
 method.types <- c("gev", "pro", "log")
 nmethods <- length(method.types)
+rareness <- matrix(NA, nsets, nsettings)
+for (setting in 1:nsettings) {
+  for (set in 1:nsets) {
+    rareness[set, setting] <- mean(simdata[[setting]]$y[, set])
+  }
+}
 
 bs.results <- auc.results <- vector(length = nsettings, mode = "list")
 bs.results.1 <- bs.results.0 <- vector(length = nsettings, mode = "list")
@@ -25,6 +33,12 @@ for (setting in 1:nsettings) {
   colnames(bs.results.0[[setting]]) <- method.types
   colnames(auc.results[[setting]])  <- method.types
 }
+
+these.sets <- which(rowSums(!is.na(auc.results[[1]])) == 3)
+this.order <- these.sets[order(rareness[these.sets])]
+plot(rareness[this.order, 1], bs.results[[1]][this.order, 1], type = "l")
+lines(rareness[this.order, 1], bs.results[[1]][this.order, 2], lty = 2)
+lines(rareness[this.order, 1], bs.results[[1]][this.order, 3], lty = 3)
 
 for (i in 1:length(files)) {
   split     <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
@@ -68,18 +82,20 @@ for (setting in 1:nsettings) {
   print(length(finished.sets[[setting]]))
 }
 
-files <- list.files(path = sum.dir)
+# Apparently ROCR can take in a list over all 100 datasets to
+# come up with an averaged cross-validation curve
+files <- list.files(path = res.dir)
 for (setting.idx in 1:6) {
   this.setting <- setting.idx
-  
+
   this.gev.pred <- vector(mode = "list", length = nsets)
   this.pro.pred <- vector(mode = "list", length = nsets)
   this.log.pred <- vector(mode = "list", length = nsets)
   this.yp       <- vector(mode = "list", length = nsets)
   sets.done <- rep(FALSE, nsets)
-  
+
   for (set in 1:nsets) {
-    results.file <- paste(sum.dir, this.setting, "-", set, ".RData", sep = "")
+    results.file <- paste(res.dir, this.setting, "-", set, ".RData", sep = "")
     if (file.exists(results.file)) {
       sets.done[set] <- TRUE
       load(results.file)
@@ -89,12 +105,12 @@ for (setting.idx in 1:6) {
       this.log.pred[[set]] <- post.prob.log
     }
   }
-  
+
   pred.gev.name <- paste("pred.gev.", this.setting, sep = "")
   pred.pro.name <- paste("pred.pro.", this.setting, sep = "")
   pred.log.name <- paste("pred.log.", this.setting, sep = "")
   yp.name       <- paste("yp.", this.setting, sep = "")
-  
+
   # the syntax here is single bracket to access multiple elements of the list
   assign(pred.gev.name, this.gev.pred[sets.done])
   assign(pred.pro.name, this.pro.pred[sets.done])
@@ -109,11 +125,11 @@ for (i in 1:nsettings) {
   this.pro <- paste("pred.pro.", i, sep = "")
   this.log <- paste("pred.log.", i, sep = "")
   this.yp  <- paste("yp.", i, sep = "")
-  
+
   pred.gev <- prediction(get(this.gev), get(this.yp))
   pred.pro <- prediction(get(this.pro), get(this.yp))
   pred.log <- prediction(get(this.log), get(this.yp))
-  
+
   quartz(width = 16, height = 8)
   main <- paste("Setting ", i, sep = "")
   plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)

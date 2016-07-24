@@ -48,28 +48,43 @@ for (i in 1:length(files)) {
   this.row      <- (n.idx - 1) * nsets * 2 + (samp.type.idx - 1) * nsets + set
   table.set     <- read.table(paste(prefix, files[i], sep = ""))
   if (all(!is.na(table.set))) {
-    bs.results[[species.idx]][this.row, 1]  <- table.set[1, 1]
-    auc.results[[species.idx]][this.row, 1] <- table.set[1, 2]
-    bs.results[[species.idx]][this.row, 2]  <- table.set[2, 1]
-    auc.results[[species.idx]][this.row, 2] <- table.set[2, 2]
-    bs.results[[species.idx]][this.row, 3]  <- table.set[3, 1]
-    auc.results[[species.idx]][this.row, 3] <- table.set[3, 2]
+    bs.results[[species.idx]][this.row, 1]    <- table.set[1, 1]
+    auc.results[[species.idx]][this.row, 1]   <- table.set[1, 2]
+    bs.results.1[[species.idx]][this.row, 1]  <- table.set[1, 3]
+    bs.results.0[[species.idx]][this.row, 1]  <- table.set[1, 4]
+    bs.results[[species.idx]][this.row, 2]    <- table.set[2, 1]
+    auc.results[[species.idx]][this.row, 2]   <- table.set[2, 2]
+    bs.results.1[[species.idx]][this.row, 2]  <- table.set[2, 3]
+    bs.results.0[[species.idx]][this.row, 2]  <- table.set[2, 4]
+    bs.results[[species.idx]][this.row, 3]    <- table.set[3, 1]
+    auc.results[[species.idx]][this.row, 3]   <- table.set[3, 2]
+    bs.results.1[[species.idx]][this.row, 3]  <- table.set[3, 3]
+    bs.results.0[[species.idx]][this.row, 3]  <- table.set[3, 4]
   }
 }
 
 bs.results.combined  <- vector(mode = "list", length = 2)
 auc.results.combined <- vector(mode = "list", length = 2)
+bs.results.1.combined <- vector(mode = "list", length = 2)
+bs.results.0.combined <- vector(mode = "list", length = 2)
 species.rate <- c(mean(Y1), mean(Y2))
 for (i in 1:2) {
   species.idx <- i
   these.nrows <- length(ns) * length(samp.types)
   bs.results.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
   auc.results.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
+  bs.results.1.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
+  bs.results.0.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
+
   these.rownames <- paste(rep(samp.types, 2), "-", rep(ns, each = 2), sep = "")
-  rownames(bs.results.combined[[species.idx]])  <- these.rownames
-  rownames(auc.results.combined[[species.idx]]) <- these.rownames
-  colnames(bs.results.combined[[species.idx]])  <- method.types
-  colnames(auc.results.combined[[species.idx]]) <- method.types
+  rownames(bs.results.combined[[species.idx]])   <- these.rownames
+  rownames(auc.results.combined[[species.idx]])  <- these.rownames
+  rownames(bs.results.1.combined[[species.idx]]) <- these.rownames
+  rownames(bs.results.0.combined[[species.idx]]) <- these.rownames
+  colnames(bs.results.combined[[species.idx]])   <- method.types
+  colnames(auc.results.combined[[species.idx]])  <- method.types
+  colnames(bs.results.1.combined[[species.idx]]) <- method.types
+  colnames(bs.results.0.combined[[species.idx]]) <- method.types
 
   this.row <- apply(bs.results[[species.idx]][1:nsets, ],
                     2, mean, na.rm = TRUE)
@@ -96,59 +111,7 @@ for (i in 1:2) {
   this.row <- apply(auc.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
                     2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][4, ] <- this.row
-}
 
-prefix <- "ss-results/"
-files <- list.files(path = prefix)
-
-bs.results.1 <- bs.results.0 <- vector(length = 2, mode = "list")
-for (i in 1:2) {
-  bs.results.1[[i]] <- matrix(NA, nfits, nmethods)
-  bs.results.0[[i]] <- matrix(NA, nfits, nmethods)
-  these.rownames <- c(paste("clu-100-", 1:nsets, sep = ""),
-                      paste("srs-100-", 1:nsets, sep = ""),
-                      paste("clu-250-", 1:nsets, sep = ""),
-                      paste("srs-250-", 1:nsets, sep = ""))
-  these.colnames <- c("gev", "probit", "logit")
-  rownames(bs.results.1[[i]]) <- these.rownames
-  rownames(bs.results.0[[i]]) <- these.rownames
-  colnames(bs.results.1[[i]]) <- these.colnames
-  colnames(bs.results.0[[i]]) <- these.colnames
-}
-
-for (i in 1:length(files)) {
-  split         <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
-  species.idx   <- as.numeric(split[2])
-  samp.type.idx <- which(samp.types == split[1])
-  n.idx         <- which(ns == as.numeric(split[3]))
-  set           <- as.numeric(split[4])
-  this.row      <- (n.idx - 1) * nsets * 2 + (samp.type.idx - 1) * nsets + set
-  results.file  <- paste("ss-results/", files[i], sep = "")
-  
-  load(results.file)
-  bs.results.1[[species.idx]][this.row, 1] <- mean((y.p[y.p == 1] - post.prob.gev[y.p == 1])^2)
-  bs.results.1[[species.idx]][this.row, 2] <- mean((y.p[y.p == 1] - post.prob.pro[y.p == 1])^2)
-  bs.results.1[[species.idx]][this.row, 3] <- mean((y.p[y.p == 1] - post.prob.log[y.p == 1])^2)
-  
-  bs.results.0[[species.idx]][this.row, 1] <- mean((y.p[y.p == 0] - post.prob.gev[y.p == 0])^2)
-  bs.results.0[[species.idx]][this.row, 2] <- mean((y.p[y.p == 0] - post.prob.pro[y.p == 0])^2)
-  bs.results.0[[species.idx]][this.row, 3] <- mean((y.p[y.p == 0] - post.prob.log[y.p == 0])^2)
-}
-
-
-bs.results.1.combined <- vector(mode = "list", length = 2)
-bs.results.0.combined <- vector(mode = "list", length = 2)
-for (i in 1:2) {
-  species.idx <- i
-  these.nrows <- length(ns) * length(samp.types)
-  bs.results.1.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
-  bs.results.0.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
-  these.rownames <- paste(rep(samp.types, 2), "-", rep(ns, each = 2), sep = "")
-  rownames(bs.results.1.combined[[species.idx]]) <- these.rownames
-  rownames(bs.results.0.combined[[species.idx]]) <- these.rownames
-  colnames(bs.results.1.combined[[species.idx]]) <- c("gev", "probit", "logit")
-  colnames(bs.results.0.combined[[species.idx]]) <- c("gev", "probit", "logit")
-  
   this.row <- apply(bs.results.1[[species.idx]][1:nsets, ],
                     2, mean, na.rm = TRUE)
   bs.results.1.combined[[species.idx]][1, ] <- this.row
@@ -161,14 +124,14 @@ for (i in 1:2) {
   this.row <- apply(bs.results.1[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
                     2, mean, na.rm = TRUE)
   bs.results.1.combined[[species.idx]][4, ] <- this.row
-  
+
   this.row <- apply(bs.results.0[[species.idx]][1:nsets, ],
                     2, mean, na.rm = TRUE)
   bs.results.0.combined[[species.idx]][1, ] <- this.row
   this.row <- apply(bs.results.0[[species.idx]][(nsets + 1):(2 * nsets), ],
                     2, mean, na.rm = TRUE)
   bs.results.0.combined[[species.idx]][2, ] <- this.row
-  this.row <- apply(bs.results.0[[species.idx]][(2 * nsets + 1):(3 * nsets), ],
+  this.row <- apply(bs.results.0[[species.idx]][(2 * nsets +1):(3 * nsets), ],
                     2, mean, na.rm = TRUE)
   bs.results.0.combined[[species.idx]][3, ] <- this.row
   this.row <- apply(bs.results.0[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
@@ -176,20 +139,26 @@ for (i in 1:2) {
   bs.results.0.combined[[species.idx]][4, ] <- this.row
 }
 
-# Apparently ROCR can take in a list over all 100 datasets to 
-# come up with an averaged cross-validation curve
+prefix <- "ss-results/"
+files <- list.files(path = prefix)
 
-for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
+# Apparently ROCR can take in a list over all 100 datasets to
+# come up with an averaged cross-validation curve
+species.idx <- 1
+
+# for (species.idx in 1:2) {
+  for (sample.idx in 1:2) {
+    # for (n.idx in 1:2) {
   this.samp    <- samp.types[sample.idx]
   this.species <- species.idx
   this.n       <- ns[n.idx]
-  
+
   this.gev.pred <- vector(mode = "list", length = nsets)
   this.pro.pred <- vector(mode = "list", length = nsets)
   this.log.pred <- vector(mode = "list", length = nsets)
   this.yp       <- vector(mode = "list", length = nsets)
   sets.done <- rep(FALSE, nsets)
-  
+
   for (set in 1:nsets) {
     results.file <- paste("./ss-results/", this.samp, "-", this.species, "-",
                           this.n, "-", set, ".RData", sep = "")
@@ -202,7 +171,7 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
       this.log.pred[[set]] <- post.prob.log
     }
   }
-  
+
   pred.gev.name <- paste("pred.gev.", this.samp, ".",
                          this.species, ".", this.n, sep = "")
   pred.pro.name <- paste("pred.pro.", this.samp, ".",
@@ -216,7 +185,7 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
   assign(pred.log.name, this.log.pred[sets.done])
   assign(yp.name, this.yp[sets.done])
   print(paste(this.samp, this.species, this.n))
-}}}
+} # }}
 
 #### look at over ROC curves and PRC curves
 pred.gev <- prediction(pred.gev.clu.1.100, yp.clu.1.100)
@@ -228,15 +197,6 @@ plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-clu-1-100.pdf")
 dev.off()
 
-pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
-pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
-pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
-quartz(width = 16, height = 8)
-main <- "Species 2, Cluster sample, n = 100"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-2-100.pdf")
-dev.off()
-
 pred.gev <- prediction(pred.gev.srs.1.100, yp.srs.1.100)
 pred.pro <- prediction(pred.pro.srs.1.100, yp.srs.1.100)
 pred.log <- prediction(pred.log.srs.1.100, yp.srs.1.100)
@@ -244,6 +204,15 @@ quartz(width = 16, height = 8)
 main <- "Species 1, Simple random sample, n = 100"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-srs-1-100.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
+pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
+pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
+quartz(width = 16, height = 8)
+main <- "Species 2, Cluster sample, n = 100"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-clu-2-100.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.srs.2.100, yp.srs.2.100)
@@ -297,52 +266,52 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
     which.y <- paste("Y", species.idx, sep = "")
     samp.type <- samp.types[sample.idx]
     n <- ns[n.idx]
-    results.file <- paste("./ss-results/", samp.type, "-", species.idx, "-", n, 
+    results.file <- paste("./ss-results/", samp.type, "-", species.idx, "-", n,
                           "-", set.idx, ".RData", sep = "")
     ss.list <- paste(samp.type, ".lst.", which.y, sep = "")
-    post.plot.file <- paste("./plots/post-prob-", samp.type, "-", species.idx, 
+    post.plot.file <- paste("./plots/post-prob-", samp.type, "-", species.idx,
                             "-", n, "-", set.idx, ".pdf", sep = "")
-    
-    
+
+
     if (set.idx %% 10 == 0) {
       if (file.exists(results.file)) {
         load(results.file)
-        
+
         obs <- as.vector(as.factor(get(which.y)))
         df <- data.frame(Y = obs, s1 = s[, 1], s2 = s[, 2])
         main <- paste("Census of species ", species.idx, sep = "")
         legend.title <- paste("Species ", species.idx, sep = "")
         p1 <- plot.species(df = df, main = main, legend.title = legend.title)
-        
+
         zlim <- range(c(post.prob.gev, post.prob.pro, post.prob.log))
         post.s       <- rbind(s.p, s.o)
         legend.title <- "P(Y = 1)"
-        
+
         post.prob <- c(post.prob.gev, rep(NA, length = nrow(s.o)))
         df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
         main <- "GEV"
         p2 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
                                 legend.title = legend.title)
-        
+
         post.prob <- c(post.prob.pro, rep(NA, length = nrow(s.o)))
         df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
         main <- "Probit"
         p3 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
                                 legend.title = legend.title)
-        
+
         post.prob <- c(post.prob.log, rep(NA, length = nrow(s.o)))
         df <- data.frame(Y = post.prob, s1 = post.s[, 1], s2 = post.s[, 2])
         main <- "Logit"
         p4 <- plot.post.heatmap(df = df, main = main, zlim = zlim,
                                 legend.title = legend.title)
-        
+
         layout.mtx <- matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
         panel <- arrangeGrob(p1, p2, p3, p4, ncol = 2, layout_matrix = layout.mtx)
         ggsave(post.plot.file, plot = panel, width = 10, height = 8)
-        
-        print(paste("Species: ", species.idx, ", Sampling: ", samp.type, 
+
+        print(paste("Species: ", species.idx, ", Sampling: ", samp.type,
                     ", n: ", n, ", Set: ", set.idx, sep = ""))
-        
+
       }
     }
   }

@@ -2,7 +2,8 @@ rm(list = ls())
 source("./package_load.R", chdir = TRUE)
 
 set.seed(7483)  # site
-ns <- c(1650, 2300, 1650, 2300, 1650, 2300)  # 650 train and 1300 train
+# ns <- c(1650, 2300, 1650, 2300, 1650, 2300)  # 650 train and 1300 train
+ns <- c(1100, 1250, 1100, 1250, 1100, 1250)  # 100 train and 250 train
 nsettings <- length(ns)  # storing y in a list
 
 ################################################################################
@@ -13,8 +14,8 @@ gev.rho    <- 0.05  # 1.5 x knot spacing
 gev.xi     <- 0
 gev.prob   <- 0.05
 gev.thresh <- -log(-log(1 - gev.prob))  # thresh = -Intercept
-knots <- as.matrix(expand.grid(x = seq(0, 1, length = 21),
-                               y = seq(0, 1, length = 21)))
+knots <- as.matrix(expand.grid(x = seq(1 / 30, 29 / 30, length = 15), 
+                               y = seq(1 / 30, 29 / 30, length = 15)))
 
 
 ################################################################################
@@ -43,9 +44,9 @@ log.error  <- 0  # let the bernoulli r.v. take care of this noise
 ###   and other sets with around 18% rareness.
 ################################################################################
 nhotspots <- 2
-p <- 0.95   # P(Y=1|hot spot)
-q <- 0.001  # P(Y=1|background)
-r <- 0.08  # Hot spot radius
+p <- 0.90   # P(Y=1|hot spot)
+q <- 0.005  # P(Y=1|background)
+r <- 0.07  # Hot spot radius
 # hot.prob <- 0.045
 
 # nhotspots <- 3
@@ -73,50 +74,66 @@ for (setting in 1:nsettings) {
 
     ### GEV generation
     if (setting == 1 | setting == 2) {
-      data <- rRareBinarySpat(x = simdata[[setting]]$x,
-                              s = simdata[[setting]]$s[, , set],
-                              knots = knots, beta = 0, xi = gev.xi,
-                              alpha = gev.alpha, rho = gev.rho,
-                              prob.success = gev.prob, thresh = gev.thresh)
-
-      simdata[[setting]]$y[, set]    <- data$y
-      simdata[[setting]]$thresh[set] <- data$thresh
+      nobs <- 0
+      while (nobs < ns[setting] * 0.03 | nobs > ns[setting] * 0.1) {
+        data <- rRareBinarySpat(x = simdata[[setting]]$x,
+                                s = simdata[[setting]]$s[, , set],
+                                knots = knots, beta = 0, xi = gev.xi,
+                                alpha = gev.alpha, rho = gev.rho,
+                                prob.success = gev.prob, thresh = gev.thresh)
+        
+        simdata[[setting]]$y[, set]    <- data$y
+        simdata[[setting]]$thresh[set] <- data$thresh
+        
+        nobs <- sum(data$y)
+      }
     }
 
     ### logit generation
     if (setting == 3 | setting == 4) {
-      d <- as.matrix(rdist(simdata[[setting]]$s[, , set]))
-      diag(d) <- 0
-      Sigma <- simple.cov.sp(D = d, sp.type = "exponential",
-                             sp.par = c(log.var, log.rho),
-                             error.var = log.error, finescale.var = 0)
-
-      data <- transform$logit(log.prob) + t(chol(Sigma)) %*% rnorm(ns[setting])
-      # thresh <- quantile(data, probs = (1 - log.prob))
-      data <- log.thresh + data
-      data <- rbinom(n = ns[setting], size = 1, prob = transform$inv.logit(data))
-
-      simdata[[setting]]$y[, set]    <- data
-      simdata[[setting]]$thresh[set] <- log.thresh
+      nobs <- 0
+      while (nobs < ns[setting] * 0.03 | nobs > ns[setting] * 0.1) {
+        d <- as.matrix(rdist(simdata[[setting]]$s[, , set]))
+        diag(d) <- 0
+        Sigma <- simple.cov.sp(D = d, sp.type = "exponential",
+                               sp.par = c(log.var, log.rho),
+                               error.var = log.error, finescale.var = 0)
+        
+        data <- transform$logit(log.prob) + t(chol(Sigma)) %*% rnorm(ns[setting])
+        # thresh <- quantile(data, probs = (1 - log.prob))
+        data <- log.thresh + data
+        data <- rbinom(n = ns[setting], size = 1, prob = transform$inv.logit(data))
+        
+        simdata[[setting]]$y[, set]    <- data
+        simdata[[setting]]$thresh[set] <- log.thresh
+        
+        nobs <- sum(data)
+      }
     }
 
     ### hotspot generation
     if (setting == 5 | setting == 6) {
-      k  <- rpois(1, nhotspots) + 1
-      hotspots <- cbind(runif(k), runif(k))
-      d <- rdist(simdata[[setting]]$s[, , set], hotspots)
-
-      # get the radius for the hotspots.
-      #   1. Look at the distance to the closes knot for all sites
-      #   2. Set the hotspot radius to the quantile of the minimum distances
-      #      that corresponds to the desired rareness / P(Y = 1|in hotspot)
-      # r <- quantile(apply(d, 1, min), probs = hot.prob / p)
-
-      hot <- rowSums(d <= r) > 0
-
-      simdata[[setting]]$y[, set] <- rbinom(ns[setting], 1, ifelse(hot, p, q))
-      simdata[[setting]]$hotspots[[set]] <- hotspots
-      simdata[[setting]]$thresh[set] <- r
+      nobs <- 0
+      
+      while (nobs < ns[setting] * 0.03 | nobs > ns[setting] * 0.1) {
+        k  <- rpois(1, nhotspots) + 1
+        hotspots <- cbind(runif(k), runif(k))
+        d <- rdist(simdata[[setting]]$s[, , set], hotspots)
+        
+        # get the radius for the hotspots.
+        #   1. Look at the distance to the closes knot for all sites
+        #   2. Set the hotspot radius to the quantile of the minimum distances
+        #      that corresponds to the desired rareness / P(Y = 1|in hotspot)
+        # r <- quantile(apply(d, 1, min), probs = hot.prob / p)
+        
+        hot <- rowSums(d <= r) > 0
+        
+        simdata[[setting]]$y[, set] <- rbinom(ns[setting], 1, ifelse(hot, p, q))
+        simdata[[setting]]$hotspots[[set]] <- hotspots
+        simdata[[setting]]$thresh[set] <- r
+        
+        nobs <- sum(simdata[[setting]]$y[, set])
+      }
     }
 
     if (set %% 20 == 0) {
@@ -146,7 +163,7 @@ for (setting in 1:nsettings) {
     idx.0   <- sample(which(simdata[[setting]]$y[, set] == 0), size = ntest.0)
 
     # reorder y and s so the train are the first observations
-    test  <- c(idx.1, idx.0)
+    test  <- sort(c(idx.1, idx.0))
     train <- (1:ns[setting])[-test]
 
     simdata[[setting]]$y[, set]   <- y[c(train, test)]
@@ -155,7 +172,11 @@ for (setting in 1:nsettings) {
 }
 
 for (i in 1:6) {
-  print(mean(simdata[[i]]$y))
+  if (i %in% c(1, 3, 5)) {
+    print(mean(simdata[[i]]$y[1:100, ]))
+  } else {
+    print(mean(simdata[[i]]$y[1:250, ]))
+  }
 }
 
 #### Plot datasets for different settings with highest and lowest rareness
@@ -164,22 +185,18 @@ par(mfrow = c(3, 4))
 settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
 
 for (setting in 1:length(settings)) {
-  if (setting %in% c(1, 3, 5)) {
-    end <- 650
-  } else {
-    end <- 1300
-  }
+  end <- ns[setting]
 
   sets <- tail(order(colMeans(simdata[[setting]]$y[1:end, ])), 2)
   for(set in sets) {
     plot(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] != 1), , set],
-         pch = 21, cex = 1.5, col = "dodgerblue4", bg = "dodgerblue1",
+         pch = 21, cex = 1, col = "dodgerblue4", bg = "dodgerblue1",
          xlab = "", ylab = "",
          main = paste(settings[setting], ": ",
                       round(100 * mean(simdata[[setting]]$y[1:end, set]), 2),
                       "%, ns = ", ns[setting] - 1000, sep = ""))
     points(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] == 1), , set],
-           pch = 21, cex = 1.5, col = "firebrick4", bg = "firebrick1")
+           pch = 21, cex = 1, col = "firebrick4", bg = "firebrick1")
   }
 }
 dev.print(device = pdf, file = "five-high.pdf")
@@ -190,23 +207,19 @@ par(mfrow = c(3, 4))
 settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
 
 for (setting in 1:length(settings)) {
-  if (setting %in% c(1, 3, 5)) {
-    end <- 650
-  } else {
-    end <- 1300
-  }
+  end <- ns[setting]
 
   sets <- order(colMeans(simdata[[setting]]$y[1:end, ]))[1:2]
 
   for (set in sets) {
     plot(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] != 1), , set],
-         pch = 21, cex = 1.5, col = "dodgerblue4", bg = "dodgerblue1",
+         pch = 21, cex = 1, col = "dodgerblue4", bg = "dodgerblue1",
          xlab = "", ylab = "",
          main = paste(settings[setting], ": ",
                       round(100 * mean(simdata[[setting]]$y[1:end, set]), 2),
                       "%, ns = ", ns[setting] - 1000, sep = ""))
     points(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] == 1), , set],
-           pch = 21, cex = 1.5, col = "firebrick4", bg = "firebrick1")
+           pch = 21, cex = 1, col = "firebrick4", bg = "firebrick1")
   }
 }
 dev.print(device = pdf, file = "five-low.pdf")
