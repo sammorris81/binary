@@ -1,4 +1,5 @@
 library(ggplot2)
+library(gridExtra)
 library(colorspace)
 library(scales)
 plot.post.heatmap <- function(df, main, zlim, midpoint = NULL,
@@ -86,4 +87,25 @@ plot.roc.prc <- function(pred.gev, pred.pro, pred.log, avg = "vertical",
   plot(prc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
   # legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
   #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
+}
+
+plot.smooth <- function(df) {
+  p1 <- ggplot(df, aes(x = rareness, y = bs, color = method))
+  p1 <- p1 + geom_point()
+  p1 <- p1 + geom_smooth()
+  p1 <- p1 + labs(x = "Rareness", y = "Brier Score", 
+                  title = "Rareness vs Brier Score")
+  p1 <- p1 + theme_bw()
+  
+  p2 <- ggplot(df, aes(x = rareness, y = auc, color = method))
+  p2 <- p2 + geom_point()
+  p2 <- p2 + geom_smooth()
+  p2 <- p2 + labs(x = "Rareness", y = "AUROC", 
+                  title = "Rareness vs AUROC")
+  p2 <- p2 + theme_bw()
+  
+  
+  layout.mtx = matrix(1:2, nrow = 1, ncol = 2)
+  panel <- arrangeGrob(p1, p2, ncol = 2, layout_matrix = layout.mtx)
+  return(panel)
 }

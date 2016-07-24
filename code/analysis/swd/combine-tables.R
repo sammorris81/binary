@@ -148,44 +148,44 @@ species.idx <- 1
 
 # for (species.idx in 1:2) {
   for (sample.idx in 1:2) {
-    # for (n.idx in 1:2) {
-  this.samp    <- samp.types[sample.idx]
-  this.species <- species.idx
-  this.n       <- ns[n.idx]
-
-  this.gev.pred <- vector(mode = "list", length = nsets)
-  this.pro.pred <- vector(mode = "list", length = nsets)
-  this.log.pred <- vector(mode = "list", length = nsets)
-  this.yp       <- vector(mode = "list", length = nsets)
-  sets.done <- rep(FALSE, nsets)
-
-  for (set in 1:nsets) {
-    results.file <- paste("./ss-results/", this.samp, "-", this.species, "-",
-                          this.n, "-", set, ".RData", sep = "")
-    if (file.exists(results.file)) {
-      sets.done[set] <- TRUE
-      load(results.file)
-      this.yp[[set]] <- y.p
-      this.gev.pred[[set]] <- post.prob.gev
-      this.pro.pred[[set]] <- post.prob.pro
-      this.log.pred[[set]] <- post.prob.log
-    }
-  }
-
-  pred.gev.name <- paste("pred.gev.", this.samp, ".",
-                         this.species, ".", this.n, sep = "")
-  pred.pro.name <- paste("pred.pro.", this.samp, ".",
-                         this.species, ".", this.n, sep = "")
-  pred.log.name <- paste("pred.log.", this.samp, ".",
-                         this.species, ".", this.n, sep = "")
-  yp.name   <- paste("yp.", this.samp, ".", this.species, ".", this.n, sep = "")
-  # the syntax here is single bracket to access multiple elements of the list
-  assign(pred.gev.name, this.gev.pred[sets.done])
-  assign(pred.pro.name, this.pro.pred[sets.done])
-  assign(pred.log.name, this.log.pred[sets.done])
-  assign(yp.name, this.yp[sets.done])
-  print(paste(this.samp, this.species, this.n))
-} # }}
+    for (n.idx in 1:2) {
+      this.samp    <- samp.types[sample.idx]
+      this.species <- species.idx
+      this.n       <- ns[n.idx]
+      
+      this.gev.pred <- vector(mode = "list", length = nsets)
+      this.pro.pred <- vector(mode = "list", length = nsets)
+      this.log.pred <- vector(mode = "list", length = nsets)
+      this.yp       <- vector(mode = "list", length = nsets)
+      sets.done <- rep(FALSE, nsets)
+      
+      for (set in 1:nsets) {
+        results.file <- paste("./ss-results/", this.samp, "-", this.species, "-",
+                              this.n, "-", set, ".RData", sep = "")
+        if (file.exists(results.file)) {
+          sets.done[set] <- TRUE
+          load(results.file)
+          this.yp[[set]] <- y.p
+          this.gev.pred[[set]] <- post.prob.gev
+          this.pro.pred[[set]] <- post.prob.pro
+          this.log.pred[[set]] <- post.prob.log
+        }
+      }
+      
+      pred.gev.name <- paste("pred.gev.", this.samp, ".",
+                             this.species, ".", this.n, sep = "")
+      pred.pro.name <- paste("pred.pro.", this.samp, ".",
+                             this.species, ".", this.n, sep = "")
+      pred.log.name <- paste("pred.log.", this.samp, ".",
+                             this.species, ".", this.n, sep = "")
+      yp.name   <- paste("yp.", this.samp, ".", this.species, ".", this.n, sep = "")
+      # the syntax here is single bracket to access multiple elements of the list
+      assign(pred.gev.name, this.gev.pred[sets.done])
+      assign(pred.pro.name, this.pro.pred[sets.done])
+      assign(pred.log.name, this.log.pred[sets.done])
+      assign(yp.name, this.yp[sets.done])
+      print(paste(this.samp, this.species, this.n))
+}}  # }
 
 #### look at over ROC curves and PRC curves
 pred.gev <- prediction(pred.gev.clu.1.100, yp.clu.1.100)
@@ -206,6 +206,24 @@ plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-srs-1-100.pdf")
 dev.off()
 
+pred.gev <- prediction(pred.gev.clu.1.250, yp.clu.1.250)
+pred.pro <- prediction(pred.pro.clu.1.250, yp.clu.1.250)
+pred.log <- prediction(pred.log.clu.1.250, yp.clu.1.250)
+quartz(width = 16, height = 8)
+main <- "Species 1, Cluster sample, n = 250"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-clu-1-250.pdf")
+dev.off()
+
+pred.gev <- prediction(pred.gev.srs.1.250, yp.srs.1.250)
+pred.pro <- prediction(pred.pro.srs.1.250, yp.srs.1.250)
+pred.log <- prediction(pred.log.srs.1.250, yp.srs.1.250)
+quartz(width = 16, height = 8)
+main <- "Species 1, Simple random sample, n = 250"
+plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, "./plots/perf-srs-1-250.pdf")
+dev.off()
+
 pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
 pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
 pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
@@ -224,15 +242,6 @@ plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-srs-2-100.pdf")
 dev.off()
 
-pred.gev <- prediction(pred.gev.clu.1.250, yp.clu.1.250)
-pred.pro <- prediction(pred.pro.clu.1.250, yp.clu.1.250)
-pred.log <- prediction(pred.log.clu.1.250, yp.clu.1.250)
-quartz(width = 16, height = 8)
-main <- "Species 1, Cluster sample, n = 250"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-1-250.pdf")
-dev.off()
-
 pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
 pred.pro <- prediction(pred.pro.clu.2.250, yp.clu.2.250)
 pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
@@ -240,15 +249,6 @@ quartz(width = 16, height = 8)
 main <- "Species 2, Cluster sample, n = 250"
 plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-clu-2-250.pdf")
-dev.off()
-
-pred.gev <- prediction(pred.gev.srs.1.250, yp.srs.1.250)
-pred.pro <- prediction(pred.pro.srs.1.250, yp.srs.1.250)
-pred.log <- prediction(pred.log.srs.1.250, yp.srs.1.250)
-quartz(width = 16, height = 8)
-main <- "Species 1, Simple random sample, n = 250"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-1-250.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.srs.2.250, yp.srs.2.250)

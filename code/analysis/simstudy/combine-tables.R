@@ -137,6 +137,28 @@ for (i in 1:nsettings) {
   dev.off()
 }
 
+#### smooth of rareness by brier score
+for (setting in 1:nsettings) {
+  these.include <- which(rowSums(!is.na(bs.results[[setting]])) == 3)
+  plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
+  df <- data.frame(rareness = rep(rareness[these.include, 1], 3),
+                   bs = c(bs.results[[setting]][these.include, 1], 
+                          bs.results[[setting]][these.include, 2],
+                          bs.results[[setting]][these.include, 3]),
+                   auc = c(auc.results[[setting]][these.include, 1],
+                           auc.results[[setting]][these.include, 2], 
+                           auc.results[[setting]][these.include, 3]),
+                   method = as.factor(rep(c("GEV", "Probit", "Logistic"), 
+                                          each = length(these.include))))
+  df$method <- factor(df$method, levels = c("GEV", "Probit", "Logistic"))
+  
+  panel <- plot.smooth(df)
+  ggsave(plot.file, plot = panel, width = 8, height = 4)
+}
+
+
+
+
 # how many have finished
 colSums(!is.na(bs.results[[1]]))
 colSums(!is.na(bs.results[[2]]))
