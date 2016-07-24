@@ -147,27 +147,29 @@ for (setting in 1:nsettings) {
 # Split observations for testing and training. Using a stratified sample here to
 # further reduce the variability in rareness across training and testing sites.
 ################################################################################
+rareness <- matrix(NA, 100, 6)
 for (setting in 1:nsettings) {
   ntest  <- 1000
   ntrain <- ns[setting] - ntest
   for (set in 1:nsets) {
     # simplify the notation
-    y <- simdata[[setting]]$y[, set]
-    s <- simdata[[setting]]$s[, , set]
+    this.y <- simdata[[setting]]$y[, set]
+    this.s <- simdata[[setting]]$s[, , set]
 
     # get the sample breakdown of 1s and 0s for testing
-    phat <- mean(y)
-    ntest.1 <- floor(ntest * phat)
-    ntest.0 <- ntest - ntest.1
-    idx.1   <- sample(which(simdata[[setting]]$y[, set] == 1), size = ntest.1)
-    idx.0   <- sample(which(simdata[[setting]]$y[, set] == 0), size = ntest.0)
+    phat <- mean(this.y)
+    ntrain.1 <- floor(ntrain * phat)
+    ntrain.0 <- ntrain - ntrain.1
+    idx.1   <- sample(which(this.y == 1), size = ntrain.1)
+    idx.0   <- sample(which(this.y == 0), size = ntrain.0)
 
     # reorder y and s so the train are the first observations
-    test  <- sort(c(idx.1, idx.0))
-    train <- (1:ns[setting])[-test]
+    train  <- sort(c(idx.1, idx.0))
+    test <- (1:ns[setting])[-train]
 
-    simdata[[setting]]$y[, set]   <- y[c(train, test)]
-    simdata[[setting]]$s[, , set] <- s[c(train, test), ]
+    simdata[[setting]]$y[, set]   <- this.y[c(train, test)]
+    simdata[[setting]]$s[, , set] <- this.s[c(train, test), ]
+    rareness[set, setting] <- mean(this.y[train])
   }
 }
 
