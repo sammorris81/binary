@@ -230,9 +230,10 @@ dev.off()
 save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata.RData")
 
 # for processing over many machines at once
-nsets <- 50
+nsets <- 100
 nsettings <- 6
-sets.remain <- matrix(TRUE, nsets, nsettings)
+sets.remain <- matrix(c(rep(FALSE, nsets * 3), rep(TRUE, nsets * 3)), 
+                      nsets, nsettings, byrow = TRUE)
 write.table(x = sets.remain, file = "./sim-control/sets-remain.txt")
 system(paste("scp ./sim-control/sets-remain.txt samorris@hpc.stat.ncsu.edu:~/",
              "repos-git/rare-binary/code/analysis/simstudy/sim-control/",
