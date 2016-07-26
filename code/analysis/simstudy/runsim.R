@@ -289,7 +289,7 @@ while (sets.remain) {
   } else {
     cat("Waiting for unlock... \n")
     if (do.upload) {
-      system("rm ./sim-control/*.*")
+      system("rm ./sim-control-2/*.*")
     }
     Sys.sleep(10)  # wait a few seconds and try again
   }
