@@ -13,14 +13,14 @@ nmethods <- length(gen.methods)  # storing y in a list
 ### gev settings
 ################################################################################
 # gev.alpha  <- 0.3
-gev.alpha  <- 0.4
+gev.alpha  <- 0.3
 # gev.rho    <- 0.05  # 1.5 x knot spacing
 gev.rho    <- 0.025
 gev.xi     <- 0
 gev.prob   <- 0.05
 gev.thresh <- -log(-log(1 - gev.prob))  # thresh = -Intercept
-knots <- as.matrix(expand.grid(x = seq(1 / 60, 59 / 60, length = 30), 
-                               y = seq(1 / 60, 59 / 60, length = 30)))
+knots <- as.matrix(expand.grid(x = seq(1 / 100, 99 / 100, length = 50), 
+                               y = seq(1 / 100, 99 / 100, length = 50)))
 
 ################################################################################
 ### logit settings
@@ -32,7 +32,7 @@ knots <- as.matrix(expand.grid(x = seq(1 / 60, 59 / 60, length = 30),
 ################################################################################
 log.var    <- 10
 # log.rho    <- 0.05
-log.rho    <- 0.025
+log.rho    <- 0.05
 log.prob   <- 0.05  # used to set the intercept for the xbeta
 log.thresh <- transform$logit(log.prob)
 log.error  <- 0  # let the bernoulli r.v. take care of this noise
