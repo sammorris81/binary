@@ -4,8 +4,10 @@ source("./package_load.R", chdir = TRUE)
 set.seed(7483)  # site
 # ns <- c(1650, 2300, 1650, 2300, 1650, 2300)  # 650 train and 1300 train
 # ns <- c(1100, 1250, 1100, 1250, 1100, 1250)  # 100 train and 250 train
-ns <- c(100, 250, 100, 250, 100, 250)
-nsettings <- length(ns)  # storing y in a list
+ns <- c(100, 250)
+samp.types  <- c("clu", "srs")
+gen.methods <- c("gev", "logistic", "hotspot")
+nmethods <- length(gen.methods)  # storing y in a list
 
 ################################################################################
 ### gev settings
@@ -17,8 +19,8 @@ gev.rho    <- 0.025
 gev.xi     <- 0
 gev.prob   <- 0.05
 gev.thresh <- -log(-log(1 - gev.prob))  # thresh = -Intercept
-knots <- as.matrix(expand.grid(x = seq(1 / 50, 49 / 50, length = 25), 
-                               y = seq(1 / 50, 49 / 50, length = 25)))
+knots <- as.matrix(expand.grid(x = seq(1 / 60, 59 / 60, length = 30), 
+                               y = seq(1 / 60, 59 / 60, length = 30)))
 
 ################################################################################
 ### logit settings
@@ -60,7 +62,7 @@ r <- 0.07  # Hot spot radius
 ##############################################
 ### generate the data
 ##############################################
-simdata <- vector(mode = "list", length = nsettings)
+simdata <- vector(mode = "list", length = nmethods)
 
 nsets <- 100
 set.seed(3282)  # data
@@ -73,72 +75,50 @@ Sigma <- simple.cov.sp(D = d, sp.type = "exponential",
                        error.var = log.error, finescale.var = 0)
 t.Sigma.chol <- t(chol(Sigma))
 
-for (setting in 1:nsettings) {
-  # simdata[[setting]]$y <- matrix(data = NA, nrow = ns[setting], ncol = nsets)
-  simdata[[setting]]$y <- matrix(data = NA, nrow = nrow(s.grid), ncol = nsets)
-  simdata[[setting]]$thresh <- rep(NA, nsets)
-  # simdata[[setting]]$s <- array(runif(2 * nsets * ns[setting]),
-  #                               dim = c(ns[setting], 2, nsets))
-  
-  # simdata[[setting]]$x <- matrix(1, ns[setting], 1)
-  simdata[[setting]]$x <- matrix(1, nrow(s.grid), 1)
-  simdata[[setting]]$hotspots <- vector(mode = "list", length = nsets)
+for (method in 1:nmethods) {
+  simdata[[method]]$y.grid <- matrix(data = NA, nrow = nrow(s.grid), ncol = nsets)
+  simdata[[method]]$thresh <- rep(NA, nsets)
+  simdata[[method]]$x <- matrix(1, nrow(s.grid), 1)
+  simdata[[method]]$hotspots <- vector(mode = "list", length = nsets)
   
   for (set in 1:nsets) {
-    
     ### GEV generation
-    if (setting == 1 | setting == 2) {
+    if (method == 1) {
       nobs <- 0
-      # while (nobs < ns[setting] * 0.03 | nobs > ns[setting] * 0.1) {
       while (nobs < 100 | nobs > 700) {
-        data <- rRareBinarySpat(x = simdata[[setting]]$x,
-                                # s = simdata[[setting]]$s[, , set],
-                                s = s.grid,
+        data <- rRareBinarySpat(x = simdata[[method]]$x, s = s.grid,
                                 knots = knots, beta = 0, xi = gev.xi,
                                 alpha = gev.alpha, rho = gev.rho,
                                 prob.success = gev.prob, thresh = gev.thresh)
         
-        simdata[[setting]]$y[, set]    <- data$y
-        simdata[[setting]]$thresh[set] <- data$thresh
+        simdata[[method]]$y.grid[, set] <- data$y
+        simdata[[method]]$thresh[set]   <- data$thresh
         
         nobs <- sum(data$y)
       }
     }
     
     ### logit generation
-    if (setting == 3 | setting == 4) {
+    if (method == 2) {
       nobs <- 0
-      # while (nobs < ns[setting] * 0.03 | nobs > ns[setting] * 0.1) {
       while (nobs < 100 | nobs > 700) {
-        # d <- as.matrix(rdist(simdata[[setting]]$s[, , set]))
-        # diag(d) <- 0
-        # Sigma <- simple.cov.sp(D = d, sp.type = "exponential",
-        #                        sp.par = c(log.var, log.rho),
-        #                        error.var = log.error, finescale.var = 0)
-        
-        # data <- transform$logit(log.prob) + t(chol(Sigma)) %*% rnorm(ns[setting])
         data <- transform$logit(log.prob) + t.Sigma.chol %*% rnorm(nrow(s.grid))
-        # thresh <- quantile(data, probs = (1 - log.prob))
         data <- log.thresh + data
-        # data <- rbinom(n = ns[setting], size = 1, prob = transform$inv.logit(data))
         data <- rbinom(n = nrow(s.grid), size = 1, prob = transform$inv.logit(data))
         
-        simdata[[setting]]$y[, set]    <- data
-        simdata[[setting]]$thresh[set] <- log.thresh
+        simdata[[method]]$y.grid[, set] <- data
+        simdata[[method]]$thresh[set]   <- log.thresh
         
         nobs <- sum(data)
       }
     }
     
     ### hotspot generation
-    if (setting == 5 | setting == 6) {
+    if (method == 3) {
       nobs <- 0
-      
-      # while (nobs < ns[setting] * 0.03 | nobs > ns[setting] * 0.1) {
       while (nobs < 100 | nobs > 700) {
         k  <- rpois(1, nhotspots) + 1
         hotspots <- cbind(runif(k), runif(k))
-        # d <- rdist(simdata[[setting]]$s[, , set], hotspots)
         d <- rdist(s.grid, hotspots)
         
         # get the radius for the hotspots.
@@ -148,16 +128,13 @@ for (setting in 1:nsettings) {
         # r <- quantile(apply(d, 1, min), probs = hot.prob / p)
         
         hot <- rowSums(d <= r) > 0
+        this.y <- rbinom(nrow(s.grid), 1, ifelse(hot, p, q))
         
-        # simdata[[setting]]$y[, set] <- rbinom(ns[setting], 1, 
-        #                                       ifelse(hot, p, q))
+        simdata[[method]]$hotspots[[set]] <- hotspots
+        simdata[[method]]$thresh[set] <- r
         
-        simdata[[setting]]$y[, set] <- rbinom(nrow(s.grid), 1, 
-                                              ifelse(hot, p, q))
-        simdata[[setting]]$hotspots[[set]] <- hotspots
-        simdata[[setting]]$thresh[set] <- r
-        
-        nobs <- sum(simdata[[setting]]$y[, set])
+        nobs <- sum(this.y)
+        simdata[[method]]$y.grid[, set] <- this.y
       }
     }
     
@@ -165,40 +142,82 @@ for (setting in 1:nsettings) {
       print(paste("  Dataset ", set, " finished", sep = ""))
     }
   }
-  print(paste("Setting ", setting, " finished", sep = ""))
+  print(paste("Method ", gen.methods[method], " finished", sep = ""))
 }
+save(s.grid, simdata, file = "simdata-grid.RData")
 
 ################################################################################
 # Split observations for testing and training. Using a stratified sample here to
 # further reduce the variability in rareness across training and testing sites.
 ################################################################################
-rareness <- matrix(NA, 100, 6)
-for (setting in 1:nsettings) {
-  # ntest  <- 1000
-  # ntrain <- ns[setting] - ntest
-  ntrain <- ns[setting]
-  simdata[[setting]]$s <- array(NA, dim = c(ntrain, 2, nsets))
-  for (set in 1:nsets) {
-    # simplify the notation
-    this.y <- simdata[[setting]]$y[, set]
-    this.s <- s.grid
+for (method in 1:3) {
+  for (n.idx in 1:length(ns)) {
+    n <- ns[n.idx]
+    this.clu <- vector(mode = "list", length = nsets)
+    this.srs <- vector(mode = "list", length = nsets)
+    clu.name <- paste("clu.lst.", method, ".", n, sep = "")
+    srs.name <- paste("srs.lst.", method, ".", n, sep = "")
+    for (set in 1:nsets) {
+      set.seed(n.idx * 1000 + set)
+      nobs <- 0
+      this.y <- simdata[[method]]$y.grid[, set]
+      
+      while (nobs < 3) {
+        # keep repeating the sampling until there are at least 3 observations
+        these.train <- sort(sample(length(this.y), n))
+        y.o <- this.y[these.train]
+        these.cluster <- y.o == 1
+        these.cluster.ids <- these.train[these.cluster]
+        for (i in 1:length(these.cluster.ids)) {
+          # get the location of the cell where y == 1
+          this.cell <- get.arr.idx(these.cluster.ids[i], nrows = 100)
+          this.row  <- this.cell[1]
+          this.col  <- this.cell[2]
+          
+          # account for the boundary
+          neighbors.row <- c(this.row + 1, this.row - 1)
+          neighbors.col <- c(this.col + 1, this.col - 1)
+          neighbors.row <- neighbors.row[neighbors.row > 0 & neighbors.row < 100]
+          neighbors.col <- neighbors.col[neighbors.col > 0 & neighbors.col < 100]
+          for (j in 1:length(neighbors.row)) {
+            these.train <- c(these.train,
+                             get.idx(row = neighbors.row[j], col = this.col, 
+                                     nrows = 100))
+          }
+          for (j in 1:length(neighbors.col)) {
+            these.train <- c(these.train, 
+                             get.idx(row = this.row, col = neighbors.col[j], 
+                                     nrows = 100))
+          }
+        }
+        these.train <- sort(unique(these.train))
+        y.o <- this.y[these.train]
+        nobs <- sum(y.o)
+      }
+      this.clu[[set]] <- these.train
+      
+      set.seed(n.idx * 1000 + set)
+      nobs <- 0
+      nsamp <- length(these.train)
+      while (nobs < 3) {
+        these.train <- sort(sample(length(this.y), nsamp))
+        y.o <- this.y[these.train]
+        nobs <- sum(y.o)
+      }
+      this.srs[[set]] <- these.train
+    }
     
-    # get the sample breakdown of 1s and 0s for testing
-    phat <- mean(this.y)
-    ntrain.1 <- floor(ntrain * phat)
-    ntrain.0 <- ntrain - ntrain.1
-    idx.1   <- sample(which(this.y == 1), size = ntrain.1)
-    idx.0   <- sample(which(this.y == 0), size = ntrain.0)
-    
-    # reorder y and s so the train are the first observations
-    train  <- sort(c(idx.1, idx.0))
-    test <- (1:ns[setting])[-train]
-    
-    simdata[[setting]]$y[, set]   <- this.y[c(train, test)]
-    simdata[[setting]]$s[, , set] <- this.s[c(train, test), ]
-    rareness[set, setting] <- mean(this.y[train])
+    assign(clu.name, this.clu)
+    assign(srs.name, this.srs)
   }
 }
+
+save(simdata, s.grid, 
+     srs.lst.1.100, srs.lst.2.100, srs.lst.3.100, 
+     srs.lst.1.250, srs.lst.2.250, srs.lst.3.250,
+     clu.lst.1.100, clu.lst.2.100, clu.lst.3.100,
+     clu.lst.1.250, clu.lst.2.250, clu.lst.3.250,
+     file = "simdata-grid.RData")
 
 for (i in 1:6) {
   if (i %in% c(1, 3, 5)) {
@@ -257,13 +276,12 @@ dev.off()
 save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata.RData")
 
 # for processing over many machines at once
-nsets <- 100
-nsettings <- 6
-sets.remain <- matrix(c(rep(FALSE, nsets * 3), rep(TRUE, nsets * 3)), 
-                      nsets, nsettings, byrow = TRUE)
-write.table(x = sets.remain, file = "./sim-control/sets-remain.txt")
-system(paste("scp ./sim-control/sets-remain.txt samorris@hpc.stat.ncsu.edu:~/",
-             "repos-git/rare-binary/code/analysis/simstudy/sim-control/",
+nsets <- 50
+nsettings <- 12
+sets.remain <- matrix(FALSE, nsets, nsettings, byrow = TRUE)
+write.table(x = sets.remain, file = "./sim-control-2/sets-remain.txt")
+system(paste("scp ./sim-control-2/sets-remain.txt samorris@hpc.stat.ncsu.edu:~/",
+             "repos-git/rare-binary/code/analysis/simstudy/sim-control-2/",
              sep = ""))
 
 # ns <- 1300
