@@ -1,5 +1,5 @@
 rm(list = ls())
-source("./package_load.R", chdir = TRUE)
+source("./package_load-2.R", chdir = TRUE)
 
 set.seed(7483)  # site
 # ns <- c(1650, 2300, 1650, 2300, 1650, 2300)  # 650 train and 1300 train
@@ -12,8 +12,8 @@ nmethods <- length(gen.methods)  # storing y in a list
 ################################################################################
 ### gev settings
 ################################################################################
-# gev.alpha  <- 0.3
-gev.alpha  <- 0.4
+gev.alpha  <- 0.3
+# gev.alpha  <- 0.4
 # gev.rho    <- 0.05  # 1.5 x knot spacing
 gev.rho    <- 0.025
 gev.xi     <- 0
@@ -31,8 +31,8 @@ knots <- as.matrix(expand.grid(x = seq(1 / 60, 59 / 60, length = 30),
 ###   some sets that had 1% rareness and some with 16%.
 ################################################################################
 log.var    <- 10
-# log.rho    <- 0.05
-log.rho    <- 0.025
+log.rho    <- 0.07
+# log.rho    <- 0.025
 log.prob   <- 0.05  # used to set the intercept for the xbeta
 log.thresh <- transform$logit(log.prob)
 log.error  <- 0  # let the bernoulli r.v. take care of this noise
@@ -50,8 +50,8 @@ log.error  <- 0  # let the bernoulli r.v. take care of this noise
 ################################################################################
 nhotspots <- 2
 p <- 0.90   # P(Y=1|hot spot)
-q <- 0.005  # P(Y=1|background)
-r <- 0.07  # Hot spot radius
+q <- 0.001  # P(Y=1|background)
+# r <- 0.07  # Hot spot radius
 # hot.prob <- 0.045
 
 # nhotspots <- 3
@@ -78,6 +78,7 @@ t.Sigma.chol <- t(chol(Sigma))
 for (method in 1:nmethods) {
   simdata[[method]]$y.grid <- matrix(data = NA, nrow = nrow(s.grid), ncol = nsets)
   simdata[[method]]$thresh <- rep(NA, nsets)
+  simdata[[method]]$r      <- vector(mode = "list", length = nsets)
   simdata[[method]]$x <- matrix(1, nrow(s.grid), 1)
   simdata[[method]]$hotspots <- vector(mode = "list", length = nsets)
   
@@ -111,6 +112,7 @@ for (method in 1:nmethods) {
         
         nobs <- sum(data)
       }
+      
     }
     
     ### hotspot generation
@@ -118,6 +120,7 @@ for (method in 1:nmethods) {
       nobs <- 0
       while (nobs < 100 | nobs > 700) {
         k  <- rpois(1, nhotspots) + 1
+        r  <- matrix(runif(k, 0.03, 0.08), nrow(s.grid), k, byrow = TRUE)
         hotspots <- cbind(runif(k), runif(k))
         d <- rdist(s.grid, hotspots)
         
@@ -131,7 +134,7 @@ for (method in 1:nmethods) {
         this.y <- rbinom(nrow(s.grid), 1, ifelse(hot, p, q))
         
         simdata[[method]]$hotspots[[set]] <- hotspots
-        simdata[[method]]$thresh[set] <- r
+        simdata[[method]]$r[[set]] <- r
         
         nobs <- sum(this.y)
         simdata[[method]]$y.grid[, set] <- this.y
@@ -219,6 +222,13 @@ save(simdata, s.grid,
      clu.lst.1.250, clu.lst.2.250, clu.lst.3.250,
      file = "simdata-grid.RData")
 
+
+#### Look at some of the simulated grids
+df.gev <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 6]), 
+                     s1 = s.grid[, 1], s2 = s.grid[, 2])
+plot.species(df.gev, main = "GEV")
+
+
 for (i in 1:6) {
   if (i %in% c(1, 3, 5)) {
     print(mean(simdata[[i]]$y[1:100, ]))
@@ -230,12 +240,12 @@ for (i in 1:6) {
 #### Plot datasets for different settings with highest and lowest rareness
 dev.new(width = 12, height = 9)
 par(mfrow = c(3, 4))
-settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
+settings <- c("GEV", "Logit", "Hotspot")
 
 for (setting in 1:length(settings)) {
   end <- ns[setting]
   
-  sets <- tail(order(colMeans(simdata[[setting]]$y[1:end, ])), 2)
+  sets <- tail(order(colMeans(simdata[[setting]]$y[1:end, ])), 4)
   for(set in sets) {
     plot(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] != 1), , set],
          pch = 21, cex = 1, col = "dodgerblue4", bg = "dodgerblue1",
@@ -252,12 +262,12 @@ dev.off()
 
 dev.new(width = 12, height = 9)
 par(mfrow = c(3, 4))
-settings <- c("GEV", "GEV", "Logit", "Logit", "Hotspot", "Hotspot")
+settings <- c("GEV", "Logit", "Hotspot")
 
 for (setting in 1:length(settings)) {
   end <- ns[setting]
   
-  sets <- order(colMeans(simdata[[setting]]$y[1:end, ]))[1:2]
+  sets <- order(colMeans(simdata[[setting]]$y[1:end, ]))[1:4]
   
   for (set in sets) {
     plot(simdata[[setting]]$s[which(simdata[[setting]]$y[1:end, set] != 1), , set],

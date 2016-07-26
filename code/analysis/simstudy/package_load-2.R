@@ -16,6 +16,7 @@ enableJIT(3)
 source("../../../code/R/spatial_gev.R", chdir = TRUE)
 source("../../../code/R/spatial_logit.R", chdir = TRUE)
 source("../../../code/R/spatial_probit.R", chdir = TRUE)
+source("../../../code/R/plotting.R", chdir = TRUE)
 
 if (Sys.info()["nodename"] == "cwl-mth-sam-001") {
   Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
