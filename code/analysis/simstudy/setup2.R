@@ -12,15 +12,16 @@ nmethods <- length(gen.methods)  # storing y in a list
 ################################################################################
 ### gev settings
 ################################################################################
-gev.alpha  <- 0.3
+gev.alpha  <- 0.35
 # gev.alpha  <- 0.4
 # gev.rho    <- 0.05  # 1.5 x knot spacing
-gev.rho    <- 0.025
+# gev.rho    <- 0.025
+gev.rho <- 0.1
 gev.xi     <- 0
 gev.prob   <- 0.05
 gev.thresh <- -log(-log(1 - gev.prob))  # thresh = -Intercept
-knots <- as.matrix(expand.grid(x = seq(1 / 60, 59 / 60, length = 30), 
-                               y = seq(1 / 60, 59 / 60, length = 30)))
+knots <- as.matrix(expand.grid(x = seq(1 / 100, 99 / 100, length = 50), 
+                               y = seq(1 / 100, 99 / 100, length = 50)))
 
 ################################################################################
 ### logit settings
@@ -31,7 +32,7 @@ knots <- as.matrix(expand.grid(x = seq(1 / 60, 59 / 60, length = 30),
 ###   some sets that had 1% rareness and some with 16%.
 ################################################################################
 log.var    <- 10
-log.rho    <- 0.07
+log.rho    <- 0.1
 # log.rho    <- 0.025
 log.prob   <- 0.05  # used to set the intercept for the xbeta
 log.thresh <- transform$logit(log.prob)
@@ -49,8 +50,8 @@ log.error  <- 0  # let the bernoulli r.v. take care of this noise
 ###   and other sets with around 18% rareness.
 ################################################################################
 nhotspots <- 2
-p <- 0.90   # P(Y=1|hot spot)
-q <- 0.001  # P(Y=1|background)
+p <- 0.85   # P(Y=1|hot spot)
+q <- 0.0005  # P(Y=1|background)
 # r <- 0.07  # Hot spot radius
 # hot.prob <- 0.045
 
@@ -86,6 +87,7 @@ for (method in 1:nmethods) {
     ### GEV generation
     if (method == 1) {
       nobs <- 0
+
       while (nobs < 100 | nobs > 700) {
         data <- rRareBinarySpat(x = simdata[[method]]$x, s = s.grid,
                                 knots = knots, beta = 0, xi = gev.xi,
@@ -97,6 +99,9 @@ for (method in 1:nmethods) {
         
         nobs <- sum(data$y)
       }
+      
+      # df <- data.frame(Y = as.factor(data$y), s1 = s.grid[, 1], s2 = s.grid[, 2])
+      # plot.species(df = df, main = paste("GEV", round(mean(data$y), 4)))
     }
     
     ### logit generation
