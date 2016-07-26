@@ -279,11 +279,30 @@ save(simdata, gev.rho, gev.prob, log.rho, log.prob, file = "simdata.RData")
 nsets <- 50
 nsettings <- 12
 sets.remain <- matrix(TRUE, nsets, nsettings, byrow = TRUE)
+
+files <- list.files(path = "./sim-results-2/")
+for (i in 1:length(files)) {
+  split <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
+  gen.method <- as.numeric(split[3])
+  if (split[1] == "clu") {
+    samp.idx <- 1
+  } else {
+    samp.idx <- 2
+  }
+  if (as.numeric(split[2] == 100)) {
+    n.idx <- 1
+  } else {
+    n.idx <- 2
+  }
+  set <- as.numeric(split[4])
+  setting <- (gen.method - 1) * 4 + (n.idx - 1) * 2 + samp.idx
+  sets.remain[set, setting] <- FALSE
+}
+
 write.table(x = sets.remain, file = "./sim-control-2/sets-remain.txt")
 system(paste("scp ./sim-control-2/sets-remain.txt samorris@hpc.stat.ncsu.edu:~/",
              "repos-git/rare-binary/code/analysis/simstudy/sim-control-2/",
              sep = ""))
-
 # ns <- 1300
 # p <- 0.01
 # s <- cbind(runif(ns), runif(ns))
