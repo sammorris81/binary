@@ -187,41 +187,34 @@ species.idx <- 1
       print(paste(this.samp, this.species, this.n))
 }}  # }
 
+quartz(width = 16, height = 16)
+par(mfrow = c(2, 2))
 #### look at over ROC curves and PRC curves
 pred.gev <- prediction(pred.gev.clu.1.100, yp.clu.1.100)
 pred.pro <- prediction(pred.pro.clu.1.100, yp.clu.1.100)
 pred.log <- prediction(pred.log.clu.1.100, yp.clu.1.100)
-quartz(width = 16, height = 8)
-main <- "Species 1, Cluster sample, n = 100"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-1-100.pdf")
-dev.off()
-
-pred.gev <- prediction(pred.gev.srs.1.100, yp.srs.1.100)
-pred.pro <- prediction(pred.pro.srs.1.100, yp.srs.1.100)
-pred.log <- prediction(pred.log.srs.1.100, yp.srs.1.100)
-quartz(width = 16, height = 8)
-main <- "Species 1, Simple random sample, n = 100"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-1-100.pdf")
-dev.off()
+main <- " Cluster sample, n = 100"
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 pred.gev <- prediction(pred.gev.clu.1.250, yp.clu.1.250)
 pred.pro <- prediction(pred.pro.clu.1.250, yp.clu.1.250)
 pred.log <- prediction(pred.log.clu.1.250, yp.clu.1.250)
-quartz(width = 16, height = 8)
-main <- "Species 1, Cluster sample, n = 250"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-1-250.pdf")
-dev.off()
+main <- "Cluster sample, n = 250"
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+
+pred.gev <- prediction(pred.gev.srs.1.100, yp.srs.1.100)
+pred.pro <- prediction(pred.pro.srs.1.100, yp.srs.1.100)
+pred.log <- prediction(pred.log.srs.1.100, yp.srs.1.100)
+main <- "Simple random sample, n = 100"
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 pred.gev <- prediction(pred.gev.srs.1.250, yp.srs.1.250)
 pred.pro <- prediction(pred.pro.srs.1.250, yp.srs.1.250)
 pred.log <- prediction(pred.log.srs.1.250, yp.srs.1.250)
-quartz(width = 16, height = 8)
-main <- "Species 1, Simple random sample, n = 250"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-1-250.pdf")
+main <- "Simple random sample, n = 250"
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+
+dev.print(device = pdf, "./plots/data-perf-species1.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
@@ -229,7 +222,7 @@ pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
 pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
 quartz(width = 16, height = 8)
 main <- "Species 2, Cluster sample, n = 100"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-clu-2-100.pdf")
 dev.off()
 
@@ -238,7 +231,7 @@ pred.pro <- prediction(pred.pro.srs.2.100, yp.srs.2.100)
 pred.log <- prediction(pred.log.srs.2.100, yp.srs.2.100)
 quartz(width = 16, height = 8)
 main <- "Species 2, Simple random sample, n = 100"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-srs-2-100.pdf")
 dev.off()
 
@@ -247,7 +240,7 @@ pred.pro <- prediction(pred.pro.clu.2.250, yp.clu.2.250)
 pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
 quartz(width = 16, height = 8)
 main <- "Species 2, Cluster sample, n = 250"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-clu-2-250.pdf")
 dev.off()
 
@@ -256,7 +249,7 @@ pred.pro <- prediction(pred.pro.srs.2.250, yp.srs.2.250)
 pred.log <- prediction(pred.log.srs.2.250, yp.srs.2.250)
 quartz(width = 16, height = 8)
 main <- "Species 2, Simple random sample, n = 250"
-plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/perf-srs-2-250.pdf")
 dev.off()
 
@@ -320,6 +313,7 @@ for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
 
 df <- data.frame(Y = as.vector(as.factor(Y1)), s1 = s[, 1], s2 = s[, 2])
 p1 <- plot.species(df = df, main = NULL, legend.title = "Tamarix\nramosissima")
+ggsave("./plots/tamarix-census.pdf", plot = p1, width = 8, height = 8)
 
 df <- data.frame(Y = as.vector(as.factor(Y2)), s1 = s[, 1], s2 = s[, 2])
 p2 <- plot.species(df = df, main = NULL, legend.title = "Hedysarum\nscoparium")

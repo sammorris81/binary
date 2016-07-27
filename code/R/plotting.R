@@ -62,44 +62,108 @@ plot.simdata <- function(y, s) {
          pch = 21)
 }
 
-plot.roc.prc <- function(pred.gev, pred.pro, pred.log, avg = "vertical",
-                         main = NULL) {
-  roc.gev  <- performance(pred.gev, "tpr", "fpr")
-  roc.pro  <- performance(pred.pro, "tpr", "fpr")
-  roc.log  <- performance(pred.log, "tpr", "fpr")
-  prc.gev  <- performance(pred.gev, "prec", "rec")
-  prc.pro  <- performance(pred.pro, "prec", "rec")
-  prc.log  <- performance(pred.log, "prec", "rec")
+plot.roc.gg <- function(pred.gev.100, pred.pro.100, pred.log.100,
+                     pred.gev.250, pred.pro.250, pred.log.250,
+                     main = NULL, span = 1) {
+  roc.gev.clu <- performance(pred.gev.clu, "tpr", "fpr")
+  roc.pro.clu <- performance(pred.pro.clu, "tpr", "fpr")
+  roc.log.clu <- performance(pred.log.clu, "tpr", "fpr")
+  roc.gev.srs <- performance(pred.gev.srs, "tpr", "fpr")
+  roc.pro.srs <- performance(pred.pro.srs, "tpr", "fpr")
+  roc.log.srs <- performance(pred.log.srs, "tpr", "fpr")
 
   roc.main <- paste("ROC Curve: ", main, sep = "")
-  prc.main <- paste("Precision Recall Curve: ", main, sep = "")
+  # prc.main <- paste("Precision Recall Curve: ", main, sep = "")
+  
+  ngev.clu <- length(unlist(roc.gev.clu@x.values))
+  npro.clu <- length(unlist(roc.pro.clu@x.values))
+  nlog.clu <- length(unlist(roc.log.clu@x.values))
+  ngev.srs <- length(unlist(roc.gev.srs@x.values))
+  npro.srs <- length(unlist(roc.pro.srs@x.values))
+  nlog.srs <- length(unlist(roc.log.srs@x.values))
+  x.vals <- c(unlist(roc.gev.clu@x.values), unlist(roc.pro.clu@x.values), 
+              unlist(roc.log.clu@x.values), unlist(roc.gev.srs@x.values),
+              unlist(roc.pro.srs@x.values), unlist(roc.log.srs@x.values))
+  y.vals <- c(unlist(roc.gev.clu@y.values), unlist(roc.pro.clu@y.values), 
+              unlist(roc.log.clu@y.values), unlist(roc.gev.srs@y.values),
+              unlist(roc.pro.srs@y.values), unlist(roc.log.srs@y.values))
+  method <- as.factor(c(rep("GEV", ngev.clu), rep("Probit", npro.clu), 
+                        rep("Logistic", nlog.clu), rep("GEV", ngev.srs),
+                        rep("Probit", npro.srs), rep("Logistic", nlog.srs)))
+  sample <- as.factor(c(rep("clu", ngev.clu + npro.clu + nlog.clu), 
+                        rep("srs", ngev.srs + npro.srs + nlog.srs)))
+  df <- data.frame(x.vals, y.vals, method, sample)
+  
+  p1 <- ggplot(df, aes(x = x.vals, y = y.vals, color = method, linetype = sample))
+  p1 <- p1 + geom_smooth()
+  p1 <- p1 + labs(x = "False positive rate", y = "Average true positive rate",
+                  title = roc.main)
+  return(p1)
+  
+  # plot(roc.gev, avg = avg, col = "grey20", lwd = 2, main = roc.main)
+  # plot(roc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
+  # plot(roc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
+  # legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
+  #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
 
-  par(mfrow = c(1, 2))
-  plot(roc.gev, avg = avg, col = "grey20", lwd = 2, main = roc.main)
-  plot(roc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
-  plot(roc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
+  # plot(prc.gev, avg = avg, col = "grey20", lwd = 2, main = prc.main,
+  #      ylim = c(0, 1))
+  # plot(prc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
+  # plot(prc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
+  # legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
+  #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
+}
+
+plot.roc <- function(pred.gev, pred.pro, pred.log,
+                     avg = "vertical", main = NULL) {
+  roc.gev <- performance(pred.gev, "tpr", "fpr")
+  roc.pro <- performance(pred.pro, "tpr", "fpr")
+  roc.log <- performance(pred.log, "tpr", "fpr")
+  
+  roc.main <- paste("ROC Curve: ", main, sep = "")
+  # prc.main <- paste("Precision Recall Curve: ", main, sep = "")
+ 
+  # plot(roc.gev, avg = avg, col = "grey20", main = roc.main)
+  plot(roc.gev, avg = avg, col = "grey20", spread.estimate = "stderror", 
+       show.spread.at = seq(0.1, 0.9, 0.1), main = roc.main, 
+       cex = 1.5, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+  # plot(roc.pro, avg = avg, col = "firebrick2", add = TRUE)
+  plot(roc.pro, avg = avg, col = "firebrick2", plotCI.col = "firebrick2", 
+       spread.estimate = "stderror", show.spread.at = seq(0.1, 0.9, 0.1), 
+       add = TRUE)
+  # plot(roc.log, avg = avg, col = "dodgerblue2", add = TRUE)
+  plot(roc.log, avg = avg, plotCI.col = "dodgerblue2", col = "dodgerblue2", 
+       spread.estimate = "stderror", show.spread.at = seq(0.1, 0.9, 0.1), 
+       add = TRUE)
+
   legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
-         legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
+         legend = c("GEV", "Probit", "Logit"), 
+         lty = 1, lwd = 1, 
+         cex = 1.5)
 
-  plot(prc.gev, avg = avg, col = "grey20", lwd = 2, main = prc.main,
-       ylim = c(0, 1))
-  plot(prc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
-  plot(prc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
+  # plot(prc.gev, avg = avg, col = "grey20", lwd = 2, main = prc.main,
+  #      ylim = c(0, 1))
+  # plot(prc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
+  # plot(prc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
   # legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
   #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
 }
 
 plot.smooth <- function(df) {
   p1 <- ggplot(df, aes(x = rareness, y = bs, color = method))
-  p1 <- p1 + geom_point()
-  p1 <- p1 + geom_smooth()
+  p1 <- p1 + geom_point(alpha = 0.8)
+  p1 <- p1 + geom_smooth(alpha = 0.4)
+  p1 <- p1 + scale_x_continuous(breaks = seq(0.01, 0.06, by = 0.01))
+  p1 <- p1 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
   p1 <- p1 + labs(x = "Rareness", y = "Brier Score", 
                   title = "Rareness vs Brier Score")
   p1 <- p1 + theme_bw()
   
   p2 <- ggplot(df, aes(x = rareness, y = auc, color = method))
-  p2 <- p2 + geom_point()
-  p2 <- p2 + geom_smooth()
+  p2 <- p2 + geom_point(alpha = 0.8)
+  p2 <- p2 + geom_smooth(alpha = 0.4)
+  p2 <- p2 + scale_x_continuous(breaks = seq(0.01, 0.06, by = 0.01))
+  p2 <- p2 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
   p2 <- p2 + labs(x = "Rareness", y = "AUROC", 
                   title = "Rareness vs AUROC")
   p2 <- p2 + theme_bw()

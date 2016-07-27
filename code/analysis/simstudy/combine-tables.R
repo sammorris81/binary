@@ -135,28 +135,93 @@ for (gen.method in 1:3) {
 }
 
 #### look at over ROC curves and PRC curves
-for (i in 1:nsettings) {
-  this.gev <- paste("pred.gev.", i, sep = "")
-  this.pro <- paste("pred.pro.", i, sep = "")
-  this.log <- paste("pred.log.", i, sep = "")
-  this.yp  <- paste("yp.", i, sep = "")
+pred.gev.clu.100.1 <- prediction(pred.gev.1, yp.1)
+pred.gev.srs.100.1 <- prediction(pred.gev.2, yp.2)
+pred.pro.clu.100.1 <- prediction(pred.pro.1, yp.1)
+pred.pro.srs.100.1 <- prediction(pred.pro.2, yp.2)
+pred.log.clu.100.1 <- prediction(pred.log.1, yp.1)
+pred.log.srs.100.1 <- prediction(pred.log.2, yp.2)
 
-  pred.gev <- prediction(get(this.gev), get(this.yp))
-  pred.pro <- prediction(get(this.pro), get(this.yp))
-  pred.log <- prediction(get(this.log), get(this.yp))
+pred.gev.clu.250.1 <- prediction(pred.gev.3, yp.3)
+pred.gev.srs.250.1 <- prediction(pred.gev.4, yp.4)
+pred.pro.clu.250.1 <- prediction(pred.pro.3, yp.3)
+pred.pro.srs.250.1 <- prediction(pred.pro.4, yp.4)
+pred.log.clu.250.1 <- prediction(pred.log.3, yp.3)
+pred.log.srs.250.1 <- prediction(pred.log.4, yp.4)
 
-  quartz(width = 16, height = 8)
-  main <- paste("Setting ", i, sep = "")
-  plot.roc.prc(pred.gev, pred.pro, pred.log, main = main)
-  dev.print(device = pdf, paste("./plots/perf-setting-", i, ".pdf", sep = ""))
-  dev.off()
-}
+quartz(width = 16, height = 16)
+par(mfrow = c(2, 2))
+plot.roc(pred.gev.clu.100.1, pred.pro.clu.100.1, pred.log.clu.100.1,
+         main = "Setting: GEV, Sample: CLU-100")
+plot.roc(pred.gev.clu.250.1, pred.pro.clu.250.1, pred.log.clu.250.1,
+         main = "Setting: GEV, Sample: CLU-250")
+plot.roc(pred.gev.srs.100.1, pred.pro.srs.100.1, pred.log.srs.100.1,
+         main = "Setting: GEV, Sample: SRS-100")
+plot.roc(pred.gev.srs.250.1, pred.pro.srs.250.1, pred.log.srs.250.1,
+         main = "Setting: GEV, Sample: SRS-250")
+dev.print(device = pdf, "./plots/sim-perf-gev.pdf")
+dev.off()
+
+pred.gev.clu.100.2 <- prediction(pred.gev.5, yp.5)
+pred.gev.srs.100.2 <- prediction(pred.gev.6, yp.6)
+pred.pro.clu.100.2 <- prediction(pred.pro.5, yp.5)
+pred.pro.srs.100.2 <- prediction(pred.pro.6, yp.6)
+pred.log.clu.100.2 <- prediction(pred.log.5, yp.5)
+pred.log.srs.100.2 <- prediction(pred.log.6, yp.6)
+
+pred.gev.clu.250.2 <- prediction(pred.gev.7, yp.7)
+pred.gev.srs.250.2 <- prediction(pred.gev.8, yp.8)
+pred.pro.clu.250.2 <- prediction(pred.pro.7, yp.7)
+pred.pro.srs.250.2 <- prediction(pred.pro.8, yp.8)
+pred.log.clu.250.2 <- prediction(pred.log.7, yp.7)
+pred.log.srs.250.2 <- prediction(pred.log.8, yp.8)
+
+quartz(width = 16, height = 16)
+par(mfrow = c(2, 2))
+plot.roc(pred.gev.clu.100.2, pred.pro.clu.100.2, pred.log.clu.100.2,
+         main = "Setting: Probit, Sample: CLU-100")
+plot.roc(pred.gev.clu.250.2, pred.pro.clu.250.2, pred.log.clu.250.2,
+         main = "Setting: Probit, Sample: CLU-250")
+plot.roc(pred.gev.srs.100.2, pred.pro.srs.100.2, pred.log.srs.100.2,
+         main = "Setting: Probit, Sample: SRS-100")
+plot.roc(pred.gev.srs.250.2, pred.pro.srs.250.2, pred.log.srs.250.2,
+         main = "Setting: Probit, Sample: SRS-250")
+dev.print(device = pdf, "./plots/sim-perf-probit.pdf")
+dev.off()
+
+pred.gev.clu.100.3 <- prediction(pred.gev.9, yp.9)
+pred.gev.srs.100.3 <- prediction(pred.gev.10, yp.10)
+pred.pro.clu.100.3 <- prediction(pred.pro.9, yp.9)
+pred.pro.srs.100.3 <- prediction(pred.pro.10, yp.10)
+pred.log.clu.100.3 <- prediction(pred.log.9, yp.9)
+pred.log.srs.100.3 <- prediction(pred.log.10, yp.10)
+
+pred.gev.clu.250.3 <- prediction(pred.gev.11, yp.11)
+pred.gev.srs.250.3 <- prediction(pred.gev.12, yp.12)
+pred.pro.clu.250.3 <- prediction(pred.pro.11, yp.11)
+pred.pro.srs.250.3 <- prediction(pred.pro.12, yp.12)
+pred.log.clu.250.3 <- prediction(pred.log.11, yp.11)
+pred.log.srs.250.3 <- prediction(pred.log.12, yp.12)
+
+quartz(width = 16, height = 16)
+par(mfrow = c(2, 2))
+plot.roc(pred.gev.clu.100.3, pred.pro.clu.100.3, pred.log.clu.100.3,
+         main = "Setting: Hotspot, Sample: CLU-100")
+plot.roc(pred.gev.clu.250.3, pred.pro.clu.250.3, pred.log.clu.250.3,
+         main = "Setting: Hotspot, Sample: CLU-250")
+plot.roc(pred.gev.srs.100.3, pred.pro.srs.100.3, pred.log.srs.100.3,
+         main = "Setting: Hotspot, Sample: SRS-100")
+plot.roc(pred.gev.srs.250.3, pred.pro.srs.250.3, pred.log.srs.250.3,
+         main = "Setting: Hotspot, Sample: SRS-250")
+dev.print(device = pdf, "./plots/sim-perf-hotspot.pdf")
+dev.off()
 
 #### smooth of rareness by brier score
 for (setting in 1:nsettings) {
+  this.grid <- ceiling(setting / 4)
   these.include <- which(rowSums(!is.na(bs.results[[setting]])) == 3)
   plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
-  df <- data.frame(rareness = rep(rareness[these.include, 1], 3),
+  df <- data.frame(rareness = rep(rareness[these.include, this.grid], 3),
                    bs = c(bs.results[[setting]][these.include, 1], 
                           bs.results[[setting]][these.include, 2],
                           bs.results[[setting]][these.include, 3]),
@@ -200,14 +265,60 @@ round(auc.results.combined[, 3], 4)
 
 library(NSM3)
 set.seed(6727)  #npar
-groups <- as.factor(rep(1:nmethods, each=50))
-dataset <- as.factor(rep(1:50, times=nmethods))
-results.friedman <- matrix(0, nsettings, 2)
+nsets <- 5
+
+factor.1 <- as.factor(c(100, 250))
+factor.2 <- as.factor(c("clu", "srs"))
+factor.3 <- as.factor(c("gev", "probit", "logistic"))
+
+a <- length(factor.1)
+b <- length(factor.2)
+c <- length(factor.3)
+
+sample.size <- rep(factor.1, each = b * c * nsets)
+sample.type <- rep(factor.2, each = c * nsets, times = a)
+fit.method  <- rep(factor.3, each = nsets, times = a * b)
+dataset     <- as.factor(rep(1:nsets, times = a * b * c))
+results.friedman <- matrix(0, 3, 2)  # one row for each of gev, pro, log
 colnames(results.friedman) <- c("bs", "auc")
 
+scores.bs <- c(as.vector(bs.results[[1]][1:nsets, ]),
+               as.vector(bs.results[[2]][1:nsets, ]),
+               as.vector(bs.results[[3]][1:nsets, ]),
+               as.vector(bs.results[[4]][1:nsets, ]))
+scores.auc <- c(as.vector(auc.results[[1]][1:nsets, ]),
+                as.vector(auc.results[[2]][1:nsets, ]),
+                as.vector(auc.results[[3]][1:nsets, ]),
+                as.vector(auc.results[[4]][1:nsets, ]))
+
+boxplot(scores.bs ~ sample.size * sample.type * fit.method)
+boxplot(scores.auc ~ sample.size * sample.type * fit.method)
+
+combine.bs <- data.frame(scores.bs, sample.size, sample.type, fit.method, dataset)
+lme.1.bs.full <- lmer(scores.bs ~ sample.size*sample.type*fit.method + 
+                        (1 | dataset), data = combine.bs, REML = FALSE)
+lme.1.bs.red1 <- lmer(scores.bs ~ (sample.size + sample.type + fit.method)^2 + 
+                        (1 | dataset), data = combine.bs, REML = FALSE)
+lme.1.bs.red2<- lmer(scores.bs ~ sample.size*sample.type + fit.method + 
+                       (1 | dataset), data = combine.bs, REML = FALSE)
+lme.1.bs.red3 <- lmer(scores.bs ~ sample.size + sample.type + fit.method + 
+                        (1 | dataset), data = combine.bs, REML = FALSE)
+lme.1.bs.red4 <- lmer(scores.bs ~ sample.size + sample.type + 
+                       (1 | dataset), data = combine.bs, REML = FALSE)
+lme.1.bs.red5 <- lmer(scores.bs ~ sample.size + (1 | dataset), data = combine.bs, REML = FALSE)
+BIC(lme.1.bs.full, lme.1.bs.red1, lme.1.bs.red2, lme.1.bs.red3, lme.1.bs.red4)
+
+combine.auc <- data.frame(scores.auc, sample.size, sample.type, fit.method, dataset)
+lme.1.auc <- lmer(scores.auc ~ sample.size + sample.type + fit.method + 
+                    (1 | dataset), data = combine.auc)
+
+results.friedman[1, 1] <- friedman.test(scores ~ sample.size + sample.type + 
+                                          fit.method | dataset, 
+                                        data = combine)
+
 for (setting in 1:nsettings) {
-  scores <- as.vector(bs.results[[setting]])
-  combine <- data.frame(scores, groups, dataset)
+
+  
   results.friedman[setting, 1] <- friedman.test(scores ~ groups | dataset,
                                                 data=combine)$p.value
 
