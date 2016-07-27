@@ -86,6 +86,22 @@ for (setting in 1:nsettings) {
                                            2, mean, na.rm = TRUE)
 }
 
+df1 <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 39]), s1 = s.grid[, 1], 
+                  s2 = s.grid[, 2])
+p1 <- plot.species(df = df1, main = "Simulated GEV dataset")
+
+df2 <- data.frame(Y = as.factor(simdata[[2]]$y.grid[, 23]), s1 = s.grid[, 1], 
+                  s2 = s.grid[, 2])
+p2 <- plot.species(df = df2, main = "Simulated probit dataset")
+
+df3 <- data.frame(Y = as.factor(simdata[[3]]$y.grid[, 18]), s1 = s.grid[, 1], 
+                  s2 = s.grid[, 2])
+p3 <- plot.species(df = df3, main = "Simulated hotspot dataset")
+
+panel <- arrangeGrob(p1, p2, p3, ncol = 3)
+ggsave("./plots/simulateddata.pdf", panel, width = 24, height = 8)
+
+
 for (setting in 1:nsettings) {
   print(length(finished.sets[[setting]]))
 }
