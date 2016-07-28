@@ -56,14 +56,16 @@ for (set in these.sets) {
   s.p[, 2] <- (s.p[, 2] - s.min[2]) / max(s.range)
   X.p <- matrix(1, nrow(s.p), 1)
 
-  knot.start <- 1 / 30
-  knot.end   <- 29 / 30
-  knots <- as.matrix(expand.grid(seq(knot.start, knot.end, length = 15),
-                                 seq(knot.start, knot.end, length = 15)))
-  knots <- rbind(knots, s.o[y.o == 1, ])
+  # knot.start <- 1 / 30
+  # knot.end   <- 29 / 30
+  # knots <- as.matrix(expand.grid(seq(knot.start, knot.end, length = 15),
+  #                                seq(knot.start, knot.end, length = 15)))
+  # knots <- rbind(knots, s.o[y.o == 1, ])
+  knots  <- s.o
   nknots <- nrow(knots)
   
-  rho.lower <- 1 / 30  # 1 / (nknots * 2)
+  # rho.lower <- 1 / 30  # 1 / (nknots * 2)
+  rho.lower <- 1e-4
   rho.upper <- 1
   nknots <- nrow(knots)
   
@@ -205,6 +207,7 @@ for (set in these.sets) {
                          thin = thin, thresh = 0)
   
   cat("    Start mcmc predict \n")
+  # y.pred.gev is posterior distribution for P(Y = 1)
   y.pred.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                            s.pred = s.p, knots = knots,
                            start = 1, end = iters - burn, update = update, 
@@ -242,6 +245,7 @@ for (set in these.sets) {
                        iterplot = iterplot)
   
   cat("    Start mcmc predict \n")
+  # y.pred.pro is posterior distribution for P(Y = 1)
   y.pred.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
                             s.pred = s.p, knots = knots, thin = 10,
                             start = 1, end = iters - burn, update = update)
@@ -281,16 +285,17 @@ for (set in these.sets) {
   toc        <- proc.time()[3]
   
   print("    start mcmc predict")
-  post.prob.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
-                             pred.covars = X.p, start = burn + 1,
-                             end = iters, thin = 10, verbose = TRUE,
-                             n.report = 500)$p.y.predictive.samples
+  # y.pred.log is posterior distribution for P(Y = 1)
+  y.pred.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
+                          pred.covars = X.p, start = burn + 1,
+                          end = iters, thin = 10, verbose = TRUE,
+                          n.report = 500)$p.y.predictive.samples
 
-  post.prob.log <- t(post.prob.log)
-  y.pred.log <- matrix(
-    rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log),
-    nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
-  rm(post.prob.log)
+  y.pred.log <- t(y.pred.log)
+  # y.pred.log <- matrix(
+  #   rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log),
+  #   nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
+  # rm(post.prob.log)
 
   timings[3] <- (toc - tic) / 60
 

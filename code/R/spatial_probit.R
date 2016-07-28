@@ -4,7 +4,7 @@ make.B <- function(d, rho) {
   b2 <- rowSums(b^2)
   b <- sweep(b, 1, sqrt(b2), "/")
   if (any(is.nan(b))) {  # nan comes from 0 / 0 which means bw is very small
-    cat("\t Some sites are independent from others due to small bandwidth \n")
+    # cat("\t Some sites are independent from others due to small bandwidth \n")
   }
   b[is.nan(b)] <- 0
   return(b)
@@ -22,7 +22,8 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
   np     <- nrow(s.pred)
   iters  <- end - start + 1
   dp     <- as.matrix(rdist(s.pred, knots))
-  y.pred <- matrix(NA, nrow = floor(iters / thin), ncol=np)
+  # y.pred <- matrix(NA, nrow = floor(iters / thin), ncol=np)
+  prob.success <- matrix(NA, nrow = (iters / thin), ncol = np)
 
   beta <- mcmcoutput$beta[start:end, , drop = F]
   bw   <- mcmcoutput$bw[start:end]
@@ -32,8 +33,8 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
     if (i %% thin == 0) {
       # beta and bandwidth come directly from output
       z.pred <- X.pred %*% beta[i, ] + make.B(dp, bw[i]) %*% alpha[i, ]
-      prob.success <- pnorm(z.pred)
-      y.pred[(i / thin), ]  <- rbinom(n = np, size = 1, prob = prob.success)
+      prob.success[(i / thin), ] <- pnorm(z.pred)
+      # y.pred[(i / thin), ]  <- rbinom(n = np, size = 1, prob = prob.success)
     }
     
     if (!is.null(update)) {
@@ -43,7 +44,7 @@ pred.spprob <- function(mcmcoutput, X.pred, s.pred, knots,
     }
   }
 
-  return(y.pred)
+  return(prob.success)
 }
 
 dic.spprob <- function(mcmcoutput, Y, X, s, knots,

@@ -20,12 +20,13 @@ setting <- (gen.method - 1) * 4 + (n.idx - 1) * 2 + samp.idx
 # the results, and it appears that a grid of knots performs similarly 
 # to randomly selecting sites for knots across all the methods.
 ####
-knots.grid <- as.matrix(expand.grid(x = seq(1 / 30, 29 / 30, length = 15), 
-                                    y = seq(1 / 30, 29 / 30, length = 15)))
+# knots.grid <- as.matrix(expand.grid(x = seq(1 / 30, 29 / 30, length = 15), 
+#                                     y = seq(1 / 30, 29 / 30, length = 15)))
 
-rho.lower <- 1 / 30 
+# rho.lower <- 1 / 30 
+rho.lower <- 1e-4
 rho.upper <- 1
-nknots <- nrow(knots.grid)
+# nknots <- nrow(knots.grid)
 
 ####################################################################
 #### Start MCMC setup: Most of this is used for the spBayes package
@@ -130,7 +131,8 @@ while (sets.remain) {
     X.p    <- matrix(x[-obs], ntest, 1)
     s.i.p  <- s.grid[-obs, ]
     
-    knots <- rbind(knots.grid, s.i.o[y.i.o == 1, ])
+    # knots <- rbind(knots.grid, s.i.o[y.i.o == 1, ])
+    knots <- s.i.o
     
     table.file   <- paste("./sim-tables-2/", samp.type, "-", n, "-", gen.method, 
                           "-", i, ".txt", sep ="")
@@ -224,6 +226,7 @@ while (sets.remain) {
     auc.pro       <- roc.pro$auc
     
     print(bs.pro * 100)
+    rm(y.pred.pro)
     
     # copy table to tables folder on beowulf
     scores[2, ] <- c(bs.pro, auc.pro, bs.1.pro, bs.0.pro)
@@ -248,16 +251,16 @@ while (sets.remain) {
     toc        <- proc.time()[3]
     
     print("    start mcmc predict")
-    post.prob.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
+    y.pred.log <- spPredict(sp.obj = fit.logit, pred.coords = s.i.p,
                                pred.covars = X.p, start = burn + 1,
                                end = iters, thin = 10, verbose = TRUE,
                                n.report = 500)$p.y.predictive.samples
     
-    post.prob.log <- t(post.prob.log)
-    y.pred.log <- matrix(
-      rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log),
-      nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
-    rm(post.prob.log)
+    y.pred.log <- t(y.pred.log)
+    # y.pred.log <- matrix(
+    #   rbinom(n = length(post.prob.log), size = 1, prob = post.prob.log),
+    #   nrow = nrow(post.prob.log), ncol = ncol(post.prob.log))
+    # rm(post.prob.log)
     
     timings[3] <- (toc - tic) / 60
     
