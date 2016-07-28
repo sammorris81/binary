@@ -66,19 +66,24 @@ q <- 0.0005  # P(Y=1|background)
 simdata <- vector(mode = "list", length = nmethods)
 
 nsets <- 100
-set.seed(3282)  # data
 s.grid <- as.matrix(expand.grid(seq(0, 1, length = 100), 
                                 seq(0, 1, length = 100)))
 d <- rdist(s.grid)
 diag(d) <- 0
+dw2 <- as.matrix(rdist(s.grid, knots))^2
+w <- getW(rho = gev.rho, dw2 = dw2, a.cutoff = NULL)
+w.star <- getWStar(alpha = gev.alpha, w = w)
 Sigma <- simple.cov.sp(D = d, sp.type = "exponential",
                        sp.par = c(log.var, log.rho),
                        error.var = log.error, finescale.var = 0)
 t.Sigma.chol <- t(chol(Sigma))
+
 gev.low <- gev.high <- 0
 log.low <- log.high <- 0
 hot.low <- hot.high <- 0
-
+K.low <- 50
+K.high <- 10000
+set.seed(3282)  # data
 for (method in 1:nmethods) {
   simdata[[method]]$y.grid <- matrix(data = NA, nrow = nrow(s.grid), ncol = nsets)
   simdata[[method]]$thresh <- rep(NA, nsets)
@@ -91,24 +96,22 @@ for (method in 1:nmethods) {
     if (method == 1) {
       nobs <- 0
 
-      while (nobs < 100 | nobs > 700) {
+      while (nobs < K.low | nobs > K.high) {
         data <- rRareBinarySpat(x = simdata[[method]]$x, s = s.grid,
                                 knots = knots, beta = 0, xi = gev.xi,
                                 alpha = gev.alpha, rho = gev.rho,
+                                dw2 = dw2, w = w, w.star = w.star, 
                                 prob.success = gev.prob, thresh = gev.thresh)
         nobs <- sum(data$y)
-        if (nobs < 100) {
+        if (nobs < K.low) {
           gev.low <- gev.low + 1
-        } else if (nobs > 700) {
+        } else if (nobs > K.high) {
           gev.high <- gev.high + 1
         }
       }
       
       simdata[[method]]$y.grid[, set] <- data$y
       simdata[[method]]$thresh[set]   <- data$thresh
-      print(paste("set = ", set, sep = ""))
-      print(paste("gev.high = ", gev.high, sep = ""))
-      print(paste("gev.low = ", gev.low, sep = ""))
       
       # df <- data.frame(Y = as.factor(data$y), s1 = s.grid[, 1], s2 = s.grid[, 2])
       # plot.species(df = df, main = paste("GEV", round(mean(data$y), 4)))
@@ -117,17 +120,16 @@ for (method in 1:nmethods) {
     ### logit generation
     if (method == 2) {
       nobs <- 0
-      while (nobs < 100 | nobs > 700) {
-        log.count <- log.count + 1
+      while (nobs < K.low | nobs > K.high) {
         data <- transform$logit(log.prob) + t.Sigma.chol %*% rnorm(nrow(s.grid))
         data <- log.thresh + data
         data <- rbinom(n = nrow(s.grid), size = 1, prob = transform$inv.logit(data))
       
         nobs <- sum(data)
         
-        if (nobs < 100) {
+        if (nobs < K.low) {
           log.low <- log.low + 1
-        } else if (nobs > 700) {
+        } else if (nobs > K.high) {
           log.high <- log.high + 1
         }
       }
@@ -139,8 +141,7 @@ for (method in 1:nmethods) {
     ### hotspot generation
     if (method == 3) {
       nobs <- 0
-      while (nobs < 100 | nobs > 700) {
-        hot.count <- hot.count + 1
+      while (nobs < K.low | nobs > K.high) {
         k  <- rpois(1, nhotspots) + 1
         r  <- matrix(runif(k, 0.03, 0.08), nrow(s.grid), k, byrow = TRUE)
         hotspots <- cbind(runif(k), runif(k))
@@ -156,9 +157,9 @@ for (method in 1:nmethods) {
         this.y <- rbinom(nrow(s.grid), 1, ifelse(hot, p, q))
         nobs <- sum(this.y)
         
-        if (nobs < 100) {
+        if (nobs < K.low) {
           hot.low <- hot.low + 1
-        } else if (nobs > 700) {
+        } else if (nobs > K.high) {
           hot.high <- hot.high + 1
         }
       }
@@ -174,6 +175,7 @@ for (method in 1:nmethods) {
   }
   print(paste("Method ", gen.methods[method], " finished", sep = ""))
 }
+
 save(s.grid, simdata, file = "simdata-grid.RData")
 
 ################################################################################

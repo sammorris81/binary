@@ -352,8 +352,8 @@ getThetaStar <- function(w.star, a) {
 
 # generate dependent rare binary data
 rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
-                            prob.success = 0.05, dw2 = NULL, a = NULL,
-                            thresh = NULL) {
+                            prob.success = 0.05, dw2 = NULL, w = NULL, 
+                            w.star = NULL, a = NULL, thresh = NULL) {
 
   p <- length(beta)
   if (nt == 1) {
@@ -374,16 +374,20 @@ rRareBinarySpat <- function(x, s, knots, beta, xi, alpha, rho, nt = 1,
   if (is.null(dw2)) {  # for predictions, already have dw2
     dw2 <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   }
-
-  w <- getW(rho = rho, dw2 = dw2, a.cutoff = NULL) # w is ns x nknots
+  
+  if (is.null(w)) {
+    w <- getW(rho = rho, dw2 = dw2, a.cutoff = NULL) # w is ns x nknots
+  }
 
   # get random effects and theta.star
   if (is.null(a)) {
     a <- matrix(rPS(n = nknots * nt, alpha = alpha), nknots, nt)
   }
-
-  w.star <- getWStar(alpha = alpha, w = w)
-  aw     <- getAW(a = a, w.star = w.star)
+  
+  if (is.null(w.star)) {
+    w.star <- getWStar(alpha = alpha, w = w)
+  }
+  # aw     <- getAW(a = a, w.star = w.star)
   theta  <- (w.star %*% a)^alpha
 
   # get underlying latent variable
