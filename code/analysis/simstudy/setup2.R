@@ -75,6 +75,9 @@ Sigma <- simple.cov.sp(D = d, sp.type = "exponential",
                        sp.par = c(log.var, log.rho),
                        error.var = log.error, finescale.var = 0)
 t.Sigma.chol <- t(chol(Sigma))
+gev.low <- gev.high <- 0
+log.low <- log.high <- 0
+hot.low <- hot.high <- 0
 
 for (method in 1:nmethods) {
   simdata[[method]]$y.grid <- matrix(data = NA, nrow = nrow(s.grid), ncol = nsets)
@@ -93,12 +96,19 @@ for (method in 1:nmethods) {
                                 knots = knots, beta = 0, xi = gev.xi,
                                 alpha = gev.alpha, rho = gev.rho,
                                 prob.success = gev.prob, thresh = gev.thresh)
-        
-        simdata[[method]]$y.grid[, set] <- data$y
-        simdata[[method]]$thresh[set]   <- data$thresh
-        
         nobs <- sum(data$y)
+        if (nobs < 100) {
+          gev.low <- gev.low + 1
+        } else if (nobs > 700) {
+          gev.high <- gev.high + 1
+        }
       }
+      
+      simdata[[method]]$y.grid[, set] <- data$y
+      simdata[[method]]$thresh[set]   <- data$thresh
+      print(paste("set = ", set, sep = ""))
+      print(paste("gev.high = ", gev.high, sep = ""))
+      print(paste("gev.low = ", gev.low, sep = ""))
       
       # df <- data.frame(Y = as.factor(data$y), s1 = s.grid[, 1], s2 = s.grid[, 2])
       # plot.species(df = df, main = paste("GEV", round(mean(data$y), 4)))
@@ -108,22 +118,29 @@ for (method in 1:nmethods) {
     if (method == 2) {
       nobs <- 0
       while (nobs < 100 | nobs > 700) {
+        log.count <- log.count + 1
         data <- transform$logit(log.prob) + t.Sigma.chol %*% rnorm(nrow(s.grid))
         data <- log.thresh + data
         data <- rbinom(n = nrow(s.grid), size = 1, prob = transform$inv.logit(data))
-        
-        simdata[[method]]$y.grid[, set] <- data
-        simdata[[method]]$thresh[set]   <- log.thresh
-        
+      
         nobs <- sum(data)
+        
+        if (nobs < 100) {
+          log.low <- log.low + 1
+        } else if (nobs > 700) {
+          log.high <- log.high + 1
+        }
       }
       
+      simdata[[method]]$y.grid[, set] <- data
+      simdata[[method]]$thresh[set]   <- log.thresh
     }
     
     ### hotspot generation
     if (method == 3) {
       nobs <- 0
       while (nobs < 100 | nobs > 700) {
+        hot.count <- hot.count + 1
         k  <- rpois(1, nhotspots) + 1
         r  <- matrix(runif(k, 0.03, 0.08), nrow(s.grid), k, byrow = TRUE)
         hotspots <- cbind(runif(k), runif(k))
@@ -137,13 +154,18 @@ for (method in 1:nmethods) {
         
         hot <- rowSums(d <= r) > 0
         this.y <- rbinom(nrow(s.grid), 1, ifelse(hot, p, q))
-        
-        simdata[[method]]$hotspots[[set]] <- hotspots
-        simdata[[method]]$r[[set]] <- r
-        
         nobs <- sum(this.y)
-        simdata[[method]]$y.grid[, set] <- this.y
+        
+        if (nobs < 100) {
+          hot.low <- hot.low + 1
+        } else if (nobs > 700) {
+          hot.high <- hot.high + 1
+        }
       }
+      
+      simdata[[method]]$y.grid[, set] <- this.y
+      simdata[[method]]$hotspots[[set]] <- hotspots
+      simdata[[method]]$r[[set]] <- r
     }
     
     if (set %% 20 == 0) {
@@ -227,6 +249,17 @@ save(simdata, s.grid,
      clu.lst.1.250, clu.lst.2.250, clu.lst.3.250,
      file = "simdata-grid.RData")
 
+length.100 <- length.250 <- matrix(0, 50, 3)
+for (i in 1:50) {
+  length.100[i, 1] <- length(clu.lst.1.100[[i]])
+  length.100[i, 2] <- length(clu.lst.2.100[[i]])
+  length.100[i, 3] <- length(clu.lst.3.100[[i]])
+  length.250[i, 1] <- length(clu.lst.1.250[[i]])
+  length.250[i, 2] <- length(clu.lst.2.250[[i]])
+  length.250[i, 3] <- length(clu.lst.3.250[[i]])
+}
+
+mean(length(clu.lst.1.250[1:50]))
 
 #### Look at some of the simulated grids
 df.gev <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 6]), 
