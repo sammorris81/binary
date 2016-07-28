@@ -96,7 +96,7 @@ for (method in 1:nmethods) {
     if (method == 1) {
       nobs <- 0
 
-      while (nobs < K.low | nobs > K.high) {
+      while (nobs < K.low) {
         data <- rRareBinarySpat(x = simdata[[method]]$x, s = s.grid,
                                 knots = knots, beta = 0, xi = gev.xi,
                                 alpha = gev.alpha, rho = gev.rho,
@@ -105,8 +105,6 @@ for (method in 1:nmethods) {
         nobs <- sum(data$y)
         if (nobs < K.low) {
           gev.low <- gev.low + 1
-        } else if (nobs > K.high) {
-          gev.high <- gev.high + 1
         }
       }
       
@@ -120,7 +118,7 @@ for (method in 1:nmethods) {
     ### logit generation
     if (method == 2) {
       nobs <- 0
-      while (nobs < K.low | nobs > K.high) {
+      while (nobs < K.low) {
         data <- transform$logit(log.prob) + t.Sigma.chol %*% rnorm(nrow(s.grid))
         data <- log.thresh + data
         data <- rbinom(n = nrow(s.grid), size = 1, prob = transform$inv.logit(data))
@@ -129,8 +127,6 @@ for (method in 1:nmethods) {
         
         if (nobs < K.low) {
           log.low <- log.low + 1
-        } else if (nobs > K.high) {
-          log.high <- log.high + 1
         }
       }
       
@@ -141,7 +137,7 @@ for (method in 1:nmethods) {
     ### hotspot generation
     if (method == 3) {
       nobs <- 0
-      while (nobs < K.low | nobs > K.high) {
+      while (nobs < K.low) {
         k  <- rpois(1, nhotspots) + 1
         r  <- matrix(runif(k, 0.03, 0.08), nrow(s.grid), k, byrow = TRUE)
         hotspots <- cbind(runif(k), runif(k))
@@ -159,8 +155,6 @@ for (method in 1:nmethods) {
         
         if (nobs < K.low) {
           hot.low <- hot.low + 1
-        } else if (nobs > K.high) {
-          hot.high <- hot.high + 1
         }
       }
       
