@@ -64,21 +64,27 @@ for (i in 1:length(files)) {
 }
 
 bs.results.combined  <- vector(mode = "list", length = 2)
+bs.results.comb.se   <- vector(mode = "list", length = 2)
 auc.results.combined <- vector(mode = "list", length = 2)
+auc.results.comb.se  <- vector(mode = "list", length = 2)
 bs.results.1.combined <- vector(mode = "list", length = 2)
 bs.results.0.combined <- vector(mode = "list", length = 2)
 species.rate <- c(mean(Y1), mean(Y2))
 for (i in 1:2) {
   species.idx <- i
   these.nrows <- length(ns) * length(samp.types)
-  bs.results.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
+  bs.results.combined[[species.idx]]  <- matrix(NA, these.nrows, nmethods)
+  bs.results.comb.se[[species.idx]]   <- matrix(NA, these.nrows, nmethods)
   auc.results.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
+  auc.results.comb.se[[species.idx]]  <- matrix(NA, these.nrows, nmethods)
   bs.results.1.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
   bs.results.0.combined[[species.idx]] <- matrix(NA, these.nrows, nmethods)
 
   these.rownames <- paste(rep(samp.types, 2), "-", rep(ns, each = 2), sep = "")
   rownames(bs.results.combined[[species.idx]])   <- these.rownames
+  rownames(bs.results.comb.se[[species.idx]])    <- these.rownames
   rownames(auc.results.combined[[species.idx]])  <- these.rownames
+  rownames(auc.results.comb.se[[species.idx]])   <- these.rownames
   rownames(bs.results.1.combined[[species.idx]]) <- these.rownames
   rownames(bs.results.0.combined[[species.idx]]) <- these.rownames
   colnames(bs.results.combined[[species.idx]])   <- method.types
@@ -98,6 +104,19 @@ for (i in 1:2) {
   this.row <- apply(bs.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
                     2, mean, na.rm = TRUE)
   bs.results.combined[[species.idx]][4, ] <- this.row
+  
+  this.row <- apply(bs.results[[species.idx]][1:nsets, ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  bs.results.comb.se[[species.idx]][1, ] <- this.row
+  this.row <- apply(bs.results[[species.idx]][(nsets + 1):(2 * nsets), ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  bs.results.comb.se[[species.idx]][2, ] <- this.row
+  this.row <- apply(bs.results[[species.idx]][(2 * nsets +1):(3 * nsets), ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  bs.results.comb.se[[species.idx]][3, ] <- this.row
+  this.row <- apply(bs.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  bs.results.comb.se[[species.idx]][4, ] <- this.row
 
   this.row <- apply(auc.results[[species.idx]][1:nsets, ],
                     2, mean, na.rm = TRUE)
@@ -111,6 +130,19 @@ for (i in 1:2) {
   this.row <- apply(auc.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
                     2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][4, ] <- this.row
+  
+  this.row <- apply(auc.results[[species.idx]][1:nsets, ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  auc.results.comb.se[[species.idx]][1, ] <- this.row
+  this.row <- apply(auc.results[[species.idx]][(nsets + 1):(2 * nsets), ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  auc.results.comb.se[[species.idx]][2, ] <- this.row
+  this.row <- apply(auc.results[[species.idx]][(2 * nsets + 1):(3 * nsets), ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  auc.results.comb.se[[species.idx]][3, ] <- this.row
+  this.row <- apply(auc.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
+                    2, sd, na.rm = TRUE) / sqrt(nsets)
+  auc.results.comb.se[[species.idx]][4, ] <- this.row
 
   this.row <- apply(bs.results.1[[species.idx]][1:nsets, ],
                     2, mean, na.rm = TRUE)

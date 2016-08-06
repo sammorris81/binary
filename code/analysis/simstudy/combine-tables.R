@@ -9,6 +9,7 @@ library(ROCR)
 ngen.methods <- 3
 nsets <- 100
 method.types <- c("gev", "pro", "log")
+genmethod.names <- c("gev", "log", "hot")
 nmethods <- length(method.types)
 rareness <- matrix(NA, nsets, ngen.methods)
 for (setting in 1:ngen.methods) {
@@ -35,6 +36,7 @@ for (setting in 1:nsettings) {
   colnames(auc.results[[setting]])  <- method.types
 }
 
+setting.names <- rep(NA, nsettings)
 for (i in 1:length(files)) {
   split     <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
   gen.method <- as.numeric(split[3])
@@ -50,6 +52,8 @@ for (i in 1:length(files)) {
   }
   set <- as.numeric(split[4])
   setting <- (gen.method - 1) * 4 + (n.idx - 1) * 2 + samp.idx
+  setting.names[setting] <- paste(genmethod.names[gen.method], "-", split[1], 
+                                  "-", split[2], sep = "")
   
   set       <- as.numeric(split[4])
   table.set <- read.table(paste(tbl.dir, files[i], sep = ""))
@@ -68,25 +72,45 @@ for (i in 1:length(files)) {
 }
 
 bs.results.combined   <- matrix(NA, nsettings, nmethods)
+bs.results.comb.se    <- matrix(NA, nsettings, nmethods)
 bs.results.1.combined <- matrix(NA, nsettings, nmethods)
 bs.results.0.combined <- matrix(NA, nsettings, nmethods)
 auc.results.combined  <- matrix(NA, nsettings, nmethods)
+auc.results.comb.se   <- matrix(NA, nsettings, nmethods)
 # vector of sets numbers that are complete
 finished.sets <- vector(mode = "list", length = nsettings)
 for (setting in 1:nsettings) {
   these.sets <- which(rowSums(is.na(bs.results[[setting]])) == 0)
   finished.sets[[setting]] <- these.sets
   bs.results.combined[setting, ]   <- apply(bs.results[[setting]][these.sets, ],
-                                           2, mean, na.rm = TRUE)
+                                            2, mean, na.rm = TRUE)
+  bs.results.comb.se[setting, ]    <- apply(bs.results[[setting]][these.sets, ],
+                                            2, sd, na.rm = TRUE) / sqrt(length(these.sets))
   bs.results.1.combined[setting, ] <- apply(bs.results.1[[setting]][these.sets, ],
                                            2, mean, na.rm = TRUE)
   bs.results.0.combined[setting, ] <- apply(bs.results.0[[setting]][these.sets, ],
                                             2, mean, na.rm = TRUE)
   auc.results.combined[setting, ]  <- apply(auc.results[[setting]][these.sets, ],
                                            2, mean, na.rm = TRUE)
+  auc.results.comb.se[setting, ]   <- apply(auc.results[[setting]][these.sets, ],
+                                            2, sd, na.rm = TRUE) / sqrt(length(these.sets))
 }
 
-df1 <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 39]), s1 = s.grid[, 1], 
+rownames(bs.results.combined)  <- setting.names
+rownames(auc.results.combined) <- setting.names
+rownames(bs.results.comb.se)   <- setting.names
+rownames(auc.results.comb.se)  <- setting.names
+colnames(bs.results.combined)  <- method.types
+colnames(auc.results.combined) <- method.types
+colnames(bs.results.comb.se)   <- method.types
+colnames(auc.results.comb.se)  <- method.types
+
+round(bs.results.combined * 100, 2)
+round(bs.results.comb.se * 100, 2)
+round(auc.results.combined, 3)
+round(auc.results.comb.se, 3)
+
+df1 <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 16]), s1 = s.grid[, 1], 
                   s2 = s.grid[, 2])
 p1 <- plot.species(df = df1, main = "Simulated GEV dataset")
 
@@ -99,7 +123,7 @@ df3 <- data.frame(Y = as.factor(simdata[[3]]$y.grid[, 18]), s1 = s.grid[, 1],
 p3 <- plot.species(df = df3, main = "Simulated hotspot dataset")
 
 panel <- arrangeGrob(p1, p2, p3, ncol = 3)
-ggsave("./plots/simulateddata.pdf", panel, width = 24, height = 8)
+ggsave("./plots/simulateddata.pdf", panel, width = 17, height = 4.5)
 
 
 for (setting in 1:nsettings) {
@@ -249,7 +273,7 @@ for (setting in 1:nsettings) {
   df$method <- factor(df$method, levels = c("GEV", "Probit", "Logistic"))
   
   panel <- plot.smooth(df)
-  ggsave(plot.file, plot = panel, width = 8, height = 4)
+  ggsave(plot.file, plot = panel, width = 9, height = 4.5)
 }
 
 

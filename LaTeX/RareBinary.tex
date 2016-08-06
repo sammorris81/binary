@@ -174,7 +174,7 @@ So, the hierarchical model is given by
     % Z(\bs_i) | A_l, \ldots, A_L &\indep \text{GEV}[\bX(\bs_i)^\top \bbeta + \theta(\bs_i), \alpha \theta(\bs_i), \xi \alpha] \nonumber\\
     A_l &\sim \text{PS}(\alpha) \nonumber
 \end{align}
-with priors $\bbeta \sim \text{N}(\bZero, \sigma^2_\beta \bI_p )$, $\xi \sim \text{N}(0, \sigma^2_\xi)$, $\rho \sim \text{Unif}(\rho_l, \rho_u)$, and $\alpha &\sim \text{Beta}(a_\alpha, b_\alpha)$.
+with priors $\bbeta \sim \text{N}(\bZero, \sigma^2_\beta \bI_p )$, $\xi \sim \text{N}(0, \sigma^2_\xi)$, $\rho \sim \text{Unif}(\rho_l, \rho_u)$, and $\alpha \sim \text{Beta}(a_\alpha, b_\alpha)$.
 The model parameters are updated using Metropolis Hastings (MH) update steps, and the random effects $A_1, \ldots, A_L$, and auxiliary variables $B_1, \ldots, B_L$ are updated using Hamiltonian Monte Carlo (HMC) update steps.
 The code for this is available online through \texttt{https://github.com/sammorris81/rare-binary}.
 
@@ -252,7 +252,7 @@ For the hotspot setting, when $n_s = 100$, there are on average $110$ sites and 
 
 \subsection{Priors} \label{rbs:simpriors}
 For all models, we only include an intercept term $\beta_0$ in the model, and the prior for the intercept is \mbox{$\beta_0 \sim$ N$(0, 10)$}.
-Additionally, for all models, the prior for the bandwidth is $\rho \sim$ Unif$\left(0.001, 1)$.
+Additionally, for all models, the prior for the bandwidth is $\rho \sim$ Unif$(0.001, 1)$.
 This lower bound is selected because it is half of the distance between the rook neighbors of the knots.
 For the GEV method, the prior for the spatial dependence parameter is $\alpha \sim$ Beta$(2, 5)$.
 We select this prior because it gives greater weight to $\alpha < 0.5$, which is the point at which spatial dependence becomes fairly week, but also avoids values below 0.1 which can lead to numerical problems.
@@ -282,29 +282,32 @@ We then average AUCs across all datasets for each method and setting to obtain a
 In \fref{rbfig:simrocgev} -- \fref{rbfig:simrochot}, for each setting we present the vertically averaged ROC curve for each simulation method.
 
 \begin{table}
-  \caption{Brier scores (SE) and AUROC (SE) for GEV, Probit, and Logistic methods from the simulation study.}
+  \caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods from the simulation study.}
   \label{rbtbl:simbsresults}
   \centering
+  \scriptsize
   \begin{tabular}{ccclllclll}
   \toprule
     \multicolumn{3}{c}{ }& \multicolumn{3}{c}{BS} & \phantom{abc} & \multicolumn{3}{c}{AUROC}\\
     \cmidrule{4-6} \cmidrule{8-10}
-    \multicolumn{1}{c}{Setting} & \multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{Sample Type} & GEV    & Probit & Logistic & \phantom{abc} & GEV    & Probit & Logistic \\
+    \multicolumn{1}{c}{Setting} & \multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{Sample Type} & \multicolumn{1}{c}{GEV}    & \multicolumn{1}{c}{Probit} & \multicolumn{1}{c}{Logistic} & \phantom{abc} & \multicolumn{1}{c}{GEV}    & \multicolumn{1}{c}{Probit} & \multicolumn{1}{c}{Logistic} \\
   \midrule
-  GEV & 100 & CLU &  &  &  &&  &  &\\
-      &     & SRS &  &  &  &&  &  &\\
-      & 250 & CLU &  &  &  &&  &  &\\
-      &     & SRS &  &  &  &&  &  &\\
+  GEV & 100 & CLU & 3.10 [0.27] & 2.45 [0.19] & 2.79 [0.25] && 0.926 [0.009] &
+      0.942 [0.009] & 0.900 [0.020]\\
+      &     & SRS & 2.92 [0.20] & 2.54 [0.18] & 2.92 [0.25] && 0.938 [0.007] & 0.951 [0.007] & 0.879 [0.021]\\
+      & 250 & CLU & 2.14 [0.14] & 1.84 [0.12] & 2.02 [0.14] && 0.955 [0.006] & 0.954 [0.010] & 0.929 [0.016]\\
+      &     & SRS & 2.32 [0.15] & 2.09 [0.14] & 2.28 [0.15] && 0.948 [0.009] & 0.948 [0.010] & 0.906 [0.020]\\
   \midrule
-  Probit & 100 & CLU &  &  &  &&  &  &\\
-         &     & SRS &  &  &  &&  &  &\\
-         & 250 & CLU &  &  &  &&  &  &\\
-         &     & SRS &  &  &  &&  &  &\\
+  Logistic & 100 & CLU & 5.29 [0.25] & 4.94 [0.23] & 5.10 [0.25] && 0.659 [0.012]
+           & 0.676 [0.014] & 0.643 [0.013]\\
+           &     & SRS & 5.32 [0.23] & 5.09 [0.24] & 5.34 [0.26] && 0.690 [0.012] & 0.693 [0.012] & 0.613 [0.012]\\
+           & 250 & CLU & 4.81 [0.21] & 4.55 [0.21] & 4.66 [0.22] && 0.731 [0.010] & 0.749 [0.010] & 0.714 [0.014]\\
+           &     & SRS & 4.81 [0.23] & 4.56 [0.21] & 4.95 [0.24] && 0.744 [0.011] & 0.764 [0.010] & 0.702 [0.015]\\
   \midrule
-  Hotspot & 100 & CLU &  &  &  &&  &  &\\
-          &     & SRS &  &  &  &&  &  &\\
-          & 250 & CLU &  &  &  &&  &  &\\
-          &     & SRS &  &  &  &&  &  &\\
+  Hotspot & 100 & CLU & 2.29 [0.17] & 2.01 [0.15] & 1.81 [0.12] && 0.841 [0.016] &        0.833 [0.019] & 0.824 [0.020]\\
+          &     & SRS & 2.09 [0.13] & 1.87 [0.12] & 2.13 [0.15] && 0.885 [0.015] &  0.906 [0.013] & 0.844 [0.015]\\
+          & 250 & CLU & 1.65 [0.11] & 1.25 [0.08] & 1.40 [0.09] && 0.934 [0.009] &  0.949 [0.008] & 0.939 [0.011]\\
+          &     & SRS & 1.53 [0.10] & 1.31 [0.08] & 1.63 [0.11] && 0.947 [0.007] &  0.960 [0.005] & 0.918 [0.015]\\
   \bottomrule
   \end{tabular}
 \end{table}
@@ -407,19 +410,24 @@ To compare models, we use similar metrics as in the simulation study, but we ave
 \end{figure}
 
 \begin{table}
-  \caption{Brier scores (SE) and AUROC (SE) for GEV, Probit, and Logistic methods for \emph{Tamarix ramosissima}.}
+  \caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods for \emph{Tamarix ramosissima}.}
   \label{rbtbl:simbsresults}
   \centering
+  \footnotesize
   \begin{tabular}{cclllclll}
   \toprule
     \multicolumn{2}{c}{ }& \multicolumn{3}{c}{BS} & \phantom{abc} & \multicolumn{3}{c}{AUROC}\\
     \cmidrule{3-5} \cmidrule{7-9}
     \multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{Sample Type} & GEV    & Probit & Logistic & \phantom{abc} & GEV    & Probit & Logistic \\
   \midrule
-  100 & CLU &  &  &  &&  &  &\\
-      & SRS &  &  &  &&  &  &\\
-  250 & CLU &  &  &  &&  &  &\\
-      & SRS &  &  &  &&  &  &\\
+  100 & CLU & 5.15 [0.05] & 5.08 [0.04] & 5.35 [0.02] && 0.747 [0.009] & 0.742
+      [0.010] & 0.701 [0.009]\\
+      & SRS & 5.03 [0.04] & 4.97 [0.04] & 5.51 [0.02] && 0.796 [0.006] & 0.802
+      [0.006] & 0.631 [0.008]\\
+  250 & CLU & 4.78 [0.04] & 4.68 [0.03] & 4.97 [0.04] && 0.773 [0.009] & 0.784
+      [0.009] & 0.790 [0.008]\\
+      & SRS & 4.83 [0.04] & 4.75 [0.03] & 5.17 [0.05] && 0.826 [0.007] & 0.848
+      [0.005] & 0.712 [0.013]\\
   \bottomrule
   \end{tabular}
 \end{table}

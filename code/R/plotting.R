@@ -46,11 +46,13 @@ plot.species <- function(df, main, legend.title = NULL) {
                  panel.grid.major = element_blank(),
                  panel.background = element_blank(),
                  panel.border = element_blank(),
-                 legend.title = element_text(size = 20, face = "bold.italic",
+                 legend.title = element_text(size = rel(1.5), 
+                                             face = "bold.italic",
                                              vjust = 1),
-                 legend.text = element_text(size = 16),
-                 legend.key.height = unit(24, 'pt'),
-                 legend.key.width  = unit(24, 'pt'))
+                 legend.text = element_text(size = rel(1.5)),
+                 # legend.key.height = unit(24, 'pt'),
+                 # legend.key.width  = unit(24, 'pt'),
+                 plot.title = element_text(size = rel(1.5)))
   return(p)
 }
 
@@ -137,9 +139,9 @@ plot.roc <- function(pred.gev, pred.pro, pred.log,
        add = TRUE)
 
   legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
-         legend = c("GEV", "Probit", "Logit"), 
-         lty = 1, lwd = 1, 
-         cex = 1.5)
+         title = "Link function:",
+         legend = c("GEV", "Probit", "Logistic"), 
+         lty = 1, lwd = 1.5, cex = 1.5)
 
   # plot(prc.gev, avg = avg, col = "grey20", lwd = 2, main = prc.main,
   #      ylim = c(0, 1))
@@ -153,7 +155,7 @@ plot.smooth <- function(df) {
   p1 <- ggplot(df, aes(x = rareness, y = bs, color = method))
   p1 <- p1 + geom_point(alpha = 0.8)
   p1 <- p1 + geom_smooth(alpha = 0.4)
-  p1 <- p1 + scale_x_continuous(breaks = seq(0.01, 0.06, by = 0.01))
+  # p1 <- p1 + scale_x_continuous(breaks = seq(0.05, 0.4, by = 0.02))
   p1 <- p1 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
   p1 <- p1 + labs(x = "Rareness", y = "Brier Score", 
                   title = "Rareness vs Brier Score")
@@ -162,7 +164,7 @@ plot.smooth <- function(df) {
   p2 <- ggplot(df, aes(x = rareness, y = auc, color = method))
   p2 <- p2 + geom_point(alpha = 0.8)
   p2 <- p2 + geom_smooth(alpha = 0.4)
-  p2 <- p2 + scale_x_continuous(breaks = seq(0.01, 0.06, by = 0.01))
+  # p2 <- p2 + scale_x_continuous(breaks = seq(0.05, 0.4, by = 0.02))
   p2 <- p2 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
   p2 <- p2 + labs(x = "Rareness", y = "AUROC", 
                   title = "Rareness vs AUROC")
