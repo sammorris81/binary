@@ -1,7 +1,7 @@
 source(file = "./package_load.R", chdir = T)
-cluster <- TRUE
-n <- 100
-these.sets <- 11:20
-which.y <- 1
+cluster <- FALSE
+n <- 250
+these.sets <- 76:80
+which.y <- 2
 
 source("fitmodel_swd.R", chdir = TRUE)
