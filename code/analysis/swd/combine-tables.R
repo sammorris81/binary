@@ -104,7 +104,7 @@ for (i in 1:2) {
   this.row <- apply(bs.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
                     2, mean, na.rm = TRUE)
   bs.results.combined[[species.idx]][4, ] <- this.row
-  
+
   this.row <- apply(bs.results[[species.idx]][1:nsets, ],
                     2, sd, na.rm = TRUE) / sqrt(nsets)
   bs.results.comb.se[[species.idx]][1, ] <- this.row
@@ -130,7 +130,7 @@ for (i in 1:2) {
   this.row <- apply(auc.results[[species.idx]][(3 * nsets + 1):(4 * nsets), ],
                     2, mean, na.rm = TRUE)
   auc.results.combined[[species.idx]][4, ] <- this.row
-  
+
   this.row <- apply(auc.results[[species.idx]][1:nsets, ],
                     2, sd, na.rm = TRUE) / sqrt(nsets)
   auc.results.comb.se[[species.idx]][1, ] <- this.row
@@ -189,18 +189,18 @@ for (sample.idx in 1:2) {
   } else {
     samp.type <- "srs"
   }
-  
+
   for (n.idx in 1:2) {
     if (n.idx == 1) {
       n <- 100
     } else {
       n <- 250
     }
-    
+
     sample.list <- paste(samp.type, ".lst.Y1.", n, sep = "")
     this.col <- (sample.idx - 1) * 2 + n.idx
     these.cols[this.col] <- paste(samp.type, n, sep = "-")
-    
+
     for (set in 1:nsets) {
       these.train <- get(sample.list)[[set]]
       y.o <- y[these.train]
@@ -215,40 +215,39 @@ for (setting in 1:4) {
   # only want a single sample type in each plot
   start <- (setting - 1) * nsets + 1
   end   <- setting * nsets
-  
+
   plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
   df <- data.frame(rareness = rep(rareness[, setting], 3),
-                   bs = c(bs.results[[1]][start:end, 1], 
+                   bs = c(bs.results[[1]][start:end, 1],
                           bs.results[[1]][start:end, 2],
                           bs.results[[1]][start:end, 3]),
                    auc = c(auc.results[[1]][start:end, 1],
-                           auc.results[[1]][start:end, 2], 
+                           auc.results[[1]][start:end, 2],
                            auc.results[[1]][start:end, 3]),
-                   method = as.factor(rep(c("GEV", "Probit", "Logistic"), 
+                   method = as.factor(rep(c("GEV", "Probit", "Logistic"),
                                           each = length(start:end))))
   df$method <- factor(df$method, levels = c("GEV", "Probit", "Logistic"))
-  
+
   panel <- plot.smooth(df)
   ggsave(plot.file, plot = panel, width = 9, height = 4.5)
 }
 
 # Apparently ROCR can take in a list over all 100 datasets to
 # come up with an averaged cross-validation curve
-species.idx <- 1
 
-# for (species.idx in 1:2) {
+for (species.idx in 1:2) {
   for (sample.idx in 1:2) {
     for (n.idx in 1:2) {
       this.samp    <- samp.types[sample.idx]
       this.species <- species.idx
       this.n       <- ns[n.idx]
-      
+
       this.gev.pred <- vector(mode = "list", length = nsets)
       this.pro.pred <- vector(mode = "list", length = nsets)
       this.log.pred <- vector(mode = "list", length = nsets)
       this.yp       <- vector(mode = "list", length = nsets)
       sets.done <- rep(FALSE, nsets)
-      
+
       for (set in 1:nsets) {
         results.file <- paste("./ss-results/", this.samp, "-", this.species, "-",
                               this.n, "-", set, ".RData", sep = "")
@@ -261,7 +260,7 @@ species.idx <- 1
           this.log.pred[[set]] <- post.prob.log
         }
       }
-      
+
       pred.gev.name <- paste("pred.gev.", this.samp, ".",
                              this.species, ".", this.n, sep = "")
       pred.pro.name <- paste("pred.pro.", this.samp, ".",
@@ -275,7 +274,7 @@ species.idx <- 1
       assign(pred.log.name, this.log.pred[sets.done])
       assign(yp.name, this.yp[sets.done])
       print(paste(this.samp, this.species, this.n))
-}}  # }
+}}}
 
 quartz(width = 16, height = 16)
 par(mfrow = c(2, 2))
@@ -307,22 +306,21 @@ plot.roc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/data-perf-species1.pdf")
 dev.off()
 
+quartz(width = 16, height = 8)
+par(mfrow = c(1, 2))
 pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
 pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
 pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
-quartz(width = 16, height = 8)
 main <- "Species 2, Cluster sample, n = 100"
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-2-100.pdf")
-dev.off()
 
 pred.gev <- prediction(pred.gev.srs.2.100, yp.srs.2.100)
 pred.pro <- prediction(pred.pro.srs.2.100, yp.srs.2.100)
 pred.log <- prediction(pred.log.srs.2.100, yp.srs.2.100)
-quartz(width = 16, height = 8)
 main <- "Species 2, Simple random sample, n = 100"
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-2-100.pdf")
+
+dev.print(device = pdf, "./plots/data-perf-species2.pdf")
 dev.off()
 
 pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
