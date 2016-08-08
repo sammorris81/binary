@@ -322,6 +322,6 @@ for (set in these.sets) {
          post.prob.gev, post.prob.pro, post.prob.log,
          y.o, y.p, s.o, s.p, knots, timings, file = fit.file)
   }
-  save(post.prob.gev, post.prob.pro, post.prob.log,
+  save(post.prob.gev, post.prob.pro, post.prob.log, timings,
        y.o, y.p, s.o, s.p, file = results.file)
 }
