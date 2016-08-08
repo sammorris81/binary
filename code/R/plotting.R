@@ -151,6 +151,41 @@ plot.roc <- function(pred.gev, pred.pro, pred.log,
   #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
 }
 
+plot.prc <- function(pred.gev, pred.pro, pred.log,
+                     avg = "vertical", main = NULL) {
+  roc.gev <- performance(pred.gev, "prec", "rec")
+  roc.pro <- performance(pred.pro, "prec", "rec")
+  roc.log <- performance(pred.log, "prec", "rec")
+  
+  roc.main <- paste("PRC Curve: ", main, sep = "")
+  # prc.main <- paste("Precision Recall Curve: ", main, sep = "")
+  
+  # plot(roc.gev, avg = avg, col = "grey20", main = roc.main)
+  plot(roc.gev, avg = avg, col = "grey20", spread.estimate = "stderror", 
+       show.spread.at = seq(0.1, 0.9, 0.1), main = roc.main, 
+       cex = 1.5, cex.lab = 1.5, cex.axis = 1.5, cex.main = 1.5)
+  # plot(roc.pro, avg = avg, col = "firebrick2", add = TRUE)
+  plot(roc.pro, avg = avg, col = "firebrick2", plotCI.col = "firebrick2", 
+       spread.estimate = "stderror", show.spread.at = seq(0.1, 0.9, 0.1), 
+       add = TRUE)
+  # plot(roc.log, avg = avg, col = "dodgerblue2", add = TRUE)
+  plot(roc.log, avg = avg, plotCI.col = "dodgerblue2", col = "dodgerblue2", 
+       spread.estimate = "stderror", show.spread.at = seq(0.1, 0.9, 0.1), 
+       add = TRUE)
+  
+  legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
+         title = "Link function:",
+         legend = c("GEV", "Probit", "Logistic"), 
+         lty = 1, lwd = 1.5, cex = 1.5)
+  
+  # plot(prc.gev, avg = avg, col = "grey20", lwd = 2, main = prc.main,
+  #      ylim = c(0, 1))
+  # plot(prc.pro, avg = avg, col = "firebrick2", lwd = 2, add = TRUE)
+  # plot(prc.log, avg = avg, col = "dodgerblue2", lwd = 2, add = TRUE)
+  # legend("bottomright", col = c("grey20", "firebrick2", "dodgerblue2"),
+  #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
+}
+
 plot.smooth <- function(df) {
   p1 <- ggplot(df, aes(x = rareness, y = bs, color = method))
   p1 <- p1 + geom_point(alpha = 0.8)

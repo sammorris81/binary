@@ -174,6 +174,64 @@ for (i in 1:2) {
 prefix <- "ss-results/"
 files <- list.files(path = prefix)
 
+round(bs.results.combined[[1]] * 100, 2)
+round(bs.results.comb.se[[1]] * 100, 2)
+round(auc.results.combined[[1]], 3)
+round(auc.results.comb.se[[1]], 3)
+
+rareness <- matrix(0, nsets, 4)
+y <- Y1
+these.cols <- rep(NA, 4)
+
+for (sample.idx in 1:2) {
+  if (sample.idx == 1) {
+    samp.type <- "clu"
+  } else {
+    samp.type <- "srs"
+  }
+  
+  for (n.idx in 1:2) {
+    if (n.idx == 1) {
+      n <- 100
+    } else {
+      n <- 250
+    }
+    
+    sample.list <- paste(samp.type, ".lst.Y1.", n, sep = "")
+    this.col <- (sample.idx - 1) * 2 + n.idx
+    these.cols[this.col] <- paste(samp.type, n, sep = "-")
+    
+    for (set in 1:nsets) {
+      these.train <- get(sample.list)[[set]]
+      y.o <- y[these.train]
+      rareness[set, this.col] <- mean(y.o)
+    }
+  }
+}
+
+colnames(rareness) <- these.cols
+#### smooth of rareness by brier score
+for (setting in 1:4) {
+  # only want a single sample type in each plot
+  start <- (setting - 1) * nsets + 1
+  end   <- setting * nsets
+  
+  plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
+  df <- data.frame(rareness = rep(rareness[, setting], 3),
+                   bs = c(bs.results[[1]][start:end, 1], 
+                          bs.results[[1]][start:end, 2],
+                          bs.results[[1]][start:end, 3]),
+                   auc = c(auc.results[[1]][start:end, 1],
+                           auc.results[[1]][start:end, 2], 
+                           auc.results[[1]][start:end, 3]),
+                   method = as.factor(rep(c("GEV", "Probit", "Logistic"), 
+                                          each = length(start:end))))
+  df$method <- factor(df$method, levels = c("GEV", "Probit", "Logistic"))
+  
+  panel <- plot.smooth(df)
+  ggsave(plot.file, plot = panel, width = 9, height = 4.5)
+}
+
 # Apparently ROCR can take in a list over all 100 datasets to
 # come up with an averaged cross-validation curve
 species.idx <- 1

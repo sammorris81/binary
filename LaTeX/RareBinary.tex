@@ -32,37 +32,34 @@
 
 \section{Introduction}\label{rbs:intro}
 
-The goal in binary regression is to relate a latent variable to a response using a link function.
-% $g$ so that P$(Y_i=1) = \pi_i= g(\bX_i \bbeta)$, where $\bX_i$ is the vector of covariates for observation $i$, and $\bbeta$ is the $p$-vector of regression coefficients.
-Two common examples of binary regression include logistic regression
-% with $\pi_i = \frac{ \exp{\bX_i \bbeta} }{1 + \exp{\bX_i \bbeta}}$
-and probit regression \citep{Agresti2003}.
-% with $\pi_i = \Phi(\bX_i \bbeta)$ where $\Phi(\cdot)$ represents the standard normal distribution function.
-The link functions for logistic and probit regression are symmetric, so they may not be well-suited for binary data with very few ones.
-% In the case that $\xi = 0$, this is the complementary log-log (cloglog) link function.
-An asymmetric alternative to these link functions is the complementary log-log (cloglog) link function.
-More recently, \citet{Wang2010} introduced the generalized extreme value (GEV) link function for rare binary data (a review is given in \aref{rba:rarebinary}).
-The GEV link function introduces a new shape parameter to the link function that controls the degree of asymmetry.
-The cloglog link is a special case of the GEV link function when the shape parameter is 0.
-Although this link was selected due to its ability to handle asymmetry, the GEV distribution is one of the primary distributions used for modeling extremes \citep{Coles2001}.
-Because extreme events are rare, it is therefore reasonable to use similar methods when analyzing rare binary data.
-% where
 
-Most popular methods for spatial binary data propose a latent continuous spatial process with the binary response determined by whether the latent process exceeds a threshold \citep{DeOliveira2000,Diggle2007}.
-In the hierarchical framework, spatial dependence is typically modeled with an underlying latent Gaussian process, and conditioned on this process, observations are independent.
-For large datasets, low-rank models can be used to ease the computational burden \citep{Finley2015}.
-A Gaussian process is not appropriate for modeling extremal dependence in a distribution because there is no asymptotic dependence except in the case of perfect dependence.
-This lack of asymptotic dependence leads to an underestimation of probability that two observations will jointly exceed a high threshold.
+The goals of spatial binary data analysis are often to estimate covariate effects while accounting for spatial dependence and to make predictions at locations without samples.
+A common approach to incorporate spatial dependence in the model for binary data is related to a continuous spatial process $Z(\bs) \in \mathbb{R}$ to the binary response $Y(\bs)$ by thresholding $Y(\bs) = I[Z(\bs) > c]$ where $I[\cdot]$ is an indicator function.
+In many spatial analyses of binary data, a Gaussian process is used to model $Z(\bs)$.
+This is true for both spatial probit and spatial logistic regression.
+
+In this model, spatial dependence is determined by the joint probability that two sites simultaneously exceed the threshold $c$.
+However, when $c$ is large, and thus $Y(\bs) = 1$ is rare, then the asymptotic theory suggests that the Gaussian process will not do well at modeling dependence.
+In fact, even under strong spatial correlation for $Z$, it gives asymptotic independence.
+Therefore, this suggests that for rare binary data, the Gaussian model will not perform very well.
 
 We propose using a latent max-stable process \citep{deHaan1984} because it allows for asymptotic dependence.
-The max-stable process arises as the limit of the location-wise maximum of infinitely many spatial processes.
+The max-stable process arises as the limit of the location-wise maximum of infinitely many spatial processes, and any finite-dimensional representation of a max-stable process has generalized extreme value distribution (GEV) marginal distributions.
 Max-stable processes are extremely flexible, but are often challenging to work with in high dimensions \citep{Wadsworth2014,Thibaud2013a}.
 To address this challenge, methods have been proposed that implement composite likelihood techniques for max-stable processes \citep{Padoan2010,Genton2011,Huser2014}.
 Composite likelihoods have been used to model binary spatial data \citep{Heagerty1998}, but this is not using max-stable processes.
 As an alternative to these composite approaches, \citet{Reich2012} present a hierarchical model that implements a low-rank representation for a max-stable process.
 We chose to use this low-rank representation for our rare binary spatial regression model.
+Our model builds on related work by \citet{Wang2010} who use a GEV link for non-spatial binary data.
+The proposed model generalizes this to have spatial dependence.
 
-\hl{Paragraph outlining the structure of the paper}
+The paper proceeds as follows.
+In \sref{rbs:maxstab} we present the proposed latent max-stable process for rare binary data analysis.
+In \sref{rbs:multivariate} we give the bivariate distribution for our model.
+In \sref{rbs:spatdep} we show a link between a commonly used measure of dependence between binary variables and another metric for extremal dependence.
+The computing for our model is outlined in \sref{rbs:comp}.
+Finally, we present a simulation study in \sref{rbs:sim}, and a data analysis on \emph{Tamarix ramosissima} in \sref{rbs:dataanalysis}.
+Lastly, in \sref{rbs:conclusions} we provide some discussion and possibilities for future research.
 
 \section{Spatial dependence for binary regression} \label{rbs:maxstab}
 Let $Y(\bs)$ be the binary response at spatial location $\bs$ in a spatial domain of interest $\calD \in \calR^2$.
@@ -122,12 +119,12 @@ This is a special case of the multivariate GEV distribution with asymmetric Lapl
 We give an exact expression in the case where there are only two spatial locations which is useful for constructing a pairwise composite likelihood \citep{Padoan2010} and studying spatial dependence.
 When $n = 2$, the probability mass function is given by
 \begin{align} \label{rbeq:biv}
-  \text{P}[Y(\bs_i) = y_i, Y(\bs_j) = y_j] = \left\{ \begin{array}{ll}
+  \text{P}[Y(\bs_i) = y_i, Y(\bs_j) = y_j] = \begin{cases}
     \varphi(\bz) &y_i = 0, y_j = 0\\
     \exp\left\{ - \displaystyle \frac{ 1 }{ z(\bs_i) } \right\} - \varphi(\bz), &y_i = 1, y_j = 0 \\
     \exp\left\{ - \displaystyle \frac{ 1 }{ z(\bs_j) } \right\} - \varphi(\bz), &y_i = 0, y_j = 1 \\
     1 - \exp\left\{ - \displaystyle\frac{ 1 }{ z(\bs_i) } \right\} - \exp \left\{ -\displaystyle \frac{ 1 }{z(\bs_j)} \right\} + \varphi(\bz), \quad &y_i = 1, y_j = 1
-  \end{array} \right.
+  \end{cases}
 \end{align}
 where $\varphi(\bz) = \exp \left\{ - \displaystyle \sum_{ l = 1 }^{ L } \left[ \left( \displaystyle \frac{ w_{ l }(\bs_i) }{ z(\bs_i) } \right)^{1/\alpha} + \left( \displaystyle \frac{ w_{l }(\bs_j)}{z(\bs_j)} \right)^{1/\alpha} \right]^{\alpha} \right\}$.
 For more than two locations, we are also able to compute the exact likelihood when the $n$ is large but the number of events $K = \displaystyle \sum_{i = 1}^n Y(\bs_i)$ is small, as might be expected for very rare events, see \aref{rba:likelihoodderivation}.
@@ -183,7 +180,8 @@ The code for this is available online through \texttt{https://github.com/sammorr
 For our simulation study, we generate $n_m = 50$ datasets under 12 different simulation settings to explore the impact of sample size, sampling technique, and misspecification of link function.
 We generate data assuming three possible types of underlying process.
 For each of the underlying processes, we generate complete datasets on a $100 \times 100$ rectangular grid of $n = 10,000$ locations.
-If a dataset is generated with $K < 100$ or $K > 700$, it is discarded and a new dataset is generated.
+If a dataset is generated with $K < 50$, it is discarded and a new dataset is generated.
+This is done to guarantee that datasets have no less than $0.5\%$ rarity.
 For model fitting, we select a subsample and use the remaining sites to evaluate predictive performance.
 
 \subsection{Latent processes} \label{rbs:simsettings}
@@ -214,7 +212,7 @@ These settings are selected to give an average of approximately $K = 500$ for th
 
 \begin{figure}
   \centering
-  \includegraphics[width=\linewidth, trim=0 1in 0 1in]{plots/simulateddata}
+  \includegraphics[width=\linewidth, trim={0em, 1em, 0em, 1em}]{plots/simulateddata}
   \caption{One simulated dataset from spatial GEV (left), spatial logistic (center), and hotspot (right).}
   \label{rbfig:simulateddata}
 \end{figure}
@@ -226,10 +224,10 @@ One way these methods differ from our proposed method is that they assume the un
 In this case, we assume that $Z(\bs)$ follows a Gaussian process with mean $\bX(s)^\top \bbeta$.
 The marginal distributions are given by
 \begin{align}
-  P\left[Y(\bs) = 1\right] = \left\{ \begin{array}{ll}
+  P\left[Y(\bs) = 1\right] = \begin{cases}
     \displaystyle \frac{\exp\left[\bX^\top(\bs) \bbeta + \bW (\bs) \bepsilon \right]}{1 + \exp\left[\bX^\top(\bs) \bbeta + \bW (\bs) \bepsilon \right]}, \qquad &\text{logistic}\\
     \Phi\left[\bX^\top \bbeta (\bs) + \bW (\bs) \bepsilon \right], \qquad &\text{probit}
-  \end{array}\right.
+  \end{cases}
 \end{align}
 where $\bepsilon \sim$ N$(\bZero, \tau^2_L \bI_L)$ are Gaussian random effects at the knot locations, and $\bW(\bs)$ are a set of $L$ basis functions given to recreate the Gaussian process at all sites.
 We use our own code for the spatial probit model, but we use the \texttt{spGLM} function in the \texttt{spBayes} package \citep{Finley2015} to fit the spatial logistic model.
@@ -242,7 +240,7 @@ For the logistic model, the $\bW_l(\bs_i)$ are the default implementation from t
 \hl{Timings}
 
 \subsection{Sampling technique} \label{rbs:simsampling}
-We subsample the generated data using $n_s = 100, 250$ initial locations for two different sampling designs.
+We subsample the generated data using $n_s = 100$, $250$ initial locations for two different sampling designs.
 The first is a two-stage spatially-adaptive cluster technique (CLU) taken from \citet{Pacifici2016}.
 In this design, if an initial location is occupied, we also include the four rook neighbor (north, east, south, and west) sites in the sample.
 For the second design, we use a simple random sample (SRS) with the same number of sites included in the cluster sample.
@@ -253,7 +251,7 @@ For the hotspot setting, when $n_s = 100$, there are on average $110$ sites and 
 \subsection{Priors} \label{rbs:simpriors}
 For all models, we only include an intercept term $\beta_0$ in the model, and the prior for the intercept is \mbox{$\beta_0 \sim$ N$(0, 10)$}.
 Additionally, for all models, the prior for the bandwidth is $\rho \sim$ Unif$(0.001, 1)$.
-This lower bound is selected because it is half of the distance between the rook neighbors of the knots.
+In all methods, we place knots at all data points.
 For the GEV method, the prior for the spatial dependence parameter is $\alpha \sim$ Beta$(2, 5)$.
 We select this prior because it gives greater weight to $\alpha < 0.5$, which is the point at which spatial dependence becomes fairly week, but also avoids values below 0.1 which can lead to numerical problems.
 We fix $\xi = 0$ because we do not include any covariates.
@@ -264,22 +262,26 @@ Convergence is assessed through visual inspection of traceplots.
 \subsection{Model comparisons}\label{rbs:cv}
 For each dataset, we fit the model using the $n_s$ observations as a training set, and validate the model's predictive power at the remaining grid points.
 Let $\bs^*_j$ be the $j$th site in the validation set.
-To obtain the posterior predictive distribution, at each iteration of the MCMC, we generate a spatial field of zeros and ones at the validation locations.
-\hl{I plan to update this if we have time to rerun the computing. At the moment, I'm trying to get new results for EBF because of the error I found.}
-Then to obtain $\hat{P}[Y(\bs^*_j) = 1]$, we take the average of the posterior distribution for each $j$.
+From the posterior distributions of the parameters we can calculate $P[Y(\bs)^*_j = 1]$.
+To obtain $\hat{P}[Y(\bs^*_j) = 1]$, we take the average of the posterior distribution for each $j$.
 We consider a few different metrics for comparing model performance.
 One score is the Brier scores \citep[BS]{Gneiting2007}.
 The Brier score for predicting an occurrence at site $\bs$ is given by $\{I[Y(\bs)=1] - \hat{P}[Y(\bs)=1]\}^2$ where $I[Y(\bs) = 1]$ is an indicator function indicating that an event occurred at site $\bs$.
 We average the Brier scores over all test sites, and a lower score indicates a better fit.
-We also consider the receiver operating characteristic (ROC) curve, and the area under the ROC curve (AUROC) for the different methods and settings.
+The Brier score equally penalizes false negatives and false positives, but in the case of rare data, this may not be the best metric due to the unbalanced nature of the data.
+Therefore, we also consider the receiver operating characteristic (ROC) curve, and the area under the ROC curve (AUROC) for the different methods and settings.
 The ROC curve and AUROC are obtained via the \texttt{ROCR} \citep{Sing2005} package in \texttt{R} \citep{Rmanual}.
 We then average AUCs across all datasets for each method and setting to obtain a single AUC for each combination of method and setting.
 
 \subsection{Results} \label{rbs:simresults}
-\hl{Needs updating}
-
+Overall, we find that using a spatial probit model actually performs quite well in all cases.
 \tref{rbtbl:simbsresults} gives the Brier scores and AUC for each of the methods.
 In \fref{rbfig:simrocgev} -- \fref{rbfig:simrochot}, for each setting we present the vertically averaged ROC curve for each simulation method.
+Looking at Brier scores, we see that our model is outperformed by the probit model in all cases, by the logistic models in many settings.
+For AUROC methods, in a few of the settings, we do demonstrate a very small improvement over the probit and logistic models.
+Because these results are somewhat surprising, we also considered the performance metrics by rareness of the data.
+\fref{rbfig:simsmooth} uses a Loess smoother from \texttt{ggplot} for the Brier scores and AUROC plotted against the rareness of the dataset for the GEV data setting with cluster samples of size $n_s = 250$.
+This plot shares a key feature with the same plot from many of the other settings in that as rareness increases, the AUROC for GEV is higher than the AUROC for the probit and logistic methods.
 
 \begin{table}
   \caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods from the simulation study.}
@@ -292,19 +294,20 @@ In \fref{rbfig:simrocgev} -- \fref{rbfig:simrochot}, for each setting we present
     \cmidrule{4-6} \cmidrule{8-10}
     \multicolumn{1}{c}{Setting} & \multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{Sample Type} & \multicolumn{1}{c}{GEV}    & \multicolumn{1}{c}{Probit} & \multicolumn{1}{c}{Logistic} & \phantom{abc} & \multicolumn{1}{c}{GEV}    & \multicolumn{1}{c}{Probit} & \multicolumn{1}{c}{Logistic} \\
   \midrule
-  GEV & 100 & CLU & 3.10 [0.27] & 2.45 [0.19] & 2.79 [0.25] && 0.926 [0.009] &
-      0.942 [0.009] & 0.900 [0.020]\\
+  GEV & 100 & CLU & 3.10 [0.27] & 2.45 [0.19] & 2.79 [0.25] && 0.926
+      [0.009] & 0.942 [0.009] & 0.900 [0.020]\\
       &     & SRS & 2.92 [0.20] & 2.54 [0.18] & 2.92 [0.25] && 0.938 [0.007] & 0.951 [0.007] & 0.879 [0.021]\\
-      & 250 & CLU & 2.14 [0.14] & 1.84 [0.12] & 2.02 [0.14] && 0.955 [0.006] & 0.954 [0.010] & 0.929 [0.016]\\
-      &     & SRS & 2.32 [0.15] & 2.09 [0.14] & 2.28 [0.15] && 0.948 [0.009] & 0.948 [0.010] & 0.906 [0.020]\\
+      & 250 & CLU & 2.18 [0.15] & 1.87 [0.13] & 2.05 [0.14] && 0.951 [0.008] & 0.948 [0.011] & 0.922 [0.017]\\
+      &     & SRS & 2.29 [0.15] & 2.06 [0.13] & 2.26 [0.15] && 0.949 [0.009] & 0.949 [0.010] & 0.908 [0.020]\\
   \midrule
-  Logistic & 100 & CLU & 5.29 [0.25] & 4.94 [0.23] & 5.10 [0.25] && 0.659 [0.012]
-           & 0.676 [0.014] & 0.643 [0.013]\\
+  Logistic & 100 & CLU & 5.29 [0.25] & 4.94 [0.23] & 5.10 [0.25] &&
+           0.659 [0.012] & 0.676 [0.014] & 0.643 [0.013]\\
            &     & SRS & 5.32 [0.23] & 5.09 [0.24] & 5.34 [0.26] && 0.690 [0.012] & 0.693 [0.012] & 0.613 [0.012]\\
            & 250 & CLU & 4.81 [0.21] & 4.55 [0.21] & 4.66 [0.22] && 0.731 [0.010] & 0.749 [0.010] & 0.714 [0.014]\\
-           &     & SRS & 4.81 [0.23] & 4.56 [0.21] & 4.95 [0.24] && 0.744 [0.011] & 0.764 [0.010] & 0.702 [0.015]\\
+           &     & SRS & 4.86 [0.22] & 4.63 [0.20] & 5.01 [0.23] && 0.742 [0.010] & 0.760 [0.010] & 0.698 [0.015]\\
   \midrule
-  Hotspot & 100 & CLU & 2.29 [0.17] & 2.01 [0.15] & 1.81 [0.12] && 0.841 [0.016] &        0.833 [0.019] & 0.824 [0.020]\\
+  Hotspot & 100 & CLU & 2.29 [0.17] & 2.01 [0.15] & 1.81 [0.12] &&
+          0.841 [0.016] & 0.833 [0.019] & 0.824 [0.020]\\
           &     & SRS & 2.09 [0.13] & 1.87 [0.12] & 2.13 [0.15] && 0.885 [0.015] &  0.906 [0.013] & 0.844 [0.015]\\
           & 250 & CLU & 1.65 [0.11] & 1.25 [0.08] & 1.40 [0.09] && 0.934 [0.009] &  0.949 [0.008] & 0.939 [0.011]\\
           &     & SRS & 1.53 [0.10] & 1.31 [0.08] & 1.63 [0.11] && 0.947 [0.007] &  0.960 [0.005] & 0.918 [0.015]\\
@@ -321,6 +324,7 @@ In \fref{rbfig:simrocgev} -- \fref{rbfig:simrochot}, for each setting we present
 
 \begin{figure}
   % code/analysis/simstudy/combine-tables.R
+  \centering
   \includegraphics[width=\linewidth]{plots/sim-perf-probit}
   \caption{Vertically averaged ROC curves for probit simulation setting.}
   \label{rbfig:simrocpro}
@@ -328,9 +332,17 @@ In \fref{rbfig:simrocgev} -- \fref{rbfig:simrochot}, for each setting we present
 
 \begin{figure}
   % code/analysis/simstudy/combine-tables.R
+  \centering
   \includegraphics[width=\linewidth]{plots/sim-perf-hotspot}
   \caption{Vertically averaged ROC curves for hotpost simulation setting.}
   \label{rbfig:simrochot}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\linewidth]{plots/byrareness-3}
+  \caption{Smooth of BS (left) and AUROC (right) by rareness for GEV link and CLU-250 sampling.}
+  \label{rbfig:simsmooth}
 \end{figure}
 
 % \begin{table}
@@ -382,7 +394,6 @@ In \fref{rbfig:simrocgev} -- \fref{rbfig:simrochot}, for each setting we present
 % If needed, species 2 is \emph{Hedysarum scoparium} , and \emph{Hedysarum scoparium} can be found in $0.54\%$ of the grid cells.
 
 \section{Data analysis}\label{rbs:dataanalysis}
-\hl{Needs updating}
 
 We compare our method to the spatial probit and logit for mapping the probability of the occurrence of \emph{Tamarix ramosissima}, a plant species, for a 1-km$^2$ study region of PR China \citep{Smith2012}.
 The Chinese Academy of Forestry conducted a full census of the area, and the true occupancy of the species are plotted in \fref{rbfig:occupancy}.
@@ -395,23 +406,26 @@ The Chinese Academy of Forestry conducted a full census of the area, and the tru
 The region is split into $10$-m $\times$ $10$-m grid cells, and \emph{Tamarix ramosissima} can be found in approximately $6\%$ of the grid cells.
 
 \subsection{Methods} \label{rbs:datamethods}
-For the data analysis, we generate 100 subsamples using the CLU and SRS sampling methods with $n_s = 100$ and $n_s = 250$ initial locations.
+For the data analysis, we generate 100 subsamples using the CLU and SRS sampling methods with $n_s = 100$, $250$ initial locations.
 For each subsample, we fit the spatial GEV, spatial probit, and spatial logistic models.
 Knot placement, prior distributions, and MCMC details for the data analysis are the same as the simulation study.
 To compare models, we use similar metrics as in the simulation study, but we average the metrics over subsamples.
 
 \subsection{Results}\label{rbs:dataresults}
+As with the simulation study, we find that in most cases the spatial probit model gives the best performance.
+\tref{rbtbl:dataresults} give summary Brier scores ($\times 100$) and AUROC for the \emph{Tamarix ramosissima}.
+\fref{rbfig:dataroc} gives the vertically averaged ROC curves for each method and sampling setting.
 
 \begin{figure}
   % code/analysis/swd/combine-tables.R
   \includegraphics[width=\linewidth]{plots/data-perf-species1}
   \caption{Vertically averaged ROC curves for \emph{Tamarix ramosissima}.}
-  \label{rbfig:simrocgev}
+  \label{rbfig:dataroc}
 \end{figure}
 
 \begin{table}
   \caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods for \emph{Tamarix ramosissima}.}
-  \label{rbtbl:simbsresults}
+  \label{rbtbl:dataresults}
   \centering
   \footnotesize
   \begin{tabular}{cclllclll}
@@ -420,19 +434,27 @@ To compare models, we use similar metrics as in the simulation study, but we ave
     \cmidrule{3-5} \cmidrule{7-9}
     \multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{Sample Type} & GEV    & Probit & Logistic & \phantom{abc} & GEV    & Probit & Logistic \\
   \midrule
-  100 & CLU & 5.15 [0.05] & 5.08 [0.04] & 5.35 [0.02] && 0.747 [0.009] & 0.742
-      [0.010] & 0.701 [0.009]\\
-      & SRS & 5.03 [0.04] & 4.97 [0.04] & 5.51 [0.02] && 0.796 [0.006] & 0.802
-      [0.006] & 0.631 [0.008]\\
-  250 & CLU & 4.78 [0.04] & 4.68 [0.03] & 4.97 [0.04] && 0.773 [0.009] & 0.784
-      [0.009] & 0.790 [0.008]\\
-      & SRS & 4.83 [0.04] & 4.75 [0.03] & 5.17 [0.05] && 0.826 [0.007] & 0.848
-      [0.005] & 0.712 [0.013]\\
+  100 & CLU & 5.15 [0.05] & 5.08 [0.04] & 5.35 [0.02] && 0.747 [0.009]
+      & 0.742 [0.010] & 0.701 [0.009]\\
+      & SRS & 5.03 [0.04] & 4.97 [0.04] & 5.51 [0.02] && 0.796 [0.006]
+      & 0.802 [0.006] & 0.631 [0.008]\\
+  250 & CLU & 4.78 [0.03] & 4.68 [0.03] & 4.98 [0.04] && 0.772 [0.009]
+      & 0.783 [0.009] & 0.790 [0.008]\\
+      & SRS & 4.83 [0.04] & 4.75 [0.03] & 5.17 [0.05] && 0.826 [0.007]
+      & 0.848 [0.005] & 0.712 [0.013]\\
   \bottomrule
   \end{tabular}
 \end{table}
 
-\section{Conclusions}\label{rbs:conclusions}
+\section{Discussion and future research}\label{rbs:conclusions}
+In this paper, we present a max-stable spatial method for rare binary data.
+The principal finding in this paper is that the spatial probit model tends to outperform the proposed model.
+This finding is surprising given that the max-stable process is the theoretically justified spatial process for extreme value distributions, and it leads to possible research questions in the future.
+
+It is unusual that the spatial probit model should outperform the proposed model, particularly when the data are generated directly from the proposed model.
+One possible explanation is that for the simulated data, there is a wide range of rarity in the data (GEV: $0.5\%$ -- $35.9\%$, Logistic: $1.4\%$ -- $14.4\%$, and Hotspot: $0.5\%$ -- $6.8\%$).
+Given that for both the GEV and logistic data settings, we have a number of datasets with a relatively high rate of occurrence, it is possible that probit is a competitive method.
+In particular, it may be useful to have a slightly more restrictive data generation strategy (i.e. restrict datasets to $K < 500$).
 
 \section*{Acknowledgments}
 
