@@ -16,6 +16,8 @@
 \usepackage{changepage}
 \usepackage{booktabs}
 \usepackage{url}
+\usepackage{pdflscape}
+\usepackage{subfig}
 
 \usepackage[left=1in,top=1in,right=1in]{geometry}
 \pdfpageheight 11in
@@ -23,6 +25,13 @@
 \linespread{2.0}
 \input{mycommands.sty}
 
+
+%184: I'd make this line a little less pessimistic and say "The results of the real data analysis mirror those of the simulation study."
+%
+%201: Again, less pessimistic: "is that the spatial probit model is suffient for binary data expcept in the most extreme cases with occuring for less than 1% of the observations."  I'd also add here that probit and GEV both outperformed the logit.  Logit is the most common method, so this is news.
+%
+%
+%212: Use %rarity instead of K in case they've forgotten K by now.
 
 \begin{document}\linenumbers
 
@@ -179,7 +188,7 @@ The code for this is available online through \url{https://github.com/sammorris8
 For our simulation study, we generate $n_m = 50$ datasets under 12 different simulation settings to explore the impact of sample size, sampling technique, and misspecification of link function.
 We generate data assuming three possible types of underlying process.
 For each of the underlying processes, we generate complete datasets on a $100 \times 100$ rectangular grid of $n = 10,000$ locations.
-If a dataset is generated with $K < 50$, it is discarded and a new dataset is generated.
+If a simulated population is generated with $K < 50$, it is discarded and a new simulated population is generated.
 This is done to guarantee that datasets have no less than $0.5\%$ rarity.
 For model fitting, we select a subsample and use the remaining sites to evaluate predictive performance.
 For all models, we run the MCMC sampler for 25,000 iterations with a burn-in period of 20,000 iterations.
@@ -286,34 +295,62 @@ Because these results are somewhat surprising, we also considered the performanc
 We plot the Brier scores and AUROC for a few different sampling methods using the GEV and logistic links in \fref{rbfig:simsmooth-gevclu250} -- \fref{rbfig:simsmooth-logclu250} using a Loess smoother.
 These plots give evidence to suggest that as rareness increases, the spatial GEV method has potential to outperform the spatial probit and logistic models based on AUROC.
 
+\begin{figure}[htbp]  % code/analysis/simstudy/combine-tables.R
+  \centering
+  \includegraphics[width=\linewidth]{plots/byrareness-3}
+  \caption{Smooth of BS (left) and AUROC (right) by rareness for GEV link and cluster sampling with $n_s = 250$.}
+  \label{rbfig:simsmooth-gevclu250}
+\end{figure}
+
+\begin{figure}[htbp] % code/analysis/simstudy/combine-tables.R
+  \includegraphics[width=\linewidth]{plots/byrareness-4}
+  \caption{Smooth of BS (left) and AUROC (right) by rareness for GEV link and simple random sampling with $n_s = 250$.}
+  \label{rbfig:simsmooth-gevsrs250}
+\end{figure}
+
+\begin{figure}[htbp] % code/analysis/simstudy/combine-tables.R
+  \includegraphics[width=\linewidth]{plots/byrareness-7}
+  \caption{Smooth of BS (left) and AUROC (right) by rareness for logistic link and cluster sampling with $n_s = 250$.}
+  \label{rbfig:simsmooth-logclu250}
+\end{figure}
+
 \begin{table}
   \caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods from the simulation study.}
   \label{rbtbl:simbsresults}
   \centering
   \scriptsize
-  \begin{tabular}{ccclllclll}
+  \begin{tabular}{c c c ccc c ccc}
   \toprule
-    \multicolumn{3}{c}{ }& \multicolumn{3}{c}{BS} & \phantom{abc} & \multicolumn{3}{c}{AUROC}\\
+    \multicolumn{3}{c}{ }& \multicolumn{3}{c}{BS} && \multicolumn{3}{c}{AUROC}\\
     \cmidrule{4-6} \cmidrule{8-10}
-    \multicolumn{1}{c}{Setting} & \multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{Sample Type} & \multicolumn{1}{c}{GEV}    & \multicolumn{1}{c}{Probit} & \multicolumn{1}{c}{Logistic} & \phantom{abc} & \multicolumn{1}{c}{GEV}    & \multicolumn{1}{c}{Probit} & \multicolumn{1}{c}{Logistic} \\
+    Setting & $n$ & Sample & GEV & Probit & Logistic && GEV & Probit & Logistic\\
   \midrule
-  GEV & 100 & CLU & 3.10 [0.27] & 2.45 [0.19] & 2.79 [0.25] && 0.926
-      [0.009] & 0.942 [0.009] & 0.900 [0.020]\\
-      &     & SRS & 2.92 [0.20] & 2.54 [0.18] & 2.92 [0.25] && 0.938 [0.007] & 0.951 [0.007] & 0.879 [0.021]\\
-      & 250 & CLU & 2.18 [0.15] & 1.87 [0.13] & 2.05 [0.14] && 0.951 [0.008] & 0.948 [0.011] & 0.922 [0.017]\\
-      &     & SRS & 2.29 [0.15] & 2.06 [0.13] & 2.26 [0.15] && 0.949 [0.009] & 0.949 [0.010] & 0.908 [0.020]\\
+  GEV & 100 & CLU & 3.10 [0.27] & 2.45 [0.19] & 2.79 [0.25]
+      && 0.926 [0.009] & 0.942 [0.009] & 0.900 [0.020]\\
+      &     & SRS & 2.92 [0.20] & 2.54 [0.18] & 2.92 [0.25]
+      && 0.938 [0.007] & 0.951 [0.007] & 0.879 [0.021]\\
+      & 250 & CLU & 2.18 [0.15] & 1.87 [0.13] & 2.05 [0.14]
+      && 0.951 [0.008] & 0.948 [0.011] & 0.922 [0.017]\\
+      &     & SRS & 2.29 [0.15] & 2.06 [0.13] & 2.26 [0.15]
+      && 0.949 [0.009] & 0.949 [0.010] & 0.908 [0.020]\\
   \midrule
-  Logistic & 100 & CLU & 5.29 [0.25] & 4.94 [0.23] & 5.10 [0.25] &&
-           0.659 [0.012] & 0.676 [0.014] & 0.643 [0.013]\\
-           &     & SRS & 5.32 [0.23] & 5.09 [0.24] & 5.34 [0.26] && 0.690 [0.012] & 0.693 [0.012] & 0.613 [0.012]\\
-           & 250 & CLU & 4.81 [0.21] & 4.55 [0.21] & 4.66 [0.22] && 0.731 [0.010] & 0.749 [0.010] & 0.714 [0.014]\\
-           &     & SRS & 4.86 [0.22] & 4.63 [0.20] & 5.01 [0.23] && 0.742 [0.010] & 0.760 [0.010] & 0.698 [0.015]\\
+  Logistic & 100 & CLU & 5.29 [0.25] & 4.94 [0.23] & 5.10 [0.25]
+           && 0.659 [0.012] & 0.676 [0.014] & 0.643 [0.013]\\
+           &     & SRS & 5.32 [0.23] & 5.09 [0.24] & 5.34 [0.26]
+           && 0.690 [0.012] & 0.693 [0.012] & 0.613 [0.012]\\
+           & 250 & CLU & 4.81 [0.21] & 4.55 [0.21] & 4.66 [0.22]
+           && 0.731 [0.010] & 0.749 [0.010] & 0.714 [0.014]\\
+           &     & SRS & 4.86 [0.22] & 4.63 [0.20] & 5.01 [0.23]
+           && 0.742 [0.010] & 0.760 [0.010] & 0.698 [0.015]\\
   \midrule
-  Hotspot & 100 & CLU & 2.29 [0.17] & 2.01 [0.15] & 1.81 [0.12] &&
-          0.841 [0.016] & 0.833 [0.019] & 0.824 [0.020]\\
-          &     & SRS & 2.09 [0.13] & 1.87 [0.12] & 2.13 [0.15] && 0.885 [0.015] &  0.906 [0.013] & 0.844 [0.015]\\
-          & 250 & CLU & 1.65 [0.11] & 1.25 [0.08] & 1.40 [0.09] && 0.934 [0.009] &  0.949 [0.008] & 0.939 [0.011]\\
-          &     & SRS & 1.53 [0.10] & 1.31 [0.08] & 1.63 [0.11] && 0.947 [0.007] &  0.960 [0.005] & 0.918 [0.015]\\
+  Hotspot & 100 & CLU & 2.29 [0.17] & 2.01 [0.15] & 1.81 [0.12]
+        && 0.841 [0.016] & 0.833 [0.019] & 0.824 [0.020]\\
+          &     & SRS & 2.09 [0.13] & 1.87 [0.12] & 2.13 [0.15]
+          && 0.885 [0.015] &  0.906 [0.013] & 0.844 [0.015]\\
+          & 250 & CLU & 1.65 [0.11] & 1.25 [0.08] & 1.40 [0.09]
+          && 0.934 [0.009] &  0.949 [0.008] & 0.939 [0.011]\\
+          &     & SRS & 1.53 [0.10] & 1.31 [0.08] & 1.63 [0.11]
+          && 0.947 [0.007] &  0.960 [0.005] & 0.918 [0.015]\\
   \bottomrule
   \end{tabular}
 \end{table}
@@ -338,26 +375,6 @@ These plots give evidence to suggest that as rareness increases, the spatial GEV
 %  \caption{Vertically averaged ROC curves for hotpost simulation setting.}
 %  \label{rbfig:simrochot}
 %\end{figure}
-
-\begin{figure}  % code/analysis/simstudy/combine-tables.R
-  \centering
-  \includegraphics[width=\linewidth]{plots/byrareness-3}
-  \caption{Smooth of BS (left) and AUROC (right) by rareness for GEV link and cluster sampling with $n_s = 250$.}
-  \label{rbfig:simsmooth-gevclu250}
-\end{figure}
-
-\begin{figure} % code/analysis/simstudy/combine-tables.R
-  \includegraphics[width=\linewidth]{plots/byrareness-4}
-  \caption{Smooth of BS (left) and AUROC (right) by rareness for GEV link and simple random sampling with $n_s = 250$.}
-  \label{rbfig:simsmooth-gevsrs250}
-\end{figure}
-
-\begin{figure} % code/analysis/simstudy/combine-tables.R
-  \includegraphics[width=\linewidth]{plots/byrareness-7}
-  \caption{Smooth of BS (left) and AUROC (right) by rareness for logistic link and cluster sampling with $n_s = 250$.}
-  \label{rbfig:simsmooth-logclu250}
-\end{figure}
-
 
 % \begin{table}
 %   \caption{Relative AUC for GEV and Probit methods}
@@ -430,7 +447,8 @@ To compare models, we use similar metrics as in the simulation study, but we ave
 \subsection{Results}\label{rbs:dataresults}
 
 As with the simulation study, we find that in most cases the spatial probit model gives the best performance.
-\tref{rbtbl:dataresults} give summary Brier scores ($\times 100$) and AUROC for the \tamarix{} and \hedysarum{} analysis.
+\tref{rbtbl:dataresults} give summary Brier scores ($\times 100$) and AUROC for the \tamarix{} and \hedysarum{} analysis along with the time (in seconds) for 1,000 iterations of the MCMC sampler.
+These timings come from a single core of an Intel Core i7-5820K Haswell-E processor, using the OpenBLAS optimized BLAS library (\url{http://www.openblas.net}).
 \fref{rbfig:data1roc} gives the vertically averaged ROC curves for each method and sampling setting for \tamarix{} and \fref{rbfig:data2roc} gives the vertically averaged ROC curves for \hedysarum{}.
 These results appear to support the suggestion from the simulation study that spatial GEV gives an advantage as rareness increases.
 For \tamarix, when $n = 100$, there is a small distinction between the spatial GEV and probit models.
@@ -439,6 +457,18 @@ However, when $n = 250$, both logistic and probit models appear to outperform th
 For the rarer species, \hedysarum, we find more conclusive evidence that the GEV model provides an improvement for cluster sampling when $n = 100$.
 At this sample size, there is also some evidence to suggest that the GEV model gives some improvement over the probit model for simple random sampling.
 For $n = 250$, we still have evidence that using a cluster sampling strategy, the GEV model gives the best performance, but for simple random sampling, the probit model performs the best.
+
+\section{Discussion and future research}\label{rbs:conclusions}
+
+In this paper, we present a max-stable spatial method for rare binary data.
+The principal finding in this paper is that the spatial probit model tends to outperform the proposed model.
+This finding is surprising given that the max-stable process is the theoretically justified spatial process for extreme value distributions, and it leads to possible research questions in the future.
+
+It is unusual that the spatial probit model should outperform the proposed model, particularly when the data are generated directly from the proposed model.
+One possible explanation is that for the simulated data, there is a wide range of rarity in the data (GEV: $0.5\%$ -- $35.9\%$, Logistic: $1.4\%$ -- $14.4\%$, and Hotspot: $0.5\%$ -- $6.8\%$).
+Given that for both the GEV and logistic data settings, we have a number of datasets with a relatively high rate of occurrence, it is possible that probit is competitive partly due to the fact that the data are not rare.
+Both the simulation study and data analysis appear to support the idea that the GEV method will perform better on rarer datasets.
+Therefore, it may be useful to conduct more research on rare datasets or through simulation with a slightly more restrictive data generation strategy (i.e. restrict datasets to $K < 500$).
 
 \begin{figure}
   % code/analysis/swd/combine-tables.R
@@ -454,49 +484,57 @@ For $n = 250$, we still have evidence that using a cluster sampling strategy, th
   \label{rbfig:data2roc}
 \end{figure}
 
+\begin{landscape}
 \begin{table}
-  \caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods for \emph{Tamarix ramosissima} and \emph{Hedysarum scoparium}.}
+  \caption{Brier scores ($\times 100$) [SE], AUROC [SE], and time (in seconds) for 1,000 iterations of GEV, Probit, and Logistic methods for \tamarix{} and \hedysarum{}.}
   \label{rbtbl:dataresults}
   \centering
   \scriptsize
-  \begin{tabular}{c c c ccc c ccc}
-  \toprule
-    \multicolumn{3}{c}{ }& \multicolumn{3}{c}{BS} & \phantom{a} & \multicolumn{3}{c}{AUROC}\\
-    \cmidrule{4-6} \cmidrule{8-10}
-    Species & $n$ & Sample & GEV    & Probit & Logistic & \phantom{ab} & GEV    & Probit & Logistic \\
-  \midrule
-  TR & 100 & CLU & 5.120 [0.050] & 5.039 [0.049] & 5.382 [0.029] && 0.732 [0.014]
-           & 0.731 [0.014] & 0.699 [0.012]\\
-     &     & SRS & 4.997 [0.045] & 4.938 [0.055] & 5.500 [0.027] && 0.798 [0.008]
-           & 0.802 [0.009] & 0.636 [0.012]\\
-     & 250 & CLU & 4.779 [0.049] & 4.657 [0.045] & 4.950 [0.051] && 0.771 [0.013]
-           & 0.784 [0.013] & 0.798 [0.011]\\
-     &     & SRS & 4.823 [0.053] & 4.735 [0.048] & 5.120 [0.071] && 0.827 [0.011]
-           & 0.851 [0.007] & 0.717 [0.019]\\
-  \midrule
-  HS & 100 & CLU & 1.765 [0.018] & 1.831 [0.029] & 1.679 [0.002] && 0.642 [0.010]
-           & 0.617 [0.012] & 0.573 [0.008]\\
-     &     & SRS & 1.914 [0.066] & 1.996 [0.083] & 1.685 [0.002] && 0.686 [0.009]
-           & 0.683 [0.011] & 0.587 [0.008]\\
-     & 250 & CLU & 1.667 [0.005] & 1.657 [0.006] & 1.679 [0.001] && 0.659 [0.009]
-           & 0.648 [0.011] & 0.566 [0.005]\\
-     &     & SRS & 1.691 [0.017] & 1.666 [0.010] & 1.684 [0.001] && 0.691 [0.010]
-           & 0.709 [0.012] & 0.574 [0.007]\\
-  \bottomrule
-  \end{tabular}
+  \subfloat[\tamarix{}]{
+    \begin{tabular}{c c ccc c ccc c rrr}
+    \toprule
+      \multicolumn{2}{c}{ }& \multicolumn{3}{c}{BS} && \multicolumn{3}{c}{AUROC} && \multicolumn{3}{c}{Time} \\
+      \cmidrule{3-5} \cmidrule{7-9} \cmidrule{11-13}
+      $n$ & Samp. & GEV    & Probit & Logistic && GEV    & Probit & Logistic && GEV    & Probit & Logistic \\
+    \midrule
+    100 & CLU & 5.120 [0.050] & 5.039 [0.049] & 5.382 [0.029]
+        && 0.732 [0.014] & 0.731 [0.014] & 0.699 [0.012]
+        && 6.1 & 1.1 & 2.4\\
+        & SRS & 4.997 [0.045] & 4.938 [0.055] & 5.500 [0.027]
+        && 0.798 [0.008] & 0.802 [0.009] & 0.636 [0.012]
+        && 6.2 & 1.1 & 2.6\\
+    250 & CLU & 4.779 [0.049] & 4.657 [0.045] & 4.950 [0.051]
+        && 0.771 [0.013] & 0.784 [0.013] & 0.798 [0.011]
+        &&  &  & \\
+        & SRS & 4.823 [0.053] & 4.735 [0.048] & 5.120 [0.071]
+        && 0.827 [0.011] & 0.851 [0.007] & 0.717 [0.019]
+        &&  &  & \\
+    \bottomrule
+    \end{tabular}
+  }
+
+  \subfloat[\hedysarum]{
+    \begin{tabular}{c c ccc c ccc c rrr}
+      \toprule
+      \multicolumn{2}{c}{ }& \multicolumn{3}{c}{BS} && \multicolumn{3}{c}{AUROC} && \multicolumn{3}{c}{Time}\\
+      \cmidrule{3-5} \cmidrule{7-9} \cmidrule{11-13}
+      $n$ & Samp. & GEV    & Probit & Logistic && GEV    & Probit & Logistic && GEV    & Probit & Logistic \\
+      \midrule
+      100 & CLU & 1.765 [0.018] & 1.831 [0.029] & 1.679 [0.002]
+          && 0.642 [0.010] & 0.617 [0.012] & 0.573 [0.008]
+          && 5.7 & 1.0 & 2.1\\
+          & SRS & 1.914 [0.066] & 1.996 [0.083] & 1.685 [0.002] && 0.686 [0.009] & 0.683 [0.011] & 0.587 [0.008]
+          && 5.7 & 1.0 & 2.2\\
+      250 & CLU & 1.667 [0.005] & 1.657 [0.006] & 1.679 [0.001]
+          && 0.659 [0.009] & 0.648 [0.011] & 0.566 [0.005]
+          &&  &  & \\
+          & SRS & 1.691 [0.017] & 1.666 [0.010] & 1.684 [0.001] && 0.691 [0.010] & 0.709 [0.012] & 0.574 [0.007]
+          &&  &  & \\
+      \bottomrule
+    \end{tabular}
+  }
 \end{table}
-
-\section{Discussion and future research}\label{rbs:conclusions}
-
-In this paper, we present a max-stable spatial method for rare binary data.
-The principal finding in this paper is that the spatial probit model tends to outperform the proposed model.
-This finding is surprising given that the max-stable process is the theoretically justified spatial process for extreme value distributions, and it leads to possible research questions in the future.
-
-It is unusual that the spatial probit model should outperform the proposed model, particularly when the data are generated directly from the proposed model.
-One possible explanation is that for the simulated data, there is a wide range of rarity in the data (GEV: $0.5\%$ -- $35.9\%$, Logistic: $1.4\%$ -- $14.4\%$, and Hotspot: $0.5\%$ -- $6.8\%$).
-Given that for both the GEV and logistic data settings, we have a number of datasets with a relatively high rate of occurrence, it is possible that probit is competitive partly due to the fact that the data are not rare.
-Both the simulation study and data analysis appear to support the idea that the GEV method will perform better on rarer datasets.
-Therefore, it may be useful to conduct more research on rare datasets or through simulation with a slightly more restrictive data generation strategy (i.e. restrict datasets to $K < 500$).
+\end{landscape}
 
 \section*{Acknowledgments}
 
