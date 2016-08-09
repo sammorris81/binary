@@ -417,3 +417,39 @@ save(bs.results, bs.results.combined, bs.results.wnmt,
 # for (i in 6:10) {
 #   plot(fit.gev$b[, i, ], type = "l", main = paste("b[", i, "]", sep = ""))
 # }
+
+timing.gev <- matrix(NA, nsets, nsettings)
+timing.pro <- matrix(NA, nsets, nsettings)
+timing.log <- matrix(NA, nsets, nsettings)
+files <- list.files("./sim-fit-2")
+for (i in 1:length(files)) {
+  split     <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
+  gen.method <- as.numeric(split[3])
+  if (split[1] == "clu") {
+    samp.idx <- 1
+  } else {
+    samp.idx <- 2
+  }
+  if (as.numeric(split[2] == 100)) {
+    n.idx <- 1
+  } else {
+    n.idx <- 2
+  }
+
+  setting <- (gen.method - 1) * 4 + (n.idx - 1) * 2 + samp.idx
+  
+  set       <- as.numeric(split[4])
+  if (set <= 50) {
+  load(paste("./sim-fit-2/", files[i], sep = ""))
+  timing.gev[set, setting] <- timings[1]
+  timing.pro[set, setting] <- timings[2]
+  timing.log[set, setting] <- timings[3]
+  }
+  if (i %% 10 == 0) {
+    print(paste("Finished: ", i, " of ", length(files), sep = ""))
+  }
+}
+
+apply(timing.gev, 2, mean, na.rm = TRUE)
+apply(timing.pro, 2, mean, na.rm = TRUE)
+apply(timing.log, 2, mean, na.rm = TRUE)

@@ -418,3 +418,40 @@ p2 <- plot.species(df = df, main = NULL, legend.title = "Hedysarum\nscoparium")
 layout.mtx <- matrix(1:2, nrow = 1, ncol = 2)
 panel <- arrangeGrob(p1, p2, ncol = 2, layout_matrix = layout.mtx)
 ggsave("./plots/plant-census.pdf", plot = panel, width = 16, height = 8)
+
+
+timing.gev <- matrix(NA, nsets, 8)
+timing.pro <- matrix(NA, nsets, 8)
+timing.log <- matrix(NA, nsets, 8)
+files <- list.files("./ss-fit")
+for (i in 1:length(files)) {
+  split     <- unlist(strsplit(unlist(strsplit(files[i], "-")), "[.]"))
+  species.idx <- as.numeric(split[2])
+  if (split[1] == "clu") {
+    samp.idx <- 1
+  } else {
+    samp.idx <- 2
+  }
+  if (as.numeric(split[3] == 100)) {
+    n.idx <- 1
+  } else {
+    n.idx <- 2
+  }
+  set <- as.numeric(split[4])
+  if (set <= 50) {
+    setting <- (species.idx - 1) * 4 + (n.idx - 1) * 2 + samp.idx
+    
+    set       <- as.numeric(split[4])
+    load(paste("./ss-fit/", files[i], sep = ""))
+    timing.gev[set, setting] <- timings[1]
+    timing.pro[set, setting] <- timings[2]
+    timing.log[set, setting] <- timings[3]
+  }
+  if (i %% 10 == 0) {
+    print(paste("Finished: ", i, " of ", length(files), sep = ""))
+  }
+}
+
+round(apply(timing.gev * 60 / 25, 2, mean, na.rm = TRUE), 1)
+apply(timing.pro, 2, mean, na.rm = TRUE)
+apply(timing.log, 2, mean, na.rm = TRUE)
