@@ -52,9 +52,9 @@ for (i in 1:length(files)) {
   }
   set <- as.numeric(split[4])
   setting <- (gen.method - 1) * 4 + (n.idx - 1) * 2 + samp.idx
-  setting.names[setting] <- paste(genmethod.names[gen.method], "-", split[1], 
+  setting.names[setting] <- paste(genmethod.names[gen.method], "-", split[1],
                                   "-", split[2], sep = "")
-  
+
   set       <- as.numeric(split[4])
   table.set <- read.table(paste(tbl.dir, files[i], sep = ""))
   bs.results[[setting]][set, 1]   <- table.set[1, 1]
@@ -110,15 +110,15 @@ round(bs.results.comb.se * 100, 2)
 round(auc.results.combined, 3)
 round(auc.results.comb.se, 3)
 
-df1 <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 16]), s1 = s.grid[, 1], 
+df1 <- data.frame(Y = as.factor(simdata[[1]]$y.grid[, 16]), s1 = s.grid[, 1],
                   s2 = s.grid[, 2])
 p1 <- plot.species(df = df1, main = "Simulated GEV dataset")
 
-df2 <- data.frame(Y = as.factor(simdata[[2]]$y.grid[, 23]), s1 = s.grid[, 1], 
+df2 <- data.frame(Y = as.factor(simdata[[2]]$y.grid[, 23]), s1 = s.grid[, 1],
                   s2 = s.grid[, 2])
-p2 <- plot.species(df = df2, main = "Simulated probit dataset")
+p2 <- plot.species(df = df2, main = "Simulated logistic dataset")
 
-df3 <- data.frame(Y = as.factor(simdata[[3]]$y.grid[, 18]), s1 = s.grid[, 1], 
+df3 <- data.frame(Y = as.factor(simdata[[3]]$y.grid[, 18]), s1 = s.grid[, 1],
                   s2 = s.grid[, 2])
 p3 <- plot.species(df = df3, main = "Simulated hotspot dataset")
 
@@ -139,15 +139,15 @@ for (gen.method in 1:3) {
   for (n.idx in 1:2) {
     for (samp.idx in 1:2) {
       this.setting <- (gen.method - 1) * 4 + (n.idx - 1) * 2 + samp.idx
-      
+
       this.gev.pred <- vector(mode = "list", length = nsets)
       this.pro.pred <- vector(mode = "list", length = nsets)
       this.log.pred <- vector(mode = "list", length = nsets)
       this.yp       <- vector(mode = "list", length = nsets)
       sets.done <- rep(FALSE, nsets)
-      
+
       for (set in 1:nsets) {
-        results.file <- paste(res.dir, samp.types[samp.idx], "-", ns[n.idx], 
+        results.file <- paste(res.dir, samp.types[samp.idx], "-", ns[n.idx],
                               "-", gen.method, "-", set, ".RData", sep = "")
         if (file.exists(results.file)) {
           sets.done[set] <- TRUE
@@ -158,12 +158,12 @@ for (gen.method in 1:3) {
           this.log.pred[[set]] <- post.prob.log
         }
       }
-      
+
       pred.gev.name <- paste("pred.gev.", this.setting, sep = "")
       pred.pro.name <- paste("pred.pro.", this.setting, sep = "")
       pred.log.name <- paste("pred.log.", this.setting, sep = "")
       yp.name       <- paste("yp.", this.setting, sep = "")
-      
+
       # the syntax here is single bracket to access multiple elements of the list
       assign(pred.gev.name, this.gev.pred[sets.done])
       assign(pred.pro.name, this.pro.pred[sets.done])
@@ -262,16 +262,16 @@ for (setting in 1:nsettings) {
   these.include <- which(rowSums(!is.na(bs.results[[setting]])) == 3)
   plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
   df <- data.frame(rareness = rep(rareness[these.include, this.grid], 3),
-                   bs = c(bs.results[[setting]][these.include, 1], 
+                   bs = c(bs.results[[setting]][these.include, 1],
                           bs.results[[setting]][these.include, 2],
                           bs.results[[setting]][these.include, 3]),
                    auc = c(auc.results[[setting]][these.include, 1],
-                           auc.results[[setting]][these.include, 2], 
+                           auc.results[[setting]][these.include, 2],
                            auc.results[[setting]][these.include, 3]),
-                   method = as.factor(rep(c("GEV", "Probit", "Logistic"), 
+                   method = as.factor(rep(c("GEV", "Probit", "Logistic"),
                                           each = length(these.include))))
   df$method <- factor(df$method, levels = c("GEV", "Probit", "Logistic"))
-  
+
   panel <- plot.smooth(df)
   ggsave(plot.file, plot = panel, width = 9, height = 4.5)
 }
@@ -335,30 +335,30 @@ boxplot(scores.bs ~ sample.size * sample.type * fit.method)
 boxplot(scores.auc ~ sample.size * sample.type * fit.method)
 
 combine.bs <- data.frame(scores.bs, sample.size, sample.type, fit.method, dataset)
-lme.1.bs.full <- lmer(scores.bs ~ sample.size*sample.type*fit.method + 
+lme.1.bs.full <- lmer(scores.bs ~ sample.size*sample.type*fit.method +
                         (1 | dataset), data = combine.bs, REML = FALSE)
-lme.1.bs.red1 <- lmer(scores.bs ~ (sample.size + sample.type + fit.method)^2 + 
+lme.1.bs.red1 <- lmer(scores.bs ~ (sample.size + sample.type + fit.method)^2 +
                         (1 | dataset), data = combine.bs, REML = FALSE)
-lme.1.bs.red2<- lmer(scores.bs ~ sample.size*sample.type + fit.method + 
+lme.1.bs.red2<- lmer(scores.bs ~ sample.size*sample.type + fit.method +
                        (1 | dataset), data = combine.bs, REML = FALSE)
-lme.1.bs.red3 <- lmer(scores.bs ~ sample.size + sample.type + fit.method + 
+lme.1.bs.red3 <- lmer(scores.bs ~ sample.size + sample.type + fit.method +
                         (1 | dataset), data = combine.bs, REML = FALSE)
-lme.1.bs.red4 <- lmer(scores.bs ~ sample.size + sample.type + 
+lme.1.bs.red4 <- lmer(scores.bs ~ sample.size + sample.type +
                        (1 | dataset), data = combine.bs, REML = FALSE)
 lme.1.bs.red5 <- lmer(scores.bs ~ sample.size + (1 | dataset), data = combine.bs, REML = FALSE)
 BIC(lme.1.bs.full, lme.1.bs.red1, lme.1.bs.red2, lme.1.bs.red3, lme.1.bs.red4)
 
 combine.auc <- data.frame(scores.auc, sample.size, sample.type, fit.method, dataset)
-lme.1.auc <- lmer(scores.auc ~ sample.size + sample.type + fit.method + 
+lme.1.auc <- lmer(scores.auc ~ sample.size + sample.type + fit.method +
                     (1 | dataset), data = combine.auc)
 
-results.friedman[1, 1] <- friedman.test(scores ~ sample.size + sample.type + 
-                                          fit.method | dataset, 
+results.friedman[1, 1] <- friedman.test(scores ~ sample.size + sample.type +
+                                          fit.method | dataset,
                                         data = combine)
 
 for (setting in 1:nsettings) {
 
-  
+
   results.friedman[setting, 1] <- friedman.test(scores ~ groups | dataset,
                                                 data=combine)$p.value
 

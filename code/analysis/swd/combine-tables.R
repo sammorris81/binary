@@ -15,7 +15,7 @@ samp.types <- c("clu", "srs")
 method.types <- c("gev", "pro", "log")
 
 nmethods <- length(method.types)
-nsets <- 100
+nsets <- 50
 nfits <- nsets * length(ns) * length(samp.types)
 
 bs.results <- auc.results <- vector(length = 2,
@@ -45,21 +45,23 @@ for (i in 1:length(files)) {
   samp.type.idx <- which(samp.types == split[1])
   n.idx         <- which(ns == as.numeric(split[3]))
   set           <- as.numeric(split[4])
-  this.row      <- (n.idx - 1) * nsets * 2 + (samp.type.idx - 1) * nsets + set
-  table.set     <- read.table(paste(prefix, files[i], sep = ""))
-  if (all(!is.na(table.set))) {
-    bs.results[[species.idx]][this.row, 1]    <- table.set[1, 1]
-    auc.results[[species.idx]][this.row, 1]   <- table.set[1, 2]
-    bs.results.1[[species.idx]][this.row, 1]  <- table.set[1, 3]
-    bs.results.0[[species.idx]][this.row, 1]  <- table.set[1, 4]
-    bs.results[[species.idx]][this.row, 2]    <- table.set[2, 1]
-    auc.results[[species.idx]][this.row, 2]   <- table.set[2, 2]
-    bs.results.1[[species.idx]][this.row, 2]  <- table.set[2, 3]
-    bs.results.0[[species.idx]][this.row, 2]  <- table.set[2, 4]
-    bs.results[[species.idx]][this.row, 3]    <- table.set[3, 1]
-    auc.results[[species.idx]][this.row, 3]   <- table.set[3, 2]
-    bs.results.1[[species.idx]][this.row, 3]  <- table.set[3, 3]
-    bs.results.0[[species.idx]][this.row, 3]  <- table.set[3, 4]
+  if (set <= nsets) {
+    this.row      <- (n.idx - 1) * nsets * 2 + (samp.type.idx - 1) * nsets + set
+    table.set     <- read.table(paste(prefix, files[i], sep = ""))
+    if (all(!is.na(table.set))) {
+      bs.results[[species.idx]][this.row, 1]    <- table.set[1, 1]
+      auc.results[[species.idx]][this.row, 1]   <- table.set[1, 2]
+      bs.results.1[[species.idx]][this.row, 1]  <- table.set[1, 3]
+      bs.results.0[[species.idx]][this.row, 1]  <- table.set[1, 4]
+      bs.results[[species.idx]][this.row, 2]    <- table.set[2, 1]
+      auc.results[[species.idx]][this.row, 2]   <- table.set[2, 2]
+      bs.results.1[[species.idx]][this.row, 2]  <- table.set[2, 3]
+      bs.results.0[[species.idx]][this.row, 2]  <- table.set[2, 4]
+      bs.results[[species.idx]][this.row, 3]    <- table.set[3, 1]
+      auc.results[[species.idx]][this.row, 3]   <- table.set[3, 2]
+      bs.results.1[[species.idx]][this.row, 3]  <- table.set[3, 3]
+      bs.results.0[[species.idx]][this.row, 3]  <- table.set[3, 4]
+    }
   }
 }
 
@@ -174,10 +176,15 @@ for (i in 1:2) {
 prefix <- "ss-results/"
 files <- list.files(path = prefix)
 
-round(bs.results.combined[[1]] * 100, 2)
-round(bs.results.comb.se[[1]] * 100, 2)
+round(bs.results.combined[[1]] * 100, 3)
+round(bs.results.comb.se[[1]] * 100, 3)
 round(auc.results.combined[[1]], 3)
 round(auc.results.comb.se[[1]], 3)
+
+round(bs.results.combined[[2]] * 100, 3)
+round(bs.results.comb.se[[2]] * 100, 3)
+round(auc.results.combined[[2]], 3)
+round(auc.results.comb.se[[2]], 3)
 
 rareness <- matrix(0, nsets, 4)
 y <- Y1
@@ -282,63 +289,65 @@ par(mfrow = c(2, 2))
 pred.gev <- prediction(pred.gev.clu.1.100, yp.clu.1.100)
 pred.pro <- prediction(pred.pro.clu.1.100, yp.clu.1.100)
 pred.log <- prediction(pred.log.clu.1.100, yp.clu.1.100)
-main <- " Cluster sample, n = 100"
+main <- expression(paste(italic("Tamarix ramosissima"), 
+                         ": Cluster sample, n = 100", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 pred.gev <- prediction(pred.gev.clu.1.250, yp.clu.1.250)
 pred.pro <- prediction(pred.pro.clu.1.250, yp.clu.1.250)
 pred.log <- prediction(pred.log.clu.1.250, yp.clu.1.250)
-main <- "Cluster sample, n = 250"
+main <- expression(paste(italic("Tamarix ramosissima"), 
+                         ": Cluster sample, n = 250", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 pred.gev <- prediction(pred.gev.srs.1.100, yp.srs.1.100)
 pred.pro <- prediction(pred.pro.srs.1.100, yp.srs.1.100)
 pred.log <- prediction(pred.log.srs.1.100, yp.srs.1.100)
-main <- "Simple random sample, n = 100"
+main <- expression(paste(italic("Tamarix ramosissima"), 
+                         ": Simple random sample, n = 100", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 pred.gev <- prediction(pred.gev.srs.1.250, yp.srs.1.250)
 pred.pro <- prediction(pred.pro.srs.1.250, yp.srs.1.250)
 pred.log <- prediction(pred.log.srs.1.250, yp.srs.1.250)
-main <- "Simple random sample, n = 250"
+main <- expression(paste(italic("Tamarix ramosissima"), 
+                         ": Simple random sample, n = 250", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 dev.print(device = pdf, "./plots/data-perf-species1.pdf")
 dev.off()
 
-quartz(width = 16, height = 8)
-par(mfrow = c(1, 2))
+quartz(width = 16, height = 16)
+par(mfrow = c(2, 2))
 pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
 pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
 pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
-main <- "Species 2, Cluster sample, n = 100"
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Cluster sample, n = 100", sep = ""))
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+
+pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
+pred.pro <- prediction(pred.pro.clu.2.250, yp.clu.2.250)
+pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Cluster sample, n = 250", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
 
 pred.gev <- prediction(pred.gev.srs.2.100, yp.srs.2.100)
 pred.pro <- prediction(pred.pro.srs.2.100, yp.srs.2.100)
 pred.log <- prediction(pred.log.srs.2.100, yp.srs.2.100)
-main <- "Species 2, Simple random sample, n = 100"
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Simple random sample, n = 100", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
-
-dev.print(device = pdf, "./plots/data-perf-species2.pdf")
-dev.off()
-
-pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
-pred.pro <- prediction(pred.pro.clu.2.250, yp.clu.2.250)
-pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
-quartz(width = 16, height = 8)
-main <- "Species 2, Cluster sample, n = 250"
-plot.roc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-clu-2-250.pdf")
-dev.off()
 
 pred.gev <- prediction(pred.gev.srs.2.250, yp.srs.2.250)
 pred.pro <- prediction(pred.pro.srs.2.250, yp.srs.2.250)
 pred.log <- prediction(pred.log.srs.2.250, yp.srs.2.250)
-quartz(width = 16, height = 8)
-main <- "Species 2, Simple random sample, n = 250"
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Simple random sample, n = 250", sep = ""))
 plot.roc(pred.gev, pred.pro, pred.log, main = main)
-dev.print(device = pdf, "./plots/perf-srs-2-250.pdf")
+
+dev.print(device = pdf, "./plots/data-perf-species2.pdf")
 dev.off()
 
 

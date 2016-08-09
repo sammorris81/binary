@@ -122,7 +122,8 @@ plot.roc <- function(pred.gev, pred.pro, pred.log,
   roc.pro <- performance(pred.pro, "tpr", "fpr")
   roc.log <- performance(pred.log, "tpr", "fpr")
   
-  roc.main <- paste("ROC Curve: ", main, sep = "")
+  # roc.main <- paste("ROC Curve: ", main, sep = "")
+  roc.main <- main
   # prc.main <- paste("Precision Recall Curve: ", main, sep = "")
  
   # plot(roc.gev, avg = avg, col = "grey20", main = roc.main)
