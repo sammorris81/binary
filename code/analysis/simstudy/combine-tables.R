@@ -265,6 +265,13 @@ link.types <- rep(c("GEV", "Logistic", "Hotspot"), each = 4)
 for (setting in 1:nsettings) {
   these.include <- which(rowSums(!is.na(bs.results[[setting]])) == 3)
   plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
+  if (setting <= 4) {
+    this.grid <- 1
+  } else if (setting <= 8) {
+    this.grid <- 2
+  } else {
+    this.grid <- 3
+  }
   df <- data.frame(rareness = rep(rareness[these.include, this.grid], 3),
                    bs = c(bs.results[[setting]][these.include, 1],
                           bs.results[[setting]][these.include, 2],
@@ -276,11 +283,35 @@ for (setting in 1:nsettings) {
                                           each = length(these.include))))
   df$Method <- factor(df$Method, levels = c("GEV", "Probit", "Logistic"))
 
-  panel <- plot.smooth(df, main = paste(link.types, " Link: ", sample.types[setting], sep = "")) 
-  ggsave(plot.file, plot = panel, width = 4.5, height = 4.5)
+  panel <- plot.smooth(df, main = paste(link.types[setting], " Link: ", 
+                                        sample.types[setting], sep = "")) 
+  ggsave(plot.file, plot = panel, width = 5, height = 4)
 }
 
+# run the inside loop to make dataframe
+setting <- 3
+byrareness.3 <- plot.smooth(df, main = paste(link.types[setting], " Link: ", 
+                                             sample.types[setting], sep = "")) 
 
+setting <- 4
+byrareness.4 <- plot.smooth(df, main = paste(link.types[setting], " Link: ", 
+                                             sample.types[setting], sep = "")) 
+
+setting <- 6
+byrareness.6 <- plot.smooth(df, main = paste(link.types[setting], " Link: ", 
+                                             sample.types[setting], sep = "")) 
+
+setting <- 7
+byrareness.7 <- plot.smooth(df, main = paste(link.types[setting], " Link: ", 
+                                             sample.types[setting], sep = "")) 
+
+plots <- list(byrareness.3, byrareness.4, byrareness.6, byrareness.7)
+g     <- lapply(plots, ggplotGrob)
+row1 <- cbind(g[[1]], g[[2]], size = "max")
+row2 <- cbind(g[[3]], g[[4]], size = "max")
+panel <- rbind(row1, row2, size = "max")
+ggsave(paste("./plots/byrareness-slides.pdf", sep = ""),
+       panel, width = 10, height = 8)
 
 
 # how many have finished

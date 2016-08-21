@@ -197,9 +197,11 @@ plot.smooth <- function(df, main = NULL) {
   #                 title = "Rareness vs Brier Score")
   # p1 <- p1 + theme_bw()
   
+  xlim <- range(df$rareness)
   p2 <- ggplot(df, aes(x = rareness, y = auc, color = Method))
   p2 <- p2 + geom_point(alpha = 0.8)
   p2 <- p2 + geom_smooth(alpha = 0.4)
+  p2 <- p2 + coord_fixed(ratio = diff(xlim), xlim = xlim, ylim = c(0, 1))
   # p2 <- p2 + scale_x_continuous(breaks = seq(0.05, 0.4, by = 0.02))
   p2 <- p2 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
   p2 <- p2 + labs(x = "Rareness", y = "AUROC", title = main)
