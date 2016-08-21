@@ -187,27 +187,26 @@ plot.prc <- function(pred.gev, pred.pro, pred.log,
   #        legend = c("GEV", "Probit", "Logit"), lty = 1, lwd = 2)
 }
 
-plot.smooth <- function(df) {
-  p1 <- ggplot(df, aes(x = rareness, y = bs, color = method))
-  p1 <- p1 + geom_point(alpha = 0.8)
-  p1 <- p1 + geom_smooth(alpha = 0.4)
-  # p1 <- p1 + scale_x_continuous(breaks = seq(0.05, 0.4, by = 0.02))
-  p1 <- p1 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
-  p1 <- p1 + labs(x = "Rareness", y = "Brier Score", 
-                  title = "Rareness vs Brier Score")
-  p1 <- p1 + theme_bw()
+plot.smooth <- function(df, main = NULL) {
+  # p1 <- ggplot(df, aes(x = rareness, y = bs, color = method))
+  # p1 <- p1 + geom_point(alpha = 0.8)
+  # p1 <- p1 + geom_smooth(alpha = 0.4)
+  # # p1 <- p1 + scale_x_continuous(breaks = seq(0.05, 0.4, by = 0.02))
+  # p1 <- p1 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
+  # p1 <- p1 + labs(x = "Rareness", y = "Brier Score", 
+  #                 title = "Rareness vs Brier Score")
+  # p1 <- p1 + theme_bw()
   
-  p2 <- ggplot(df, aes(x = rareness, y = auc, color = method))
+  p2 <- ggplot(df, aes(x = rareness, y = auc, color = Method))
   p2 <- p2 + geom_point(alpha = 0.8)
   p2 <- p2 + geom_smooth(alpha = 0.4)
   # p2 <- p2 + scale_x_continuous(breaks = seq(0.05, 0.4, by = 0.02))
   p2 <- p2 + scale_color_manual(values = c("grey20", "firebrick2", "dodgerblue2"))
-  p2 <- p2 + labs(x = "Rareness", y = "AUROC", 
-                  title = "Rareness vs AUROC")
+  p2 <- p2 + labs(x = "Rareness", y = "AUROC", title = main)
   p2 <- p2 + theme_bw()
   
   
-  layout.mtx = matrix(1:2, nrow = 1, ncol = 2)
-  panel <- arrangeGrob(p1, p2, ncol = 2, layout_matrix = layout.mtx)
-  return(panel)
+  # layout.mtx = matrix(1:2, nrow = 1, ncol = 2)
+  # panel <- arrangeGrob(p1, p2, ncol = 2, layout_matrix = layout.mtx)
+  return(p2)
 }

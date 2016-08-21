@@ -350,6 +350,43 @@ plot.roc(pred.gev, pred.pro, pred.log, main = main)
 dev.print(device = pdf, "./plots/data-perf-species2.pdf")
 dev.off()
 
+# quartz(width = 16, height = 8)
+# par(mfrow = c(1, 2))
+pred.gev <- prediction(pred.gev.clu.2.100, yp.clu.2.100)
+pred.pro <- prediction(pred.pro.clu.2.100, yp.clu.2.100)
+pred.log <- prediction(pred.log.clu.2.100, yp.clu.2.100)
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Cluster sample, n = 100", sep = ""))
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, width = 8, height = 8, 
+          "./plots/data-perf-species2-100-clu.pdf")
+
+pred.gev <- prediction(pred.gev.srs.2.100, yp.srs.2.100)
+pred.pro <- prediction(pred.pro.srs.2.100, yp.srs.2.100)
+pred.log <- prediction(pred.log.srs.2.100, yp.srs.2.100)
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Simple random sample, n = 100", sep = ""))
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, width = 8, height = 8, 
+          "./plots/data-perf-species2-100-srs.pdf")
+
+pred.gev <- prediction(pred.gev.clu.2.250, yp.clu.2.250)
+pred.pro <- prediction(pred.pro.clu.2.250, yp.clu.2.250)
+pred.log <- prediction(pred.log.clu.2.250, yp.clu.2.250)
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Cluster sample, n = 250", sep = ""))
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, width = 8, height = 8, 
+          "./plots/data-perf-species2-250-clu.pdf")
+
+pred.gev <- prediction(pred.gev.srs.2.250, yp.srs.2.250)
+pred.pro <- prediction(pred.pro.srs.2.250, yp.srs.2.250)
+pred.log <- prediction(pred.log.srs.2.250, yp.srs.2.250)
+main <- expression(paste(italic("Hedysarum scoparium"), 
+                         ": Simple random sample, n = 250", sep = ""))
+plot.roc(pred.gev, pred.pro, pred.log, main = main)
+dev.print(device = pdf, width = 8, height = 8, 
+          "./plots/data-perf-species2-250-srs.pdf")
 
 for (species.idx in 1:2) { for (sample.idx in 1:2) { for (n.idx in 1:2) {
   for (set.idx in 1:nsets) {

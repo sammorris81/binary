@@ -257,8 +257,12 @@ dev.print(device = pdf, "./plots/sim-perf-hotspot.pdf")
 dev.off()
 
 #### smooth of rareness by brier score
+samples <- c("Cluster sample", "Simple random sample")
+ns      <- c(100, 250)
+sample.types <- paste(rep(samples, 2), ", n = ", rep(ns, each = 2), sep = "")
+sample.types <- rep(sample.types, 3)
+link.types <- rep(c("GEV", "Logistic", "Hotspot"), each = 4)
 for (setting in 1:nsettings) {
-  this.grid <- ceiling(setting / 4)
   these.include <- which(rowSums(!is.na(bs.results[[setting]])) == 3)
   plot.file <- paste("./plots/byrareness-", setting, ".pdf", sep = "")
   df <- data.frame(rareness = rep(rareness[these.include, this.grid], 3),
@@ -268,12 +272,12 @@ for (setting in 1:nsettings) {
                    auc = c(auc.results[[setting]][these.include, 1],
                            auc.results[[setting]][these.include, 2],
                            auc.results[[setting]][these.include, 3]),
-                   method = as.factor(rep(c("GEV", "Probit", "Logistic"),
+                   Method = as.factor(rep(c("GEV", "Probit", "Logistic"),
                                           each = length(these.include))))
-  df$method <- factor(df$method, levels = c("GEV", "Probit", "Logistic"))
+  df$Method <- factor(df$Method, levels = c("GEV", "Probit", "Logistic"))
 
-  panel <- plot.smooth(df)
-  ggsave(plot.file, plot = panel, width = 9, height = 4.5)
+  panel <- plot.smooth(df, main = paste(link.types, " Link: ", sample.types[setting], sep = "")) 
+  ggsave(plot.file, plot = panel, width = 4.5, height = 4.5)
 }
 
 
