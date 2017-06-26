@@ -16,29 +16,29 @@ sample.list <- paste(samp.type, ".lst.", this.Y, ".", n, sep = "")
 
 for (set in these.sets) {
   print(paste("Start set ", set, sep = ""))
-  
+
   these.train <- get(sample.list)[[set]]
   y <- get(this.Y)
 
   upload.pre <- paste("samorris@hpc.stat.ncsu.edu:~/repos-git/rare-binary/",
                       "code/analysis/swd/ss-tables/", sep = "")
-  
-  table.file   <- paste("./ss-tables/", samp.type, "-", which.y, "-", n, "-", 
+
+  table.file   <- paste("./ss-tables/", samp.type, "-", which.y, "-", n, "-",
                         set, ".txt", sep = "")
-  results.file <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-", 
+  results.file <- paste("./ss-results/", samp.type, "-", which.y, "-", n, "-",
                         set, ".RData", sep = "")
-  fit.file     <- paste("./ss-fit/", samp.type, "-", which.y, "-", n, "-", 
+  fit.file     <- paste("./ss-fit/", samp.type, "-", which.y, "-", n, "-",
                         set, "-fit.RData", sep = "")
-  sample.file  <- paste("./ss-sample/", samp.type, "-", which.y, "-", n, "-", 
+  sample.file  <- paste("./ss-sample/", samp.type, "-", which.y, "-", n, "-",
                         set, ".txt", sep = "")
-  
+
   y.o <- y[these.train]
-  
+
   # extract info about simulation settings
   ns     <- length(y.o)
   npred  <- length(y.p)
   nt     <- 1
-  
+
   # scale sites so in [0, 1] x [0, 1] (or close)
   s.min <- apply(s, 2, min)
   s.max <- apply(s, 2, max)
@@ -46,12 +46,12 @@ for (set in these.sets) {
   s.scale <- s
   s.scale[, 1] <- (s[, 1] - s.min[1]) / max(s.range)
   s.scale[, 2] <- (s[, 2] - s.min[2]) / max(s.range)
-  
+
   y.o <- matrix(y.o, ns, nt)
   s.o <- s.scale[these.train, ]
   X.o <- matrix(1, nrow(s.o), 1)
   y.p <- matrix(y.p, npred, nt)
-  
+
   s.p[, 1] <- (s.p[, 1] - s.min[1]) / max(s.range)
   s.p[, 2] <- (s.p[, 2] - s.min[2]) / max(s.range)
   X.p <- matrix(1, nrow(s.p), 1)
@@ -63,16 +63,16 @@ for (set in these.sets) {
   # knots <- rbind(knots, s.o[y.o == 1, ])
   knots  <- s.o
   nknots <- nrow(knots)
-  
+
   # rho.lower <- 1 / 30  # 1 / (nknots * 2)
   rho.lower <- 1e-4
   rho.upper <- 1
   nknots <- nrow(knots)
-  
+
   this.save <- cbind(y.o, s.o)
   colnames(this.save) <- c("y", "s1", "s2")
   write.table(this.save, file = sample.file)
-  
+
   ####################################################################
   #### Start MCMC setup: Most of this is used for the spBayes package
   ####################################################################
@@ -85,33 +85,33 @@ for (set in these.sets) {
   tuning       <- list("phi" = 0.1, "sigma.sq" = 0.2, "beta" = 1, "w" = 5)
   starting     <- list("phi" = 3/0.5, "sigma.sq" = 50, "beta" = 0, "w" = 0)
   priors       <- list("beta.norm" = list(0, 100),
-                       "phi.unif" = c(1 / rho.upper, 1 / rho.lower), 
+                       "phi.unif" = c(1 / rho.upper, 1 / rho.lower),
                        "sigma.sq.ig" = c(0.1, 0.1))
   cov.model <- "exponential"
   timings   <- rep(NA, 3)
   # with so many knots, adaptive is time prohibitive
   amcmc     <- list("n.batch" = n.batch, "batch.length" = batch.length,
                     "accept.rate" = 0.35)
-  
+
   # storage for some of the results
   scores <- matrix(NA, 3, 4)  # place to store brier scores and auc
   rownames(scores) <- c("gev", "probit", "logit")
   colnames(scores) <- c("bs", "auc", "bs.1", "bs.0")
-  
+
   timings <- rep(NA, 3)
-  
+
   # start the simulation
   set.seed(n * 10 + set)
-  
+
   rho.init.pcl <- 0.05
   dw2.o     <- rdist(s.o, knots)^2
   d.o       <- as.matrix(rdist(s.o))
   diag(d.o) <- 0
   max.dist  <- 1
-  
+
   #### spatial GEV
   cat("  Start gev \n")
-  
+
   # using pairwise estimates as starting points for rho, alpha, and beta. also
   # using the the pairwise estimate of alpha as the mean of the prior
   # distribution along with a standard deviation of 0.05 to allow for some
@@ -143,14 +143,14 @@ for (set in these.sets) {
   # )
 
   cat("    Finish pairwise fit \n")
-  
+
   cat("    Start mcmc fit \n")
   mcmc.seed <- 6262
   set.seed(mcmc.seed)
-  
+
   # alpha.mn <- fit.pcl$par[1]
   # alpha.sd <- 0.05
-  # # when alpha is close to 0, the PS random effects have a much higher 
+  # # when alpha is close to 0, the PS random effects have a much higher
   # # variance, and when it's close to 1, then the variance will decrease
   # if (alpha.mn < 0.3) {
   #   a.eps <- 0.5
@@ -164,7 +164,7 @@ for (set in these.sets) {
   # }
   # logrho.mn <- -3
   # logrho.sd <- 1
-  
+
   # for numerical stability with the current set of starting values for the a
   # terms. if alpha is too small, the algorithm has a very hard time getting
   # started.
@@ -173,12 +173,12 @@ for (set in these.sets) {
   # } else {
   #   alpha.init <- alpha.mn
   # }
-  
+
   # rho.init <- max(fit.pcl$par[2], rho.lower + 0.05)
   # beta.init <- fit.pcl$beta
-  
+
   rho.init <- (rho.upper - rho.lower) / 2
-  
+
   alpha.mn <- 2 / (2 + 5)
   alpha.sd <- sqrt(2 * 5 / (49 * 8))  # beta(2, 5)
   alpha.init <- 0.3
@@ -196,24 +196,24 @@ for (set in these.sets) {
                          alpha.init = alpha.init, alpha.attempts = 50,
                          alpha.mn = alpha.mn, alpha.sd = alpha.sd,
                          a.alpha.joint = FALSE, alpha.eps = 0.01,
-                         rho.init = rho.init, 
+                         rho.init = rho.init,
                          rho.lower = rho.lower, rho.upper = rho.upper,
                          rho.eps = 0.1, rho.attempts = 50, threads = 1,
                          iters = iters, burn = burn,
-                         update = update, 
+                         update = update,
                          iterplot = iterplot,
-                         # update = 10, 
+                         # update = 10,
                          # iterplot = TRUE,
                          thin = thin, thresh = 0)
-  
+
   cat("    Start mcmc predict \n")
   # y.pred.gev is posterior distribution for P(Y = 1)
   y.pred.gev <- pred.spgev(mcmcoutput = fit.gev, x.pred = X.p,
                            s.pred = s.p, knots = knots,
-                           start = 1, end = iters - burn, update = update, 
+                           start = 1, end = iters - burn, update = update,
                            thin = 10)
   timings[1] <- fit.gev$minutes
-  
+
   post.prob.gev <- apply(y.pred.gev, 2, mean)
   bs.gev        <- mean((y.p - post.prob.gev)^2)
   bs.1.gev      <- mean((y.p[y.p == 1] - post.prob.gev[y.p == 1])^2)
@@ -231,10 +231,10 @@ for (set in these.sets) {
     upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
     system(upload.cmd)
   }
-  
+
   ###### spatial probit
   cat("  Start probit \n")
-  
+
   cat("    Start mcmc fit \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
@@ -243,7 +243,7 @@ for (set in these.sets) {
                        a = 0.1, b = 0.1,
                        iters = iters, burn = burn, update = update,
                        iterplot = iterplot)
-  
+
   cat("    Start mcmc predict \n")
   # y.pred.pro is posterior distribution for P(Y = 1)
   y.pred.pro <- pred.spprob(mcmcoutput = fit.probit, X.pred = X.p,
@@ -263,16 +263,16 @@ for (set in these.sets) {
 
   # copy table to tables folder on beowulf
   scores[2, ] <- c(bs.pro, auc.pro, bs.1.pro, bs.0.pro)
-  
+
   write.table(scores, file = table.file)
   if (do.upload) {
     upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
     system(upload.cmd)
   }
-  
+
   ####### spatial logit
   cat("  start logit \n")
-  
+
   cat("    Start mcmc fit \n")
   mcmc.seed <- mcmc.seed + 1
   set.seed(mcmc.seed)
@@ -283,7 +283,7 @@ for (set in these.sets) {
                      cov.model = cov.model, n.samples = iters,
                      verbose = verbose, n.report = n.report, amcmc = amcmc)
   toc        <- proc.time()[3]
-  
+
   print("    start mcmc predict")
   # y.pred.log is posterior distribution for P(Y = 1)
   y.pred.log <- spPredict(sp.obj = fit.logit, pred.coords = s.p,
@@ -316,12 +316,12 @@ for (set in these.sets) {
     upload.cmd <- paste("scp ", table.file, " ", upload.pre, sep = "")
     system(upload.cmd)
   }
-  
-  if ((set - 1) %% 5 == 0) {
+
+  #if ((set - 1) %% 5 == 0) {
     save(fit.gev, fit.probit, fit.logit,
          post.prob.gev, post.prob.pro, post.prob.log,
          y.o, y.p, s.o, s.p, knots, timings, file = fit.file)
-  }
+  #}
   save(post.prob.gev, post.prob.pro, post.prob.log, timings,
        y.o, y.p, s.o, s.p, file = results.file)
 }
