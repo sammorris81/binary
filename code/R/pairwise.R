@@ -70,7 +70,7 @@ beta.hat <- function(par, y, cov, xi) {
   } else {
     x.beta <- cov %*% beta           # should be ns long
   }
-  z <- getZ(xi, x.beta)       # should be ns long
+  z <- getZ(xi, x.beta, thresh = 0)       # should be ns long
 
   if (any((xi * x.beta) > 1)) {
     return(1e99)
@@ -565,7 +565,7 @@ pairwise.rarebinaryCPP.9 <- function(par, y, xi, beta,
   } else {
     x.beta <- cov %*% beta           # should be ns long
   }
-  z <- getZ(xi, x.beta)       # should be ns long
+  z <- getZ(xi, x.beta, thresh = 0)  # should be ns long
 
   # keep estimates in their actual space
   if (any((xi * x.beta) > 1)) {

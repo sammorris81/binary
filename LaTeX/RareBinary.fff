@@ -1,0 +1,68 @@
+\begin{figure}  % code/analysis/simstudy/combine-tables.R
+\centering
+\includegraphics[width=\linewidth, trim={0em, 1em, 0em, 1em}]{plots/simulateddata}
+\caption{One simulated dataset from spatial GEV (left), spatial logistic (center), and hotspot (right) designs.}
+\label{rbfig:simulateddata}
+\end{figure}
+\efloatseparator
+ 
+\begin{figure}[htbp]  % code/analysis/simstudy/combine-tables.R
+\centering
+\includegraphics[width=0.47\linewidth]{plots/byrareness-1}
+\includegraphics[width=0.47\linewidth]{plots/byrareness-2}
+
+\includegraphics[width=0.47\linewidth]{plots/byrareness-3}
+\includegraphics[width=0.47\linewidth]{plots/byrareness-4}
+\caption{Smooth of AUROC by rareness for each sample technique for the GEV link.}
+\label{rbfig:simsmooth-gev}
+\end{figure}
+\efloatseparator
+ 
+\begin{figure}[htbp]  % code/analysis/simstudy/combine-tables.R
+\centering
+\includegraphics[width=0.47\linewidth]{plots/byrareness-5}
+\includegraphics[width=0.47\linewidth]{plots/byrareness-6}
+
+\includegraphics[width=0.47\linewidth]{plots/byrareness-7}
+\includegraphics[width=0.47\linewidth]{plots/byrareness-8}
+\caption{Smooth of AUROC by rareness for each sample technique for the logistic link.}
+\label{rbfig:simsmooth-log}
+\end{figure}
+\efloatseparator
+ 
+\begin{figure}[htbp]  % code/analysis/simstudy/combine-tables.R
+\centering
+\includegraphics[width=0.47\linewidth]{plots/byrareness-9}
+\includegraphics[width=0.47\linewidth]{plots/byrareness-10}
+
+\includegraphics[width=0.47\linewidth]{plots/byrareness-11}
+\includegraphics[width=0.47\linewidth]{plots/byrareness-12}
+\caption{Smooth of AUROC by rareness for each sample technique for the hotspot link.}
+\label{rbfig:simsmooth-hot}
+\end{figure}
+\efloatseparator
+ 
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth, trim=0 10em 0 10em]{plots/plant-census.pdf}
+\caption{True occupancy of \tamarix{} (left) and \hedysarum{} (right) from a 1-km$^2$ study region of PR China.}
+\label{rbfig:occupancy}
+\end{figure}
+\efloatseparator
+ 
+\begin{figure}
+% code/analysis/swd/combine-tables.R
+\includegraphics[width=\linewidth]{plots/data-perf-species1}
+\caption{Vertically averaged ROC curves for \tamarix{}.}
+\label{rbfig:data1roc}
+\end{figure}
+\efloatseparator
+ 
+\begin{figure}
+% code/analysis/swd/combine-tables.R
+\includegraphics[width=\linewidth]{plots/data-perf-species2}
+\caption{Vertically averaged ROC curves for \hedysarum{}.}
+\label{rbfig:data2roc}
+\end{figure}
+\efloatseparator
+ 

@@ -13,10 +13,10 @@
 *.rdx
 
 # Profiled output
-Rprof.out
+# Rprof.out
 
 # Regular output
-*.out
+# *.out
 
 # LaTeX aux typsetting files
 *.aux
@@ -40,5 +40,12 @@ extended-covariates.csv
 *.rdx
 
 *.rdb
+*Rplots.pdf
 
+markdown/knot-select/sim-tables/*.*
+markdown/knot-select/sim-results/*.*
+markdown/sim-hmc-2/sim-tables/*.*
+markdown/sim-hmc-2/sim-tables-bak/*.*
+markdown/sim-hmc/sim-tables/*.txt
+markdown/sim-hmc/sim-results/*.*
 code/analysis/birds/birds/2002/checklists.csv

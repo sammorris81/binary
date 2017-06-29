@@ -1,0 +1,4 @@
+\contentsline {table}{\numberline {1}{\ignorespaces Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods from the simulation study.\relax }}{30}
+\contentsline {table}{\numberline {2}{\ignorespaces Brier scores ($\times 100$) [SE], AUROC [SE], and time (in seconds) for 1,000 iterations of GEV, Probit, and Logistic methods for \emph {Tamarix ramosissima}{} and \emph {Hedysarum scoparium}{}.\relax }}{31}
+\contentsline {subtable}{\numberline {(a)}{\ignorespaces {\emph {Tamarix ramosissima}{}}}}{31}
+\contentsline {subtable}{\numberline {(b)}{\ignorespaces {\emph {Hedysarum scoparium}}}}{31}

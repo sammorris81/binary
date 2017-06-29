@@ -801,8 +801,8 @@ for (i in 1:nreps) {
 
 # test update for alpha
 set.seed(15)
-source("auxfunctions.R")
-source("updateModel.R")
+source("aux_gev.R")
+source("update_gev.R")
 nreps   <- 20000
 burn    <- 10000
 xi.t    <- 0.1

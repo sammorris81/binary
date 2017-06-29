@@ -1,0 +1,93 @@
+\begin{table}
+\caption{Brier scores ($\times 100$) [SE] and AUROC [SE] for GEV, Probit, and Logistic methods from the simulation study.}
+\label{rbtbl:simbsresults}
+\centering
+\scriptsize
+\begin{tabular}{c c c ccc c ccc}
+\toprule
+\multicolumn{3}{c}{ }& \multicolumn{3}{c}{BS} && \multicolumn{3}{c}{AUROC}\\
+\cmidrule{4-6} \cmidrule{8-10}
+Setting & $n$ & Sample & GEV & Probit & Logistic && GEV & Probit & Logistic\\
+\midrule
+GEV & 100 & CLU & 3.10 [0.27] & 2.45 [0.19] & 2.79 [0.25]
+&& 0.926 [0.009] & 0.942 [0.009] & 0.900 [0.020]\\
+&     & SRS & 2.92 [0.20] & 2.54 [0.18] & 2.92 [0.25]
+&& 0.938 [0.007] & 0.951 [0.007] & 0.879 [0.021]\\
+& 250 & CLU & 2.18 [0.15] & 1.87 [0.13] & 2.05 [0.14]
+&& 0.951 [0.008] & 0.948 [0.011] & 0.922 [0.017]\\
+&     & SRS & 2.29 [0.15] & 2.06 [0.13] & 2.26 [0.15]
+&& 0.949 [0.009] & 0.949 [0.010] & 0.908 [0.020]\\
+\midrule
+Logistic & 100 & CLU & 5.29 [0.25] & 4.94 [0.23] & 5.10 [0.25]
+&& 0.659 [0.012] & 0.676 [0.014] & 0.643 [0.013]\\
+&     & SRS & 5.32 [0.23] & 5.09 [0.24] & 5.34 [0.26]
+&& 0.690 [0.012] & 0.693 [0.012] & 0.613 [0.012]\\
+& 250 & CLU & 4.81 [0.21] & 4.55 [0.21] & 4.66 [0.22]
+&& 0.731 [0.010] & 0.749 [0.010] & 0.714 [0.014]\\
+&     & SRS & 4.86 [0.22] & 4.63 [0.20] & 5.01 [0.23]
+&& 0.742 [0.010] & 0.760 [0.010] & 0.698 [0.015]\\
+\midrule
+Hotspot & 100 & CLU & 2.29 [0.17] & 2.01 [0.15] & 1.81 [0.12]
+&& 0.841 [0.016] & 0.833 [0.019] & 0.824 [0.020]\\
+&     & SRS & 2.09 [0.13] & 1.87 [0.12] & 2.13 [0.15]
+&& 0.885 [0.015] &  0.906 [0.013] & 0.844 [0.015]\\
+& 250 & CLU & 1.65 [0.11] & 1.25 [0.08] & 1.40 [0.09]
+&& 0.934 [0.009] &  0.949 [0.008] & 0.939 [0.011]\\
+&     & SRS & 1.53 [0.10] & 1.31 [0.08] & 1.63 [0.11]
+&& 0.947 [0.007] &  0.960 [0.005] & 0.918 [0.015]\\
+\bottomrule
+\end{tabular}
+\end{table}
+\efloatseparator
+ 
+\begin{table}
+\caption{Brier scores ($\times 100$) [SE], AUROC [SE], and time (in seconds) for 1,000 iterations of GEV, Probit, and Logistic methods for \tamarix{} and \hedysarum{}.}
+\label{rbtbl:dataresults}
+\centering
+\scriptsize
+\subfloat[\tamarix{}]{
+\begin{tabular}{c c ccc c ccc c rrr}
+\toprule
+\multicolumn{2}{c}{ }& \multicolumn{3}{c}{BS} && \multicolumn{3}{c}{AUROC} && \multicolumn{3}{c}{Time} \\
+\cmidrule{3-5} \cmidrule{7-9} \cmidrule{11-13}
+$n$ & Samp. & GEV    & Probit & Logistic && GEV    & Probit & Logistic && GEV    & Probit & Logistic \\
+\midrule
+100 & CLU & 5.120 [0.050] & 5.039 [0.049] & 5.382 [0.029]
+&& 0.732 [0.014] & 0.731 [0.014] & 0.699 [0.012]
+&& 6.1 & 1.1 & 2.4\\
+& SRS & 4.997 [0.045] & 4.938 [0.055] & 5.500 [0.027]
+&& 0.798 [0.008] & 0.802 [0.009] & 0.636 [0.012]
+&& 6.2 & 1.1 & 2.6\\
+250 & CLU & 4.779 [0.049] & 4.657 [0.045] & 4.950 [0.051]
+&& 0.771 [0.013] & 0.784 [0.013] & 0.798 [0.011]
+&& 32.0 & 7.1 & 21.2 \\
+& SRS & 4.823 [0.053] & 4.735 [0.048] & 5.120 [0.071]
+&& 0.827 [0.011] & 0.851 [0.007] & 0.717 [0.019]
+&& 32.6 & 7.0 & 21.0 \\
+\bottomrule
+\end{tabular}
+}
+
+\subfloat[\hedysarum]{
+\begin{tabular}{c c ccc c ccc c rrr}
+\toprule
+\multicolumn{2}{c}{ }& \multicolumn{3}{c}{BS} && \multicolumn{3}{c}{AUROC} && \multicolumn{3}{c}{Time}\\
+\cmidrule{3-5} \cmidrule{7-9} \cmidrule{11-13}
+$n$ & Samp. & GEV    & Probit & Logistic && GEV    & Probit & Logistic && GEV    & Probit & Logistic \\
+\midrule
+100 & CLU & 1.765 [0.018] & 1.831 [0.029] & 1.679 [0.002]
+&& 0.642 [0.010] & 0.617 [0.012] & 0.573 [0.008]
+&& 5.7 & 1.0 & 2.1\\
+& SRS & 1.914 [0.066] & 1.996 [0.083] & 1.685 [0.002] && 0.686 [0.009] & 0.683 [0.011] & 0.587 [0.008]
+&& 5.7 & 1.0 & 2.2\\
+250 & CLU & 1.667 [0.005] & 1.657 [0.006] & 1.679 [0.001]
+&& 0.659 [0.009] & 0.648 [0.011] & 0.566 [0.005]
+&& 27.6 & 5.9 & 17.6 \\
+& SRS & 1.691 [0.017] & 1.666 [0.010] & 1.684 [0.001] && 0.691 [0.010] & 0.709 [0.012] & 0.574 [0.007]
+&& 27.9 & 5.9 & 18.1 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+\efloatseparator
+ 

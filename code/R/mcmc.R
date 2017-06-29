@@ -1,7 +1,7 @@
 mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                      beta.init = NULL, beta.m = 0, beta.s = 20,
                      xi.init = NULL, xi.m = 0, xi.s = 0.5,
-         	           npts = 100, knots = NULL, thresh = 0,
+                     npts = 100, knots = NULL, thresh = 0,
                      beta.tune = 0.01, xi.tune = 0.1,
                      alpha.tune = 0.1, alpha.m = 0.5, alpha.s = sqrt(1 / 12),
                      rho.tune = 0.1, logrho.m = -1, logrho.s = 2,
@@ -14,22 +14,22 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                      rho.fix = FALSE, alpha.fix = FALSE, # debug
                      xibeta.joint = FALSE, threads = 1,
                      iterplot=FALSE, iters=50000, burn=10000, update=100, thin=1
-    ) {
+) {
   library(fields)
-
+  
   # initial setup
   if (is.null(dim(y))){
     y <- matrix(y, length(y), 1)
   }
-
+  
   ns <- nrow(y)
   nt <- ncol(y)
-
+  
   x <- adjustX(x=x, y=y)
   np <- ncol(x)
-
+  
   nknots <- dim(knots)[1]
-
+  
   # predictions
   predictions <- !is.null(s.pred) & !is.null(x.pred)
   if (predictions) {
@@ -40,7 +40,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     npred <- 0
     keepers.y.pred <- NULL
   }
-
+  
   # get initial z
   if (is.null(beta.init)) {
     if (xi == 0) {
@@ -57,23 +57,23 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       beta   <- beta.init
     }
   }
-
+  
   if (is.null(xi.init)) {
     xi <- 0
   } else {
     xi <- xi.init
   }
-
+  
   x.beta <- getXBeta(x, ns, nt, beta)
   xt <- t(x)
   xtx.inv <- solve(xt %*% x)
-
+  
   z <- getZ(xi=xi, x.beta=x.beta)
-
+  
   # distance squared
   dw2    <- as.matrix(rdist(s, knots))^2  # dw2 is ns x nknots
   dw2[dw2 < 1e-6] <- 0
-
+  
   if (length(a.init) > 1) {
     a <- a.init
   } else {
@@ -88,11 +88,11 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
     }
     IDs <- getIDs(dw2, A.cutoff)
   }
-
+  
   # get the initial set of weights for the sites and knots
   rho    <- rho.init
   w      <- stdW(makeW(dw2, rho, A.cutoff))  # w is ns x nknots
-
+  
   if (spatial) {
     alpha <- alpha.init
     u.beta <- qbeta(seq(0, 1, length=npts + 1), 0.5, 0.5)
@@ -109,10 +109,10 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   a.star  <- a^alpha
   wz      <- getwzCPP(z = z, w = w)
   kernel  <- getKernelCPP(wz = wz, a_star = a.star, alpha = alpha)
-
+  
   # keep current likelihood values in mcmc for time savings
   cur.lly  <- logLikeY(y = y, kernel = kernel)
-
+  
   # MH tuning parameters
   if (length(beta.tune) == 1) {
     acc.beta <- att.beta <- mh.beta <- rep(beta.tune, np)
@@ -125,7 +125,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   acc.a     <- att.a     <- 0 * mh.a
   acc.alpha <- att.alpha <- mh.alpha <- alpha.tune
   acc.rho   <- att.rho   <- mh.rho   <- rho.tune
-
+  
   # storage
   keepers.beta  <- matrix(NA, nrow=iters, ncol=np)
   keepers.xi    <- rep(NA, iters)
@@ -133,9 +133,9 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
   keepers.alpha <- rep(NA, iters)
   keepers.rho   <- rep(NA, iters)
   keepers.lly   <- rep(NA, iters)
-
+  
   for (iter in 1:iters) { for (ttt in 1:thin) {
-
+    
     if (xibeta.joint) {  # update beta and xi
       # we are actual sampling for p = P(Y = 0)
       xibeta.update <- updateXiBeta(y = y, alpha = alpha, z = z, w = w,
@@ -148,7 +148,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     mh.p = mh.beta,
                                     acc.xi = acc.xi, att.xi = att.xi,
                                     mh.xi = mh.xi, thresh = 0)
-
+      
       beta     <- xibeta.update$beta
       x.beta   <- xibeta.update$x.beta
       xi       <- xibeta.update$xi
@@ -160,21 +160,21 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       acc.beta <- xibeta.update$acc.p
       att.xi   <- xibeta.update$att.xi
       acc.xi   <- xibeta.update$acc.xi
-
+      
       if (iter < burn / 2) {
         mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
                               nattempts=beta.attempts)
         acc.beta  <- mh.update$acc
         att.beta  <- mh.update$att
         mh.beta   <- mh.update$mh
-
+        
         mh.update <- mhUpdate(acc=acc.xi, att=att.xi, mh=mh.xi,
                               nattempts=xi.attempts)
         acc.xi  <- mh.update$acc
         att.xi  <- mh.update$att
         mh.xi   <- mh.update$mh
       }
-
+      
     } else {  # update beta
       if (!beta.fix) {
         beta.update <- updateBeta(y = y, kernel = kernel, alpha = alpha,
@@ -191,7 +191,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         cur.lly  <- beta.update$cur.lly
         att.beta <- beta.update$att
         acc.beta <- beta.update$acc
-
+        
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc=acc.beta, att=att.beta, mh=mh.beta,
                                 nattempts=beta.attempts)
@@ -200,7 +200,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           mh.beta   <- mh.update$mh
         }
       }
-
+      
       # update xi
       if (!xi.fix) {
         xi.update <- updateXi(y = y, kernel = kernel, alpha = alpha,
@@ -215,7 +215,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         cur.lly <- xi.update$cur.lly
         att.xi  <- xi.update$att
         acc.xi  <- xi.update$acc
-
+        
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc = acc.xi, att = att.xi, mh = mh.xi,
                                 nattempts = xi.attempts)
@@ -225,7 +225,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         }
       }
     }
-
+    
     if (spatial) {
       # update a - NOTE: does not use acc, att, and mh like usual
       old.a    <- a
@@ -239,7 +239,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       kernel   <- a.update$kernel
       cur.lly  <- a.update$cur.lly
       cur.llps <- a.update$cur.llps
-
+      
       if (iter < burn / 2) {
         # adjust the candidate standard deviations
         level <- get.level(old.a, cuts)
@@ -252,7 +252,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
             acc.a[j] <- att.a[j] <- 0
           }
         }
-
+        
         # adjust A.cutoff if any a's have not moved since the start
         # this is typically the case when A.cutoff is too small
         if (any((a - a.init) == 0)) {
@@ -277,7 +277,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                                     bin.width = bin.width,
                                     acc = acc.alpha, att = att.alpha,
                                     mh = mh.alpha, threads = threads)
-
+        
         alpha     <- alpha.update$alpha
         kernel    <- alpha.update$kernel
         a.star    <- alpha.update$a.star
@@ -285,7 +285,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         cur.llps  <- alpha.update$cur.llps
         att.alpha <- alpha.update$att
         acc.alpha <- alpha.update$acc
-
+        
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc = acc.alpha, att = att.alpha, mh = mh.alpha,
                                 nattempts = alpha.attempts)
@@ -294,7 +294,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
           mh.alpha  <- mh.update$mh
         }
       }  # fi !alpha.fix
-
+      
       # update rho
       if (!rho.fix) {
         rho.update <- updateRho(y = y, kernel = kernel, a.star = a.star, 
@@ -310,7 +310,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         cur.lly <- rho.update$cur.lly
         att.rho <- rho.update$att
         acc.rho <- rho.update$acc
-
+        
         if (iter < burn / 2) {
           mh.update <- mhUpdate(acc = acc.rho, att = att.rho, mh = mh.rho,
                                 nattempts = rho.attempts)
@@ -320,16 +320,16 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         }
       }  # fi rho.fix
     }
-
-    }  # end thin
-
+    
+  }  # end thin
+    
     if ((iter > burn) & predictions) {
       yp <- rRareBinarySpat(x = x.pred, s = s.pred, knots = knots,
                             beta = beta, xi = xi, alpha = alpha, rho = rho,
                             thresh = thresh, dw2 = dw2p, a = a)
       keepers.y.pred[(iter - burn), , ] <- yp$y
     }
-
+    
     # storage
     keepers.beta[iter, ] <- beta
     keepers.xi[iter]     <- xi
@@ -339,7 +339,7 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       keepers.rho[iter]    <- rho
     }
     keepers.lly[iter] <- sum(logLikeY(y = y, kernel = kernel))
-
+    
     if (iter %% update == 0) {
       acc.rate.beta  <- round(acc.beta / att.beta, 3)
       acc.rate.xi    <- round(acc.xi / att.xi, 3)
@@ -347,14 +347,14 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         acc.rate.alpha <- round(acc.alpha / att.alpha, 3)
         acc.rate.rho   <- round(acc.rho / att.rho, 3)
       }
-
+      
       if (iterplot) {
         if (iter < burn) {
           begin <- max(1, (iter - 2000))
         } else {
           begin <- burn
         }
-
+        
         par(mfrow=c(2, 4))
         plot(keepers.beta[begin:iter, 1], type="l", main=bquote(beta[0]),
              xlab=round(mh.beta[1], 4), ylab=acc.rate.beta[1])
@@ -368,13 +368,13 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
         }
         plot(keepers.xi[begin:iter], type="l", main=bquote(xi),
              xlab=round(mh.xi, 4), ylab=acc.rate.xi)
-
+        
         if (spatial) {
           plot(keepers.alpha[begin:iter], type="l", main=bquote(alpha),
                xlab=round(mh.alpha, 4), ylab=acc.rate.alpha)
           plot(keepers.rho[begin:iter], type="l", main=bquote(rho),
                xlab=round(mh.rho, 4), ylab=acc.rate.rho)
-
+          
           for (i in 1:4) {
             plot(keepers.a[begin:iter, i, 1], type="l",
                  main=paste("knot ", i, ", day 1", sep=""),
@@ -385,11 +385,11 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
       }
       cat("\t Iter", iter, "\n")
     }
-
+    
   } # end iter
-
+  
   return.iters <- (burn + 1):iters
-
+  
   if (spatial) {
     results <- list(beta = keepers.beta[return.iters, , drop = F],
                     xi = keepers.xi[return.iters],
@@ -407,6 +407,6 @@ mcmc.gev <- function(y, s, x, s.pred = NULL, x.pred = NULL,
                     y.pred = keepers.y.pred,
                     A.cutoff = A.cutoff)
   }
-
+  
   return(results)
 }  # end mcmc
